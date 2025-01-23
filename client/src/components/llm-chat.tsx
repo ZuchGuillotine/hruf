@@ -59,8 +59,8 @@ export default function LLMChat() {
               key={index}
               className={`${
                 message.role === 'assistant'
-                  ? 'bg-muted'
-                  : 'bg-primary text-primary-foreground'
+                  ? 'bg-white/10 text-white'
+                  : 'bg-white text-[#1b4332]'
               }`}
             >
               <CardContent className="p-4">
@@ -76,9 +76,14 @@ export default function LLMChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about supplements, interactions, or health advice..."
+          className="bg-white/10 text-white placeholder:text-white/60"
           disabled={isLoading}
         />
-        <Button type="submit" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="bg-white text-[#1b4332] hover:bg-white/90"
+        >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
