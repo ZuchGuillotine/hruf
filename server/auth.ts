@@ -30,10 +30,13 @@ const crypto = {
 
 declare global {
   namespace Express {
-    interface User extends Express.User {
+    interface User {
       id: number;
       username: string;
       email: string;
+      name?: string;
+      phoneNumber?: string;
+      isPro?: boolean;
     }
   }
 }
@@ -80,12 +83,12 @@ export function setupAuth(app: Express) {
           if (!user) {
             return done(null, false, { message: "Invalid email or password." });
           }
-          
+
           const isMatch = await crypto.compare(password, user.password);
           if (!isMatch) {
             return done(null, false, { message: "Invalid email or password." });
           }
-          
+
           return done(null, user);
         } catch (err) {
           return done(err);
@@ -161,7 +164,7 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: Error, user: Express.User, info: IVerifyOptions) => {
       if (err) return next(err);
       if (!user) return res.status(401).send(info.message);
-      
+
       req.login(user, (err) => {
         if (err) return next(err);
         return res.json({
