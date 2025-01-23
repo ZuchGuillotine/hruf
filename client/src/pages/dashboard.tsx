@@ -8,6 +8,13 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Dashboard() {
   const [showSupplementForm, setShowSupplementForm] = useState(false);
@@ -31,9 +38,9 @@ export default function Dashboard() {
               <SupplementList />
             </div>
           </ResizablePanel>
-          
+
           <ResizableHandle />
-          
+
           <ResizablePanel defaultSize={30}>
             <div className="h-full p-6">
               <h2 className="text-2xl font-semibold mb-4">AI Assistant</h2>
