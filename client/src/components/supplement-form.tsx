@@ -20,7 +20,7 @@ export default function SupplementForm({
 }) {
   const { addSupplement } = useSupplements();
   const { toast } = useToast();
-  
+
   const form = useForm<FormData>({
     defaultValues: {
       name: "",
@@ -50,36 +50,55 @@ export default function SupplementForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium">
+        <label htmlFor="name" className="text-sm font-medium text-white">
           Supplement Name
         </label>
-        <Input id="name" {...form.register("name")} required />
+        <Input 
+          id="name" 
+          {...form.register("name")} 
+          required 
+          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+        />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="dosage" className="text-sm font-medium">
+        <label htmlFor="dosage" className="text-sm font-medium text-white">
           Dosage
         </label>
-        <Input id="dosage" {...form.register("dosage")} required />
+        <Input 
+          id="dosage" 
+          {...form.register("dosage")} 
+          required 
+          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+        />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="frequency" className="text-sm font-medium">
+        <label htmlFor="frequency" className="text-sm font-medium text-white">
           Frequency
         </label>
-        <Input id="frequency" {...form.register("frequency")} required />
+        <Input 
+          id="frequency" 
+          {...form.register("frequency")} 
+          required 
+          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+        />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="notes" className="text-sm font-medium">
+        <label htmlFor="notes" className="text-sm font-medium text-white">
           Notes
         </label>
-        <Textarea id="notes" {...form.register("notes")} />
+        <Textarea 
+          id="notes" 
+          {...form.register("notes")} 
+          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+        />
       </div>
 
       <Button
         type="submit"
-        className="w-full"
+        className="w-full bg-white text-[#1b4332] hover:bg-white/90"
         disabled={form.formState.isSubmitting}
       >
         {form.formState.isSubmitting && (
