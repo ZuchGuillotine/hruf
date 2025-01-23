@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, LineChart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
 
 export default function Header() {
   const { user, logout } = useUser();
@@ -45,9 +46,11 @@ export default function Header() {
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            SupplementTracker
-          </h1>
+          <Link href="/">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
+              SupplementTracker
+            </h1>
+          </Link>
         </div>
 
         <DropdownMenu>
@@ -68,11 +71,20 @@ export default function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleLogout}>
+            <Link href="/profile">
+              <DropdownMenuItem className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/health-stats">
+              <DropdownMenuItem className="cursor-pointer">
+                <LineChart className="mr-2 h-4 w-4" />
+                <span>Health Stats</span>
+              </DropdownMenuItem>
+            </Link>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
