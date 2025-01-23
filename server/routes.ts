@@ -1,6 +1,7 @@
-import type { Express, Request, Response } from "express";
+import type { Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
+import { chatWithAI } from "./openai";
 import { db } from "@db";
 import { supplements, supplementLogs } from "@db/schema";
 import { eq, and } from "drizzle-orm";
@@ -15,6 +16,22 @@ export function registerRoutes(app: Express): Server {
     }
     next();
   };
+
+  // Chat endpoint
+  app.post("/api/chat", requireAuth, async (req, res) => {
+    try {
+      const { messages } = req.body;
+
+      if (!Array.isArray(messages)) {
+        return res.status(400).send("Messages must be an array");
+      }
+
+      const response = await chatWithAI(messages);
+      res.json(response);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   // Supplements CRUD
   app.get("/api/supplements", requireAuth, async (req, res) => {
@@ -56,11 +73,11 @@ export function registerRoutes(app: Express): Server {
           )
         )
         .returning();
-      
+
       if (!updated) {
         return res.status(404).send("Supplement not found");
       }
-      
+
       res.json(updated);
     } catch (error) {
       res.status(500).send("Failed to update supplement");
@@ -78,11 +95,11 @@ export function registerRoutes(app: Express): Server {
           )
         )
         .returning();
-      
+
       if (!deleted) {
         return res.status(404).send("Supplement not found");
       }
-      
+
       res.json({ message: "Supplement deleted successfully" });
     } catch (error) {
       res.status(500).send("Failed to delete supplement");
