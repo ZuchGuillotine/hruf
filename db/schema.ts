@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -8,14 +8,21 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email").unique().notNull(),
   name: text("name"),
-  healthProfile: json("health_profile").$type<{
-    age?: number;
-    weight?: number;
-    allergies?: string[];
-    conditions?: string[];
-  }>(),
+  phoneNumber: text("phone_number"),
+  isPro: boolean("is_pro").default(false),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const healthStats = pgTable("health_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  weight: integer("weight"),
+  dateOfBirth: date("date_of_birth"),
+  averageSleep: integer("average_sleep"),
+  profilePhotoUrl: text("profile_photo_url"),
+  allergies: json("allergies").$type<string[]>(),
+  lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const supplements = pgTable("supplements", {
@@ -47,11 +54,14 @@ export const supplementLogs = pgTable("supplement_logs", {
 
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
+export const insertHealthStatsSchema = createInsertSchema(healthStats);
+export const selectHealthStatsSchema = createSelectSchema(healthStats);
+
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
-
+export type InsertHealthStats = typeof healthStats.$inferInsert;
+export type SelectHealthStats = typeof healthStats.$inferSelect;
 export type InsertSupplement = typeof supplements.$inferInsert;
 export type SelectSupplement = typeof supplements.$inferSelect;
-
 export type InsertSupplementLog = typeof supplementLogs.$inferInsert;
 export type SelectSupplementLog = typeof supplementLogs.$inferSelect;

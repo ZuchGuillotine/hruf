@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
+import ProfilePage from "@/pages/profile";
+import HealthStatsPage from "@/pages/health-stats";
 import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 
@@ -26,6 +28,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/health-stats" component={HealthStatsPage} />
       <Route component={NotFound} />
     </Switch>
   );
