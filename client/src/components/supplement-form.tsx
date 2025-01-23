@@ -4,12 +4,21 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
 type FormData = {
   name: string;
-  dosage: string;
-  frequency: string;
+  dosageAmount: string;
+  dosageUnit: string;
+  frequencyAmount: string;
+  frequencyUnit: string;
   notes?: string;
 };
 
@@ -24,15 +33,22 @@ export default function SupplementForm({
   const form = useForm<FormData>({
     defaultValues: {
       name: "",
-      dosage: "",
-      frequency: "",
+      dosageAmount: "1",
+      dosageUnit: "mg",
+      frequencyAmount: "1",
+      frequencyUnit: "daily",
       notes: "",
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      await addSupplement(data);
+      await addSupplement({
+        name: data.name,
+        dosage: `${data.dosageAmount} ${data.dosageUnit}`,
+        frequency: `${data.frequencyAmount}x ${data.frequencyUnit}`,
+        notes: data.notes,
+      });
       toast({
         title: "Success",
         description: "Supplement added successfully",
@@ -65,24 +81,71 @@ export default function SupplementForm({
         <label htmlFor="dosage" className="text-sm font-medium text-white">
           Dosage
         </label>
-        <Input 
-          id="dosage" 
-          {...form.register("dosage")} 
-          required 
-          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-        />
+        <div className="flex gap-2">
+          <Select
+            defaultValue={form.getValues("dosageAmount")}
+            onValueChange={(value) => form.setValue("dosageAmount", value)}
+          >
+            <SelectTrigger className="bg-white text-[#1b4332]">
+              <SelectValue placeholder="Amount" />
+            </SelectTrigger>
+            <SelectContent>
+              {[...Array(10)].map((_, i) => (
+                <SelectItem key={i + 1} value={(i + 1).toString()}>
+                  {i + 1}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            defaultValue={form.getValues("dosageUnit")}
+            onValueChange={(value) => form.setValue("dosageUnit", value)}
+          >
+            <SelectTrigger className="bg-white text-[#1b4332]">
+              <SelectValue placeholder="Unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mg">mg</SelectItem>
+              <SelectItem value="g">g</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-2">
         <label htmlFor="frequency" className="text-sm font-medium text-white">
           Frequency
         </label>
-        <Input 
-          id="frequency" 
-          {...form.register("frequency")} 
-          required 
-          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-        />
+        <div className="flex gap-2">
+          <Select
+            defaultValue={form.getValues("frequencyAmount")}
+            onValueChange={(value) => form.setValue("frequencyAmount", value)}
+          >
+            <SelectTrigger className="bg-white text-[#1b4332]">
+              <SelectValue placeholder="Amount" />
+            </SelectTrigger>
+            <SelectContent>
+              {[...Array(14)].map((_, i) => (
+                <SelectItem key={i + 1} value={(i + 1).toString()}>
+                  {i + 1}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            defaultValue={form.getValues("frequencyUnit")}
+            onValueChange={(value) => form.setValue("frequencyUnit", value)}
+          >
+            <SelectTrigger className="bg-white text-[#1b4332]">
+              <SelectValue placeholder="Unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hourly">hourly</SelectItem>
+              <SelectItem value="daily">daily</SelectItem>
+              <SelectItem value="weekly">weekly</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-2">
