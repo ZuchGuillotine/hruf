@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Header from "@/components/header";
+import { Link } from "wouter";
 
 type HealthStatsFormData = {
   weight?: number;
@@ -51,16 +53,18 @@ export default function HealthStatsPage() {
 
   return (
     <div className="min-h-screen bg-[#e8f3e8]">
+      <Header />
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-6">
-          <Button
-            onClick={() => window.location.href = '/profile'}
-            variant="ghost"
-            className="mb-4 text-[#1b4332]"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Profile
-          </Button>
+          <Link href="/profile">
+            <Button
+              variant="ghost"
+              className="mb-4 text-[#1b4332]"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Profile
+            </Button>
+          </Link>
 
           <Card className="bg-[#1b4332] text-white">
             <CardHeader>

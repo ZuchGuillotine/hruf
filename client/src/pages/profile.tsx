@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import Header from "@/components/header";
 
 type ProfileFormData = {
   email: string;
@@ -59,6 +60,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#e8f3e8]">
+      <Header />
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-6">
           <Card className="bg-[#1b4332] text-white">
