@@ -7,7 +7,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { users, insertUserSchema } from "@db/schema";
 import { db } from "@db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 const crypto = {
@@ -69,24 +69,30 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(
       {
-        usernameField: "email",
+        usernameField: "email", // We'll use this field for both email and username
         passwordField: "password",
       },
-      async (email, password, done) => {
+      async (emailOrUsername, password, done) => {
         try {
+          // Check both email and username fields
           const [user] = await db
             .select()
             .from(users)
-            .where(eq(users.email, email))
+            .where(
+              or(
+                eq(users.email, emailOrUsername),
+                eq(users.username, emailOrUsername)
+              )
+            )
             .limit(1);
 
           if (!user) {
-            return done(null, false, { message: "Invalid email or password." });
+            return done(null, false, { message: "Invalid credentials." });
           }
 
           const isMatch = await crypto.compare(password, user.password);
           if (!isMatch) {
-            return done(null, false, { message: "Invalid email or password." });
+            return done(null, false, { message: "Invalid credentials." });
           }
 
           return done(null, user);
@@ -123,17 +129,25 @@ export function setupAuth(app: Express) {
           .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
-      const { email, password, username } = result.data;
+      const { email, username, password } = result.data;
 
-      // Check if user already exists
+      // Check if user already exists with either email or username
       const [existingUser] = await db
         .select()
         .from(users)
-        .where(eq(users.email, email))
+        .where(
+          or(
+            eq(users.email, email),
+            eq(users.username, username)
+          )
+        )
         .limit(1);
 
       if (existingUser) {
-        return res.status(400).send("Email already registered");
+        if (existingUser.email === email) {
+          return res.status(400).send("Email already registered");
+        }
+        return res.status(400).send("Username already taken");
       }
 
       // Hash password
@@ -152,7 +166,14 @@ export function setupAuth(app: Express) {
         if (err) return next(err);
         return res.json({
           message: "Registration successful",
-          user: { id: newUser.id, username: newUser.username, email: newUser.email },
+          user: {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            name: newUser.name,
+            phoneNumber: newUser.phoneNumber,
+            isPro: newUser.isPro,
+          },
         });
       });
     } catch (error) {
@@ -169,7 +190,14 @@ export function setupAuth(app: Express) {
         if (err) return next(err);
         return res.json({
           message: "Login successful",
-          user: { id: user.id, username: user.username, email: user.email },
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            name: user.name,
+            phoneNumber: user.phoneNumber,
+            isPro: user.isPro,
+          },
         });
       });
     })(req, res, next);

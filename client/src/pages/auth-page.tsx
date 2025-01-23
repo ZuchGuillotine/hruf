@@ -24,7 +24,7 @@ export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useUser();
   const { toast } = useToast();
-  
+
   const form = useForm<FormData>({
     defaultValues: {
       email: "",
@@ -56,7 +56,7 @@ export default function AuthPage() {
           <CardTitle>{isLogin ? "Login" : "Register"}</CardTitle>
           <CardDescription>
             {isLogin
-              ? "Sign in to your account"
+              ? "Sign in to your account using your email or username"
               : "Create your account to get started"}
           </CardDescription>
         </CardHeader>
@@ -71,17 +71,19 @@ export default function AuthPage() {
                   id="username"
                   type="text"
                   {...form.register("username")}
+                  required={!isLogin}
                 />
               </div>
             )}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
-                Email
+                {isLogin ? "Email or Username" : "Email"}
               </label>
               <Input
                 id="email"
-                type="email"
+                type={isLogin ? "text" : "email"}
                 {...form.register("email")}
+                placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
               />
             </div>
             <div className="space-y-2">
