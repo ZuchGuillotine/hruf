@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { SupplementSearch } from "./supplement-search";
 import {
   Select,
   SelectContent,
@@ -66,21 +68,19 @@ export default function SupplementForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium text-white">
+        <Label htmlFor="name" className="text-sm font-medium text-white">
           Supplement Name
-        </label>
-        <Input 
-          id="name" 
-          {...form.register("name")} 
-          required 
-          className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+        </Label>
+        <SupplementSearch
+          value={form.watch("name")}
+          onChange={(value) => form.setValue("name", value)}
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="dosage" className="text-sm font-medium text-white">
+        <Label htmlFor="dosage" className="text-sm font-medium text-white">
           Dosage
-        </label>
+        </Label>
         <div className="flex gap-2">
           <Select
             defaultValue={form.getValues("dosageAmount")}
@@ -113,9 +113,9 @@ export default function SupplementForm({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="frequency" className="text-sm font-medium text-white">
+        <Label htmlFor="frequency" className="text-sm font-medium text-white">
           Frequency
-        </label>
+        </Label>
         <div className="flex gap-2">
           <Select
             defaultValue={form.getValues("frequencyAmount")}
@@ -149,9 +149,9 @@ export default function SupplementForm({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="notes" className="text-sm font-medium text-white">
+        <Label htmlFor="notes" className="text-sm font-medium text-white">
           Notes
-        </label>
+        </Label>
         <Textarea 
           id="notes" 
           {...form.register("notes")} 
