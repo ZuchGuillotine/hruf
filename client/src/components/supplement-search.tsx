@@ -47,6 +47,16 @@ interface SupplementSearchProps {
 export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Filter and limit suggestions to top 4 matches
+  const suggestions = React.useMemo(() => {
+    const searchTerm = value.toLowerCase();
+    return commonSupplements
+      .filter(supplement => 
+        supplement.toLowerCase().includes(searchTerm)
+      )
+      .slice(0, 4);
+  }, [value]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -56,21 +66,21 @@ export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
           aria-expanded={open}
           className="w-full justify-between bg-white text-[#1b4332] border-none hover:bg-white/90"
         >
-          {value || "Search supplements..."}
+          {value || ""}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command className="bg-white text-[#1b4332]">
           <CommandInput 
-            placeholder="Search supplements..." 
+            placeholder="" 
             className="h-9"
             value={value}
             onValueChange={onChange}
           />
           <CommandEmpty>No supplement found.</CommandEmpty>
-          <CommandGroup className="max-h-60 overflow-auto">
-            {commonSupplements.map((supplement) => (
+          <CommandGroup>
+            {suggestions.map((supplement) => (
               <CommandItem
                 key={supplement}
                 value={supplement}
@@ -78,6 +88,7 @@ export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
                   onChange(currentValue);
                   setOpen(false);
                 }}
+                className="cursor-pointer"
               >
                 {supplement}
                 <Check
