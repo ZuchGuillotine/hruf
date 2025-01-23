@@ -7,25 +7,28 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 type ProfileFormData = {
   email: string;
   phoneNumber: string;
   name: string;
   username: string;
+  dateOfBirth: string;
   isPro: boolean;
 };
 
 export default function ProfilePage() {
   const { user, isLoading } = useUser();
   const { toast } = useToast();
-  
+
   const form = useForm<ProfileFormData>({
     defaultValues: {
       email: user?.email || "",
       phoneNumber: user?.phoneNumber || "",
       name: user?.name || "",
       username: user?.username || "",
+      dateOfBirth: "", // To be implemented: Fetch from user profile
       isPro: user?.isPro || false,
     },
   });
@@ -73,7 +76,7 @@ export default function ProfilePage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="phoneNumber">Phone Number</Label>
                   <Input
@@ -83,7 +86,7 @@ export default function ProfilePage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
                   <Input
@@ -92,7 +95,7 @@ export default function ProfilePage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
                   <Input
@@ -101,7 +104,18 @@ export default function ProfilePage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
+
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    max={format(new Date(), 'yyyy-MM-dd')}
+                    {...form.register("dateOfBirth")}
+                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                  />
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="pro"
@@ -110,7 +124,7 @@ export default function ProfilePage() {
                   />
                   <Label htmlFor="pro">Pro Account</Label>
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full bg-white text-[#1b4332] hover:bg-white/90"
@@ -124,7 +138,7 @@ export default function ProfilePage() {
               </form>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-[#1b4332] text-white">
             <CardHeader>
               <CardTitle className="text-2xl">Health Statistics</CardTitle>

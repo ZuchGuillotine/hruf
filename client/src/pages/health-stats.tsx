@@ -7,11 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
 
 type HealthStatsFormData = {
   weight?: number;
-  dateOfBirth?: string;
   averageSleep?: number;
   profilePhotoUrl?: string;
   allergies?: string;
@@ -20,7 +18,7 @@ type HealthStatsFormData = {
 export default function HealthStatsPage() {
   const { user, isLoading } = useUser();
   const { toast } = useToast();
-  
+
   const form = useForm<HealthStatsFormData>({
     defaultValues: {
       // To be implemented: Fetch existing health stats
@@ -79,18 +77,7 @@ export default function HealthStatsPage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    max={format(new Date(), 'yyyy-MM-dd')}
-                    {...form.register("dateOfBirth")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="averageSleep">Average Sleep (hours)</Label>
                   <Input
@@ -103,7 +90,7 @@ export default function HealthStatsPage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="profilePhotoUrl">Profile Photo URL</Label>
                   <Input
@@ -113,7 +100,7 @@ export default function HealthStatsPage() {
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="allergies">Allergies (one per line)</Label>
                   <Textarea
@@ -123,7 +110,7 @@ export default function HealthStatsPage() {
                     placeholder="Enter your allergies here..."
                   />
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full bg-white text-[#1b4332] hover:bg-white/90"
