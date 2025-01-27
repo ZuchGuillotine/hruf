@@ -40,9 +40,14 @@ export class Trie {
     let current = this.root;
     const normalizedPrefix = prefix.toLowerCase();
 
+    // Debug logging
+    console.log(`Searching trie for prefix: "${normalizedPrefix}"`);
+
     // Traverse to the last node of the prefix
     for (const char of normalizedPrefix) {
+      console.log(`Checking character: ${char}`);
       if (!current.children.has(char)) {
+        console.log(`Character ${char} not found in trie`);
         return results;
       }
       current = current.children.get(char)!;
@@ -50,37 +55,38 @@ export class Trie {
 
     // Use DFS to find all words with the prefix
     this._findAllWords(current, normalizedPrefix, results, limit);
+    console.log(`Found ${results.length} matches:`, results);
     return results;
   }
 
   private _findAllWords(node: TrieNode, prefix: string, results: Array<any>, limit: number) {
     if (results.length >= limit) return;
 
-    if (node.isEndOfWord) {
-      results.push({
-        name: prefix,
-        ...node.data
-      });
+    if (node.isEndOfWord && node.data) {
+      console.log(`Adding word to results: ${prefix}`);
+      results.push(node.data);
     }
 
-    // Use Array.from to handle the MapIterator
-    const entries = Array.from(node.children.entries());
-    for (const [char, childNode] of entries) {
+    for (const [char, childNode] of node.children.entries()) {
       this._findAllWords(childNode, prefix + char, results, limit);
     }
   }
 
   // Load supplements into the trie
   loadSupplements(supplements: Array<any>) {
+    console.log(`Loading ${supplements.length} supplements into trie`);
     for (const supplement of supplements) {
+      console.log(`Adding supplement: ${supplement.name}`);
       this.insert(supplement.name, supplement);
 
       // Also index alternative names if they exist
       if (supplement.alternativeNames) {
         for (const altName of supplement.alternativeNames) {
+          console.log(`Adding alternative name: ${altName}`);
           this.insert(altName, supplement);
         }
       }
     }
+    console.log('Finished loading supplements into trie');
   }
 }
