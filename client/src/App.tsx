@@ -9,6 +9,7 @@ import ProfilePage from "@/pages/profile";
 import HealthStatsPage from "@/pages/health-stats";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
+import CookieConsent from "@/components/cookie-consent";
 import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 
@@ -43,6 +44,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
+      <CookieConsent />
       <Toaster />
     </QueryClientProvider>
   );
