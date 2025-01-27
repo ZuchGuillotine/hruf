@@ -63,7 +63,9 @@ export class Trie {
       });
     }
 
-    for (const [char, childNode] of node.children.entries()) {
+    // Use Array.from to handle the MapIterator
+    const entries = Array.from(node.children.entries());
+    for (const [char, childNode] of entries) {
       this._findAllWords(childNode, prefix + char, results, limit);
     }
   }
@@ -72,7 +74,7 @@ export class Trie {
   loadSupplements(supplements: Array<any>) {
     for (const supplement of supplements) {
       this.insert(supplement.name, supplement);
-      
+
       // Also index alternative names if they exist
       if (supplement.alternativeNames) {
         for (const altName of supplement.alternativeNames) {
