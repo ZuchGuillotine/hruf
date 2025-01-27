@@ -10,9 +10,39 @@ class TrieNode {
   }
 }
 
+function levenshteinDistance(str1: string, str2: string): number {
+  const m = str1.length;
+  const n = str2.length;
+  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+  for (let i = 0; i <= m; i++) {
+    dp[i][0] = i;
+  }
+  for (let j = 0; j <= n; j++) {
+    dp[0][j] = j;
+  }
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = Math.min(
+          dp[i - 1][j - 1] + 1,  // substitution
+          dp[i - 1][j] + 1,      // deletion
+          dp[i][j - 1] + 1       // insertion
+        );
+      }
+    }
+  }
+
+  return dp[m][n];
+}
+
 export class Trie {
   private root: TrieNode;
   private supplements: Map<string, any>;
+  private maxDistance: number = 2; // Maximum Levenshtein distance for fuzzy matching
 
   constructor() {
     this.root = new TrieNode();
@@ -37,25 +67,59 @@ export class Trie {
 
   search(prefix: string, limit: number = 4): Array<any> {
     const results: Array<any> = [];
-    let current = this.root;
     const normalizedPrefix = prefix.toLowerCase();
 
-    // Debug logging
     console.log(`Searching trie for prefix: "${normalizedPrefix}"`);
 
-    // Traverse to the last node of the prefix
+    // First try exact prefix match
+    let current = this.root;
+    let exactMatch = true;
+
     for (const char of normalizedPrefix) {
       console.log(`Checking character: ${char}`);
       if (!current.children.has(char)) {
-        console.log(`Character ${char} not found in trie`);
-        return results;
+        exactMatch = false;
+        break;
       }
       current = current.children.get(char)!;
     }
 
-    // Use DFS to find all words with the prefix
-    this._findAllWords(current, normalizedPrefix, results, limit);
+    if (exactMatch) {
+      this._findAllWords(current, normalizedPrefix, results, limit);
+    }
+
+    // If no exact matches or not enough results, try fuzzy matching
+    if (results.length < limit) {
+      console.log('No exact matches found, trying fuzzy search');
+      const fuzzyResults = this._fuzzySearch(normalizedPrefix, limit - results.length);
+      results.push(...fuzzyResults);
+    }
+
     console.log(`Found ${results.length} matches:`, results);
+    return results;
+  }
+
+  private _fuzzySearch(query: string, limit: number): Array<any> {
+    const results: Array<any> = [];
+    const matches = new Map<string, { distance: number; data: any }>();
+
+    // Compare with all stored supplements
+    for (const [word, data] of this.supplements.entries()) {
+      const distance = levenshteinDistance(query, word);
+      if (distance <= this.maxDistance) {
+        matches.set(word, { distance, data });
+      }
+    }
+
+    // Sort matches by distance and take the top results
+    const sortedMatches = Array.from(matches.entries())
+      .sort((a, b) => a[1].distance - b[1].distance)
+      .slice(0, limit);
+
+    for (const [_, { data }] of sortedMatches) {
+      results.push(data);
+    }
+
     return results;
   }
 
@@ -72,14 +136,12 @@ export class Trie {
     }
   }
 
-  // Load supplements into the trie
   loadSupplements(supplements: Array<any>) {
     console.log(`Loading ${supplements.length} supplements into trie`);
     for (const supplement of supplements) {
       console.log(`Adding supplement: ${supplement.name}`);
       this.insert(supplement.name, supplement);
 
-      // Also index alternative names if they exist
       if (supplement.alternativeNames) {
         for (const altName of supplement.alternativeNames) {
           console.log(`Adding alternative name: ${altName}`);
