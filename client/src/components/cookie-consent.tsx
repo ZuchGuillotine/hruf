@@ -11,16 +11,23 @@ export default function CookieConsent() {
   const [showConsent, setShowConsent] = useState(false);
 
   useEffect(() => {
-    // Check if user has already consented
-    const hasConsented = localStorage.getItem("cookieConsent");
-    if (!hasConsented) {
+    // Check if user has already made a choice about cookies
+    const cookieChoice = localStorage.getItem("cookieConsent");
+    if (cookieChoice === null) {
       setShowConsent(true);
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem("cookieConsent", "true");
+    localStorage.setItem("cookieConsent", "accepted");
     setShowConsent(false);
+  };
+
+  const handleDecline = () => {
+    localStorage.setItem("cookieConsent", "declined");
+    setShowConsent(false);
+    // When declined, you might want to disable certain tracking features
+    // or use only essential cookies
   };
 
   if (!showConsent) {
@@ -33,14 +40,21 @@ export default function CookieConsent() {
         <CardContent className="pt-6">
           <p className="text-sm text-foreground/90">
             We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. 
-            By clicking "Accept", you consent to our use of cookies. Read our{" "}
+            By clicking "Accept", you consent to our use of cookies. By clicking "Decline", only essential cookies will be used.
+            For more information about how we use cookies, please read our{" "}
             <Link href="/privacy">
-              <a className="text-[#1b4332] hover:underline">Privacy Policy</a>
-            </Link>{" "}
-            to learn more about how we use cookies.
+              <a className="text-[#1b4332] font-semibold hover:underline">Privacy Policy</a>
+            </Link>.
           </p>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">
+          <Button
+            variant="outline"
+            className="border-[#1b4332] text-[#1b4332] hover:bg-[#1b4332] hover:text-white"
+            onClick={handleDecline}
+          >
+            Decline
+          </Button>
           <Button
             variant="outline"
             className="border-[#1b4332] text-[#1b4332] hover:bg-[#1b4332] hover:text-white"
