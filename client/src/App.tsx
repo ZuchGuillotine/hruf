@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import ProfilePage from "@/pages/profile";
 import HealthStatsPage from "@/pages/health-stats";
 import TermsOfService from "@/pages/terms-of-service";
+import PrivacyPolicy from "@/pages/privacy-policy";
 import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 
@@ -22,7 +23,7 @@ function Router() {
     );
   }
 
-  if (!user && window.location.pathname !== '/terms') {
+  if (!user && window.location.pathname !== '/terms' && window.location.pathname !== '/privacy') {
     return <AuthPage />;
   }
 
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/terms" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       <Route component={NotFound} />
     </Switch>
   );
