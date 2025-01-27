@@ -52,10 +52,29 @@ export const supplementLogs = pgTable("supplement_logs", {
   }>(),
 });
 
+export const supplementReference = pgTable("supplement_reference", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  alternativeNames: json("alternative_names").$type<string[]>(),
+  description: text("description"),
+  source: text("source"),
+  sourceUrl: text("source_url"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertHealthStatsSchema = createInsertSchema(healthStats);
 export const selectHealthStatsSchema = createSelectSchema(healthStats);
+export const insertSupplementSchema = createInsertSchema(supplements);
+export const selectSupplementSchema = createSelectSchema(supplements);
+export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
+export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
+
+export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
+export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
@@ -65,3 +84,5 @@ export type InsertSupplement = typeof supplements.$inferInsert;
 export type SelectSupplement = typeof supplements.$inferSelect;
 export type InsertSupplementLog = typeof supplementLogs.$inferInsert;
 export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
+export type InsertSupplementReference = typeof supplementReference.$inferInsert;
+export type SelectSupplementReference = typeof supplementReference.$inferSelect;

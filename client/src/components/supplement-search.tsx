@@ -14,70 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-/**
- * This list can be extended in multiple ways:
- * 
- * 1. Direct Addition:
- * - Add new supplements to the relevant category below
- * - Follow the alphabetical order within categories
- * 
- * 2. Database-Driven (Future Enhancement):
- * - Create a 'supplements' table with fields: name, category, common_names
- * - Add an API endpoint in routes.ts: GET /api/supplements/common
- * - Modify this component to fetch from the API instead of using this static list
- * 
- * 3. Admin Interface (Future Enhancement):
- * - Create an admin page with CRUD operations for supplements
- * - Add role-based access control for admin users
- * - Store supplements in the database
- * - Add API endpoints for managing the supplements list
- */
-
-// Common supplements organized by category
-const commonSupplements = [
-  // Vitamins
-  "Vitamin A",
-  "Vitamin B1",
-  "Vitamin B2",
-  "Vitamin B3",
-  "Vitamin B6",
-  "Vitamin B12",
-  "Vitamin C",
-  "Vitamin D",
-  "Vitamin E",
-  "Vitamin K",
-
-  // Minerals
-  "Calcium",
-  "Iron",
-  "Magnesium",
-  "Potassium",
-  "Selenium",
-  "Zinc",
-
-  // Amino Acids & Proteins
-  "Collagen",
-  "Creatine",
-  "L-Arginine",
-  "L-Glutamine",
-  "Protein Powder",
-  "Whey Protein",
-
-  // Fatty Acids
-  "Fish Oil",
-  "Omega-3",
-  "Omega-6",
-  "Omega-9",
-
-  // Other Supplements
-  "Biotin",
-  "CoQ10",
-  "Glucosamine",
-  "Melatonin",
-  "Probiotics",
-  "Turmeric",
-].sort(); // Keep the final list alphabetically sorted
+import { useQuery } from "@tanstack/react-query";
 
 interface SupplementSearchProps {
   value: string;
@@ -86,16 +23,19 @@ interface SupplementSearchProps {
 
 export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
 
-  // Filter and limit suggestions to top 4 matches
-  const suggestions = React.useMemo(() => {
-    const searchTerm = value.toLowerCase();
-    return commonSupplements
-      .filter(supplement => 
-        supplement.toLowerCase().includes(searchTerm)
-      )
-      .slice(0, 4);
-  }, [value]);
+  const { data: suggestions = [] } = useQuery({
+    queryKey: ['/api/supplements/search', search],
+    enabled: search.length > 0,
+    queryFn: async () => {
+      const res = await fetch(`/api/supplements/search?q=${encodeURIComponent(search)}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch suggestions');
+      }
+      return res.json();
+    },
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -112,29 +52,34 @@ export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command className="bg-white text-[#1b4332]">
-          <CommandInput 
-            placeholder="" 
+          <CommandInput
+            placeholder=""
+            value={search}
+            onValueChange={setSearch}
             className="h-9"
-            value={value}
-            onValueChange={onChange}
           />
           <CommandEmpty>No supplement found.</CommandEmpty>
           <CommandGroup>
             {suggestions.map((supplement) => (
               <CommandItem
-                key={supplement}
-                value={supplement}
+                key={supplement.name}
+                value={supplement.name}
                 onSelect={(currentValue) => {
                   onChange(currentValue);
                   setOpen(false);
                 }}
                 className="cursor-pointer"
               >
-                {supplement}
+                <div className="flex flex-col">
+                  <span>{supplement.name}</span>
+                  {supplement.category && (
+                    <span className="text-xs text-muted-foreground">{supplement.category}</span>
+                  )}
+                </div>
                 <Check
                   className={cn(
                     "ml-auto h-4 w-4",
-                    value === supplement ? "opacity-100" : "opacity-0"
+                    value === supplement.name ? "opacity-100" : "opacity-0"
                   )}
                 />
               </CommandItem>

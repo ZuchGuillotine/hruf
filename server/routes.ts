@@ -3,8 +3,9 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db";
-import { supplements, supplementLogs } from "@db/schema";
-import { eq, and } from "drizzle-orm";
+import { supplements, supplementLogs, supplementReference } from "@db/schema";
+import { eq, and, ilike } from "drizzle-orm";
+import { supplementService } from "./services/supplements";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -131,6 +132,25 @@ export function registerRoutes(app: Express): Server {
       res.json(newLog);
     } catch (error) {
       res.status(500).send("Failed to create supplement log");
+    }
+  });
+
+  // Initialize supplement service
+  supplementService.initialize().catch(console.error);
+
+  // New route for supplement search
+  app.get("/api/supplements/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query) {
+        return res.json([]);
+      }
+
+      const suggestions = supplementService.search(query);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Supplement search error:", error);
+      res.status(500).send("Failed to search supplements");
     }
   });
 
