@@ -10,15 +10,17 @@ const app = express();
 // Trust first proxy
 app.set('trust proxy', 1);
 
-// Security headers
+// Security headers with adjusted CSP for Replit
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "wss:", "ws:"],
+      defaultSrc: ["'self'", "*.replit.dev"],
+      styleSrc: ["'self'", "'unsafe-inline'", "*.replit.dev"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*.replit.dev"],
+      imgSrc: ["'self'", "data:", "blob:", "*.replit.dev"],
+      connectSrc: ["'self'", "wss:", "ws:", "*.replit.dev", "https://*.replit.dev"],
+      frameSrc: ["'self'", "*.replit.dev"],
+      fontSrc: ["'self'", "data:", "*.replit.dev"],
     },
   },
   crossOriginEmbedderPolicy: false,
