@@ -24,7 +24,7 @@ function levenshteinDistance(str1: string, str2: string): number {
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      if (str1[i - 1] === str2[j - 1]) {
+      if (str1[i - 1].toLowerCase() === str2[j - 1].toLowerCase()) {
         dp[i][j] = dp[i - 1][j - 1];
       } else {
         dp[i][j] = Math.min(
@@ -39,19 +39,41 @@ function levenshteinDistance(str1: string, str2: string): number {
   return dp[m][n];
 }
 
+function normalizeVitaminName(input: string): string {
+  // Remove spaces and convert to lowercase
+  let normalized = input.toLowerCase().replace(/\s+/g, '');
+
+  // Common vitamin spelling patterns
+  normalized = normalized
+    .replace(/vit+a*min/g, 'vitamin')  // Handle repeated letters
+    .replace(/vitamiin/g, 'vitamin')
+    .replace(/vitmin/g, 'vitamin')
+    .replace(/vitamen/g, 'vitamin')
+    .replace(/vitemin/g, 'vitamin');
+
+  return normalized;
+}
+
 export class Trie {
   private root: TrieNode;
   private supplements: Map<string, any>;
-  private maxDistance: number = 2; // Maximum Levenshtein distance for fuzzy matching
+  private baseMaxDistance: number = 2;
 
   constructor() {
     this.root = new TrieNode();
     this.supplements = new Map();
   }
 
+  private getMaxDistance(wordLength: number): number {
+    // Scale max distance based on word length
+    if (wordLength <= 4) return this.baseMaxDistance;
+    if (wordLength <= 8) return this.baseMaxDistance + 1;
+    return this.baseMaxDistance + 2;
+  }
+
   insert(word: string, data: any = null) {
     let current = this.root;
-    const normalizedWord = word.toLowerCase();
+    const normalizedWord = normalizeVitaminName(word);
 
     for (const char of normalizedWord) {
       if (!current.children.has(char)) {
@@ -67,9 +89,9 @@ export class Trie {
 
   search(prefix: string, limit: number = 4): Array<any> {
     const results: Array<any> = [];
-    const normalizedPrefix = prefix.toLowerCase();
+    const normalizedPrefix = normalizeVitaminName(prefix);
 
-    console.log(`Searching trie for prefix: "${normalizedPrefix}"`);
+    console.log(`Searching trie for normalized prefix: "${normalizedPrefix}"`);
 
     // First try exact prefix match
     let current = this.root;
@@ -102,11 +124,12 @@ export class Trie {
   private _fuzzySearch(query: string, limit: number): Array<any> {
     const results: Array<any> = [];
     const matches = new Map<string, { distance: number; data: any }>();
+    const maxDistance = this.getMaxDistance(query.length);
 
     // Compare with all stored supplements
     for (const [word, data] of this.supplements.entries()) {
       const distance = levenshteinDistance(query, word);
-      if (distance <= this.maxDistance) {
+      if (distance <= maxDistance) {
         matches.set(word, { distance, data });
       }
     }
