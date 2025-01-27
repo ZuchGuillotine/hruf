@@ -138,15 +138,19 @@ export function registerRoutes(app: Express): Server {
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
 
-  // New route for supplement search
+  // Supplement search endpoint
   app.get("/api/supplements/search", async (req, res) => {
     try {
       const query = req.query.q as string;
+      console.log(`Received search request for query: "${query}"`);
+
       if (!query) {
+        console.log("Empty query, returning empty results");
         return res.json([]);
       }
 
       const suggestions = supplementService.search(query);
+      console.log(`Returning ${suggestions.length} suggestions`);
       res.json(suggestions);
     } catch (error) {
       console.error("Supplement search error:", error);
