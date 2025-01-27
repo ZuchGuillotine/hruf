@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div>
-            <span className="text-lg font-semibold">SupplementTracker</span>
+            <span className="text-lg font-semibold">StackTracker</span>
           </div>
           <nav className="flex space-x-6">
             <Link href="/terms">
@@ -27,7 +27,7 @@ export default function Footer() {
           </nav>
         </div>
         <div className="mt-6 text-center text-white/60 text-sm">
-          © {new Date().getFullYear()} SupplementTracker. All rights reserved.
+          © {new Date().getFullYear()} StackTracker. All rights reserved.
         </div>
       </div>
     </footer>

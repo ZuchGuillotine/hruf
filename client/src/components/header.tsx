@@ -48,7 +48,7 @@ export default function Header() {
         <div className="flex items-center gap-4">
           <Link href="/">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
-              SupplementTracker
+              StackTracker
             </h1>
           </Link>
         </div>
