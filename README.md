@@ -34,6 +34,18 @@ A comprehensive HIPAA-compliant supplement tracking application that empowers us
   - Privacy-focused design
   - Audit trail capabilities
 
+### Legal & Privacy
+- **Terms of Service & Privacy**
+  - Comprehensive Terms of Service
+  - Detailed Privacy Policy
+  - Clear data handling practices
+  - User rights documentation
+- **GDPR Compliance**
+  - Cookie consent management
+  - User choice persistence
+  - Essential vs optional cookies
+  - Privacy policy integration
+
 ## 🚀 Technical Stack
 
 ### Frontend

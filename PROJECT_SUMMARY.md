@@ -53,6 +53,16 @@ A comprehensive health and supplement tracking application that helps users mana
 - Mobile-friendly design
 - Intuitive form layouts
 
+### Legal Compliance & Privacy
+- Comprehensive Terms of Service page
+- Detailed Privacy Policy
+- GDPR-compliant cookie consent mechanism:
+  - User choice persistence
+  - Accept/Decline options
+  - Clear explanation of cookie usage
+  - Link to Privacy Policy
+- Transparent data handling practices
+
 ## Current Development Status
 
 ### Completed Components
@@ -77,6 +87,12 @@ A comprehensive health and supplement tracking application that helps users mana
    - Chat interface
    - OpenAI GPT-4o connection
    - Health-focused AI responses
+
+5. Legal & Privacy Framework
+   - Terms of Service implementation
+   - Privacy Policy documentation
+   - GDPR-compliant cookie management
+   - User data protection measures
 
 ### Database Schema
 - Users table with authentication and profile data
