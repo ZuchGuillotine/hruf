@@ -7,6 +7,9 @@ import helmet from "helmet";
 
 const app = express();
 
+// Trust first proxy
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: {
