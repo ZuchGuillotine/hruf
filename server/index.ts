@@ -3,28 +3,12 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
-import helmet from "helmet";
+//import helmet from "helmet"; // Removed helmet middleware
 
 const app = express();
 
 // Trust first proxy
 app.set('trust proxy', 1);
-
-// Security headers with adjusted CSP for Replit
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'", "*.replit.dev"],
-      styleSrc: ["'self'", "'unsafe-inline'", "*.replit.dev"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*.replit.dev"],
-      imgSrc: ["'self'", "data:", "blob:", "*.replit.dev"],
-      connectSrc: ["'self'", "wss:", "ws:", "*.replit.dev", "https://*.replit.dev"],
-      frameSrc: ["'self'", "*.replit.dev"],
-      fontSrc: ["'self'", "data:", "*.replit.dev"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-}));
 
 // Rate limiting
 const limiter = rateLimit({
