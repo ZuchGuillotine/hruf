@@ -2,6 +2,7 @@ import Header from "@/components/header";
 import SupplementList from "@/components/supplement-list";
 import SupplementForm from "@/components/supplement-form";
 import LLMChat from "@/components/llm-chat";
+import Footer from "@/components/footer";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -18,11 +19,11 @@ export default function Dashboard() {
   const [showSupplementForm, setShowSupplementForm] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#e8f3e8]"> {/* Light forest green background */}
+    <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
       <Header />
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-6 space-y-6 flex-grow">
         {/* AI Assistant Section */}
-        <div className="bg-[#1b4332] rounded-lg p-6"> {/* Dark forest green box */}
+        <div className="bg-[#1b4332] rounded-lg p-6">
           <h2 className="text-2xl font-semibold mb-4 text-white">AI Assistant</h2>
           <p className="text-white/90 mb-4">How are you feeling?</p>
           <div className="h-[300px]">
@@ -31,7 +32,7 @@ export default function Dashboard() {
         </div>
 
         {/* Supplements Section */}
-        <div className="bg-[#1b4332] rounded-lg p-6"> {/* Dark forest green box */}
+        <div className="bg-[#1b4332] rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">My Supplements</h2>
             <Button
@@ -93,6 +94,8 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      <Footer />
 
       <Dialog open={showSupplementForm} onOpenChange={setShowSupplementForm}>
         <DialogContent className="bg-[#1b4332] text-white">
