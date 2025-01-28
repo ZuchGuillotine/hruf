@@ -71,7 +71,7 @@ export default function AuthPage() {
       if (!window.google?.accounts?.id) return;
 
       window.google.accounts.id.initialize({
-        client_id: "798510659255-vhb18ruokhvkbft5ddjo0pke399fhjgi.apps.googleusercontent.com",
+        client_id: "798510659255-nkc1bsil6bn4chkrs86oq2hajaf5tps8.apps.googleusercontent.com",
         callback: handleGoogleResponse,
       });
 
