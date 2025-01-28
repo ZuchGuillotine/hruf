@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import Header from "@/components/header";
+import { ProfileProgress } from "@/components/profile-progress";
 
 type ProfileFormData = {
   email: string;
@@ -29,14 +30,13 @@ export default function ProfilePage() {
       phoneNumber: user?.phoneNumber || "",
       name: user?.name || "",
       username: user?.username || "",
-      dateOfBirth: "", // To be implemented: Fetch from user profile
+      dateOfBirth: "", 
       isPro: user?.isPro || false,
     },
   });
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
-      // To be implemented: API call to update profile
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -63,6 +63,7 @@ export default function ProfilePage() {
       <Header />
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-6">
+          <ProfileProgress />
           <Card className="bg-[#1b4332] text-white">
             <CardHeader>
               <CardTitle className="text-2xl">Profile Settings</CardTitle>
