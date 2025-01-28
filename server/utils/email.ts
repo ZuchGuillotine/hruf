@@ -8,12 +8,39 @@ if (!process.env.SENDGRID_API_KEY) {
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+// Test SendGrid connection and sender verification
+export async function testSendGridConnection() {
+  try {
+    const msg = {
+      to: 'test@example.com', // This won't actually send an email
+      from: 'noreply@stacktracker.co',
+      subject: 'SendGrid Test',
+      text: 'Testing SendGrid Configuration',
+    };
+
+    // This validates the API key and sender authentication
+    await sgMail.send(msg);
+    return true;
+  } catch (error: any) {
+    if (error.response) {
+      const { message, code } = error.response.body;
+      if (code === 403) {
+        throw new Error('SendGrid API key does not have permission to send emails');
+      }
+      if (message.includes('The from address does not match')) {
+        throw new Error('Sender email address not verified in SendGrid');
+      }
+    }
+    throw error;
+  }
+}
+
 export async function sendVerificationEmail(email: string, token: string) {
   const verificationUrl = `${process.env.APP_URL || 'http://localhost:5000'}/verify-email?token=${token}`;
 
   const msg = {
     to: email,
-    from: 'noreply@stacktracker.co', // Replace with your verified sender
+    from: 'noreply@stacktracker.co', // Make sure this email is verified in SendGrid
     subject: 'Verify your StackTracker account',
     text: `Please verify your email address by clicking this link: ${verificationUrl}`,
     html: `
@@ -34,15 +61,18 @@ export async function sendVerificationEmail(email: string, token: string) {
   };
 
   try {
+    // Test connection before attempting to send
+    await testSendGridConnection();
+
+    // Send the actual email
     await sgMail.send(msg);
     console.log(`Verification email sent to ${email}`);
   } catch (error: any) {
     console.error('Error sending verification email:', error);
-    // Log more detailed error information
     if (error.response) {
-      console.error(error.response.body);
+      console.error('SendGrid API Error:', error.response.body);
     }
-    throw new Error('Failed to send verification email');
+    throw new Error(error.message || 'Failed to send verification email');
   }
 }
 

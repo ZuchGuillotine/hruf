@@ -104,11 +104,22 @@ export function registerRoutes(app: Express): Server {
           message: "Registration successful. Please check your email to verify your account.",
           requiresVerification: true,
         });
-      } catch (emailError) {
+      } catch (emailError: any) {
         console.error('Failed to send verification email:', emailError);
-        // Even if email fails, return success but with a different message
+
+        // Provide specific error messages based on the type of failure
+        let errorMessage = "Account created but verification email failed to send. ";
+
+        if (emailError.message.includes('API key does not have permission')) {
+          errorMessage += "Email service not properly configured.";
+        } else if (emailError.message.includes('Sender email address not verified')) {
+          errorMessage += "Email sender not verified.";
+        } else {
+          errorMessage += "Please contact support.";
+        }
+
         res.json({
-          message: "Account created but verification email failed to send. Please contact support.",
+          message: errorMessage,
           requiresVerification: true,
           emailError: true,
         });
