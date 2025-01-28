@@ -13,7 +13,7 @@ export async function testSendGridConnection() {
   try {
     const msg = {
       to: 'test@example.com', // This won't actually send an email
-      from: 'noreply@stacktracker.co',
+      from: 'accounts@stacktracker.io',
       subject: 'SendGrid Test',
       text: 'Testing SendGrid Configuration',
     };
@@ -40,7 +40,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   const msg = {
     to: email,
-    from: 'noreply@stacktracker.co', // Make sure this email is verified in SendGrid
+    from: 'accounts@stacktracker.io', // Verified SendGrid sender
     subject: 'Verify your StackTracker account',
     text: `Please verify your email address by clicking this link: ${verificationUrl}`,
     html: `
