@@ -18,6 +18,25 @@ export function registerRoutes(app: Express): Server {
     next();
   };
 
+  // Middleware to check admin role
+  const requireAdmin = (req: Request, res: Response, next: Function) => {
+    if (!req.user?.isAdmin) {
+      return res.status(403).send("Admin access required");
+    }
+    next();
+  };
+
+  // Admin endpoints
+  app.get("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const supplements = await db.select().from(supplementReference);
+      res.json(supplements);
+    } catch (error) {
+      console.error("Error fetching supplement reference data:", error);
+      res.status(500).send("Failed to fetch supplement reference data");
+    }
+  });
+
   // Chat endpoint
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
