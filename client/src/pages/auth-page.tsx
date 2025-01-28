@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Card,
@@ -15,6 +15,21 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import Footer from "@/components/footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
 
 type FormData = {
   email: string;
@@ -25,7 +40,7 @@ type FormData = {
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [verificationSent, setVerificationSent] = useState(false);
-  const { login, register } = useUser();
+  const { login, register, googleLogin } = useUser();
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -35,6 +50,34 @@ export default function AuthPage() {
       username: "",
     },
   });
+
+  useEffect(() => {
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.initialize({
+        client_id: "798510659255-vhb18ruokhvkbft5ddjo0pke399fhjgi.apps.googleusercontent.com",
+        callback: async (response) => {
+          try {
+            await googleLogin(response.credential);
+          } catch (error: any) {
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: error.message,
+            });
+          }
+        },
+      });
+
+      const googleButton = document.getElementById("google-signin");
+      if (googleButton) {
+        window.google.accounts.id.renderButton(googleButton, {
+          theme: "outline",
+          size: "large",
+          width: "100%",
+        });
+      }
+    }
+  }, [googleLogin, toast]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -140,6 +183,19 @@ export default function AuthPage() {
                   {...form.register("password")}
                 />
               </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <div id="google-signin" className="mt-4"></div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button

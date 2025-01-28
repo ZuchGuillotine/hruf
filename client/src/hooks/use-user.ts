@@ -5,6 +5,7 @@ type RequestResult = {
   ok: true;
   user?: SelectUser;
   message?: string;
+  requiresVerification?: boolean;
 } | {
   ok: false;
   message: string;
@@ -13,7 +14,7 @@ type RequestResult = {
 async function handleRequest(
   url: string,
   method: string,
-  body?: Partial<InsertUser>
+  body?: Partial<InsertUser> | { credential?: string }
 ): Promise<RequestResult> {
   try {
     const response = await fetch(url, {
@@ -72,6 +73,13 @@ export function useUser() {
     },
   });
 
+  const googleLoginMutation = useMutation({
+    mutationFn: (credential: string) => handleRequest('/api/auth/google', 'POST', { credential }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
   const logoutMutation = useMutation({
     mutationFn: () => handleRequest('/api/logout', 'POST'),
     onSuccess: () => {
@@ -91,6 +99,7 @@ export function useUser() {
     isLoading,
     error,
     login: loginMutation.mutateAsync,
+    googleLogin: googleLoginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
   };
