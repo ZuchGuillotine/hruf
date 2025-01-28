@@ -10,6 +10,7 @@ A comprehensive health and supplement tracking application that helps users mana
 - **Authentication**: Passport.js with session-based auth
 - **AI Integration**: OpenAI GPT-4o for intelligent health insights
 - **Styling**: Custom theme with professional forest green aesthetic
+- **Email Service**: SendGrid for verification emails (pending setup)
 
 ## Implemented Features
 
@@ -18,6 +19,12 @@ A comprehensive health and supplement tracking application that helps users mana
 - Session-based authentication with Passport.js
 - Profile management with user details and preferences
 - Pro account toggle functionality
+- Email verification system (infrastructure in place but pending SendGrid setup):
+  - Verification token generation
+  - Token expiration handling (24-hour validity)
+  - Secure verification flow
+  - User-friendly verification UI
+  - Pending: SendGrid integration for sending verification emails
 
 ### Core Supplement Management
 - Add, view, and delete supplements
@@ -65,6 +72,17 @@ A comprehensive health and supplement tracking application that helps users mana
 
 ## Recently Implemented Features (January 28, 2025):
 
+### Email Verification System (In Progress)
+- Added email verification token generation
+- Implemented verification token expiration logic
+- Created verification endpoint and handler
+- Added verification UI components
+- Built email templates for verification
+- TODO: Complete SendGrid setup:
+  - Sender verification needed
+  - Domain authentication pending
+  - API key permissions verification required
+
 ### Admin Interface & Supplement Management
 - Implemented admin user privileges system
 - Created admin-only supplement management interface
@@ -104,6 +122,16 @@ A comprehensive health and supplement tracking application that helps users mana
    - Privacy Policy documentation
    - GDPR-compliant cookie management
    - User data protection measures
+
+### In Progress
+1. Email Verification System
+   - Backend infrastructure: ✅ Complete
+   - Frontend UI: ✅ Complete
+   - SendGrid Integration: ⏳ Pending
+     - Requires sender verification
+     - Domain authentication setup needed
+     - API key configuration verification
+
 
 ### Database Schema
 - Users table with authentication, profile data, and admin privileges
