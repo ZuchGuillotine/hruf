@@ -29,11 +29,31 @@ export function registerRoutes(app: Express): Server {
   // Admin endpoints
   app.get("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const supplements = await db.select().from(supplementReference);
+      const supplements = await db
+        .select()
+        .from(supplementReference)
+        .orderBy(supplementReference.name);
       res.json(supplements);
     } catch (error) {
       console.error("Error fetching supplement reference data:", error);
       res.status(500).send("Failed to fetch supplement reference data");
+    }
+  });
+
+  app.post("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const [newSupplement] = await db
+        .insert(supplementReference)
+        .values(req.body)
+        .returning();
+
+      // Reinitialize the supplement service to include the new supplement
+      await supplementService.initialize();
+
+      res.json(newSupplement);
+    } catch (error) {
+      console.error("Error creating supplement reference:", error);
+      res.status(500).send("Failed to create supplement reference");
     }
   });
 
