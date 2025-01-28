@@ -14,18 +14,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type ProfileFormData = {
   email: string;
-  phoneNumber: string;
-  name: string;
+  phoneNumber?: string;
+  name?: string;
   username: string;
-  dateOfBirth: string;
-  isPro: boolean;
+  isPro?: boolean;
 };
 
 async function updateProfile(data: ProfileFormData) {
   const response = await fetch('/api/profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      email: data.email,
+      phoneNumber: data.phoneNumber || null,
+      name: data.name || null,
+      username: data.username,
+      isPro: data.isPro || false,
+    }),
     credentials: 'include',
   });
 
@@ -47,7 +52,6 @@ export default function ProfilePage() {
       phoneNumber: user?.phoneNumber || "",
       name: user?.name || "",
       username: user?.username || "",
-      dateOfBirth: "", 
       isPro: user?.isPro || false,
     },
   });
@@ -128,17 +132,6 @@ export default function ProfilePage() {
                   <Input
                     id="username"
                     {...form.register("username")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    max={format(new Date(), 'yyyy-MM-dd')}
-                    {...form.register("dateOfBirth")}
                     className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                   />
                 </div>
