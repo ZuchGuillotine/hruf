@@ -5,6 +5,30 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      spacing: {
+        'safe': 'env(safe-area-inset-bottom)',
+      },
+      height: {
+        'screen': '100vh',
+        'screen-dynamic': '100dvh',
+        'touch': '44px',
+      },
+      minHeight: {
+        'screen': '100vh',
+        'screen-dynamic': '100dvh',
+        'touch': '44px',
+      },
+      maxHeight: {
+        'screen': '100vh',
+        'screen-dynamic': '100dvh',
+      },
+      // Touch target sizes
+      width: {
+        'touch': '44px',
+      },
+      minWidth: {
+        'touch': '44px',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -64,20 +88,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {

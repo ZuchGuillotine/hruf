@@ -25,9 +25,10 @@ interface Supplement {
 interface SupplementSearchProps {
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 }
 
-export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
+export function SupplementSearch({ value, onChange, className }: SupplementSearchProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -53,7 +54,10 @@ export function SupplementSearch({ value, onChange }: SupplementSearchProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between bg-white text-[#1b4332] border-none hover:bg-white/90"
+          className={cn(
+            "w-full justify-between bg-white text-[#1b4332] border-none hover:bg-white/90",
+            className
+          )}
         >
           {value || "Select a supplement..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
