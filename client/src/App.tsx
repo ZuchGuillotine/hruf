@@ -9,9 +9,28 @@ import ProfilePage from "@/pages/profile";
 import HealthStatsPage from "@/pages/health-stats";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
+import AdminSupplements from "@/pages/admin/supplements";
 import CookieConsent from "@/components/cookie-consent";
 import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
+
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { user, isLoading } = useUser();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user?.isAdmin) {
+    return <NotFound />;
+  }
+
+  return <Component />;
+}
 
 function Router() {
   const { user, isLoading } = useUser();
@@ -35,6 +54,7 @@ function Router() {
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
       <Route component={NotFound} />
     </Switch>
   );

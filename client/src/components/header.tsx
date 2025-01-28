@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart } from 'lucide-react';
+import { LogOut, User, LineChart, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -83,6 +83,17 @@ export default function Header() {
                 <span>Health Stats</span>
               </DropdownMenuItem>
             </Link>
+            {user?.isAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <Link href="/admin/supplements">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Database className="mr-2 h-4 w-4" />
+                    <span>Manage Supplements</span>
+                  </DropdownMenuItem>
+                </Link>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
