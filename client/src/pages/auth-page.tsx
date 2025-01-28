@@ -24,7 +24,6 @@ declare global {
         id: {
           initialize: (config: any) => void;
           renderButton: (element: HTMLElement, config: any) => void;
-          prompt: () => void;
         };
       };
     };
@@ -35,6 +34,10 @@ type FormData = {
   email: string;
   password: string;
   username?: string;
+};
+
+type GoogleResponse = {
+  credential: string;
 };
 
 export default function AuthPage() {
@@ -51,33 +54,39 @@ export default function AuthPage() {
     },
   });
 
+  const handleGoogleResponse = async (response: GoogleResponse) => {
+    try {
+      await googleLogin(response.credential);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
   useEffect(() => {
-    if (window.google?.accounts?.id) {
+    const initializeGoogle = () => {
+      if (!window.google?.accounts?.id) return;
+
       window.google.accounts.id.initialize({
         client_id: "798510659255-vhb18ruokhvkbft5ddjo0pke399fhjgi.apps.googleusercontent.com",
-        callback: async (response) => {
-          try {
-            await googleLogin(response.credential);
-          } catch (error: any) {
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: error.message,
-            });
-          }
-        },
+        callback: handleGoogleResponse,
       });
 
-      const googleButton = document.getElementById("google-signin");
-      if (googleButton) {
-        window.google.accounts.id.renderButton(googleButton, {
+      const buttonContainer = document.getElementById("google-signin");
+      if (buttonContainer) {
+        window.google.accounts.id.renderButton(buttonContainer, {
           theme: "outline",
           size: "large",
-          width: "100%",
         });
       }
-    }
-  }, [googleLogin, toast]);
+    };
+
+    // Small delay to ensure DOM is ready
+    setTimeout(initializeGoogle, 100);
+  }, [googleLogin]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -195,7 +204,7 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <div id="google-signin" className="mt-4"></div>
+              <div id="google-signin" className="flex justify-center mt-4"></div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button
