@@ -2,15 +2,20 @@ import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 
 // Initialize SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+if (!process.env.SENDGRID_API_KEY) {
+  throw new Error("SENDGRID_API_KEY environment variable must be set");
+}
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export async function sendVerificationEmail(email: string, token: string) {
   const verificationUrl = `${process.env.APP_URL || 'http://localhost:5000'}/verify-email?token=${token}`;
-  
+
   const msg = {
     to: email,
     from: 'noreply@stacktracker.co', // Replace with your verified sender
     subject: 'Verify your StackTracker account',
+    text: `Please verify your email address by clicking this link: ${verificationUrl}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1b4332;">Welcome to StackTracker!</h2>
@@ -30,8 +35,13 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   try {
     await sgMail.send(msg);
-  } catch (error) {
+    console.log(`Verification email sent to ${email}`);
+  } catch (error: any) {
     console.error('Error sending verification email:', error);
+    // Log more detailed error information
+    if (error.response) {
+      console.error(error.response.body);
+    }
     throw new Error('Failed to send verification email');
   }
 }

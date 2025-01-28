@@ -75,13 +75,14 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Modify registration endpoint to include email verification
+  // Registration endpoint with improved error handling
   app.post("/api/register", async (req, res) => {
     try {
       const verificationToken = generateVerificationToken();
       const tokenExpiry = new Date();
       tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 24 hours
 
+      // Create user first
       const [user] = await db
         .insert(users)
         .values({
@@ -92,14 +93,28 @@ export function registerRoutes(app: Express): Server {
         })
         .returning();
 
-      await sendVerificationEmail(user.email, verificationToken);
+      console.log(`User created successfully: ${user.email}`);
 
-      res.json({
-        message: "Registration successful. Please check your email to verify your account.",
-        requiresVerification: true,
-      });
+      try {
+        // Then attempt to send verification email
+        await sendVerificationEmail(user.email, verificationToken);
+        console.log(`Verification email sent successfully to ${user.email}`);
+
+        res.json({
+          message: "Registration successful. Please check your email to verify your account.",
+          requiresVerification: true,
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Even if email fails, return success but with a different message
+        res.json({
+          message: "Account created but verification email failed to send. Please contact support.",
+          requiresVerification: true,
+          emailError: true,
+        });
+      }
     } catch (error) {
-      console.error('Error registering user:', error);
+      console.error('Error in registration process:', error);
       res.status(500).send("Error registering user");
     }
   });
