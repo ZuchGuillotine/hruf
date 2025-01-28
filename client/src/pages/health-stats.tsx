@@ -9,6 +9,8 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import { Link } from "wouter";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import type { SelectHealthStats } from "@db/schema";
 
 type HealthStatsFormData = {
   weight?: number;
@@ -17,33 +19,66 @@ type HealthStatsFormData = {
   allergies?: string;
 };
 
+async function updateHealthStats(data: HealthStatsFormData) {
+  const response = await fetch('/api/health-stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...data,
+      allergies: data.allergies ? data.allergies.split('\n').filter(Boolean) : [],
+    }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.json();
+}
+
 export default function HealthStatsPage() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading: userLoading } = useUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: healthStats, isLoading: statsLoading } = useQuery<SelectHealthStats>({
+    queryKey: ['/api/health-stats'],
+    enabled: !!user,
+  });
 
   const form = useForm<HealthStatsFormData>({
     defaultValues: {
-      // To be implemented: Fetch existing health stats
+      weight: healthStats?.weight,
+      averageSleep: healthStats?.averageSleep,
+      profilePhotoUrl: healthStats?.profilePhotoUrl,
+      allergies: healthStats?.allergies ? (healthStats.allergies as string[]).join('\n') : '',
     },
   });
 
-  const onSubmit = async (data: HealthStatsFormData) => {
-    try {
-      // To be implemented: API call to update health stats
+  const mutation = useMutation({
+    mutationFn: updateHealthStats,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/health-stats'] });
       toast({
         title: "Success",
         description: "Health stats updated successfully",
       });
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: "Error",
         description: error.message,
       });
-    }
+    },
+  });
+
+  const onSubmit = (data: HealthStatsFormData) => {
+    mutation.mutate(data);
   };
 
-  if (isLoading) {
+  if (userLoading || statsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -118,9 +153,9 @@ export default function HealthStatsPage() {
                 <Button
                   type="submit"
                   className="w-full bg-white text-[#1b4332] hover:bg-white/90"
-                  disabled={form.formState.isSubmitting}
+                  disabled={mutation.isPending}
                 >
-                  {form.formState.isSubmitting && (
+                  {mutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Save Changes

@@ -3,28 +3,70 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db";
-import { supplements, supplementLogs, supplementReference } from "@db/schema";
+import { supplements, supplementLogs, supplementReference, healthStats } from "@db/schema";
 import { eq, and, ilike } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
+
+// Middleware to check authentication
+const requireAuth = (req: Request, res: Response, next: Function) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).send("Authentication required");
+  }
+  next();
+};
+
+// Middleware to check admin role
+const requireAdmin = (req: Request, res: Response, next: Function) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).send("Admin access required");
+  }
+  next();
+};
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
-  // Middleware to check authentication
-  const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Authentication required");
+  // Health Stats endpoints
+  app.get("/api/health-stats", requireAuth, async (req, res) => {
+    try {
+      const [userStats] = await db
+        .select()
+        .from(healthStats)
+        .where(eq(healthStats.userId, req.user!.id));
+      res.json(userStats || {});
+    } catch (error) {
+      console.error("Error fetching health stats:", error);
+      res.status(500).send("Failed to fetch health stats");
     }
-    next();
-  };
+  });
 
-  // Middleware to check admin role
-  const requireAdmin = (req: Request, res: Response, next: Function) => {
-    if (!req.user?.isAdmin) {
-      return res.status(403).send("Admin access required");
+  app.post("/api/health-stats", requireAuth, async (req, res) => {
+    try {
+      const [existing] = await db
+        .select()
+        .from(healthStats)
+        .where(eq(healthStats.userId, req.user!.id));
+
+      let result;
+      if (existing) {
+        [result] = await db
+          .update(healthStats)
+          .set({ ...req.body, lastUpdated: new Date() })
+          .where(eq(healthStats.userId, req.user!.id))
+          .returning();
+      } else {
+        [result] = await db
+          .insert(healthStats)
+          .values({ ...req.body, userId: req.user!.id })
+          .returning();
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error updating health stats:", error);
+      res.status(500).send("Failed to update health stats");
     }
-    next();
-  };
+  });
 
   // Admin endpoints
   app.get("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
