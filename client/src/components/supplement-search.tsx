@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 
 interface Supplement {
+  id: number;
   name: string;
   category: string;
   description?: string;
@@ -42,8 +43,15 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
         throw new Error('Failed to fetch suggestions');
       }
       const data = await res.json();
-      console.log('Received suggestions:', data);
-      return data;
+      // Remove duplicates based on supplement ID
+      const uniqueData = data.reduce((acc: Supplement[], curr: Supplement) => {
+        if (!acc.find(item => item.id === curr.id)) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []);
+      console.log('Received suggestions:', uniqueData);
+      return uniqueData;
     },
   });
 
@@ -72,14 +80,14 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
             className="h-9"
           />
           {isLoading ? (
-            <div>Loading...</div>
+            <div className="p-4 text-sm text-muted-foreground">Loading...</div>
           ) : suggestions.length === 0 ? (
             <CommandEmpty>No supplement found.</CommandEmpty>
           ) : (
             <CommandGroup>
               {suggestions.map((supplement) => (
                 <CommandItem
-                  key={supplement.name}
+                  key={`${supplement.id}-${supplement.name}`}
                   value={supplement.name}
                   onSelect={(currentValue) => {
                     onChange(currentValue);
