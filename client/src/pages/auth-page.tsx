@@ -14,6 +14,7 @@ import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import Footer from "@/components/footer";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type FormData = {
   email: string;
@@ -23,6 +24,7 @@ type FormData = {
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [verificationSent, setVerificationSent] = useState(false);
   const { login, register } = useUser();
   const { toast } = useToast();
 
@@ -39,7 +41,10 @@ export default function AuthPage() {
       if (isLogin) {
         await login(data);
       } else {
-        await register(data);
+        const response = await register(data);
+        if (response.requiresVerification) {
+          setVerificationSent(true);
+        }
       }
     } catch (error: any) {
       toast({
@@ -49,6 +54,43 @@ export default function AuthPage() {
       });
     }
   };
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
+        <div className="flex-grow flex items-center justify-center px-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Check Your Email</CardTitle>
+              <CardDescription>
+                We've sent a verification link to your email address. Please click the link to verify your account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Alert>
+                <AlertDescription>
+                  The verification link will expire in 24 hours. If you don't see the email in your inbox, please check your spam folder.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  setVerificationSent(false);
+                  setIsLogin(true);
+                }}
+              >
+                Back to Login
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
