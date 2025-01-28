@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import Header from "@/components/header";
 import { ProfileProgress } from "@/components/profile-progress";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type ProfileFormData = {
   email: string;
@@ -20,9 +21,25 @@ type ProfileFormData = {
   isPro: boolean;
 };
 
+async function updateProfile(data: ProfileFormData) {
+  const response = await fetch('/api/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.json();
+}
+
 export default function ProfilePage() {
   const { user, isLoading } = useUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
@@ -35,19 +52,26 @@ export default function ProfilePage() {
     },
   });
 
-  const onSubmit = async (data: ProfileFormData) => {
-    try {
+  const mutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: "Error",
         description: error.message,
       });
-    }
+    },
+  });
+
+  const onSubmit = (data: ProfileFormData) => {
+    mutation.mutate(data);
   };
 
   if (isLoading) {
@@ -131,9 +155,9 @@ export default function ProfilePage() {
                 <Button
                   type="submit"
                   className="w-full bg-white text-[#1b4332] hover:bg-white/90"
-                  disabled={form.formState.isSubmitting}
+                  disabled={mutation.isPending}
                 >
-                  {form.formState.isSubmitting && (
+                  {mutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Save Changes

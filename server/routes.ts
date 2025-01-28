@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db";
-import { supplements, supplementLogs, supplementReference, healthStats } from "@db/schema";
+import { supplements, supplementLogs, supplementReference, healthStats, users } from "@db/schema";
 import { eq, and, ilike } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 
@@ -236,6 +236,25 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Supplement search error:", error);
       res.status(500).send("Failed to search supplements");
+    }
+  });
+
+  // User profile endpoints
+  app.post("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({
+          ...req.body,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, req.user!.id))
+        .returning();
+
+      res.json({ message: "Profile updated successfully", user: updated });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).send("Failed to update profile");
     }
   });
 
