@@ -57,7 +57,10 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   const msg = {
     to: email,
-    from: SENDER_EMAIL,
+    from: {
+      email: SENDER_EMAIL,
+      name: 'StackTracker'
+    },
     subject: 'Verify your StackTracker account',
     text: `Please verify your email address by clicking this link: ${verificationUrl}`,
     html: `
@@ -78,33 +81,38 @@ export async function sendVerificationEmail(email: string, token: string) {
   };
 
   try {
-    console.log(`Attempting to send verification email to ${email}...`);
-    await testSendGridConnection();
+    console.log('Attempting to send verification email with the following configuration:');
+    console.log('From:', SENDER_EMAIL);
+    console.log('To:', email);
+    console.log('API Key length:', process.env.SENDGRID_API_KEY?.length);
 
-    // Send the actual email
-    await sgMail.send(msg);
-    console.log(`✓ Verification email successfully sent to ${email}`);
-    return true;
-  } catch (error: any) {
-    console.error('Failed to send verification email:', {
-      error: error.message,
-      response: error.response?.body,
-      email: email,
+    const [response] = await sgMail.send(msg);
+
+    console.log('SendGrid API Response:', {
+      statusCode: response?.statusCode,
+      headers: response?.headers,
     });
 
-    // Specific error handling for common issues
-    if (error.response?.body) {
-      const { message } = error.response.body;
-      if (message.includes('The from address does not match')) {
-        throw new Error(`Sender email "${SENDER_EMAIL}" is not verified in SendGrid`);
-      }
-      if (message.includes('rate limit')) {
-        throw new Error('Email sending rate limit exceeded');
-      }
-      throw new Error(`SendGrid Error: ${message}`);
+    if (response?.statusCode === 202) {
+      console.log('✓ Verification email successfully sent');
+      return true;
+    } else {
+      throw new Error(`Unexpected status code: ${response?.statusCode}`);
+    }
+  } catch (error: any) {
+    console.error('SendGrid Error Details:', {
+      message: error.message,
+      code: error?.code,
+      response: error?.response?.body,
+    });
+
+    if (error?.response?.body) {
+      const { message, errors } = error.response.body;
+      console.error('SendGrid API Errors:', errors);
+      throw new Error(`SendGrid API Error: ${message}`);
     }
 
-    throw error;
+    throw new Error(`Failed to send verification email: ${error.message}`);
   }
 }
 
