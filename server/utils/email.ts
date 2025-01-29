@@ -8,29 +8,46 @@ if (!process.env.SENDGRID_API_KEY) {
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+const SENDER_EMAIL = 'accounts@stacktracker.io';
+
 // Test SendGrid connection and sender verification
 export async function testSendGridConnection() {
   try {
+    console.log('Testing SendGrid configuration...');
+
+    // First verify API key validity
     const msg = {
-      to: 'test@example.com', // This won't actually send an email
-      from: 'accounts@stacktracker.io',
+      to: 'test@example.com',
+      from: SENDER_EMAIL,
       subject: 'SendGrid Test',
       text: 'Testing SendGrid Configuration',
     };
 
-    // This validates the API key and sender authentication
-    await sgMail.send(msg);
+    try {
+      await sgMail.send(msg);
+      console.log('SendGrid API key is valid and has proper permissions');
+    } catch (error: any) {
+      console.error('SendGrid API Error:', {
+        message: error.message,
+        response: error.response?.body,
+      });
+
+      if (error.response?.body) {
+        const { message, code } = error.response.body;
+        if (code === 403) {
+          throw new Error('SendGrid API key does not have proper permissions. Please ensure the API key has "Mail Send" permissions enabled.');
+        }
+        if (message.includes('The from address does not match')) {
+          throw new Error(`Sender email "${SENDER_EMAIL}" is not verified in SendGrid. Please verify this domain or email address in your SendGrid account.`);
+        }
+        throw new Error(`SendGrid Error: ${message}`);
+      }
+      throw error;
+    }
+
     return true;
   } catch (error: any) {
-    if (error.response) {
-      const { message, code } = error.response.body;
-      if (code === 403) {
-        throw new Error('SendGrid API key does not have permission to send emails');
-      }
-      if (message.includes('The from address does not match')) {
-        throw new Error('Sender email address not verified in SendGrid');
-      }
-    }
+    console.error('SendGrid Configuration Error:', error);
     throw error;
   }
 }
@@ -40,7 +57,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   const msg = {
     to: email,
-    from: 'accounts@stacktracker.io', // Verified SendGrid sender
+    from: SENDER_EMAIL,
     subject: 'Verify your StackTracker account',
     text: `Please verify your email address by clicking this link: ${verificationUrl}`,
     html: `
@@ -61,18 +78,33 @@ export async function sendVerificationEmail(email: string, token: string) {
   };
 
   try {
-    // Test connection before attempting to send
+    console.log(`Attempting to send verification email to ${email}...`);
     await testSendGridConnection();
 
     // Send the actual email
     await sgMail.send(msg);
-    console.log(`Verification email sent to ${email}`);
+    console.log(`✓ Verification email successfully sent to ${email}`);
+    return true;
   } catch (error: any) {
-    console.error('Error sending verification email:', error);
-    if (error.response) {
-      console.error('SendGrid API Error:', error.response.body);
+    console.error('Failed to send verification email:', {
+      error: error.message,
+      response: error.response?.body,
+      email: email,
+    });
+
+    // Specific error handling for common issues
+    if (error.response?.body) {
+      const { message } = error.response.body;
+      if (message.includes('The from address does not match')) {
+        throw new Error(`Sender email "${SENDER_EMAIL}" is not verified in SendGrid`);
+      }
+      if (message.includes('rate limit')) {
+        throw new Error('Email sending rate limit exceeded');
+      }
+      throw new Error(`SendGrid Error: ${message}`);
     }
-    throw new Error(error.message || 'Failed to send verification email');
+
+    throw error;
   }
 }
 
