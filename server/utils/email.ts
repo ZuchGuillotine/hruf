@@ -1,27 +1,42 @@
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+// Verbose environment checking
+const REQUIRED_ENV_VARS = {
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  APP_URL: process.env.APP_URL || 'http://localhost:5000',
+  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL || 'accounts@stacktracker.io'
+};
+
+// Check for missing environment variables
+const missingVars = Object.entries(REQUIRED_ENV_VARS)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
 }
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Initialize SendGrid
+sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY);
 
-// Allow override of sender email for testing
-const SENDER_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'accounts@stacktracker.io';
+// Store sender email for consistent usage
+const SENDER_EMAIL = REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL;
 
 export async function sendVerificationEmail(email: string, token: string) {
-  // Get current environment URL
-  const baseUrl = process.env.APP_URL || 'http://localhost:5000';
-  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
-
-  console.log('Email Configuration:', {
-    environment: process.env.NODE_ENV || 'development',
-    baseUrl,
-    senderEmail: SENDER_EMAIL,
-    recipientEmail: email,
-    apiKeyPresent: !!process.env.SENDGRID_API_KEY,
+  // Log configuration state
+  console.log('SendGrid Configuration State:', {
+    environment: REQUIRED_ENV_VARS.NODE_ENV,
+    baseUrl: REQUIRED_ENV_VARS.APP_URL,
+    senderConfigured: !!SENDER_EMAIL,
+    apiKeyConfigured: !!REQUIRED_ENV_VARS.SENDGRID_API_KEY,
+    apiKeyLength: REQUIRED_ENV_VARS.SENDGRID_API_KEY?.length || 0,
+    fromEmail: SENDER_EMAIL,
+    toEmail: email,
   });
+
+  const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
 
   const msg = {
     to: email,
@@ -49,29 +64,38 @@ export async function sendVerificationEmail(email: string, token: string) {
     console.log('Attempting to send verification email...');
     const [response] = await sgMail.send(msg);
 
-    console.log('SendGrid Response:', {
+    console.log('SendGrid API Response:', {
       statusCode: response?.statusCode,
       headers: response?.headers,
     });
 
-    return true;
+    if (response?.statusCode === 202) {
+      console.log('✓ Verification email sent successfully');
+      return true;
+    } else {
+      throw new Error(`Unexpected status code: ${response?.statusCode}`);
+    }
   } catch (error: any) {
     console.error('SendGrid Error Details:', {
       name: error.name,
       message: error.message,
-      stack: error.stack,
-      response: error.response?.body,
       code: error.code,
+      response: error.response?.body,
     });
 
-    // Check for specific SendGrid errors
+    // Specific error handling for common issues
     if (error.response?.body) {
       const { errors } = error.response.body;
-      if (errors?.[0]?.message.includes('domain')) {
-        console.error('Domain verification error detected. Please ensure the sender domain is properly verified in SendGrid.');
+      const errorMessage = errors?.[0]?.message || error.message;
+
+      if (errorMessage.includes('The from address does not match')) {
+        throw new Error(`Sender email "${SENDER_EMAIL}" is not verified in SendGrid`);
       }
-      if (errors?.[0]?.message.includes('permission')) {
-        console.error('API key permission error. Please ensure the API key has "Mail Send" permissions.');
+      if (errorMessage.includes('API key does not have permission')) {
+        throw new Error('SendGrid API key does not have "Mail Send" permission');
+      }
+      if (errorMessage.includes('domain authentication')) {
+        throw new Error('Domain authentication required in SendGrid');
       }
     }
 
