@@ -7,10 +7,21 @@ if (!process.env.SENDGRID_API_KEY) {
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-const SENDER_EMAIL = 'accounts@stacktracker.io';
+// Allow override of sender email for testing
+const SENDER_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'accounts@stacktracker.io';
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const verificationUrl = `${process.env.APP_URL || 'http://localhost:5000'}/verify-email?token=${token}`;
+  // Get current environment URL
+  const baseUrl = process.env.APP_URL || 'http://localhost:5000';
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
+
+  console.log('Email Configuration:', {
+    environment: process.env.NODE_ENV || 'development',
+    baseUrl,
+    senderEmail: SENDER_EMAIL,
+    recipientEmail: email,
+    apiKeyPresent: !!process.env.SENDGRID_API_KEY,
+  });
 
   const msg = {
     to: email,
@@ -35,15 +46,35 @@ export async function sendVerificationEmail(email: string, token: string) {
   };
 
   try {
-    console.log(`Sending verification email to ${email}`);
-    await sgMail.send(msg);
-    console.log(`Verification email sent successfully to ${email}`);
+    console.log('Attempting to send verification email...');
+    const [response] = await sgMail.send(msg);
+
+    console.log('SendGrid Response:', {
+      statusCode: response?.statusCode,
+      headers: response?.headers,
+    });
+
     return true;
   } catch (error: any) {
-    console.error('SendGrid Error:', {
+    console.error('SendGrid Error Details:', {
+      name: error.name,
       message: error.message,
+      stack: error.stack,
       response: error.response?.body,
+      code: error.code,
     });
+
+    // Check for specific SendGrid errors
+    if (error.response?.body) {
+      const { errors } = error.response.body;
+      if (errors?.[0]?.message.includes('domain')) {
+        console.error('Domain verification error detected. Please ensure the sender domain is properly verified in SendGrid.');
+      }
+      if (errors?.[0]?.message.includes('permission')) {
+        console.error('API key permission error. Please ensure the API key has "Mail Send" permissions.');
+      }
+    }
+
     throw error;
   }
 }
