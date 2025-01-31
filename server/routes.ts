@@ -78,10 +78,15 @@ export function registerRoutes(app: Express): Server {
   // Registration endpoint with improved error handling
   app.post("/api/register", async (req, res) => {
     try {
+      console.log('Registration attempt:', {
+        email: req.body.email,
+        bodyKeys: Object.keys(req.body),
+      });
+  
       const verificationToken = generateVerificationToken();
       const tokenExpiry = new Date();
       tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 24 hours
-
+  
       // Create user first
       const [user] = await db
         .insert(users)
@@ -92,24 +97,24 @@ export function registerRoutes(app: Express): Server {
           verificationTokenExpiry: tokenExpiry,
         })
         .returning();
-
+  
       console.log(`User created successfully: ${user.email}`);
-
+  
       try {
         // Then attempt to send verification email
         await sendVerificationEmail(user.email, verificationToken);
         console.log(`Verification email sent successfully to ${user.email}`);
-
+  
         res.json({
           message: "Registration successful. Please check your email to verify your account.",
           requiresVerification: true,
         });
       } catch (emailError: any) {
         console.error('Failed to send verification email:', emailError);
-
+  
         // Provide specific error messages based on the type of failure
         let errorMessage = "Account created but verification email failed to send. ";
-
+  
         if (emailError.message.includes('API key does not have permission')) {
           errorMessage += "Email service not properly configured.";
         } else if (emailError.message.includes('Sender email address not verified')) {
@@ -117,14 +122,14 @@ export function registerRoutes(app: Express): Server {
         } else {
           errorMessage += "Please contact support.";
         }
-
+  
         res.json({
           message: errorMessage,
           requiresVerification: true,
           emailError: true,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in registration process:', error);
       res.status(500).send("Error registering user");
     }
@@ -343,24 +348,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // User profile endpoints
-  app.post("/api/profile", requireAuth, async (req, res) => {
-    try {
-      const [updated] = await db
-        .update(users)
-        .set({
-          ...req.body,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, req.user!.id))
-        .returning();
-
-      res.json({ message: "Profile updated successfully", user: updated });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      res.status(500).send("Failed to update profile");
-    }
-  });
+    // User profile endpoints
+    app.post("/api/profile", requireAuth, async (req, res) => {
+        try {
+            const [updated] = await db
+              .update(users)
+              .set({
+                ...req.body,
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, req.user!.id))
+              .returning();
+      
+            res.json({ message: "Profile updated successfully", user: updated });
+          } catch (error) {
+            console.error("Error updating profile:", error);
+            res.status(500).send("Failed to update profile");
+          }
+    });
 
   const httpServer = createServer(app);
   return httpServer;

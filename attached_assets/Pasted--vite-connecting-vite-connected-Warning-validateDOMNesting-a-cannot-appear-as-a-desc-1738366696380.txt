@@ -1,0 +1,33 @@
+[vite] connecting...
+[vite] connected.
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+    at a
+    at a
+    at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2cb6698e:205:18
+    at nav
+    at div
+    at div
+    at footer
+    at Footer
+    at div
+    at AuthPage (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/pages/auth-page.tsx:38:33)
+    at Router (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/App.tsx?v=vHjsoUUfq8Lr5SizXyfmk:66:31)
+    at QueryClientProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2cb6698e:2805:3)
+    at App
+at a
+at a
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2cb6698e:205:18
+at nav
+at div
+at div
+at footer
+at Footer
+at div
+at AuthPage (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/pages/auth-page.tsx:38:33)
+at Router (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/App.tsx?v=vHjsoUUfq8Lr5SizXyfmk:66:31)
+at QueryClientProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2cb6698e:2805:3)
+at App
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400

@@ -10,19 +10,19 @@ export default function Footer() {
           </div>
           <nav className="flex space-x-6">
             <Link href="/terms">
-              <a className="text-white/80 hover:text-white transition-colors">
+              <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Terms of Service
-              </a>
+              </span>
             </Link>
             <Link href="/privacy">
-              <a className="text-white/80 hover:text-white transition-colors">
+              <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Privacy Policy
-              </a>
+              </span>
             </Link>
             <Link href="/contact">
-              <a className="text-white/80 hover:text-white transition-colors">
+              <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Contact
-              </a>
+              </span>
             </Link>
           </nav>
         </div>
