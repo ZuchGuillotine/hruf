@@ -10,21 +10,17 @@ const REQUIRED_ENV_VARS = {
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL
 };
 
-// Configure SendGrid with timeout and retry settings
+// Configure SendGrid
 const configureSendGrid = () => {
   if (!REQUIRED_ENV_VARS.SENDGRID_API_KEY) {
     throw new Error('SendGrid API key is required');
   }
 
+  // Set API key for Web API usage
   sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY);
 
-  // Set client options
-  const client = sgMail.client;
-  if (client?.axios?.defaults) {
-    client.axios.defaults.timeout = 30000; // 30 second timeout
-    client.axios.defaults.headers['User-Agent'] = 'StackTracker/1.0.0';
-    client.axios.defaults.headers['Content-Type'] = 'application/json';
-  }
+  // Set custom request headers
+  sgMail.setSubstitutionWrappers('{{', '}}'); // Use mustache syntax for templates
 };
 
 export async function testSendGridConnection(): Promise<boolean> {
@@ -42,7 +38,7 @@ export async function testSendGridConnection(): Promise<boolean> {
     // Configure SendGrid
     configureSendGrid();
 
-    // Send a test email using the template
+    // Test email using Web API
     const msg = {
       to: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
@@ -55,7 +51,7 @@ export async function testSendGridConnection(): Promise<boolean> {
       }
     };
 
-    console.log('Sending test email with configuration:', {
+    console.log('Sending test email via Web API:', {
       to: msg.to,
       from: msg.from,
       templateId: msg.templateId,
@@ -80,6 +76,11 @@ export async function testSendGridConnection(): Promise<boolean> {
       stack: error.stack,
       timestamp: new Date().toISOString()
     });
+
+    if (error.response?.body?.errors) {
+      console.error('SendGrid API Errors:', error.response.body.errors);
+    }
+
     return false;
   }
 }
@@ -94,17 +95,9 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     // Configure SendGrid
     configureSendGrid();
 
-    console.log('Preparing to send verification email:', {
-      to: email,
-      from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL,
-      tokenLength: token.length,
-      timestamp: new Date().toISOString()
-    });
-
     const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
-    console.log('Generated verification URL:', verificationUrl);
 
-    // Use SendGrid template
+    // Use Web API to send email
     const msg = {
       to: email,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
@@ -112,21 +105,12 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       dynamicTemplateData: {
         subject: 'Verify your StackTracker account',
         preheader: 'Please verify your email to complete registration',
-        name: email.split('@')[0], // Use the part before @ as the name
+        name: email.split('@')[0],
         verificationUrl: verificationUrl
-      },
-      tracking_settings: {
-        click_tracking: {
-          enable: true,
-          enable_text: true
-        },
-        open_tracking: {
-          enable: true
-        }
       }
     };
 
-    console.log('Sending verification email with template:', {
+    console.log('Sending verification email via Web API:', {
       to: msg.to,
       from: msg.from,
       templateId: msg.templateId,
