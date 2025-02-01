@@ -58,6 +58,11 @@ export async function testSendGridConnection(): Promise<boolean> {
       timestamp: new Date().toISOString()
     });
 
+    // Add unique tracking ID to help debug specific requests
+    const trackingId = crypto.randomBytes(4).toString('hex');
+    msg.customArgs = { tracking_id: trackingId };
+
+    console.log(`Sending email with tracking ID ${trackingId}`);
     const [response] = await sgMail.send(msg);
 
     console.log('Test email sent successfully:', {
@@ -117,6 +122,11 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       timestamp: new Date().toISOString()
     });
 
+    // Add unique tracking ID to help debug specific requests
+    const trackingId = crypto.randomBytes(4).toString('hex');
+    msg.customArgs = { tracking_id: trackingId };
+
+    console.log(`Sending email with tracking ID ${trackingId}`);
     const [response] = await sgMail.send(msg);
 
     console.log('SendGrid API Response:', {
