@@ -101,6 +101,13 @@ export default function AuthPage() {
     } catch (error: any) {
       // Enhanced error handling for registration
       let errorMessage = error.message;
+
+      // Check for API error response
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      // Handle specific error codes
       if (error.response?.data?.code === "EMAIL_EXISTS") {
         errorMessage = "An account with this email already exists. Please use a different email or try logging in.";
       }
@@ -109,6 +116,7 @@ export default function AuthPage() {
         variant: "destructive",
         title: "Registration Error",
         description: errorMessage,
+        duration: 5000, // Show for 5 seconds
       });
     }
   };
