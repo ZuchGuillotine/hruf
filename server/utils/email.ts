@@ -4,6 +4,7 @@ import crypto from 'crypto';
 // Verbose environment checking
 const REQUIRED_ENV_VARS = {
   SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
+  SENDGRID_TEMPLATE_ID: process.env.SENDGRID_TEMPLATE_ID,
   NODE_ENV: process.env.NODE_ENV || 'development',
   APP_URL: process.env.APP_URL || 'http://localhost:5000',
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL
@@ -24,13 +25,17 @@ export async function testSendGridConnection(): Promise<boolean> {
     // Set API key
     sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY!);
 
-    // Send a test email without sandbox mode
+    // Send a test email using the template
     const msg = {
       to: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
-      subject: 'SendGrid Test Email',
-      text: 'This is a test email to verify SendGrid is working.',
-      html: '<strong>This is a test email to verify SendGrid is working.</strong>'
+      templateId: REQUIRED_ENV_VARS.SENDGRID_TEMPLATE_ID!,
+      dynamicTemplateData: {
+        subject: 'SendGrid Test Email',
+        preheader: 'Testing SendGrid Configuration',
+        name: 'Test User',
+        verificationUrl: `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=test`
+      }
     };
 
     const [response] = await sgMail.send(msg);
@@ -74,38 +79,24 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
     console.log('Generated verification URL:', verificationUrl);
 
+    // Use SendGrid template
     const msg = {
       to: email,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
-      subject: 'Verify your StackTracker account',
-      text: `Please verify your email address by clicking this link: ${verificationUrl}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1b4332;">Welcome to StackTracker!</h2>
-          <p>Thank you for signing up. Please verify your email address by clicking the button below:</p>
-          <a href="${verificationUrl}" 
-             style="display: inline-block; background-color: #1b4332; color: white; 
-                    padding: 12px 24px; text-decoration: none; border-radius: 4px; 
-                    margin: 20px 0;">
-            Verify Email
-          </a>
-          <p>If the button doesn't work, copy and paste this link into your browser:</p>
-          <p>${verificationUrl}</p>
-          <p>This verification link will expire in 24 hours.</p>
-        </div>
-      `,
-      trackingSettings: {
-        clickTracking: { enable: true },
-        openTracking: { enable: true }
+      templateId: REQUIRED_ENV_VARS.SENDGRID_TEMPLATE_ID!,
+      dynamicTemplateData: {
+        subject: 'Verify your StackTracker account',
+        preheader: 'Please verify your email to complete registration',
+        name: email.split('@')[0], // Use the part before @ as the name
+        verificationUrl: verificationUrl
       }
     };
 
-    console.log('Sending verification email with configuration:', {
+    console.log('Sending verification email with template:', {
       to: msg.to,
       from: msg.from,
-      subject: msg.subject,
-      hasHtml: !!msg.html,
-      hasText: !!msg.text,
+      templateId: msg.templateId,
+      dynamicTemplateData: msg.dynamicTemplateData,
       timestamp: new Date().toISOString()
     });
 
