@@ -419,10 +419,7 @@ export function registerRoutes(app: Express): Server {
             res.status(500).send("Failed to update profile");
           }
     });
-
-  const httpServer = createServer(app);
-  return httpServer;
-}
+  
   // Admin endpoint to delete non-admin users
   app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
     try {
@@ -430,7 +427,7 @@ export function registerRoutes(app: Express): Server {
         .delete(users)
         .where(eq(users.isAdmin, false))
         .returning();
-      
+
       res.json({ 
         message: `Successfully deleted ${result.length} non-admin users`,
         deletedCount: result.length 
@@ -440,3 +437,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).send("Failed to delete non-admin users");
     }
   });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
