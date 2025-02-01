@@ -78,15 +78,22 @@ export function registerRoutes(app: Express): Server {
   // Registration endpoint with improved error handling
   app.post("/api/register", async (req, res) => {
     try {
-      console.log('Registration attempt:', {
+      console.log('Starting registration process:', {
         email: req.body.email,
         bodyKeys: Object.keys(req.body),
+        timestamp: new Date().toISOString()
       });
-  
+
       const verificationToken = generateVerificationToken();
       const tokenExpiry = new Date();
       tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 24 hours
-  
+
+      console.log('Generated verification token:', {
+        tokenLength: verificationToken.length,
+        expiry: tokenExpiry,
+        timestamp: new Date().toISOString()
+      });
+
       // Create user first
       const [user] = await db
         .insert(users)
@@ -97,32 +104,57 @@ export function registerRoutes(app: Express): Server {
           verificationTokenExpiry: tokenExpiry,
         })
         .returning();
-  
-      console.log(`User created successfully: ${user.email}`);
-  
+
+      console.log('User created successfully:', {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date().toISOString()
+      });
+
       try {
-        // Then attempt to send verification email
-        await sendVerificationEmail(user.email, verificationToken);
-        console.log(`Verification email sent successfully to ${user.email}`);
-  
-        res.json({
-          message: "Registration successful. Please check your email to verify your account.",
-          requiresVerification: true,
+        // Attempt to send verification email
+        const emailSent = await sendVerificationEmail(user.email, verificationToken);
+
+        console.log('Email sending attempt completed:', {
+          success: emailSent,
+          email: user.email,
+          timestamp: new Date().toISOString()
         });
+
+        if (emailSent) {
+          res.json({
+            message: "Registration successful. Please check your email to verify your account.",
+            requiresVerification: true,
+          });
+        } else {
+          res.json({
+            message: "Account created but verification email could not be sent. Please contact support.",
+            requiresVerification: true,
+            emailError: true,
+          });
+        }
       } catch (emailError: any) {
-        console.error('Failed to send verification email:', emailError);
-  
+        console.error('Failed to send verification email:', {
+          error: emailError.message,
+          code: emailError.code,
+          response: emailError.response?.body,
+          stack: emailError.stack,
+          timestamp: new Date().toISOString()
+        });
+
         // Provide specific error messages based on the type of failure
         let errorMessage = "Account created but verification email failed to send. ";
-  
+
         if (emailError.message.includes('API key does not have permission')) {
           errorMessage += "Email service not properly configured.";
-        } else if (emailError.message.includes('Sender email address not verified')) {
+        } else if (emailError.message.includes('The from address does not match')) {
           errorMessage += "Email sender not verified.";
+        } else if (emailError.message.includes('domain authentication')) {
+          errorMessage += "Domain authentication required.";
         } else {
           errorMessage += "Please contact support.";
         }
-  
+
         res.json({
           message: errorMessage,
           requiresVerification: true,
@@ -130,8 +162,16 @@ export function registerRoutes(app: Express): Server {
         });
       }
     } catch (error: any) {
-      console.error('Error in registration process:', error);
-      res.status(500).send("Error registering user");
+      console.error('Error in registration process:', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+
+      res.status(500).json({
+        message: "Error registering user",
+        error: error.message
+      });
     }
   });
 
