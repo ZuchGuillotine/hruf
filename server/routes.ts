@@ -84,6 +84,19 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
+      // Check for existing user with same email
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, req.body.email));
+
+      if (existingUser) {
+        return res.status(400).json({
+          message: "An account with this email already exists",
+          code: "EMAIL_EXISTS"
+        });
+      }
+
       const verificationToken = generateVerificationToken();
       const tokenExpiry = new Date();
       tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 24 hours

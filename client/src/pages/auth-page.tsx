@@ -99,10 +99,16 @@ export default function AuthPage() {
         }
       }
     } catch (error: any) {
+      // Enhanced error handling for registration
+      let errorMessage = error.message;
+      if (error.response?.data?.code === "EMAIL_EXISTS") {
+        errorMessage = "An account with this email already exists. Please use a different email or try logging in.";
+      }
+
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message,
+        title: "Registration Error",
+        description: errorMessage,
       });
     }
   };
