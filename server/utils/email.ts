@@ -10,6 +10,23 @@ const REQUIRED_ENV_VARS = {
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL
 };
 
+// Configure SendGrid with timeout and retry settings
+const configureSendGrid = () => {
+  if (!REQUIRED_ENV_VARS.SENDGRID_API_KEY) {
+    throw new Error('SendGrid API key is required');
+  }
+
+  sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY);
+
+  // Set client options
+  const client = sgMail.client;
+  if (client?.axios?.defaults) {
+    client.axios.defaults.timeout = 30000; // 30 second timeout
+    client.axios.defaults.headers['User-Agent'] = 'StackTracker/1.0.0';
+    client.axios.defaults.headers['Content-Type'] = 'application/json';
+  }
+};
+
 export async function testSendGridConnection(): Promise<boolean> {
   try {
     // Check for required environment variables
@@ -22,8 +39,8 @@ export async function testSendGridConnection(): Promise<boolean> {
       return false;
     }
 
-    // Set API key
-    sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY!);
+    // Configure SendGrid
+    configureSendGrid();
 
     // Send a test email using the template
     const msg = {
@@ -37,6 +54,13 @@ export async function testSendGridConnection(): Promise<boolean> {
         verificationUrl: `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=test`
       }
     };
+
+    console.log('Sending test email with configuration:', {
+      to: msg.to,
+      from: msg.from,
+      templateId: msg.templateId,
+      timestamp: new Date().toISOString()
+    });
 
     const [response] = await sgMail.send(msg);
 
@@ -53,7 +77,8 @@ export async function testSendGridConnection(): Promise<boolean> {
       message: error.message,
       code: error.code,
       response: error.response?.body,
-      stack: error.stack
+      stack: error.stack,
+      timestamp: new Date().toISOString()
     });
     return false;
   }
@@ -66,15 +91,15 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       return false;
     }
 
+    // Configure SendGrid
+    configureSendGrid();
+
     console.log('Preparing to send verification email:', {
       to: email,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL,
       tokenLength: token.length,
       timestamp: new Date().toISOString()
     });
-
-    // Set API key for this request
-    sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY!);
 
     const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
     console.log('Generated verification URL:', verificationUrl);
@@ -89,6 +114,15 @@ export async function sendVerificationEmail(email: string, token: string): Promi
         preheader: 'Please verify your email to complete registration',
         name: email.split('@')[0], // Use the part before @ as the name
         verificationUrl: verificationUrl
+      },
+      tracking_settings: {
+        click_tracking: {
+          enable: true,
+          enable_text: true
+        },
+        open_tracking: {
+          enable: true
+        }
       }
     };
 
@@ -96,7 +130,6 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       to: msg.to,
       from: msg.from,
       templateId: msg.templateId,
-      dynamicTemplateData: msg.dynamicTemplateData,
       timestamp: new Date().toISOString()
     });
 
@@ -130,6 +163,9 @@ export async function sendVerificationEmail(email: string, token: string): Promi
 export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
+
+// Initialize SendGrid configuration
+configureSendGrid();
 
 // Test SendGrid connection on startup
 testSendGridConnection()
