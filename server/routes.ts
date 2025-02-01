@@ -91,8 +91,9 @@ export function registerRoutes(app: Express): Server {
         .where(eq(users.email, req.body.email));
 
       if (existingUser) {
-        return res.status(400).json({
-          message: "An account with this email already exists",
+        return res.status(409).json({
+          status: 'error',
+          message: "An account with this email already exists. Please use a different email or try logging in.",
           code: "EMAIL_EXISTS"
         });
       }

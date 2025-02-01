@@ -99,17 +99,16 @@ export default function AuthPage() {
         }
       }
     } catch (error: any) {
+      console.error('Registration error:', error);
+
       // Enhanced error handling for registration
-      let errorMessage = error.message;
+      let errorMessage = "Registration failed. Please try again.";
 
-      // Check for API error response
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      // Handle specific error codes
-      if (error.response?.data?.code === "EMAIL_EXISTS") {
-        errorMessage = "An account with this email already exists. Please use a different email or try logging in.";
+      // Handle different types of error responses
+      if (error.response?.data) {
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       toast({
