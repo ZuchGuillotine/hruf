@@ -3,42 +3,50 @@ import crypto from 'crypto';
 import { MailDataRequired } from '@sendgrid/mail';
 import axios from 'axios';
 
-// Verbose environment checking
-const REQUIRED_ENV_VARS = {
-  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
-  SENDGRID_TEMPLATE_ID: process.env.SENDGRID_TEMPLATE_ID,
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  APP_URL: process.env.APP_URL || 'http://localhost:5000',
-  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL
+// Environment variable validation with detailed logging
+const validateEnvironment = () => {
+  const requiredVars = {
+    SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
+    SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL,
+    APP_URL: process.env.APP_URL || 'http://localhost:5000',
+    NODE_ENV: process.env.NODE_ENV || 'development'
+  };
+
+  const missingVars = Object.entries(requiredVars)
+    .filter(([key, value]) => !value)
+    .map(([key]) => key);
+
+  console.log('Environment configuration:', {
+    missingVariables: missingVars,
+    presentVariables: Object.keys(requiredVars).filter(key => !!requiredVars[key]),
+    appUrl: requiredVars.APP_URL,
+    nodeEnv: requiredVars.NODE_ENV,
+    fromEmail: requiredVars.SENDGRID_FROM_EMAIL ? 'present' : 'missing',
+    apiKey: requiredVars.SENDGRID_API_KEY ? 'present' : 'missing',
+    timestamp: new Date().toISOString()
+  });
+
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+
+  return requiredVars;
 };
 
-// Configure SendGrid
+// Configure SendGrid with validation
 const configureSendGrid = () => {
-  if (!REQUIRED_ENV_VARS.SENDGRID_API_KEY) {
-    throw new Error('SendGrid API key is required');
-  }
-  sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY);
+  const env = validateEnvironment();
+  sgMail.setApiKey(env.SENDGRID_API_KEY!);
+  return env;
 };
 
 export async function testSendGridConnection(): Promise<boolean> {
   try {
-    // Check for required environment variables
-    const missingVars = Object.entries(REQUIRED_ENV_VARS)
-      .filter(([key, value]) => !value)
-      .map(([key]) => key);
+    const env = configureSendGrid();
 
-    if (missingVars.length > 0) {
-      console.error('Missing required environment variables:', missingVars);
-      return false;
-    }
-
-    // Configure SendGrid
-    configureSendGrid();
-
-    // Simple test email without template
     const msg: MailDataRequired = {
-      to: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
-      from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
+      to: env.SENDGRID_FROM_EMAIL!,
+      from: env.SENDGRID_FROM_EMAIL!,
       subject: 'SendGrid Test Email',
       text: 'This is a test email to verify SendGrid connectivity.',
       html: '<p>This is a test email to verify SendGrid connectivity.</p>'
@@ -66,10 +74,6 @@ export async function testSendGridConnection(): Promise<boolean> {
       message: error.message,
       code: error.code,
       response: error.response?.body,
-      networkError: error.isAxiosError ? {
-        timeout: error.code === 'ECONNABORTED',
-        message: error.message
-      } : undefined,
       timestamp: new Date().toISOString()
     });
 
@@ -88,24 +92,21 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       return false;
     }
 
-    configureSendGrid();
+    const env = configureSendGrid();
+    const verificationUrl = `${env.APP_URL}/verify-email?token=${token}`;
 
-    const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
-
-    // Log the complete request configuration
     console.log('Verification email configuration:', {
       apiEndpoint: 'https://api.sendgrid.com/v3/mail/send',
-      apiKey: 'present',
-      fromEmail: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL,
+      fromEmail: env.SENDGRID_FROM_EMAIL,
       toEmail: email,
-      appUrl: REQUIRED_ENV_VARS.APP_URL,
+      appUrl: env.APP_URL,
       timestamp: new Date().toISOString()
     });
 
     const msg: MailDataRequired = {
       to: email,
       from: {
-        email: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
+        email: env.SENDGRID_FROM_EMAIL!,
         name: 'StackTracker'
       },
       subject: 'Verify your StackTracker account',
@@ -192,7 +193,6 @@ export async function sendVerificationEmail(email: string, token: string): Promi
   }
 }
 
-
 export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
@@ -205,8 +205,8 @@ export async function sendVerificationTestEmail(): Promise<boolean> {
   return sendVerificationEmail(testEmail, testToken);
 }
 
-// Initialize SendGrid configuration
-configureSendGrid();
+// Initialize SendGrid configuration with validation
+const env = validateEnvironment();
 
 // Test SendGrid connection on startup with a delay to ensure proper initialization
 setTimeout(() => {
@@ -214,7 +214,6 @@ setTimeout(() => {
     .then(success => {
       if (success) {
         console.log('✓ SendGrid test email sent successfully');
-        // After successful test email, try verification email
         return sendVerificationTestEmail();
       } else {
         console.error('✗ SendGrid test email failed');
