@@ -2,11 +2,23 @@
 import sgMail from '@sendgrid/mail';
 import { MailDataRequired } from '@sendgrid/helpers/classes/mail';
 
-// Load API key from environment variables
+// Load and validate configuration
 const apiKey = process.env.SENDGRID_API_KEY;
+const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+
 if (!apiKey) {
   throw new Error('SENDGRID_API_KEY is not defined in environment variables.');
 }
+
+if (!fromEmail) {
+  throw new Error('SENDGRID_FROM_EMAIL is not defined in environment variables.');
+}
+
+console.log('SendGrid Configuration:', {
+  apiKeyExists: !!apiKey,
+  fromEmail,
+  templateIds: EMAIL_TEMPLATES
+});
 
 // Set the API key for SendGrid
 sgMail.setApiKey(apiKey);

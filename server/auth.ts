@@ -164,9 +164,17 @@ export function setupAuth(app: Express) {
 
       // Send welcome email
       try {
+        console.log('Attempting to send welcome email to:', email);
         await sendWelcomeEmail(email, username);
+        console.log('Welcome email sent successfully to:', email);
       } catch (error) {
         console.error('Failed to send welcome email:', error);
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          response: error.response?.body
+        });
         // Don't block registration if email fails
       }
 

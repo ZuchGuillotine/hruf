@@ -8,6 +8,27 @@ import { eq, and, ilike, sql } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 
+// Test email endpoint (remove in production)
+app.post("/api/test-email", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    
+    await sendWelcomeEmail(email, "Test User");
+    res.json({ message: "Test email sent successfully" });
+  } catch (error) {
+    console.error("Test email error:", error);
+    res.status(500).json({ 
+      error: "Failed to send test email",
+      details: error.message,
+      response: error.response?.body
+    });
+  }
+});
+
+
 // Middleware to check authentication
 const requireAuth = (req: Request, res: Response, next: Function) => {
   if (!req.isAuthenticated()) {
