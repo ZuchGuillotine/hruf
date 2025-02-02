@@ -9,7 +9,19 @@ async function sendTwoFactorAuthEmail(
   try {
     const { email, code } = req.body;
 
+    console.log('2FA Request received:', {
+      emailProvided: !!email,
+      codeProvided: !!code,
+      timestamp: new Date().toISOString()
+    });
+
     if (!email || !code) {
+      console.warn('Missing 2FA fields:', {
+        email: !email ? 'missing' : 'present',
+        code: !code ? 'missing' : 'present',
+        timestamp: new Date().toISOString()
+      });
+
       res.status(400).json({ 
         error: 'Missing required fields',
         details: {
@@ -36,8 +48,14 @@ async function sendTwoFactorAuthEmail(
       </div>
     `.trim();
 
+    console.log('Sending 2FA email:', {
+      to: email,
+      subject,
+      timestamp: new Date().toISOString()
+    });
+
     const response = await sendEmail({ to: email, subject, text, html });
-    
+
     console.log('2FA email sent successfully:', {
       to: email,
       statusCode: response.statusCode,
@@ -48,6 +66,7 @@ async function sendTwoFactorAuthEmail(
   } catch (error) {
     console.error('Failed to send 2FA email:', {
       error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
     next(error);
