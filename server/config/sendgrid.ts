@@ -25,7 +25,7 @@ sgMail.setApiKey(apiKey);
 
 // Email template IDs
 export const EMAIL_TEMPLATES = {
-  WELCOME: 'd-xxxxxxxxxxxxx', // Replace with actual template ID
+  WELCOME: process.env.SENDGRID_WELCOME_TEMPLATE_ID || 'd-xxxxxxxxxxxxx', // Replace with actual template ID
   TWO_FACTOR: 'd-xxxxxxxxxxxxx',
   PASSWORD_RESET: 'd-xxxxxxxxxxxxx',
   DRIP_1: 'd-xxxxxxxxxxxxx',
