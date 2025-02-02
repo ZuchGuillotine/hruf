@@ -12,22 +12,56 @@ async function sendEmail(
   { to, subject, text, html }: EmailParams, 
   retries = 1
 ): Promise<sgMail.ClientResponse> {
+  const senderEmail = process.env.SENDGRID_SENDER_EMAIL;
+  if (!senderEmail) {
+    throw new Error('SENDGRID_SENDER_EMAIL environment variable is not set');
+  }
+
   const msg: MailDataRequired = {
     to,
-    from: process.env.SENDGRID_SENDER_EMAIL!,
+    from: {
+      email: senderEmail,
+      name: 'StackTracker Support'
+    },
     subject,
     text,
     html,
+    mailSettings: {
+      sandboxMode: {
+        enable: false
+      },
+      bypassListManagement: {
+        enable: true
+      },
+      bypassSpamManagement: {
+        enable: true
+      }
+    },
     trackingSettings: {
       clickTracking: { enable: true },
-      openTracking: { enable: true }
-    }
+      openTracking: { enable: true },
+      subscriptionTracking: { enable: false },
+      ganalytics: { enable: false }
+    },
+    headers: {
+      'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(2)}`,
+      'X-Priority': '1',
+      'Importance': 'high',
+      'X-MSMail-Priority': 'High',
+      'List-Unsubscribe': `<mailto:unsubscribe@${new URL(senderEmail).hostname}>`,
+      'Feedback-ID': 'StackTracker:account-verification'
+    },
+    asm: {
+      groupId: 0, // Disable unsubscribe groups for transactional emails
+    },
+    categories: ['account-verification']
   };
 
   console.log('Attempting to send email:', {
     to: msg.to,
     from: msg.from,
     subject: msg.subject,
+    headers: msg.headers,
     timestamp: new Date().toISOString(),
     remainingRetries: retries
   });
@@ -38,7 +72,7 @@ async function sendEmail(
     console.log('Email sent successfully:', {
       to: msg.to,
       statusCode: response.statusCode,
-      headers: response.headers,
+      messageId: response.headers['x-message-id'],
       timestamp: new Date().toISOString()
     });
 

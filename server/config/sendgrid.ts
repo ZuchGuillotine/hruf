@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import { MailDataRequired } from '@sendgrid/mail';
 
 // Detailed environment variable validation
 function validateSendGridConfig() {
@@ -27,19 +28,39 @@ function validateSendGridConfig() {
 const config = validateSendGridConfig();
 sgMail.setApiKey(config.SENDGRID_API_KEY);
 
-// Test SendGrid configuration
+// Test SendGrid configuration with enhanced delivery settings
 async function testSendGridConnection(): Promise<boolean> {
   try {
-    const msg = {
+    const msg: MailDataRequired = {
       to: config.SENDGRID_SENDER_EMAIL,
-      from: config.SENDGRID_SENDER_EMAIL,
+      from: {
+        email: config.SENDGRID_SENDER_EMAIL,
+        name: 'StackTracker Support'
+      },
       subject: 'SendGrid Test',
       text: 'Testing SendGrid Configuration',
+      mailSettings: {
+        sandboxMode: {
+          enable: false
+        }
+      },
+      trackingSettings: {
+        clickTracking: { enable: true },
+        openTracking: { enable: true },
+        subscriptionTracking: { enable: false },
+        ganalytics: { enable: false }
+      },
+      headers: {
+        'X-Entity-Ref-ID': `test-${new Date().getTime()}`,
+        priority: 'high'
+      }
     };
 
     console.log('Testing SendGrid connection:', {
       to: msg.to,
       from: msg.from,
+      subject: msg.subject,
+      headers: msg.headers,
       timestamp: new Date().toISOString()
     });
 
@@ -48,6 +69,7 @@ async function testSendGridConnection(): Promise<boolean> {
     console.log('SendGrid test successful:', {
       statusCode: response.statusCode,
       headers: response.headers,
+      messageId: response.headers['x-message-id'],
       timestamp: new Date().toISOString()
     });
 
@@ -60,6 +82,14 @@ async function testSendGridConnection(): Promise<boolean> {
       response: error.response?.body,
       timestamp: new Date().toISOString()
     });
+
+    if (error.response?.body?.errors) {
+      console.error('SendGrid API Errors:', {
+        errors: error.response.body.errors,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     return false;
   }
 }

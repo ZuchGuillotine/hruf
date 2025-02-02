@@ -42,8 +42,11 @@ async function sendTwoFactorAuthEmail(
           ${code}
         </p>
         <p style="color: #666; font-size: 14px;">
-          This code will expire in 10 minutes.
+          This code will expire in 10 minutes.<br>
           If you did not request this code, please ignore this email.
+        </p>
+        <p style="font-size: 12px; color: #888; margin-top: 24px;">
+          This is an automated message, please do not reply.
         </p>
       </div>
     `.trim();
@@ -51,18 +54,23 @@ async function sendTwoFactorAuthEmail(
     console.log('Sending 2FA email:', {
       to: email,
       subject,
+      messageType: '2FA Code',
       timestamp: new Date().toISOString()
     });
 
     const response = await sendEmail({ to: email, subject, text, html });
 
-    console.log('2FA email sent successfully:', {
+    console.log('2FA email send attempt completed:', {
       to: email,
       statusCode: response.statusCode,
+      messageId: response.headers['x-message-id'],
       timestamp: new Date().toISOString()
     });
 
-    res.status(200).json({ message: '2FA code sent successfully' });
+    res.status(200).json({ 
+      message: '2FA code sent successfully',
+      messageId: response.headers['x-message-id']
+    });
   } catch (error) {
     console.error('Failed to send 2FA email:', {
       error: error instanceof Error ? error.message : 'Unknown error',
