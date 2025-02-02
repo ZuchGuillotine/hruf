@@ -1,4 +1,4 @@
-import type { Request, Response, Express } from "express";
+import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
@@ -7,46 +7,47 @@ import { supplements, supplementLogs, supplementReference, healthStats, users } 
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
-
-// Test email endpoint (remove in production)
-app.post("/api/test-email", async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-    
-    await sendWelcomeEmail(email, "Test User");
-    res.json({ message: "Test email sent successfully" });
-  } catch (error) {
-    console.error("Test email error:", error);
-    res.status(500).json({ 
-      error: "Failed to send test email",
-      details: error.message,
-      response: error.response?.body
-    });
-  }
-});
-
-
-// Middleware to check authentication
-const requireAuth = (req: Request, res: Response, next: Function) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).send("Authentication required");
-  }
-  next();
-};
-
-// Middleware to check admin role
-const requireAdmin = (req: Request, res: Response, next: Function) => {
-  if (!req.user?.isAdmin) {
-    return res.status(403).send("Admin access required");
-  }
-  next();
-};
+import { sendWelcomeEmail } from './services/emailService';
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+
+  // Test email endpoint (remove in production)
+  app.post("/api/test-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      await sendWelcomeEmail(email, "Test User");
+      res.json({ message: "Test email sent successfully" });
+    } catch (error) {
+      console.error("Test email error:", error);
+      res.status(500).json({ 
+        error: "Failed to send test email",
+        details: error.message,
+        response: error.response?.body
+      });
+    }
+  });
+
+  // Middleware to check authentication
+  const requireAuth = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Authentication required");
+    }
+    next();
+  };
+  
+  // Middleware to check admin role
+  const requireAdmin = (req: Request, res: Response, next: Function) => {
+    if (!req.user?.isAdmin) {
+      return res.status(403).send("Admin access required");
+    }
+    next();
+  };
+
 
   // Add 2FA endpoint
   app.post("/api/auth/2fa/send", async (req, res, next) => {
@@ -118,7 +119,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Remove the email verification endpoint since we're not using email verification for now
 
   // Health Stats endpoints
   app.get("/api/health-stats", requireAuth, async (req, res) => {
@@ -332,44 +332,44 @@ export function registerRoutes(app: Express): Server {
       res.status(500).send("Failed to search supplements");
     }
   });
-
+  
     // User profile endpoints
     app.post("/api/profile", requireAuth, async (req, res) => {
-        try {
-            const [updated] = await db
-              .update(users)
-              .set({
-                ...req.body,
-                updatedAt: new Date(),
-              })
-              .where(eq(users.id, req.user!.id))
-              .returning();
-      
-            res.json({ message: "Profile updated successfully", user: updated });
-          } catch (error) {
-            console.error("Error updating profile:", error);
-            res.status(500).send("Failed to update profile");
-          }
-    });
+      try {
+        const [updated] = await db
+          .update(users)
+          .set({
+            ...req.body,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, req.user!.id))
+          .returning();
+  
+        res.json({ message: "Profile updated successfully", user: updated });
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).send("Failed to update profile");
+      }
+  });
   
   // Admin endpoint to delete non-admin users
-  app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const result = await db
-        .delete(users)
-        .where(eq(users.isAdmin, false))
-        .returning();
-
-      res.json({ 
-        message: `Successfully deleted ${result.length} non-admin users`,
-        deletedCount: result.length 
-      });
-    } catch (error) {
-      console.error("Error deleting non-admin users:", error);
-      res.status(500).send("Failed to delete non-admin users");
-    }
-  });
-
+    app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const result = await db
+          .delete(users)
+          .where(eq(users.isAdmin, false))
+          .returning();
+  
+        res.json({ 
+          message: `Successfully deleted ${result.length} non-admin users`,
+          deletedCount: result.length 
+        });
+      } catch (error) {
+        console.error("Error deleting non-admin users:", error);
+        res.status(500).send("Failed to delete non-admin users");
+      }
+    });
+  
   const httpServer = createServer(app);
   return httpServer;
 }
