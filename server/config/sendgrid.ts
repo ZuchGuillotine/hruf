@@ -31,21 +31,22 @@ function validateSendGridConfig() {
   }
 
   const senderDomain = config.SENDGRID_SENDER_EMAIL.split('@')[1];
+  const isDevEnvironment = config.APP_URL.includes('localhost');
 
-  // Warn if using localhost in production sender domain
-  if (!config.APP_URL.includes('localhost') && senderDomain.includes('localhost')) {
-    console.warn('Warning: Using localhost sender domain in production environment');
+  // For production, ensure we're using the SendGrid authenticated domain
+  if (!isDevEnvironment && senderDomain !== 'em5459.stacktracker.io') {
+    console.warn('Warning: Sender email domain does not match SendGrid authenticated domain (em5459.stacktracker.io)');
   }
 
   console.log('SendGrid Domain Validation:', {
     senderEmail: config.SENDGRID_SENDER_EMAIL,
     domain: senderDomain,
     appUrl: config.APP_URL,
-    environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
+    environment: isDevEnvironment ? 'development' : 'production',
     timestamp: new Date().toISOString()
   });
 
-  return { ...config, senderDomain };
+  return { ...config, senderDomain, isDevEnvironment };
 }
 
 // Initialize SendGrid with validation
@@ -58,7 +59,7 @@ async function testSendGridConnection(): Promise<boolean> {
     console.log('Testing SendGrid connection:', {
       senderDomain: config.senderDomain,
       appUrl: config.APP_URL,
-      environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
+      environment: config.isDevEnvironment ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 
@@ -96,7 +97,7 @@ async function testSendGridConnection(): Promise<boolean> {
       statusCode: response.statusCode,
       headers: response.headers,
       messageId: response.headers['x-message-id'],
-      environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
+      environment: config.isDevEnvironment ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 
@@ -109,7 +110,7 @@ async function testSendGridConnection(): Promise<boolean> {
       response: error.response?.body,
       senderDomain: config.senderDomain,
       appUrl: config.APP_URL,
-      environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
+      environment: config.isDevEnvironment ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 

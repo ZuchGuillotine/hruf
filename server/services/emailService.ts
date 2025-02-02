@@ -18,30 +18,36 @@ async function sendEmail(
   }
 
   const appUrl = process.env.APP_URL || 'http://localhost:5000';
-  const senderDomain = senderEmail.split('@')[1];
   const isDevEnvironment = appUrl.includes('localhost');
+
+  // For production, use the authenticated SendGrid domain for sending
+  // but keep the user-facing domain for links
+  const senderDomain = isDevEnvironment ? 'localhost:5000' : 'em5459.stacktracker.io';
+  const linkDomain = isDevEnvironment ? 'localhost:5000' : 'stacktracker.io';
 
   console.log('Email environment configuration:', {
     appUrl,
     senderDomain,
+    linkDomain,
     environment: isDevEnvironment ? 'development' : 'production',
     timestamp: new Date().toISOString()
   });
 
-  // In development, we'll still send emails but log warnings about domain mismatch
-  if (isDevEnvironment && !senderDomain.includes('localhost')) {
-    console.warn('Warning: Using production sender domain in development environment');
-  }
+  // Replace any URLs in the HTML content to use the correct domain
+  const updatedHtml = isDevEnvironment ? html : html.replace(
+    new RegExp(appUrl, 'g'),
+    `https://${linkDomain}`
+  );
 
   const msg: MailDataRequired = {
     to,
     from: {
-      email: senderEmail,
+      email: `noreply@${senderDomain}`,
       name: 'StackTracker Support'
     },
     subject,
     text,
-    html,
+    html: updatedHtml,
     mailSettings: {
       sandboxMode: {
         enable: false
