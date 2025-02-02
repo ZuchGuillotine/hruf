@@ -2,7 +2,6 @@
 // - server/config/sendgrid.ts
 // - server/services/emailService.ts
 // - server/controllers/authController.ts
-
 import { sendEmail } from '../services/emailService';
 
 // Re-export the new email service for backward compatibility
@@ -11,7 +10,16 @@ export { sendEmail };
 // Maintaining the verification email functionality until it's migrated
 export async function sendVerificationEmail(email: string, token: string): Promise<boolean> {
   try {
-    const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
+    const appUrl = process.env.APP_URL || 'http://localhost:5000';
+    const isDevEnvironment = appUrl.includes('localhost');
+    const verificationUrl = `${appUrl}/verify-email?token=${token}`;
+
+    console.log('Generating verification email:', {
+      email,
+      verificationUrl,
+      environment: isDevEnvironment ? 'development' : 'production',
+      timestamp: new Date().toISOString()
+    });
 
     const subject = 'Verify your StackTracker account';
     const text = `Please verify your email to complete registration. Click here: ${verificationUrl}`;
@@ -28,6 +36,10 @@ export async function sendVerificationEmail(email: string, token: string): Promi
         <p style="color: #666; font-size: 14px;">
           If the button doesn't work, copy and paste this link into your browser:<br>
           ${verificationUrl}
+        </p>
+        <p style="font-size: 12px; color: #888; margin-top: 24px;">
+          This verification link will expire in 24 hours.
+          If you did not create an account, please ignore this email.
         </p>
       </div>
     `.trim();

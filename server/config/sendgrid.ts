@@ -5,7 +5,7 @@ import { MailDataRequired } from '@sendgrid/mail';
 function validateSendGridConfig() {
   const config = {
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
-    SENDGRID_SENDER_EMAIL: process.env.SENDGRID_SENDER_EMAIL
+    SENDGRID_SENDER_EMAIL: process.env.SENDGRID_SENDER_EMAIL,
   };
 
   console.log('SendGrid Configuration Check:', {
@@ -21,16 +21,32 @@ function validateSendGridConfig() {
     throw new Error('SENDGRID_SENDER_EMAIL is not defined');
   }
 
-  return config;
+  // Validate sender email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(config.SENDGRID_SENDER_EMAIL)) {
+    throw new Error('SENDGRID_SENDER_EMAIL is not a valid email address');
+  }
+
+  const senderDomain = config.SENDGRID_SENDER_EMAIL.split('@')[1];
+
+  console.log('SendGrid Domain Validation:', {
+    senderEmail: config.SENDGRID_SENDER_EMAIL,
+    domain: senderDomain,
+    timestamp: new Date().toISOString()
+  });
+
+  return { ...config, senderDomain };
 }
 
 // Initialize SendGrid with validation
 const config = validateSendGridConfig();
 sgMail.setApiKey(config.SENDGRID_API_KEY);
 
-// Test SendGrid configuration with enhanced delivery settings
+// Test SendGrid configuration with corrected settings
 async function testSendGridConnection(): Promise<boolean> {
   try {
+    console.log('Testing SendGrid with domain:', config.senderDomain);
+
     const msg: MailDataRequired = {
       to: config.SENDGRID_SENDER_EMAIL,
       from: {
@@ -39,6 +55,7 @@ async function testSendGridConnection(): Promise<boolean> {
       },
       subject: 'SendGrid Test',
       text: 'Testing SendGrid Configuration',
+      html: '<p>Testing SendGrid Configuration</p>',
       mailSettings: {
         sandboxMode: {
           enable: false
@@ -46,14 +63,16 @@ async function testSendGridConnection(): Promise<boolean> {
       },
       trackingSettings: {
         clickTracking: { enable: true },
-        openTracking: { enable: true },
-        subscriptionTracking: { enable: false },
-        ganalytics: { enable: false }
+        openTracking: { enable: true }
       },
       headers: {
-        'X-Entity-Ref-ID': `test-${new Date().getTime()}`,
-        priority: 'high'
-      }
+        'X-Priority': '1',
+        'Importance': 'high',
+        'X-MSMail-Priority': 'High',
+        'List-Unsubscribe': `<mailto:unsubscribe@${config.senderDomain}>`,
+        'Feedback-ID': 'StackTracker:account-verification'
+      },
+      categories: ['test-email']
     };
 
     console.log('Testing SendGrid connection:', {
@@ -61,6 +80,7 @@ async function testSendGridConnection(): Promise<boolean> {
       from: msg.from,
       subject: msg.subject,
       headers: msg.headers,
+      domain: config.senderDomain,
       timestamp: new Date().toISOString()
     });
 

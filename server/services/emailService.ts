@@ -17,6 +17,17 @@ async function sendEmail(
     throw new Error('SENDGRID_SENDER_EMAIL environment variable is not set');
   }
 
+  const appUrl = process.env.APP_URL || 'http://localhost:5000';
+  const senderDomain = new URL(senderEmail).hostname;
+  const isDevEnvironment = appUrl.includes('localhost');
+
+  console.log('Email environment configuration:', {
+    appUrl,
+    senderDomain,
+    environment: isDevEnvironment ? 'development' : 'production',
+    timestamp: new Date().toISOString()
+  });
+
   const msg: MailDataRequired = {
     to,
     from: {
@@ -29,30 +40,18 @@ async function sendEmail(
     mailSettings: {
       sandboxMode: {
         enable: false
-      },
-      bypassListManagement: {
-        enable: true
-      },
-      bypassSpamManagement: {
-        enable: true
       }
     },
     trackingSettings: {
       clickTracking: { enable: true },
-      openTracking: { enable: true },
-      subscriptionTracking: { enable: false },
-      ganalytics: { enable: false }
+      openTracking: { enable: true }
     },
     headers: {
-      'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(2)}`,
       'X-Priority': '1',
       'Importance': 'high',
       'X-MSMail-Priority': 'High',
-      'List-Unsubscribe': `<mailto:unsubscribe@${new URL(senderEmail).hostname}>`,
+      'List-Unsubscribe': `<mailto:unsubscribe@${senderDomain}>`,
       'Feedback-ID': 'StackTracker:account-verification'
-    },
-    asm: {
-      groupId: 0, // Disable unsubscribe groups for transactional emails
     },
     categories: ['account-verification']
   };
@@ -62,6 +61,7 @@ async function sendEmail(
     from: msg.from,
     subject: msg.subject,
     headers: msg.headers,
+    environment: isDevEnvironment ? 'development' : 'production',
     timestamp: new Date().toISOString(),
     remainingRetries: retries
   });
@@ -73,12 +73,12 @@ async function sendEmail(
       to: msg.to,
       statusCode: response.statusCode,
       messageId: response.headers['x-message-id'],
+      environment: isDevEnvironment ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 
     return response;
   } catch (error: any) {
-    // If a timeout error occurs, retry once before failing
     if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
       console.log('Email send timeout, retrying...', {
         to,
@@ -87,6 +87,7 @@ async function sendEmail(
           code: error.code,
           message: error.message
         },
+        environment: isDevEnvironment ? 'development' : 'production',
         timestamp: new Date().toISOString()
       });
       return await sendEmail({ to, subject, text, html }, retries - 1);
@@ -97,12 +98,14 @@ async function sendEmail(
       message: error.message,
       code: error.code,
       response: error.response?.body,
+      environment: isDevEnvironment ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 
     if (error.response?.body?.errors) {
       console.error('SendGrid API Errors:', {
         errors: error.response.body.errors,
+        environment: isDevEnvironment ? 'development' : 'production',
         timestamp: new Date().toISOString()
       });
     }
