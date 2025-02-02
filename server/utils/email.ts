@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 import { MailDataRequired } from '@sendgrid/mail';
+import axios from 'axios';
 
 // Verbose environment checking
 const REQUIRED_ENV_VARS = {
@@ -11,20 +12,12 @@ const REQUIRED_ENV_VARS = {
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL
 };
 
-// Configure SendGrid with timeout and retry options
+// Configure SendGrid
 const configureSendGrid = () => {
   if (!REQUIRED_ENV_VARS.SENDGRID_API_KEY) {
     throw new Error('SendGrid API key is required');
   }
   sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY);
-
-  // Configure client with timeout
-  const client = sgMail.client;
-  if (client.axios) {
-    client.axios.defaults.timeout = 30000; // 30 second timeout
-    client.axios.defaults.maxRetries = 3; // Allow 3 retries
-    client.axios.defaults.retryDelay = 1000; // Wait 1 second between retries
-  }
 };
 
 export async function testSendGridConnection(): Promise<boolean> {
@@ -104,19 +97,13 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       <p><a href="${verificationUrl}">Click here to verify your email</a></p>
     `;
 
+    // First try without template
     const msg: MailDataRequired = {
       to: email,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
       subject: 'Verify your StackTracker account',
       text: templateText,
       html: templateHtml,
-      templateId: REQUIRED_ENV_VARS.SENDGRID_TEMPLATE_ID,
-      dynamicTemplateData: {
-        subject: 'Verify your StackTracker account',
-        preheader: 'Please verify your email to complete registration',
-        name: email.split('@')[0],
-        verificationUrl: verificationUrl
-      }
     };
 
     let retryCount = 0;
@@ -129,6 +116,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
           to: msg.to,
           from: msg.from,
           templateId: msg.templateId,
+          endpoint: 'https://api.sendgrid.com/v3/mail/send',
           timestamp: new Date().toISOString()
         });
 
@@ -143,14 +131,16 @@ export async function sendVerificationEmail(email: string, token: string): Promi
         return response?.statusCode === 202;
       } catch (retryError: any) {
         retryCount++;
-        if (retryCount === maxRetries) throw retryError;
 
         console.log(`Retry ${retryCount}/${maxRetries} after error:`, {
           name: retryError.name,
           message: retryError.message,
-          code: retryError.code
+          code: retryError.code,
+          response: retryError.response?.body,
+          endpoint: 'https://api.sendgrid.com/v3/mail/send'
         });
 
+        if (retryCount === maxRetries) throw retryError;
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
