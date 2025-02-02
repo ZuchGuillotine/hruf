@@ -40,9 +40,7 @@ export async function testSendGridConnection(): Promise<boolean> {
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
       subject: 'SendGrid Test Email',
       text: 'This is a test email to verify SendGrid connectivity.',
-      headers: {
-        'X-Test-Header': 'test-value'
-      }
+      html: '<p>This is a test email to verify SendGrid connectivity.</p>'
     };
 
     console.log('Sending test email:', {
@@ -88,11 +86,18 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     configureSendGrid();
 
     const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
+    const templateText = `Please verify your email to complete registration. Click here: ${verificationUrl}`;
+    const templateHtml = `
+      <p>Please verify your email to complete registration.</p>
+      <p><a href="${verificationUrl}">Click here to verify your email</a></p>
+    `;
 
     const msg: MailDataRequired = {
       to: email,
       from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
       subject: 'Verify your StackTracker account',
+      text: templateText,
+      html: templateHtml,
       templateId: REQUIRED_ENV_VARS.SENDGRID_TEMPLATE_ID,
       dynamicTemplateData: {
         subject: 'Verify your StackTracker account',
@@ -139,6 +144,14 @@ export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
+export async function sendVerificationTestEmail(): Promise<boolean> {
+  const testEmail = 'test@example.com';
+  const testToken = generateVerificationToken();
+
+  console.log('Attempting to send verification test email to:', testEmail);
+  return sendVerificationEmail(testEmail, testToken);
+}
+
 // Initialize SendGrid configuration
 configureSendGrid();
 
@@ -148,8 +161,17 @@ setTimeout(() => {
     .then(success => {
       if (success) {
         console.log('✓ SendGrid test email sent successfully');
+        // After successful test email, try verification email
+        return sendVerificationTestEmail();
       } else {
         console.error('✗ SendGrid test email failed');
+      }
+    })
+    .then(verificationSuccess => {
+      if (verificationSuccess) {
+        console.log('✓ SendGrid verification test email sent successfully');
+      } else {
+        console.error('✗ SendGrid verification test email failed');
       }
     })
     .catch(console.error);
