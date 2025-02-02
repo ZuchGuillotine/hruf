@@ -11,12 +11,20 @@ const REQUIRED_ENV_VARS = {
   SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL
 };
 
-// Configure SendGrid
+// Configure SendGrid with timeout and retry options
 const configureSendGrid = () => {
   if (!REQUIRED_ENV_VARS.SENDGRID_API_KEY) {
     throw new Error('SendGrid API key is required');
   }
   sgMail.setApiKey(REQUIRED_ENV_VARS.SENDGRID_API_KEY);
+
+  // Configure client with timeout
+  const client = sgMail.client;
+  if (client.axios) {
+    client.axios.defaults.timeout = 30000; // 30 second timeout
+    client.axios.defaults.maxRetries = 3; // Allow 3 retries
+    client.axios.defaults.retryDelay = 1000; // Wait 1 second between retries
+  }
 };
 
 export async function testSendGridConnection(): Promise<boolean> {
@@ -65,6 +73,10 @@ export async function testSendGridConnection(): Promise<boolean> {
       message: error.message,
       code: error.code,
       response: error.response?.body,
+      networkError: error.isAxiosError ? {
+        timeout: error.code === 'ECONNABORTED',
+        message: error.message
+      } : undefined,
       timestamp: new Date().toISOString()
     });
 
@@ -107,28 +119,53 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       }
     };
 
-    console.log('Sending verification email:', {
-      to: msg.to,
-      from: msg.from,
-      templateId: msg.templateId,
-      timestamp: new Date().toISOString()
-    });
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
 
-    const [response] = await sgMail.send(msg);
+    while (retryCount < maxRetries) {
+      try {
+        console.log('Sending verification email (attempt ' + (retryCount + 1) + '):', {
+          to: msg.to,
+          from: msg.from,
+          templateId: msg.templateId,
+          timestamp: new Date().toISOString()
+        });
 
-    console.log('Verification email sent successfully:', {
-      statusCode: response?.statusCode,
-      headers: response?.headers,
-      timestamp: new Date().toISOString()
-    });
+        const [response] = await sgMail.send(msg);
 
-    return response?.statusCode === 202;
+        console.log('Verification email sent successfully:', {
+          statusCode: response?.statusCode,
+          headers: response?.headers,
+          timestamp: new Date().toISOString()
+        });
+
+        return response?.statusCode === 202;
+      } catch (retryError: any) {
+        retryCount++;
+        if (retryCount === maxRetries) throw retryError;
+
+        console.log(`Retry ${retryCount}/${maxRetries} after error:`, {
+          name: retryError.name,
+          message: retryError.message,
+          code: retryError.code
+        });
+
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+
+    return false;
   } catch (error: any) {
     console.error('Failed to send verification email:', {
       name: error.name,
       message: error.message,
       code: error.code,
       response: error.response?.body,
+      networkError: error.isAxiosError ? {
+        timeout: error.code === 'ECONNABORTED',
+        message: error.message
+      } : undefined,
       timestamp: new Date().toISOString()
     });
 
