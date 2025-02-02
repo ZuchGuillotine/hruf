@@ -7,6 +7,7 @@ import { supplements, supplementLogs, supplementReference, healthStats, users } 
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendVerificationEmail, generateVerificationToken } from './utils/email';
+import { sendTwoFactorAuthEmail } from './controllers/authController';
 
 // Middleware to check authentication
 const requireAuth = (req: Request, res: Response, next: Function) => {
@@ -26,6 +27,20 @@ const requireAdmin = (req: Request, res: Response, next: Function) => {
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+
+  // Add 2FA endpoint
+  app.post("/api/auth/2fa/send", async (req, res, next) => {
+    try {
+      await sendTwoFactorAuthEmail(req, res, next);
+    } catch (error) {
+      console.error('Error in 2FA route:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      next(error);
+    }
+  });
 
   // Add email verification endpoint
   app.get("/api/verify-email", async (req, res) => {

@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
-//import helmet from "helmet"; // Removed helmet middleware
 
 const app = express();
 
@@ -26,13 +25,21 @@ const speedLimiter = slowDown({
   delayMs: (hits) => hits * 100, // begin adding 100ms of delay per hit
 });
 
-// Apply rate limiting and DDoS protection to all routes
-app.use(limiter);
-app.use(speedLimiter);
+// Apply to all /api routes
+app.use('/api', limiter);
+app.use('/api', speedLimiter);
 
+// Body parsing middleware must be before route registration
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// API-specific headers
+app.use('/api', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
+// API request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -64,16 +71,29 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Create the HTTP server and register API routes first
   const server = registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Global error handling middleware for API routes
+  app.use('/api', (err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    console.error('Server Error:', {
+      status,
+      message,
+      stack: err.stack,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(status).json({ 
+      status: 'error',
+      message,
+      timestamp: new Date().toISOString()
+    });
   });
 
+  // Setup Vite last, after all API routes are registered
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
