@@ -6,7 +6,6 @@ import { db } from "@db";
 import { supplements, supplementLogs, supplementReference, healthStats, users } from "@db/schema";
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
-import { sendVerificationEmail, generateVerificationToken } from './utils/email';
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 
 // Middleware to check authentication
@@ -42,55 +41,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Add email verification endpoint
-  app.get("/api/verify-email", async (req, res) => {
-    try {
-      const { token } = req.query;
-
-      if (!token || typeof token !== 'string') {
-        return res.status(400).send("Invalid verification token");
-      }
-
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(
-          and(
-            eq(users.verificationToken, token),
-            eq(users.emailVerified, false),
-            sql`${users.verificationTokenExpiry} > CURRENT_TIMESTAMP`
-          )
-        );
-
-      if (!user) {
-        return res.status(400).send("Invalid or expired verification token");
-      }
-
-      await db
-        .update(users)
-        .set({
-          emailVerified: true,
-          verificationToken: null,
-          verificationTokenExpiry: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, user.id));
-
-      // Automatically log the user in after verification
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Error logging in after verification:', err);
-          return res.status(500).send("Error logging in after verification");
-        }
-        res.redirect('/dashboard');
-      });
-    } catch (error) {
-      console.error('Error verifying email:', error);
-      res.status(500).send("Error verifying email");
-    }
-  });
-
-  // Registration endpoint with improved error handling
+  // Remove email verification from registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
       console.log('Starting registration process:', {
@@ -113,24 +64,12 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      const verificationToken = generateVerificationToken();
-      const tokenExpiry = new Date();
-      tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 24 hours
-
-      console.log('Generated verification token:', {
-        tokenLength: verificationToken.length,
-        expiry: tokenExpiry,
-        timestamp: new Date().toISOString()
-      });
-
-      // Create user first
+      // Create user
       const [user] = await db
         .insert(users)
         .values({
           ...req.body,
-          emailVerified: false,
-          verificationToken,
-          verificationTokenExpiry: tokenExpiry,
+          emailVerified: true, // Auto-verify for now since we don't have email service
         })
         .returning();
 
@@ -140,56 +79,10 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
-      try {
-        // Attempt to send verification email
-        const emailSent = await sendVerificationEmail(user.email, verificationToken);
-
-        console.log('Email sending attempt completed:', {
-          success: emailSent,
-          email: user.email,
-          timestamp: new Date().toISOString()
-        });
-
-        if (emailSent) {
-          res.json({
-            message: "Registration successful. Please check your email to verify your account.",
-            requiresVerification: true,
-          });
-        } else {
-          res.json({
-            message: "Account created but verification email could not be sent. Please contact support.",
-            requiresVerification: true,
-            emailError: true,
-          });
-        }
-      } catch (emailError: any) {
-        console.error('Failed to send verification email:', {
-          error: emailError.message,
-          code: emailError.code,
-          response: emailError.response?.body,
-          stack: emailError.stack,
-          timestamp: new Date().toISOString()
-        });
-
-        // Provide specific error messages based on the type of failure
-        let errorMessage = "Account created but verification email failed to send. ";
-
-        if (emailError.message.includes('API key does not have permission')) {
-          errorMessage += "Email service not properly configured.";
-        } else if (emailError.message.includes('The from address does not match')) {
-          errorMessage += "Email sender not verified.";
-        } else if (emailError.message.includes('domain authentication')) {
-          errorMessage += "Domain authentication required.";
-        } else {
-          errorMessage += "Please contact support.";
-        }
-
-        res.json({
-          message: errorMessage,
-          requiresVerification: true,
-          emailError: true,
-        });
-      }
+      res.json({
+        message: "Registration successful",
+        user: user
+      });
     } catch (error: any) {
       console.error('Error in registration process:', {
         error: error.message,
@@ -203,6 +96,8 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
+  // Remove the email verification endpoint since we're not using email verification for now
 
   // Health Stats endpoints
   app.get("/api/health-stats", requireAuth, async (req, res) => {
