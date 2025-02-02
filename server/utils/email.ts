@@ -1,13 +1,8 @@
-// This file is deprecated and has been replaced by:
-// - server/config/sendgrid.ts
-// - server/services/emailService.ts
-// - server/controllers/authController.ts
 import { sendEmail } from '../services/emailService';
 
-// Re-export the new email service for backward compatibility
 export { sendEmail };
 
-// Maintaining the verification email functionality until it's migrated
+// Updated verification email functionality with proper URL handling
 export async function sendVerificationEmail(email: string, token: string): Promise<boolean> {
   try {
     const appUrl = process.env.APP_URL || 'http://localhost:5000';
@@ -16,6 +11,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
 
     console.log('Generating verification email:', {
       email,
+      appUrl,
       verificationUrl,
       environment: isDevEnvironment ? 'development' : 'production',
       timestamp: new Date().toISOString()
@@ -38,16 +34,29 @@ export async function sendVerificationEmail(email: string, token: string): Promi
           ${verificationUrl}
         </p>
         <p style="font-size: 12px; color: #888; margin-top: 24px;">
-          This verification link will expire in 24 hours.
+          This verification link will expire in 24 hours.<br>
           If you did not create an account, please ignore this email.
         </p>
       </div>
     `.trim();
 
     const response = await sendEmail({ to: email, subject, text, html });
+
+    console.log('Verification email send attempt:', {
+      success: response.statusCode === 202,
+      statusCode: response.statusCode,
+      messageId: response.headers['x-message-id'],
+      environment: isDevEnvironment ? 'development' : 'production',
+      timestamp: new Date().toISOString()
+    });
+
     return response.statusCode === 202;
   } catch (error) {
-    console.error('Failed to send verification email:', error);
+    console.error('Failed to send verification email:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     return false;
   }
 }

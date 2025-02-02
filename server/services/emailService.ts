@@ -18,7 +18,7 @@ async function sendEmail(
   }
 
   const appUrl = process.env.APP_URL || 'http://localhost:5000';
-  const senderDomain = new URL(senderEmail).hostname;
+  const senderDomain = senderEmail.split('@')[1];
   const isDevEnvironment = appUrl.includes('localhost');
 
   console.log('Email environment configuration:', {
@@ -27,6 +27,11 @@ async function sendEmail(
     environment: isDevEnvironment ? 'development' : 'production',
     timestamp: new Date().toISOString()
   });
+
+  // In development, we'll still send emails but log warnings about domain mismatch
+  if (isDevEnvironment && !senderDomain.includes('localhost')) {
+    console.warn('Warning: Using production sender domain in development environment');
+  }
 
   const msg: MailDataRequired = {
     to,
@@ -79,6 +84,7 @@ async function sendEmail(
 
     return response;
   } catch (error: any) {
+    // Retry on network-related errors
     if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET')) {
       console.log('Email send timeout, retrying...', {
         to,
@@ -102,6 +108,7 @@ async function sendEmail(
       timestamp: new Date().toISOString()
     });
 
+    // Log specific SendGrid API errors
     if (error.response?.body?.errors) {
       console.error('SendGrid API Errors:', {
         errors: error.response.body.errors,

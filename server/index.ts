@@ -25,19 +25,19 @@ const speedLimiter = slowDown({
   delayMs: (hits) => hits * 100, // begin adding 100ms of delay per hit
 });
 
-// Apply to all /api routes
-app.use('/api', limiter);
-app.use('/api', speedLimiter);
-
 // Body parsing middleware must be before route registration
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// API-specific headers
+// API routes should be handled before static files
 app.use('/api', (req, res, next) => {
   res.setHeader('Content-Type', 'application/json');
   next();
 });
+
+// Apply rate limiting to API routes
+app.use('/api', limiter);
+app.use('/api', speedLimiter);
 
 // API request logging middleware
 app.use((req, res, next) => {

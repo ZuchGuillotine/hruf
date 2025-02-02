@@ -64,6 +64,7 @@ async function sendTwoFactorAuthEmail(
       to: email,
       statusCode: response.statusCode,
       messageId: response.headers['x-message-id'],
+      environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });
 
@@ -75,6 +76,7 @@ async function sendTwoFactorAuthEmail(
     console.error('Failed to send 2FA email:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
+      environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });
     next(error);

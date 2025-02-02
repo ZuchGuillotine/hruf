@@ -6,11 +6,14 @@ function validateSendGridConfig() {
   const config = {
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
     SENDGRID_SENDER_EMAIL: process.env.SENDGRID_SENDER_EMAIL,
+    APP_URL: process.env.APP_URL || 'http://localhost:5000'
   };
 
   console.log('SendGrid Configuration Check:', {
     apiKeyPresent: !!config.SENDGRID_API_KEY,
     senderEmailPresent: !!config.SENDGRID_SENDER_EMAIL,
+    appUrl: config.APP_URL,
+    isDevelopment: config.APP_URL.includes('localhost'),
     timestamp: new Date().toISOString()
   });
 
@@ -29,9 +32,16 @@ function validateSendGridConfig() {
 
   const senderDomain = config.SENDGRID_SENDER_EMAIL.split('@')[1];
 
+  // Warn if using localhost in production sender domain
+  if (!config.APP_URL.includes('localhost') && senderDomain.includes('localhost')) {
+    console.warn('Warning: Using localhost sender domain in production environment');
+  }
+
   console.log('SendGrid Domain Validation:', {
     senderEmail: config.SENDGRID_SENDER_EMAIL,
     domain: senderDomain,
+    appUrl: config.APP_URL,
+    environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
     timestamp: new Date().toISOString()
   });
 
@@ -42,10 +52,15 @@ function validateSendGridConfig() {
 const config = validateSendGridConfig();
 sgMail.setApiKey(config.SENDGRID_API_KEY);
 
-// Test SendGrid configuration with corrected settings
+// Test SendGrid configuration with domain validation
 async function testSendGridConnection(): Promise<boolean> {
   try {
-    console.log('Testing SendGrid with domain:', config.senderDomain);
+    console.log('Testing SendGrid connection:', {
+      senderDomain: config.senderDomain,
+      appUrl: config.APP_URL,
+      environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
+      timestamp: new Date().toISOString()
+    });
 
     const msg: MailDataRequired = {
       to: config.SENDGRID_SENDER_EMAIL,
@@ -75,21 +90,13 @@ async function testSendGridConnection(): Promise<boolean> {
       categories: ['test-email']
     };
 
-    console.log('Testing SendGrid connection:', {
-      to: msg.to,
-      from: msg.from,
-      subject: msg.subject,
-      headers: msg.headers,
-      domain: config.senderDomain,
-      timestamp: new Date().toISOString()
-    });
-
     const [response] = await sgMail.send(msg);
 
     console.log('SendGrid test successful:', {
       statusCode: response.statusCode,
       headers: response.headers,
       messageId: response.headers['x-message-id'],
+      environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 
@@ -100,6 +107,9 @@ async function testSendGridConnection(): Promise<boolean> {
       message: error.message,
       code: error.code,
       response: error.response?.body,
+      senderDomain: config.senderDomain,
+      appUrl: config.APP_URL,
+      environment: config.APP_URL.includes('localhost') ? 'development' : 'production',
       timestamp: new Date().toISOString()
     });
 
