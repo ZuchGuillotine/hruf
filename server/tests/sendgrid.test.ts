@@ -6,7 +6,6 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 async function testSendEmail() {
   const msg = {
-    to: 'bencox820@hotmail.com',
     from: 'accounts@stacktracker.io', // must be verified sender
     subject: 'Sending with SendGrid is Fun',
     text: 'and easy to do anywhere, even with Node.js',
