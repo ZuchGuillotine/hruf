@@ -9,11 +9,9 @@ const RETRY_DELAY_MS = 2000;
 async function sendEmail(msg: sgMail.MailDataRequired): Promise<void> {
   let attempt = 0;
   
-  // Add SPF and DKIM headers
+  // Let SendGrid handle email authentication headers
   msg.headers = {
-    ...msg.headers,
-    'x-spf': 'pass',
-    'dkim-signature': process.env.SENDGRID_DKIM_SIGNATURE || ''
+    ...msg.headers
   };
 
   while (attempt < MAX_RETRIES) {
