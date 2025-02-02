@@ -91,31 +91,60 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     configureSendGrid();
 
     const verificationUrl = `${REQUIRED_ENV_VARS.APP_URL}/verify-email?token=${token}`;
-    const templateText = `Please verify your email to complete registration. Click here: ${verificationUrl}`;
-    const templateHtml = `
-      <p>Please verify your email to complete registration.</p>
-      <p><a href="${verificationUrl}">Click here to verify your email</a></p>
-    `;
 
-    // First try without template
+    // Log the complete request configuration
+    console.log('Verification email configuration:', {
+      apiEndpoint: 'https://api.sendgrid.com/v3/mail/send',
+      apiKey: 'present',
+      fromEmail: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL,
+      toEmail: email,
+      appUrl: REQUIRED_ENV_VARS.APP_URL,
+      timestamp: new Date().toISOString()
+    });
+
     const msg: MailDataRequired = {
       to: email,
-      from: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
+      from: {
+        email: REQUIRED_ENV_VARS.SENDGRID_FROM_EMAIL!,
+        name: 'StackTracker'
+      },
       subject: 'Verify your StackTracker account',
-      text: templateText,
-      html: templateHtml,
+      text: `Please verify your email to complete registration. Click here: ${verificationUrl}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Welcome to StackTracker!</h2>
+          <p>Please verify your email to complete your registration.</p>
+          <p>
+            <a href="${verificationUrl}" 
+               style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 4px;">
+              Verify Email
+            </a>
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            ${verificationUrl}
+          </p>
+        </div>
+      `.trim(),
+      headers: {
+        'X-Priority': '1',
+        'X-Application': 'StackTracker'
+      },
+      trackingSettings: {
+        clickTracking: { enable: true },
+        openTracking: { enable: true }
+      }
     };
 
     let retryCount = 0;
     const maxRetries = 3;
-    const retryDelay = 1000; // 1 second
+    const retryDelay = 1000;
 
     while (retryCount < maxRetries) {
       try {
         console.log('Sending verification email (attempt ' + (retryCount + 1) + '):', {
           to: msg.to,
           from: msg.from,
-          templateId: msg.templateId,
           endpoint: 'https://api.sendgrid.com/v3/mail/send',
           timestamp: new Date().toISOString()
         });
@@ -132,12 +161,12 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       } catch (retryError: any) {
         retryCount++;
 
-        console.log(`Retry ${retryCount}/${maxRetries} after error:`, {
+        console.error(`Retry ${retryCount}/${maxRetries} failed:`, {
           name: retryError.name,
           message: retryError.message,
           code: retryError.code,
           response: retryError.response?.body,
-          endpoint: 'https://api.sendgrid.com/v3/mail/send'
+          timestamp: new Date().toISOString()
         });
 
         if (retryCount === maxRetries) throw retryError;
@@ -152,10 +181,6 @@ export async function sendVerificationEmail(email: string, token: string): Promi
       message: error.message,
       code: error.code,
       response: error.response?.body,
-      networkError: error.isAxiosError ? {
-        timeout: error.code === 'ECONNABORTED',
-        message: error.message
-      } : undefined,
       timestamp: new Date().toISOString()
     });
 
@@ -166,6 +191,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     return false;
   }
 }
+
 
 export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
