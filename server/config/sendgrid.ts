@@ -1,4 +1,3 @@
-
 import sgMail from '@sendgrid/mail';
 import { MailDataRequired } from '@sendgrid/helpers/classes/mail';
 
@@ -14,6 +13,16 @@ if (!fromEmail) {
   throw new Error('SENDGRID_FROM_EMAIL is not defined in environment variables.');
 }
 
+// Email template IDs
+export const EMAIL_TEMPLATES = {
+  WELCOME: process.env.SENDGRID_TEMPLATE_ID || 'd-xxxxxxxxxxxxx',
+  TWO_FACTOR: 'd-xxxxxxxxxxxxx',
+  PASSWORD_RESET: 'd-xxxxxxxxxxxxx',
+  DRIP_1: 'd-xxxxxxxxxxxxx',
+  DRIP_2: 'd-xxxxxxxxxxxxx',
+  DRIP_3: 'd-xxxxxxxxxxxxx',
+} as const;
+
 console.log('SendGrid Configuration:', {
   apiKeyExists: !!apiKey,
   fromEmail,
@@ -23,19 +32,9 @@ console.log('SendGrid Configuration:', {
 // Set the API key for SendGrid
 sgMail.setApiKey(apiKey);
 
-// Email template IDs
-export const EMAIL_TEMPLATES = {
-  WELCOME: process.env.SENDGRID_WELCOME_TEMPLATE_ID || 'd-xxxxxxxxxxxxx', // Replace with actual template ID
-  TWO_FACTOR: 'd-xxxxxxxxxxxxx',
-  PASSWORD_RESET: 'd-xxxxxxxxxxxxx',
-  DRIP_1: 'd-xxxxxxxxxxxxx',
-  DRIP_2: 'd-xxxxxxxxxxxxx',
-  DRIP_3: 'd-xxxxxxxxxxxxx',
-} as const;
-
 // Sender configuration
 export const DEFAULT_SENDER = {
-  email: 'noreply@yourdomain.com',
+  email: fromEmail,
   name: 'Stack Tracker',
 };
 
