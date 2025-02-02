@@ -40,13 +40,17 @@ async function sendEmail(msg: sgMail.MailDataRequired): Promise<void> {
 }
 
 export async function sendWelcomeEmail(to: string, username: string): Promise<void> {
+  const currentYear = new Date().getFullYear();
+  
   const msg = {
     to,
     from: process.env.SENDGRID_FROM_EMAIL,
     templateId: EMAIL_TEMPLATES.WELCOME,
     dynamicTemplateData: {
-      username,
-      loginUrl: `${process.env.APP_URL}/login`
+      firstName: username,
+      setupAccountLink: `${process.env.APP_URL}/profile`,
+      currentYear: currentYear.toString(),
+      proPlanLink: '#' // Placeholder until pro plan page is created
     }
   };
 
