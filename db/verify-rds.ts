@@ -1,11 +1,23 @@
-import { rdsDb } from "./rds";
+import { rdsDb, createDatabaseIfNotExists } from "./rds";
 import { supplementReference } from "./schema";
+import { sql } from "drizzle-orm";
 
 async function verifyRdsTable() {
   console.log('Starting RDS verification...');
+  console.log('Replit IP Address: 34.148.196.141'); // Log Replit's IP for reference
 
   try {
+    // First ensure database exists
+    console.log('Ensuring database exists...');
+    await createDatabaseIfNotExists();
+
     console.log('Attempting to query supplement reference table...');
+
+    // First try a simple connection test
+    const result = await rdsDb.execute(sql`SELECT 1`);
+    console.log('Basic connection test successful');
+
+    // Then try to query the actual table
     const supplements = await rdsDb.select().from(supplementReference);
     console.log("Successfully connected to RDS!");
     console.log(`Found ${supplements.length} supplements in the table`);
@@ -38,9 +50,9 @@ async function verifyRdsTable() {
 
     // Additional connection troubleshooting info
     console.log('Connection troubleshooting info:', {
-      sslEnabled: true, // We're using SSL in the connection options
-      connectionTimeout: '30 seconds',
-      retryAttempts: 3,
+      sslEnabled: true,
+      connectionTimeout: '60 seconds',
+      retryAttempts: 'Using connection pool',
       possibleIssues: [
         'Security group not allowing connections',
         'VPC configuration blocking access',
@@ -54,6 +66,14 @@ async function verifyRdsTable() {
         errorType: error instanceof Error ? error.constructor.name : typeof error
       }
     });
+
+    // Check if it's a timeout error and provide specific guidance
+    if (error.code === 'ETIMEDOUT' || error.code === 'CONNECT_TIMEOUT') {
+      console.log('\nTimeout Error Detected: This usually indicates one of these issues:');
+      console.log('1. Network latency between Replit and AWS RDS is too high');
+      console.log('2. AWS RDS security group might need updating');
+      console.log('3. The database instance might be in a different region');
+    }
   } finally {
     process.exit();
   }
