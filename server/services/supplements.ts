@@ -1,4 +1,4 @@
-import { db } from "@db";
+import { rdsDb } from "@db/rds";
 import { supplementReference } from "@db/schema";
 import { Trie } from "../utils/trie";
 
@@ -15,7 +15,7 @@ class SupplementService {
     if (this.initialized) return;
 
     console.log("Initializing supplement service...");
-    const supplements = await db.select().from(supplementReference);
+    const supplements = await rdsDb.select().from(supplementReference);
     console.log(`Loaded ${supplements.length} supplements from database`);
 
     this.trie.loadSupplements(supplements);
