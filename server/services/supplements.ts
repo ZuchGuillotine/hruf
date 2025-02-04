@@ -36,7 +36,7 @@ class SupplementService {
     const trieResults = this.trie.search(query, limit);
     
     // PostgreSQL fuzzy search using trigram similarity
-    const dbResults = await rdsDb.execute(sql`
+    const { rows: dbResults } = await rdsDb.execute(sql`
       SELECT *, similarity(name, ${query}) as score 
       FROM supplement_reference 
       WHERE name % ${query} 
@@ -45,7 +45,7 @@ class SupplementService {
     `);
 
     // Merge and deduplicate results
-    const combined = [...trieResults, ...dbResults];
+    const combined = [...trieResults, ...(dbResults || [])];
     const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
     const sorted = unique.slice(0, limit);
 
