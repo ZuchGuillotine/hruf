@@ -29,15 +29,31 @@ const rootUrl = getRootUrl(rdsUrl);
 console.log('Attempting to connect to RDS with URL pattern:', 
   rdsUrl.replace(/:[^:@]+@/, ':****@'));
 
-// First create a pool for root connection (no database specified)
-const rootPool = new Pool({
-  connectionString: rootUrl,
+// Pool configuration for both root and application pools
+const poolConfig = {
   ssl: {
     rejectUnauthorized: false
   },
-  connectionTimeoutMillis: 60000,
-  idleTimeoutMillis: 60000,
-  max: 1
+  connectionTimeoutMillis: 120000, // Increased to 2 minutes
+  idleTimeoutMillis: 120000,
+  max: 1,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
+  statement_timeout: 60000, // 1 minute statement timeout
+  query_timeout: 60000,
+  application_name: 'supplement-tracker', // Helps identify connections in logs
+  retry_strategy: { // Add retry strategy
+    retries: 3,
+    factor: 2,
+    minTimeout: 1000,
+    maxTimeout: 60000
+  }
+};
+
+// First create a pool for root connection (no database specified)
+const rootPool = new Pool({
+  connectionString: rootUrl,
+  ...poolConfig
 });
 
 // Create the database if it doesn't exist
@@ -75,14 +91,7 @@ export const createDatabaseIfNotExists = async () => {
 // Pool for actual application connection (with database)
 const pool = new Pool({
   connectionString: rdsUrl,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  connectionTimeoutMillis: 60000,
-  idleTimeoutMillis: 60000,
-  max: 1,
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 10000
+  ...poolConfig
 });
 
 pool.on('connect', () => {
