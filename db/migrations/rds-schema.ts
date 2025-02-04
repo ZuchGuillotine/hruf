@@ -1,3 +1,4 @@
+
 import { rdsDb } from "../rds";
 import { sql } from "drizzle-orm";
 
@@ -30,6 +31,41 @@ async function main() {
         ON supplements USING gin (name gin_trgm_ops);
     `);
     console.log("Created trigram index for fuzzy search");
+
+    // Insert initial supplement data
+    console.log("Inserting supplement data...");
+    await rdsDb.execute(sql`
+      INSERT INTO supplements (name) VALUES
+        ('Acai (General)'),
+        ('Acai Berry Extract'),
+        ('Acai Berry Powder'),
+        ('Acetyl-L-Carnitine (General)'),
+        ('Acetyl-L-Carnitine HCL'),
+        ('Aged Garlic Extract (General)'),
+        ('Aged Garlic Extract Powder'),
+        ('Agmatine (General)'),
+        ('Agmatine Sulfate'),
+        ('Alpha Lipoic Acid (General)'),
+        ('Alpha Lipoic Acid (R-ALA)'),
+        ('Alpha Lipoic Acid (Racemic)'),
+        ('Algae Oil (General)'),
+        ('Alfalfa (General)'),
+        ('Allicin (General)'),
+        ('Alpha GPC (General)'),
+        ('Andrographis (General)'),
+        ('Andrographis Paniculata Extract'),
+        ('Arginine (General)'),
+        ('L-Arginine'),
+        ('Arginine Alpha-Ketoglutarate'),
+        ('Ashwagandha (General)'),
+        ('Ashwagandha Root Powder'),
+        ('Ashwagandha Extract (KSM-66)'),
+        ('Ashwagandha Extract (Sensoril)'),
+        ('Astaxanthin (General)'),
+        ('Astaxanthin (Haematococcus pluvialis)')
+      ON CONFLICT (name) DO NOTHING;
+    `);
+    console.log("Supplement data inserted successfully");
 
     console.log("RDS schema created successfully");
   } catch (error) {
