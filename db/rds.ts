@@ -29,30 +29,47 @@ const rootUrl = getRootUrl(rdsUrl);
 console.log('Attempting to connect to RDS with URL pattern:', 
   rdsUrl.replace(/:[^:@]+@/, ':****@'));
 
-// Pool configuration for both root and application pools
+// Enhanced pool configuration with aggressive timeouts and retry strategy
 const poolConfig = {
   ssl: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    // Force SSL mode to 'require'
+    sslmode: 'require',
+    // Add additional SSL parameters
+    ssl: true,
+    // Increase SSL handshake timeout
+    sslConnectTimeout: 10000
   },
-  connectionTimeoutMillis: 120000, // Increased to 2 minutes
-  idleTimeoutMillis: 120000,
-  max: 1,
+  connectionTimeoutMillis: 300000, // 5 minutes
+  idleTimeoutMillis: 300000,
+  max: 1, // Single connection to avoid overhead
   keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
-  statement_timeout: 60000, // 1 minute statement timeout
-  query_timeout: 60000,
-  application_name: 'supplement-tracker', // Helps identify connections in logs
-  retry_strategy: { // Add retry strategy
-    retries: 3,
-    factor: 2,
-    minTimeout: 1000,
-    maxTimeout: 60000
-  }
+  keepAliveInitialDelayMillis: 5000,
+  statement_timeout: 120000, // 2 minutes
+  query_timeout: 120000,
+  application_name: 'supplement-tracker',
+  retry_strategy: {
+    retries: 5,
+    factor: 1.5,
+    minTimeout: 2000,
+    maxTimeout: 120000
+  },
+  // Network-level timeouts
+  tcp_keepalive: true,
+  tcp_keepalive_time: 60,
+  tcp_keepalive_interval: 30,
+  tcp_keepalive_count: 5
+};
+
+// Construct a connection string with explicit parameters
+const getConnectionString = (url: string) => {
+  const parsed = new URL(url);
+  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=require&connect_timeout=300&application_name=supplement-tracker&keepalives=1&keepalives_idle=60&keepalives_interval=30&keepalives_count=5`;
 };
 
 // First create a pool for root connection (no database specified)
 const rootPool = new Pool({
-  connectionString: rootUrl,
+  connectionString: getConnectionString(rootUrl),
   ...poolConfig
 });
 
@@ -74,14 +91,17 @@ export const createDatabaseIfNotExists = async () => {
 
     if (result.rows.length === 0) {
       console.log(`Creating database ${dbName}...`);
-      // Create database (need to escape as it might contain dashes)
       await client.query(`CREATE DATABASE "${dbName}"`);
       console.log('Database created successfully');
     } else {
       console.log('Database already exists');
     }
   } catch (error) {
-    console.error('Error in createDatabaseIfNotExists:', error);
+    console.error('Error in createDatabaseIfNotExists:', {
+      message: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     throw error;
   } finally {
     client.release();
@@ -90,16 +110,29 @@ export const createDatabaseIfNotExists = async () => {
 
 // Pool for actual application connection (with database)
 const pool = new Pool({
-  connectionString: rdsUrl,
+  connectionString: getConnectionString(rdsUrl),
   ...poolConfig
 });
 
-pool.on('connect', () => {
-  console.log('Established new database connection');
+// Enhanced connection event logging
+pool.on('connect', (client) => {
+  console.log('New client connected to PostgreSQL:', {
+    timestamp: new Date().toISOString(),
+    database: pool.options.database,
+    host: pool.options.host,
+    port: pool.options.port,
+    user: pool.options.user,
+    application_name: pool.options.application_name
+  });
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected database error:', err);
+  console.error('Unexpected PostgreSQL error:', {
+    message: err instanceof Error ? err.message : String(err),
+    code: err instanceof Error && 'code' in err ? (err as any).code : undefined,
+    stack: err instanceof Error ? err.stack : undefined,
+    timestamp: new Date().toISOString()
+  });
 });
 
 pool.on('acquire', () => {
