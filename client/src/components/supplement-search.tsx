@@ -32,6 +32,12 @@ interface SupplementSearchProps {
 export function SupplementSearch({ value, onChange, className }: SupplementSearchProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [customValue, setCustomValue] = React.useState(value);
+
+  // Update customValue when value prop changes
+  React.useEffect(() => {
+    setCustomValue(value);
+  }, [value]);
 
   const { data: suggestions = [], isLoading } = useQuery<Supplement[]>({
     queryKey: ['/api/supplements/search', search],
@@ -55,6 +61,12 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
     },
   });
 
+  const handleInputChange = (value: string) => {
+    setSearch(value);
+    setCustomValue(value);
+    onChange(value); // Pass the custom value back to the parent
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -67,22 +79,22 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
             className
           )}
         >
-          {value || "Select a supplement..."}
+          {customValue || "Select or type a supplement name..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command className="bg-white text-[#1b4332]">
           <CommandInput
-            placeholder="Search supplements..."
+            placeholder="Search or type supplement name..."
             value={search}
-            onValueChange={setSearch}
+            onValueChange={handleInputChange}
             className="h-9"
           />
           {isLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading...</div>
           ) : suggestions.length === 0 ? (
-            <CommandEmpty>No supplement found.</CommandEmpty>
+            <CommandEmpty>No matches found. You can use this custom name.</CommandEmpty>
           ) : (
             <CommandGroup className="max-h-[200px] overflow-y-auto custom-scrollbar">
               {suggestions.map((supplement) => (
@@ -92,6 +104,7 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
                   onSelect={(currentValue) => {
                     onChange(currentValue);
                     setSearch(currentValue);
+                    setCustomValue(currentValue);
                     setOpen(false);
                   }}
                   className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
