@@ -23,16 +23,33 @@ class SupplementService {
     console.log("Supplement service initialized successfully");
   }
 
-  search(query: string, limit: number = 4) {
+  async search(query: string, limit: number = 4) {
     if (!this.initialized) {
       console.warn("Supplement service not initialized!");
       return [];
     }
 
     console.log(`Searching for "${query}" with limit ${limit}`);
-    const results = this.trie.search(query, limit);
-    console.log(`Found ${results.length} results`);
-    return results;
+    
+    // Combine Trie and PostgreSQL search results
+    const trieResults = this.trie.search(query, limit);
+    
+    // PostgreSQL fuzzy search using trigram similarity
+    const dbResults = await rdsDb.execute(sql`
+      SELECT *, similarity(name, ${query}) as score 
+      FROM supplement_reference 
+      WHERE name % ${query} 
+      ORDER BY score DESC 
+      LIMIT ${limit}
+    `);
+
+    // Merge and deduplicate results
+    const combined = [...trieResults, ...dbResults];
+    const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+    const sorted = unique.slice(0, limit);
+
+    console.log(`Found ${sorted.length} results`);
+    return sorted;
   }
 }
 
