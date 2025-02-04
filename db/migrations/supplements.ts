@@ -1,5 +1,6 @@
 import { db } from "@db";
 import { supplementReference } from "@db/schema";
+import { sql } from 'drizzle-orm';
 
 const initialSupplements = [
   // General Supplements
@@ -90,23 +91,58 @@ const initialSupplements = [
 
 export async function seedSupplements() {
   try {
-    console.log("Seeding supplement reference data...");
+    console.log("Starting supplement reference data seeding...");
 
-    for (const supplement of initialSupplements) {
-      await db.insert(supplementReference).values(supplement).onConflictDoNothing();
+    // Check if data already exists
+    const existingCount = await db
+      .select({ count: sql`count(*)` })
+      .from(supplementReference);
+
+    console.log(`Found ${existingCount[0].count} existing supplements`);
+
+    if (existingCount[0].count > 0) {
+      console.log("Supplement data already exists, skipping seeding");
+      return;
     }
 
-    console.log("Supplement reference data seeded successfully");
+    console.log(`Preparing to seed ${initialSupplements.length} supplements...`);
+
+    // Insert supplements in batches
+    const batchSize = 50;
+    for (let i = 0; i < initialSupplements.length; i += batchSize) {
+      const batch = initialSupplements.slice(i, i + batchSize);
+      await db.insert(supplementReference)
+        .values(batch)
+        .onConflictDoNothing();
+
+      console.log(`Seeded batch of ${batch.length} supplements`);
+    }
+
+    // Verify seeding
+    const finalCount = await db
+      .select({ count: sql`count(*)` })
+      .from(supplementReference);
+
+    console.log(`Seeding completed. Final count: ${finalCount[0].count} supplements`);
   } catch (error) {
-    console.error("Error seeding supplement data:", error);
+    console.error("Error seeding supplement data:", {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     throw error;
   }
 }
 
-// Run the seeding function
-seedSupplements()
-  .then(() => console.log("Seeding completed successfully"))
-  .catch((error) => {
-    console.error("Seeding failed:", error);
-    process.exit(1);
-  });
+// Only run seeding if this file is executed directly
+if (require.main === module) {
+  seedSupplements()
+    .then(() => {
+      console.log("Seeding completed successfully");
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error("Seeding failed:", error);
+      process.exit(1);
+    });
+}
