@@ -13,12 +13,11 @@ class SupplementService {
   }
 
   async initialize() {
-    if (this.initialized) return;
-
     console.log("Initializing supplement service...");
     const supplements = await rdsDb.select().from(supplementReference);
     console.log(`Loaded ${supplements.length} supplements from database`);
 
+    this.trie = new Trie(); // Reset trie
     this.trie.loadSupplements(supplements);
     this.initialized = true;
     console.log("Supplement service initialized successfully");
