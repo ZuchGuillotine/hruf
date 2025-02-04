@@ -64,7 +64,7 @@ const poolConfig = {
 // Construct a connection string with explicit parameters
 const getConnectionString = (url: string) => {
   const parsed = new URL(url);
-  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=require&connect_timeout=300&application_name=supplement-tracker&keepalives=1&keepalives_idle=60&keepalives_interval=30&keepalives_count=5`;
+  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=require&ssl=true&connect_timeout=300&application_name=supplement-tracker&keepalives=1&keepalives_idle=60&keepalives_interval=30&keepalives_count=5`;
 };
 
 // First create a pool for root connection (no database specified)
