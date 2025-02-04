@@ -1,5 +1,6 @@
 import { rdsDb } from "@db/rds";
 import { supplementReference } from "@db/schema";
+import { sql } from "drizzle-orm";
 import { Trie } from "../utils/trie";
 
 class SupplementService {
