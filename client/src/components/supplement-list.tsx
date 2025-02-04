@@ -36,14 +36,23 @@ export default function SupplementList() {
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [supplementStates, setSupplementStates] = useState<Record<number, { taken: boolean }>>({});
 
-  // Initialize supplement states
+  // Initialize supplement states only when supplements change
   React.useEffect(() => {
-    const initialStates = supplements.reduce((acc, supplement) => {
-      acc[supplement.id] = { taken: true }; // Default to taken
+    const newStates = supplements.reduce((acc, supplement) => {
+      // Only update if the state doesn't exist or has changed
+      if (!supplementStates[supplement.id]) {
+        acc[supplement.id] = { taken: true }; // Default to taken
+      } else {
+        acc[supplement.id] = supplementStates[supplement.id];
+      }
       return acc;
     }, {} as Record<number, { taken: boolean }>);
-    setSupplementStates(initialStates);
-  }, [supplements]);
+
+    // Only update state if there are actual changes
+    if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
+      setSupplementStates(newStates);
+    }
+  }, [supplements, supplementStates]); // Only run when supplements change
 
   const handleSaveChanges = async () => {
     try {
@@ -131,7 +140,7 @@ export default function SupplementList() {
                   onCheckedChange={(checked) => {
                     setSupplementStates(prev => ({
                       ...prev,
-                      [supplement.id]: { ...prev[supplement.id], taken: checked }
+                      [supplement.id]: { taken: checked }
                     }));
                   }}
                 />
