@@ -16,7 +16,6 @@ class SupplementService {
     try {
       console.log("Initializing supplement service...");
 
-      // Use db instead of rdsDb
       const supplements = await db.select().from(supplementReference);
       console.log(`Retrieved ${supplements.length} supplements from database`);
 
@@ -30,17 +29,25 @@ class SupplementService {
         // Fetch supplements again after seeding
         const seededSupplements = await db.select().from(supplementReference);
         console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
-        this.trie.loadSupplements(seededSupplements);
+        this.loadSupplements(seededSupplements);
       } else {
-        this.trie.loadSupplements(supplements);
+        this.loadSupplements(supplements);
       }
 
       this.initialized = true;
       console.log("Supplement service initialized successfully");
     } catch (error) {
-      console.error("Error initializing supplement service:", error);
-      throw new Error(`Failed to initialize supplement service: ${error.message}`);
+      console.error("Error initializing supplement service:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      throw new Error(`Failed to initialize supplement service: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private loadSupplements(supplements: any[]) {
+    console.log(`Loading ${supplements.length} supplements into service`);
+    this.trie.loadSupplements(supplements);
   }
 
   async search(query: string, limit: number = 4) {
@@ -52,27 +59,25 @@ class SupplementService {
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
-      // Combine Trie and PostgreSQL search results
-      const trieResults = this.trie.search(query, limit);
+      // Simple database search using ILIKE
+      const dbResults = await db
+        .select()
+        .from(supplementReference)
+        .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
+        .limit(limit);
 
-      // PostgreSQL fuzzy search using trigram similarity
-      const fuzzyResults = await db.execute<any>(sql`
-        SELECT *, similarity(name, ${query}) as score 
-        FROM supplement_reference 
-        WHERE name % ${query} 
-        ORDER BY score DESC 
-        LIMIT ${limit}
-      `);
+      console.log('Database search results:', dbResults);
 
-      // Merge and deduplicate results
-      const combined = [...trieResults, ...(fuzzyResults || [])];
-      const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
-      const sorted = unique.slice(0, limit);
+      if (dbResults.length === 0) {
+        // Try Trie search as fallback
+        const trieResults = this.trie.search(query, limit);
+        console.log('Trie search results:', trieResults);
+        return trieResults || [];
+      }
 
-      console.log(`Found ${sorted.length} results`);
-      return sorted;
+      return dbResults;
     } catch (error) {
-      console.error("Error in supplement search:", error);
+      console.error("Error in supplement search:", error instanceof Error ? error.message : error);
       return [];
     }
   }

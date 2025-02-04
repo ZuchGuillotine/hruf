@@ -1,7 +1,9 @@
+import { SelectSupplementReference } from "@db/schema";
+
 class TrieNode {
   children: Map<string, TrieNode>;
   isEndOfWord: boolean;
-  data: any;
+  data: SelectSupplementReference | null;
 
   constructor() {
     this.children = new Map();
@@ -40,6 +42,8 @@ function levenshteinDistance(str1: string, str2: string): number {
 }
 
 function normalizeVitaminName(input: string): string {
+  if (!input) return '';
+
   // Remove spaces and convert to lowercase
   let normalized = input.toLowerCase().replace(/\s+/g, '');
 
@@ -56,7 +60,7 @@ function normalizeVitaminName(input: string): string {
 
 export class Trie {
   private root: TrieNode;
-  private supplements: Map<string, any>;
+  private supplements: Map<string, SelectSupplementReference>;
   private baseMaxDistance: number = 2;
 
   constructor() {
@@ -71,7 +75,12 @@ export class Trie {
     return this.baseMaxDistance + 2;
   }
 
-  insert(word: string, data: any = null) {
+  insert(word: string, data: SelectSupplementReference) {
+    if (!word || !data) {
+      console.warn('Attempted to insert invalid data into Trie:', { word, data });
+      return;
+    }
+
     let current = this.root;
     const normalizedWord = normalizeVitaminName(word);
 
@@ -87,10 +96,14 @@ export class Trie {
     this.supplements.set(normalizedWord, data);
   }
 
-  search(prefix: string, limit: number = 4): Array<any> {
-    const results: Array<any> = [];
-    const normalizedPrefix = normalizeVitaminName(prefix);
+  search(prefix: string, limit: number = 4): SelectSupplementReference[] {
+    const results: SelectSupplementReference[] = [];
+    if (!prefix) {
+      console.log('Empty search prefix provided');
+      return results;
+    }
 
+    const normalizedPrefix = normalizeVitaminName(prefix);
     console.log(`Searching trie for normalized prefix: "${normalizedPrefix}"`);
 
     // First try exact prefix match
@@ -98,7 +111,6 @@ export class Trie {
     let exactMatch = true;
 
     for (const char of normalizedPrefix) {
-      console.log(`Checking character: ${char}`);
       if (!current.children.has(char)) {
         exactMatch = false;
         break;
@@ -117,22 +129,22 @@ export class Trie {
       results.push(...fuzzyResults);
     }
 
-    console.log(`Found ${results.length} matches:`, results);
+    console.log(`Found ${results.length} matches in Trie:`, results);
     return results;
   }
 
-  private _fuzzySearch(query: string, limit: number): Array<any> {
-    const results: Array<any> = [];
-    const matches = new Map<string, { distance: number; data: any }>();
+  private _fuzzySearch(query: string, limit: number): SelectSupplementReference[] {
+    const results: SelectSupplementReference[] = [];
+    const matches = new Map<string, { distance: number; data: SelectSupplementReference }>();
     const maxDistance = this.getMaxDistance(query.length);
 
     // Compare with all stored supplements
-    for (const [word, data] of this.supplements.entries()) {
+    this.supplements.forEach((data, word) => {
       const distance = levenshteinDistance(query, word);
       if (distance <= maxDistance) {
         matches.set(word, { distance, data });
       }
-    }
+    });
 
     // Sort matches by distance and take the top results
     const sortedMatches = Array.from(matches.entries())
@@ -140,13 +152,18 @@ export class Trie {
       .slice(0, limit);
 
     for (const [_, { data }] of sortedMatches) {
-      results.push(data);
+      if (data) results.push(data);
     }
 
     return results;
   }
 
-  private _findAllWords(node: TrieNode, prefix: string, results: Array<any>, limit: number) {
+  private _findAllWords(
+    node: TrieNode, 
+    prefix: string, 
+    results: SelectSupplementReference[], 
+    limit: number
+  ) {
     if (results.length >= limit) return;
 
     if (node.isEndOfWord && node.data) {
@@ -154,24 +171,28 @@ export class Trie {
       results.push(node.data);
     }
 
-    for (const [char, childNode] of node.children.entries()) {
+    node.children.forEach((childNode, char) => {
       this._findAllWords(childNode, prefix + char, results, limit);
-    }
+    });
   }
 
-  loadSupplements(supplements: Array<any>) {
-    console.log(`Loading ${supplements.length} supplements into trie`);
-    for (const supplement of supplements) {
-      console.log(`Adding supplement: ${supplement.name}`);
-      this.insert(supplement.name, supplement);
+  loadSupplements(supplements: SelectSupplementReference[]) {
+    if (!Array.isArray(supplements)) {
+      console.error('Invalid supplements data provided to loadSupplements');
+      return;
+    }
 
-      if (supplement.alternativeNames) {
-        for (const altName of supplement.alternativeNames) {
-          console.log(`Adding alternative name: ${altName}`);
-          this.insert(altName, supplement);
-        }
+    console.log(`Loading ${supplements.length} supplements into trie`);
+
+    for (const supplement of supplements) {
+      if (supplement && supplement.name) {
+        console.log(`Adding supplement: ${supplement.name}`);
+        this.insert(supplement.name, supplement);
+      } else {
+        console.warn('Invalid supplement data:', supplement);
       }
     }
+
     console.log('Finished loading supplements into trie');
   }
 }

@@ -324,15 +324,23 @@ export function registerRoutes(app: Express): Server {
         return res.json([]);
       }
 
-      const suggestions = supplementService.search(query);
+      const suggestions = await supplementService.search(query);
       console.log(`Returning ${suggestions.length} suggestions`);
       res.json(suggestions);
     } catch (error) {
-      console.error("Supplement search error:", error);
-      res.status(500).send("Failed to search supplements");
+      console.error("Supplement search error:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        query: req.query.q,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({ 
+        error: "Failed to search supplements",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
-  
+
     // User profile endpoints
     app.post("/api/profile", requireAuth, async (req, res) => {
       try {
@@ -344,22 +352,22 @@ export function registerRoutes(app: Express): Server {
           })
           .where(eq(users.id, req.user!.id))
           .returning();
-  
+
         res.json({ message: "Profile updated successfully", user: updated });
       } catch (error) {
         console.error("Error updating profile:", error);
         res.status(500).send("Failed to update profile");
       }
-  });
+    });
   
-  // Admin endpoint to delete non-admin users
+    // Admin endpoint to delete non-admin users
     app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
       try {
         const result = await db
           .delete(users)
           .where(eq(users.isAdmin, false))
           .returning();
-  
+
         res.json({ 
           message: `Successfully deleted ${result.length} non-admin users`,
           deletedCount: result.length 
@@ -370,6 +378,7 @@ export function registerRoutes(app: Express): Server {
       }
     });
   
+
   const httpServer = createServer(app);
   return httpServer;
 }
