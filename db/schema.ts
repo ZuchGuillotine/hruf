@@ -58,12 +58,8 @@ export const supplementLogs = pgTable("supplement_logs", {
 
 export const supplementReference = pgTable("supplement_reference", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name").unique().notNull(),
   category: text("category").notNull(),
-  alternativeNames: json("alternative_names").$type<string[]>(),
-  description: text("description"),
-  source: text("source"),
-  sourceUrl: text("source_url"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
