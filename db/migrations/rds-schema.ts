@@ -8,8 +8,8 @@ async function main() {
     // Enable pg_trgm extension for fuzzy search
     console.log("Attempting to enable pg_trgm extension...");
     await rdsDb.execute(sql`
-      CREATE EXTENSION IF NOT EXISTS pg_trgm;
-      CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+      CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public;
+      CREATE EXTENSION IF NOT EXISTS fuzzystrmatch SCHEMA public;
     `);
     console.log("Enabled extensions");
 
@@ -24,10 +24,19 @@ async function main() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
-      CREATE INDEX IF NOT EXISTS idx_supplement_reference_name_trgm
+      -- Create a trigram index on name for efficient fuzzy search
+      DROP INDEX IF EXISTS idx_supplement_reference_name_trgm;
+      CREATE INDEX idx_supplement_reference_name_trgm
         ON supplement_reference USING gin (name gin_trgm_ops);
 
-      CREATE INDEX IF NOT EXISTS idx_supplement_reference_category
+      -- Create a trigram index on both name and category for combined searches
+      DROP INDEX IF EXISTS idx_supplement_reference_name_category_trgm;
+      CREATE INDEX idx_supplement_reference_name_category_trgm
+        ON supplement_reference USING gin ((name || ' ' || category) gin_trgm_ops);
+
+      -- Regular B-tree index on category for exact matches and sorting
+      DROP INDEX IF EXISTS idx_supplement_reference_category;
+      CREATE INDEX idx_supplement_reference_category
         ON supplement_reference (category);
     `);
 
