@@ -13,69 +13,62 @@ async function main() {
     `);
     console.log("Enabled pg_trgm extension");
 
-    // Create the supplements table in RDS
-    console.log("Attempting to create supplements table...");
+    // Create the supplement_reference table
+    console.log("Creating supplement_reference table...");
     await rdsDb.execute(sql`
-      CREATE TABLE IF NOT EXISTS supplements (
+      CREATE TABLE IF NOT EXISTS supplement_reference (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        name TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'General',
+        alternative_names JSONB DEFAULT '[]',
+        description TEXT,
+        source TEXT,
+        source_url TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
       );
-    `);
-    console.log("Created supplements table");
 
-    // Create trigram index for fuzzy search
-    console.log("Attempting to create trigram index...");
-    await rdsDb.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_supplements_name_trgm
-        ON supplements USING gin (name gin_trgm_ops);
+      CREATE INDEX IF NOT EXISTS idx_supplement_reference_name_trgm
+        ON supplement_reference USING gin (name gin_trgm_ops);
     `);
-    console.log("Created trigram index for fuzzy search");
 
     // Insert initial supplement data
     console.log("Inserting supplement data...");
     await rdsDb.execute(sql`
-      INSERT INTO supplements (name) VALUES
-        ('Acai (General)'),
-        ('Acai Berry Extract'),
-        ('Acai Berry Powder'),
-        ('Acetyl-L-Carnitine (General)'),
-        ('Acetyl-L-Carnitine HCL'),
-        ('Aged Garlic Extract (General)'),
-        ('Aged Garlic Extract Powder'),
-        ('Agmatine (General)'),
-        ('Agmatine Sulfate'),
-        ('Alpha Lipoic Acid (General)'),
-        ('Alpha Lipoic Acid (R-ALA)'),
-        ('Alpha Lipoic Acid (Racemic)'),
-        ('Algae Oil (General)'),
-        ('Alfalfa (General)'),
-        ('Allicin (General)'),
-        ('Alpha GPC (General)'),
-        ('Andrographis (General)'),
-        ('Andrographis Paniculata Extract'),
-        ('Arginine (General)'),
-        ('L-Arginine'),
-        ('Arginine Alpha-Ketoglutarate'),
-        ('Ashwagandha (General)'),
-        ('Ashwagandha Root Powder'),
-        ('Ashwagandha Extract (KSM-66)'),
-        ('Ashwagandha Extract (Sensoril)'),
-        ('Astaxanthin (General)'),
-        ('Astaxanthin (Haematococcus pluvialis)')
+      INSERT INTO supplement_reference (name, category) VALUES
+        ('Acai (General)', 'Herbal'),
+        ('Acai Berry Extract', 'Herbal'),
+        ('Acai Berry Powder', 'Herbal'),
+        ('Acetyl-L-Carnitine (General)', 'Amino Acids'),
+        ('Acetyl-L-Carnitine HCL', 'Amino Acids'),
+        ('Aged Garlic Extract (General)', 'Herbal'),
+        ('Aged Garlic Extract Powder', 'Herbal'),
+        ('Agmatine (General)', 'Amino Acids'),
+        ('Agmatine Sulfate', 'Amino Acids'),
+        ('Alpha Lipoic Acid (General)', 'Antioxidants'),
+        ('Alpha Lipoic Acid (R-ALA)', 'Antioxidants'),
+        ('Alpha Lipoic Acid (Racemic)', 'Antioxidants'),
+        ('Algae Oil (General)', 'Fatty Acids'),
+        ('Alfalfa (General)', 'Herbal'),
+        ('Allicin (General)', 'Herbal'),
+        ('Alpha GPC (General)', 'Nootropics'),
+        ('Andrographis (General)', 'Herbal'),
+        ('Andrographis Paniculata Extract', 'Herbal'),
+        ('Arginine (General)', 'Amino Acids'),
+        ('L-Arginine', 'Amino Acids'),
+        ('Arginine Alpha-Ketoglutarate', 'Amino Acids'),
+        ('Ashwagandha (General)', 'Herbal'),
+        ('Ashwagandha Root Powder', 'Herbal'),
+        ('Ashwagandha Extract (KSM-66)', 'Herbal'),
+        ('Ashwagandha Extract (Sensoril)', 'Herbal'),
+        ('Astaxanthin (General)', 'Antioxidants'),
+        ('Astaxanthin (Haematococcus pluvialis)', 'Antioxidants')
       ON CONFLICT (name) DO NOTHING;
     `);
-    console.log("Supplement data inserted successfully");
+    console.log("Supplement reference data inserted successfully");
 
-    console.log("RDS schema created successfully");
   } catch (error) {
-    console.error("Error creating RDS schema:", {
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
+    console.error("Error creating RDS schema:", error);
     throw error;
   }
 }
