@@ -5,7 +5,7 @@ import LLMChat from "@/components/llm-chat";
 import Footer from "@/components/footer";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -24,7 +24,7 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-6 space-y-6 flex-grow">
         {/* AI Assistant Section */}
         <div className="bg-[#1b4332] rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-white">AI Assistant</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-white">Stack Chat Assistant</h2>
           <p className="text-white/90 mb-4">How are you feeling?</p>
           <div className="h-[300px]">
             <LLMChat />
