@@ -38,7 +38,7 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
     enabled: search.length > 0,
     queryFn: async () => {
       console.log('Fetching suggestions for:', search);
-      const res = await fetch(`/api/supplements/search?q=${encodeURIComponent(search)}&limit=10`);
+      const res = await fetch(`/api/supplements/search?q=${encodeURIComponent(search)}&limit=20`);
       if (!res.ok) {
         throw new Error('Failed to fetch suggestions');
       }
@@ -84,16 +84,17 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
           ) : suggestions.length === 0 ? (
             <CommandEmpty>No supplement found.</CommandEmpty>
           ) : (
-            <CommandGroup className="max-h-[200px] overflow-y-auto">
+            <CommandGroup className="max-h-[200px] overflow-y-auto custom-scrollbar">
               {suggestions.map((supplement) => (
                 <CommandItem
                   key={`${supplement.id}-${supplement.name}`}
                   value={supplement.name}
                   onSelect={(currentValue) => {
                     onChange(currentValue);
+                    setSearch(currentValue);
                     setOpen(false);
                   }}
-                  className="cursor-pointer"
+                  className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                 >
                   <div className="flex flex-col">
                     <span>{supplement.name}</span>
