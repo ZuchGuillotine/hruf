@@ -1,0 +1,51 @@
+Attempting to connect to RDS with URL pattern: postgres://Bencox820:****@stacktrackertest1.c9y68m0iab7h.us-east-2.rds.amazonaws.com:5432/stacktracker1
+Starting RDS verification...
+Replit IP Address: 34.148.196.141
+Performing DNS lookup for RDS hostname...
+DNS Resolution successful: {
+  hostname: 'stacktrackertest1.c9y68m0iab7h.us-east-2.rds.amazonaws.com',
+  ip: '18.190.138.254',
+  family: 4
+}
+Testing raw TCP connection...
+TCP connection attempt 1/3...
+TCP connection successful - port is reachable
+Testing database connection with increased timeout...
+Error connecting to RDS: {
+  message: 'self-signed certificate in certificate chain',
+  code: 'SELF_SIGNED_CERT_IN_CHAIN',
+  errno: undefined,
+  address: undefined,
+  port: undefined,
+  stack: 'Error: self-signed certificate in certificate chain\n' +
+    '    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async createDatabaseIfNotExists (/home/runner/workspace/db/rds.ts:78:18)\n' +
+    '    at async verifyRdsTable (/home/runner/workspace/db/verify-rds.ts:130:5)',
+  timestamp: '2025-02-04T07:44:55.693Z'
+}
+Connection Diagnostics: {
+  urlFormat: {
+    hasProtocol: true,
+    containsHost: true,
+    containsPort: true,
+    containsDatabase: true,
+    region: 'us-east-2'
+  },
+  region: 'us-east-2',
+  replitRegion: 'us-east-1',
+  possibleIssues: [
+    'RDS instance is in a different region than Replit (us-east-1)',
+    'Security group may need to allow inbound from 34.148.196.141',
+    'VPC configuration might be blocking access',
+    'Database instance status should be checked in AWS Console',
+    'Network ACL (acl-023b9eedcd59a8791) may be blocking PostgreSQL traffic'
+  ],
+  recommendations: [
+    '1. Verify RDS security group allows inbound from 34.148.196.141 on port 5432',
+    '2. Check if RDS instance is publicly accessible',
+    '3. Ensure database instance is in "available" state',
+    '4. Verify Network ACL allows inbound traffic on port 5432',
+    '5. Consider creating RDS instance in us-east-1 region for better latency'
+  ]
+}
