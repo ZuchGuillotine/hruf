@@ -34,7 +34,7 @@ export default function Dashboard() {
         {/* Supplements Section */}
         <div className="bg-[#1b4332] rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-white">My Supplements</h2>
+            <h2 className="text-3xl font-bold text-white">Track my Supplements</h2>
             <Button
               onClick={() => setShowSupplementForm(true)}
               className="bg-white text-[#1b4332] hover:bg-white/90"

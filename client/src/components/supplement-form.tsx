@@ -15,8 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import cn from 'classnames'; // Assuming classnames library is used
-
+import cn from 'classnames';
 
 type FormData = {
   name: string;
@@ -27,38 +26,79 @@ type FormData = {
   notes?: string;
 };
 
-export default function SupplementForm({
-  onSuccess
-}: {
+interface SupplementFormProps {
+  supplementId?: number;
   onSuccess: () => void;
-}) {
-  const { addSupplement } = useSupplements();
+}
+
+export default function SupplementForm({
+  supplementId,
+  onSuccess
+}: SupplementFormProps) {
+  const { addSupplement, updateSupplement, supplements } = useSupplements();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  // Find existing supplement if editing
+  const existingSupplement = supplementId 
+    ? supplements.find(s => s.id === supplementId)
+    : null;
+
+  // Parse existing dosage and frequency if available
+  const parseDosage = (dosage?: string) => {
+    if (!dosage) return { amount: "1", unit: "mg" };
+    const match = dosage.match(/(\d+)\s*(\w+)/);
+    return {
+      amount: match?.[1] || "1",
+      unit: match?.[2] || "mg"
+    };
+  };
+
+  const parseFrequency = (frequency?: string) => {
+    if (!frequency) return { amount: "1", unit: "daily" };
+    const match = frequency.match(/(\d+)x\s*(\w+)/);
+    return {
+      amount: match?.[1] || "1",
+      unit: match?.[2] || "daily"
+    };
+  };
+
+  const existingDosage = parseDosage(existingSupplement?.dosage);
+  const existingFrequency = parseFrequency(existingSupplement?.frequency);
+
   const form = useForm<FormData>({
     defaultValues: {
-      name: "",
-      dosageAmount: "1",
-      dosageUnit: "mg",
-      frequencyAmount: "1",
-      frequencyUnit: "daily",
-      notes: "",
+      name: existingSupplement?.name || "",
+      dosageAmount: existingDosage.amount,
+      dosageUnit: existingDosage.unit,
+      frequencyAmount: existingFrequency.amount,
+      frequencyUnit: existingFrequency.unit,
+      notes: existingSupplement?.notes || "",
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      await addSupplement({
+      const supplementData = {
         name: data.name,
         dosage: `${data.dosageAmount} ${data.dosageUnit}`,
         frequency: `${data.frequencyAmount}x ${data.frequencyUnit}`,
         notes: data.notes,
-      });
-      toast({
-        title: "Success",
-        description: "Supplement added successfully",
-      });
+      };
+
+      if (supplementId) {
+        await updateSupplement({ id: supplementId, data: supplementData });
+        toast({
+          title: "Success",
+          description: "Supplement updated successfully",
+        });
+      } else {
+        await addSupplement(supplementData);
+        toast({
+          title: "Success",
+          description: "Supplement added successfully",
+        });
+      }
       onSuccess();
     } catch (error: any) {
       toast({
@@ -181,7 +221,7 @@ export default function SupplementForm({
         {form.formState.isSubmitting && (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         )}
-        Add Supplement
+        {supplementId ? 'Update Supplement' : 'Add Supplement'}
       </Button>
     </form>
   );
