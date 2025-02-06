@@ -36,9 +36,6 @@ export const BackgroundWords: React.FC = () => {
           <div
             key={index}
             className={`word-line ${size} ${direction}`}
-            style={{
-              animationDelay: `${index * 2}s`
-            }}
           >
             {phrase}
           </div>
