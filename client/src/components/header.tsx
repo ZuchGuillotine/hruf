@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart, Database } from 'lucide-react';
+import { LogOut, User, LineChart, Database, Home, BookOpen, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -46,11 +46,33 @@ export default function Header() {
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
-              StackTracker
-            </h1>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
+                StackTracker
+              </h1>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <Link href="/">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Home className="mr-2 h-4 w-4" />
+                  <span>Home</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/about">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Info className="mr-2 h-4 w-4" />
+                  <span>About</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/learn">
+                <DropdownMenuItem className="cursor-pointer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Learn</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <DropdownMenu>

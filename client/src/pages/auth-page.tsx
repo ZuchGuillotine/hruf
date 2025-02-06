@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 import Footer from "@/components/footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import LandingHeader from "@/components/landing-header";
 
 declare global {
   interface Window {
@@ -123,6 +124,7 @@ export default function AuthPage() {
   if (verificationSent) {
     return (
       <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
+        <LandingHeader />
         <div className="flex-grow flex items-center justify-center px-4">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -139,8 +141,8 @@ export default function AuthPage() {
               </Alert>
             </CardContent>
             <CardFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => {
                   setVerificationSent(false);
@@ -159,6 +161,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
+      <LandingHeader />
       <div className="flex-grow flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <CardHeader>
