@@ -75,20 +75,20 @@
 }
 
 @keyframes scrollRightToLeft {
-  0%, 100% {
-    transform: translateX(100%);
+  from {
+    transform: translateX(100vw);
   }
-  50% {
+  to {
     transform: translateX(-100%);
   }
 }
 
 @keyframes scrollLeftToRight {
-  0%, 100% {
+  from {
     transform: translateX(-100%);
   }
-  50% {
-    transform: translateX(100%);
+  to {
+    transform: translateX(100vw);
   }
 }
 
