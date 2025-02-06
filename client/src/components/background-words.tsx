@@ -10,7 +10,13 @@ const phrases = [
   "What's a good zinc dosage for immunity?",
   "Are there benefits to ashwagandha supplements?",
   "Can fish oil help with joint health?",
-  "What's the ideal B-complex ratio?"
+  "What's the ideal B-complex ratio?",
+  "Do I need to add copper if I'm taking zinc?",
+  "Can N-Acetyl Cysteine cause drowsiness?",
+  "What supplements are good for improved VO2 max?",
+  "How much is too much vitamin A?",
+  "Which amino acids help with hormone therapy?",
+  "Convert the recommended dose for someone my weight"
 ];
 
 export const BackgroundWords: React.FC = () => {

@@ -40,7 +40,7 @@
 }
 
 .word-line {
-  @apply absolute whitespace-nowrap opacity-20 text-primary/80;
+  @apply absolute whitespace-nowrap opacity-25 text-primary/80;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
