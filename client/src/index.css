@@ -41,8 +41,8 @@
 
 .word-row {
   @apply relative w-full;
-  height: 12vh; /* Increased height for better spacing */
-  margin: 2vh 0; /* Vertical spacing between rows */
+  height: 8vh; /* Reduced height for more compact layout */
+  margin: 1vh 0; /* Reduced margin for more rows */
 }
 
 .word-line {
@@ -54,16 +54,16 @@
 
 .word-line.right-to-left {
   animation-name: scrollRightToLeft;
-  animation-duration: 40s; /* Increased duration */
+  animation-duration: 45s; /* Increased duration for smoother movement */
 }
 
 .word-line.left-to-right {
   animation-name: scrollLeftToRight;
-  animation-duration: 40s; /* Increased duration */
+  animation-duration: 45s; /* Increased duration for smoother movement */
 }
 
 .word-line.large {
-  @apply text-3xl;
+  @apply text-2xl; /* Slightly reduced for better fit */
 }
 
 .word-line.medium {
@@ -76,19 +76,19 @@
 
 @keyframes scrollRightToLeft {
   from {
-    transform: translateX(200vw); /* Start further right */
+    transform: translateX(100vw);
   }
   to {
-    transform: translateX(-200vw); /* End further left */
+    transform: translateX(-100vw);
   }
 }
 
 @keyframes scrollLeftToRight {
   from {
-    transform: translateX(-200vw); /* Start further left */
+    transform: translateX(-100vw);
   }
   to {
-    transform: translateX(200vw); /* End further right */
+    transform: translateX(100vw);
   }
 }
 

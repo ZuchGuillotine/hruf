@@ -28,15 +28,14 @@ const phrases = [
 ];
 
 export const BackgroundWords: React.FC = () => {
-  // Distribute phrases across rows with fixed spacing
   const createRows = () => {
     const shuffled = [...phrases].sort(() => Math.random() - 0.5);
     const rows: string[][] = [];
     let currentIndex = 0;
 
     while (currentIndex < shuffled.length) {
-      // For better spacing, alternate between 1 and 2 phrases per row
-      const phrasesInRow = (rows.length % 2 === 0) ? 2 : 1;
+      // Always use 2-3 phrases per row
+      const phrasesInRow = 2 + (rows.length % 2); // Alternates between 2 and 3
       const row = shuffled.slice(currentIndex, currentIndex + phrasesInRow);
       rows.push(row);
       currentIndex += phrasesInRow;
@@ -54,9 +53,9 @@ export const BackgroundWords: React.FC = () => {
         return (
           <div key={rowIndex} className="word-row">
             {row.map((phrase, phraseIndex) => {
-              // Calculate fixed spacing with wide gaps between phrases
-              const gap = row.length === 1 ? 0 : 150; // Large gap when multiple phrases
-              const initialOffset = row.length === 1 ? 0 : phraseIndex * gap;
+              // Calculate fixed spacing with moderate gaps between phrases
+              const gap = 40; // Reduced gap between phrases
+              const initialOffset = phraseIndex * gap;
 
               return (
                 <div
