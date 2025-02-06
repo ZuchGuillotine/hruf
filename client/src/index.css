@@ -32,7 +32,11 @@
 
 /* Background Word Animation Styles */
 .background-words-container {
-  @apply absolute inset-0 overflow-hidden pointer-events-none;
+  @apply absolute overflow-hidden pointer-events-none;
+  top: 4rem; /* Start below header (64px) */
+  left: 0;
+  right: 0;
+  bottom: 4rem; /* Stay above footer */
 }
 
 .word-line {
