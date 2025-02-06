@@ -50,8 +50,8 @@ export const BackgroundWords: React.FC = () => {
         const direction = rowIndex % 2 === 0 ? 'right-to-left' : 'left-to-right';
         const size = rowIndex % 3 === 0 ? 'large' : rowIndex % 3 === 1 ? 'medium' : 'small';
 
-        // Reduced offset to prevent overlap
-        const offset = (rowIndex * 15) % 100;
+        // Further reduced offset and adjusted spacing
+        const offset = (rowIndex * 10) % 100;
 
         return (
           <div key={rowIndex} className="word-row">
@@ -59,6 +59,7 @@ export const BackgroundWords: React.FC = () => {
               className={`word-line ${size} ${direction}`}
               style={{
                 animationDelay: `${-offset}s`,
+                top: '10%', 
                 transform: direction === 'right-to-left' 
                   ? `translateX(${100 - offset}%)` 
                   : `translateX(${-(100 - offset)}%)`
@@ -66,14 +67,15 @@ export const BackgroundWords: React.FC = () => {
             >
               {row}
             </div>
-            {/* Clone with adjusted timing and positioning */}
+            {/* Clone with increased spacing */}
             <div
               className={`word-line ${size} ${direction}`}
               style={{
-                animationDelay: `${-(offset + 60)}s`, // Increased delay between clones
+                animationDelay: `${-(offset + 60)}s`,
+                top: '10%', 
                 transform: direction === 'right-to-left' 
-                  ? `translateX(${150 - offset}%)` // Adjusted positioning
-                  : `translateX(${-(150 - offset)}%)` // Adjusted positioning
+                  ? `translateX(${180 - offset}%)` 
+                  : `translateX(${-(180 - offset)}%)` 
               }}
             >
               {row}

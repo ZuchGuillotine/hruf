@@ -33,16 +33,16 @@
 /* Background Word Animation Styles */
 .background-words-container {
   @apply absolute overflow-hidden pointer-events-none;
-  top: 4rem; /* Start below header */
+  top: 4rem;
   left: 0;
   right: 0;
-  bottom: 4rem; /* Stay above footer */
+  bottom: 4rem;
 }
 
 .word-row {
   @apply relative w-full;
-  height: 8vh; /* Reduced height for more compact layout */
-  margin: 1vh 0; /* Reduced margin for more rows */
+  height: 12vh; /* Increased height for more vertical spacing */
+  margin: 2vh 0; /* Increased margin between rows */
 }
 
 .word-line {
