@@ -49,21 +49,20 @@
   @apply absolute whitespace-nowrap opacity-20 text-primary/80;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  min-width: max-content;
 }
 
 .word-line.right-to-left {
   animation-name: scrollRightToLeft;
-  animation-duration: 45s; /* Increased duration for smoother movement */
+  animation-duration: 60s; /* Increased for smoother movement */
 }
 
 .word-line.left-to-right {
   animation-name: scrollLeftToRight;
-  animation-duration: 45s; /* Increased duration for smoother movement */
+  animation-duration: 60s; /* Increased for smoother movement */
 }
 
 .word-line.large {
-  @apply text-2xl; /* Slightly reduced for better fit */
+  @apply text-2xl;
 }
 
 .word-line.medium {
@@ -75,20 +74,20 @@
 }
 
 @keyframes scrollRightToLeft {
-  from {
-    transform: translateX(100vw);
+  0% {
+    transform: translateX(200vw);
   }
-  to {
-    transform: translateX(-100vw);
+  100% {
+    transform: translateX(-200vw);
   }
 }
 
 @keyframes scrollLeftToRight {
-  from {
-    transform: translateX(-100vw);
+  0% {
+    transform: translateX(-200vw);
   }
-  to {
-    transform: translateX(100vw);
+  100% {
+    transform: translateX(200vw);
   }
 }
 
