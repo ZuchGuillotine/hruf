@@ -59,7 +59,6 @@ export const BackgroundWords: React.FC = () => {
               className={`word-line ${size} ${direction}`}
               style={{
                 animationDelay: `${-offset}s`,
-                top: '10%', 
                 transform: direction === 'right-to-left' 
                   ? `translateX(${100 - offset}%)` 
                   : `translateX(${-(100 - offset)}%)`
@@ -72,7 +71,6 @@ export const BackgroundWords: React.FC = () => {
               className={`word-line ${size} ${direction}`}
               style={{
                 animationDelay: `${-(offset + 60)}s`,
-                top: '10%', 
                 transform: direction === 'right-to-left' 
                   ? `translateX(${180 - offset}%)` 
                   : `translateX(${-(180 - offset)}%)` 

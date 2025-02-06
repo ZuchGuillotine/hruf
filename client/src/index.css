@@ -41,8 +41,8 @@
 
 .word-row {
   @apply relative w-full;
-  height: 12vh; /* Increased height for more vertical spacing */
-  margin: 2vh 0; /* Increased margin between rows */
+  height: 8vh;
+  margin: 1vh 0;
 }
 
 .word-line {
