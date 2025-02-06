@@ -33,37 +33,42 @@
 /* Background Word Animation Styles */
 .background-words-container {
   @apply absolute overflow-hidden pointer-events-none;
-  top: 4rem; /* Start below header (64px) */
+  top: 4rem; /* Start below header */
   left: 0;
   right: 0;
   bottom: 4rem; /* Stay above footer */
 }
 
+.word-row {
+  @apply relative w-full;
+  height: 8vh; /* Reduced height for more rows */
+  margin: 1vh 0; /* Reduced margin for tighter spacing */
+}
+
 .word-line {
-  @apply absolute whitespace-nowrap opacity-25 text-primary/80;
+  @apply absolute whitespace-nowrap opacity-20 text-primary/80;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  /* Start from visible positions */
   transform: translateX(0);
+  min-width: max-content;
+  transition: opacity 0.3s ease;
 }
 
 .word-line.right-to-left {
-  right: 0;
   animation-name: scrollRightToLeft;
 }
 
 .word-line.left-to-right {
-  left: 0;
   animation-name: scrollLeftToRight;
 }
 
 .word-line.large {
-  @apply text-4xl;
-  animation-duration: 40s;
+  @apply text-3xl; /* Slightly reduced size */
+  animation-duration: 45s;
 }
 
 .word-line.medium {
-  @apply text-2xl;
+  @apply text-xl;
   animation-duration: 35s;
 }
 
@@ -74,19 +79,19 @@
 
 @keyframes scrollRightToLeft {
   0% {
-    transform: translateX(0);
+    transform: translateX(100%);
   }
   100% {
-    transform: translateX(-200%);
+    transform: translateX(-100%);
   }
 }
 
 @keyframes scrollLeftToRight {
   0% {
-    transform: translateX(0);
+    transform: translateX(-100%);
   }
   100% {
-    transform: translateX(200%);
+    transform: translateX(100%);
   }
 }
 
@@ -94,6 +99,6 @@
 @media (max-width: 640px) {
   .auth-card {
     @apply w-[90%] max-w-[320px] scale-90 transform;
-    margin: -2rem auto; /* Adjust vertical spacing */
+    margin: -2rem auto;
   }
 }
