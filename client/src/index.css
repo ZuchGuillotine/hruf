@@ -70,17 +70,23 @@
   animation-duration: 30s;
 }
 
-/* Adjusted vertical positions to prevent overlap */
-.word-line:nth-child(1) { top: 5%; }
-.word-line:nth-child(2) { top: 15%; }
-.word-line:nth-child(3) { top: 25%; }
-.word-line:nth-child(4) { top: 35%; }
-.word-line:nth-child(5) { top: 45%; }
-.word-line:nth-child(6) { top: 55%; }
-.word-line:nth-child(7) { top: 65%; }
-.word-line:nth-child(8) { top: 75%; }
-.word-line:nth-child(9) { top: 85%; }
-.word-line:nth-child(10) { top: 95%; }
+/* Adjusted vertical positions with smaller gaps for more lines */
+.word-line:nth-child(1) { top: 2%; }
+.word-line:nth-child(2) { top: 8%; }
+.word-line:nth-child(3) { top: 14%; }
+.word-line:nth-child(4) { top: 20%; }
+.word-line:nth-child(5) { top: 26%; }
+.word-line:nth-child(6) { top: 32%; }
+.word-line:nth-child(7) { top: 38%; }
+.word-line:nth-child(8) { top: 44%; }
+.word-line:nth-child(9) { top: 50%; }
+.word-line:nth-child(10) { top: 56%; }
+.word-line:nth-child(11) { top: 62%; }
+.word-line:nth-child(12) { top: 68%; }
+.word-line:nth-child(13) { top: 74%; }
+.word-line:nth-child(14) { top: 80%; }
+.word-line:nth-child(15) { top: 86%; }
+.word-line:nth-child(16) { top: 92%; }
 
 @keyframes scrollRightToLeft {
   0% {
