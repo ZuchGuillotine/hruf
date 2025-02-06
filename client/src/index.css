@@ -76,19 +76,19 @@
 
 @keyframes scrollRightToLeft {
   from {
-    transform: translateX(100vw);
+    transform: translateX(200vw); /* Start further right */
   }
   to {
-    transform: translateX(-100%);
+    transform: translateX(-200%); /* End further left */
   }
 }
 
 @keyframes scrollLeftToRight {
   from {
-    transform: translateX(-100%);
+    transform: translateX(-200%); /* Start further left */
   }
   to {
-    transform: translateX(100vw);
+    transform: translateX(200vw); /* End further right */
   }
 }
 

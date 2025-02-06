@@ -36,7 +36,7 @@ export const BackgroundWords: React.FC = () => {
     while (currentIndex < shuffled.length) {
       const phrasesInRow = 2 + (rows.length % 2); 
       const rowPhrases = shuffled.slice(currentIndex, currentIndex + phrasesInRow);
-      const combinedPhrase = rowPhrases.join('            •            ');
+      const combinedPhrase = rowPhrases.join('                •                '); 
       rows.push(combinedPhrase);
       currentIndex += phrasesInRow;
     }
@@ -50,30 +50,20 @@ export const BackgroundWords: React.FC = () => {
         const direction = rowIndex % 2 === 0 ? 'right-to-left' : 'left-to-right';
         const size = rowIndex % 3 === 0 ? 'large' : rowIndex % 3 === 1 ? 'medium' : 'small';
 
-        // Further reduced offset and adjusted spacing
-        const offset = (rowIndex * 10) % 100;
-
         return (
           <div key={rowIndex} className="word-row">
             <div
               className={`word-line ${size} ${direction}`}
               style={{
-                animationDelay: `${-offset}s`,
-                transform: direction === 'right-to-left' 
-                  ? `translateX(${100 - offset}%)` 
-                  : `translateX(${-(100 - offset)}%)`
+                animationDelay: `${-(rowIndex * 20)}s`, 
               }}
             >
               {row}
             </div>
-            {/* Clone with increased spacing */}
             <div
               className={`word-line ${size} ${direction}`}
               style={{
-                animationDelay: `${-(offset + 60)}s`,
-                transform: direction === 'right-to-left' 
-                  ? `translateX(${180 - offset}%)` 
-                  : `translateX(${-(180 - offset)}%)` 
+                animationDelay: `${-(rowIndex * 20 + 60)}s`, 
               }}
             >
               {row}
