@@ -43,7 +43,7 @@ type GoogleResponse = {
 };
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false); // Changed default to false for signup
   const [verificationSent, setVerificationSent] = useState(false);
   const { login, register, googleLogin } = useUser();
   const { toast } = useToast();
@@ -95,7 +95,7 @@ export default function AuthPage() {
         await login(data);
       } else {
         const response = await register(data);
-        if (response.requiresVerification) {
+        if (response.status === 'verification_required') { // Changed to check status
           setVerificationSent(true);
         }
       }
@@ -164,11 +164,11 @@ export default function AuthPage() {
       <div className="flex-grow flex items-center justify-center px-4 relative z-10">
         <Card className="w-full max-w-[380px]">
           <CardHeader>
-            <CardTitle>{isLogin ? "Login" : "Register"}</CardTitle>
+            <CardTitle>{isLogin ? "Login" : "Create Account"}</CardTitle>
             <CardDescription>
               {isLogin
                 ? "Sign in to your account using your email or username"
-                : "Create your account to get started"}
+                : "Join StackTracker to start managing your supplements"}
             </CardDescription>
           </CardHeader>
           <form onSubmit={form.handleSubmit(onSubmit)}>

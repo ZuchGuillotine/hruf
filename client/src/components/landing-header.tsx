@@ -1,6 +1,10 @@
 import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { useUser } from "@/hooks/use-user";
 
 export default function LandingHeader() {
+  const { user } = useUser();
+
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -22,6 +26,15 @@ export default function LandingHeader() {
               Learn
             </a>
           </Link>
+          {!user && (
+            <Button variant="ghost" asChild>
+              <Link href="/auth">
+                <a className="text-foreground hover:text-foreground/80 transition-colors">
+                  Log in
+                </a>
+              </Link>
+            </Button>
+          )}
         </nav>
       </div>
     </header>
