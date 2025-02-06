@@ -162,7 +162,7 @@ export default function AuthPage() {
       <LandingHeader />
       <BackgroundWords />
       <div className="flex-grow flex items-center justify-center px-4 relative z-10">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-[380px]">
           <CardHeader>
             <CardTitle>{isLogin ? "Login" : "Register"}</CardTitle>
             <CardDescription>
@@ -172,7 +172,7 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {!isLogin && (
                 <div className="space-y-2">
                   <label htmlFor="username" className="text-sm font-medium">
