@@ -163,12 +163,12 @@ export default function AuthPage() {
       <BackgroundWords />
       <div className="flex-grow flex items-center justify-center px-4 relative z-10">
         <Card className="w-full max-w-[380px]">
-          <CardHeader>
-            <CardTitle>{isLogin ? "Login" : "Create Account"}</CardTitle>
+          <CardHeader className="text-center">
+            <CardTitle>{isLogin ? "Login" : "Signup"}</CardTitle>
             <CardDescription>
               {isLogin
                 ? "Sign in to your account using your email or username"
-                : "Join StackTracker to start managing your supplements"}
+                : "Join StackTracker to improve your supplementation protocol journey"}
             </CardDescription>
           </CardHeader>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -230,7 +230,7 @@ export default function AuthPage() {
                 {form.formState.isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isLogin ? "Sign In" : "Create Account"}
+                {isLogin ? "Sign In" : "Signup"}
               </Button>
               <Button
                 type="button"
