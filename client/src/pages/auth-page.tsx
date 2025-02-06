@@ -162,7 +162,7 @@ export default function AuthPage() {
       <LandingHeader />
       <BackgroundWords />
       <div className="flex-grow flex items-center justify-center px-4 relative z-10">
-        <Card className="w-full max-w-[380px]">
+        <Card className="auth-card w-full max-w-[380px]">
           <CardHeader className="text-center">
             <CardTitle>{isLogin ? "Login" : "Signup"}</CardTitle>
             <CardDescription>
