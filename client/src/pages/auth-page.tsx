@@ -17,6 +17,7 @@ import Footer from "@/components/footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import LandingHeader from "@/components/landing-header";
+import BackgroundWords from "@/components/background-words";
 
 declare global {
   interface Window {
@@ -85,7 +86,6 @@ export default function AuthPage() {
       }
     };
 
-    // Small delay to ensure DOM is ready
     setTimeout(initializeGoogle, 100);
   }, [googleLogin]);
 
@@ -102,10 +102,8 @@ export default function AuthPage() {
     } catch (error: any) {
       console.error('Registration error:', error);
 
-      // Enhanced error handling for registration
       let errorMessage = "Registration failed. Please try again.";
 
-      // Handle different types of error responses
       if (error.response?.data) {
         errorMessage = error.response.data.message || errorMessage;
       } else if (error.message) {
@@ -116,7 +114,7 @@ export default function AuthPage() {
         variant: "destructive",
         title: "Registration Error",
         description: errorMessage,
-        duration: 5000, // Show for 5 seconds
+        duration: 5000,
       });
     }
   };
@@ -160,9 +158,10 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
+    <div className="min-h-screen flex flex-col bg-[#e8f3e8] relative">
       <LandingHeader />
-      <div className="flex-grow flex items-center justify-center px-4">
+      <BackgroundWords />
+      <div className="flex-grow flex items-center justify-center px-4 relative z-10">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>{isLogin ? "Login" : "Register"}</CardTitle>

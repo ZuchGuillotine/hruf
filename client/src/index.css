@@ -29,3 +29,41 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Background Word Animation Styles */
+.background-words-container {
+  @apply absolute inset-0 overflow-hidden pointer-events-none;
+}
+
+.word-line {
+  @apply absolute whitespace-nowrap opacity-20 text-primary/80;
+  right: -100%;
+  animation: scrollRightToLeft linear infinite;
+}
+
+.word-line.large {
+  @apply text-4xl;
+  top: 10%;
+  animation-duration: 40s;
+}
+
+.word-line.medium {
+  @apply text-2xl;
+  top: 30%;
+  animation-duration: 35s;
+}
+
+.word-line.small {
+  @apply text-lg;
+  top: 50%;
+  animation-duration: 30s;
+}
+
+@keyframes scrollRightToLeft {
+  0% {
+    right: -100%;
+  }
+  100% {
+    right: 100%;
+  }
+}
