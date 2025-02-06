@@ -37,27 +37,46 @@
 
 .word-line {
   @apply absolute whitespace-nowrap opacity-20 text-primary/80;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.word-line.right-to-left {
   right: -100%;
-  animation: scrollRightToLeft linear infinite;
+  animation-name: scrollRightToLeft;
+}
+
+.word-line.left-to-right {
+  left: -100%;
+  animation-name: scrollLeftToRight;
 }
 
 .word-line.large {
   @apply text-4xl;
-  top: 10%;
   animation-duration: 40s;
 }
 
 .word-line.medium {
   @apply text-2xl;
-  top: 30%;
   animation-duration: 35s;
 }
 
 .word-line.small {
   @apply text-lg;
-  top: 50%;
   animation-duration: 30s;
 }
+
+/* Adjusted vertical positions to prevent overlap */
+.word-line:nth-child(1) { top: 5%; }
+.word-line:nth-child(2) { top: 15%; }
+.word-line:nth-child(3) { top: 25%; }
+.word-line:nth-child(4) { top: 35%; }
+.word-line:nth-child(5) { top: 45%; }
+.word-line:nth-child(6) { top: 55%; }
+.word-line:nth-child(7) { top: 65%; }
+.word-line:nth-child(8) { top: 75%; }
+.word-line:nth-child(9) { top: 85%; }
+.word-line:nth-child(10) { top: 95%; }
 
 @keyframes scrollRightToLeft {
   0% {
@@ -65,5 +84,14 @@
   }
   100% {
     right: 100%;
+  }
+}
+
+@keyframes scrollLeftToRight {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
   }
 }
