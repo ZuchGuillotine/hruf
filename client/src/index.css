@@ -54,12 +54,12 @@
 
 .word-line.right-to-left {
   animation-name: scrollRightToLeft;
-  animation-duration: 60s;
+  animation-duration: 120s; /* Doubled duration for slower movement */
 }
 
 .word-line.left-to-right {
   animation-name: scrollLeftToRight;
-  animation-duration: 60s;
+  animation-duration: 120s; /* Doubled duration for slower movement */
 }
 
 .word-line.large {
