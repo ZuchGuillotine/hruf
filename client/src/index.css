@@ -75,20 +75,20 @@
 }
 
 @keyframes scrollRightToLeft {
-  0% {
-    transform: translateX(var(--initial-position, 0));
+  0%, 100% {
+    transform: translateX(100%);
   }
-  100% {
-    transform: translateX(-200vw);
+  50% {
+    transform: translateX(-100%);
   }
 }
 
 @keyframes scrollLeftToRight {
-  0% {
-    transform: translateX(var(--initial-position, 0));
+  0%, 100% {
+    transform: translateX(-100%);
   }
-  100% {
-    transform: translateX(200vw);
+  50% {
+    transform: translateX(100%);
   }
 }
 

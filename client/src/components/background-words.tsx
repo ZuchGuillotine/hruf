@@ -50,16 +50,30 @@ export const BackgroundWords: React.FC = () => {
         const direction = rowIndex % 2 === 0 ? 'right-to-left' : 'left-to-right';
         const size = rowIndex % 3 === 0 ? 'large' : rowIndex % 3 === 1 ? 'medium' : 'small';
 
-        const initialPosition = -25 + (rowIndex * 15); 
+        // Calculate offset for staggered appearance
+        const offset = (rowIndex * 20) % 100;
 
         return (
           <div key={rowIndex} className="word-row">
             <div
               className={`word-line ${size} ${direction}`}
               style={{
+                animationDelay: `${-offset}s`, // Stagger the animation start
                 transform: direction === 'right-to-left' 
-                  ? `translateX(${initialPosition}%)` 
-                  : `translateX(${-initialPosition}%)`,
+                  ? `translateX(${100 - offset}%)` 
+                  : `translateX(${-(100 - offset)}%)`
+              }}
+            >
+              {row}
+            </div>
+            {/* Clone for seamless infinite scroll */}
+            <div
+              className={`word-line ${size} ${direction}`}
+              style={{
+                animationDelay: `${-(offset + 30)}s`, // Offset for the clone
+                transform: direction === 'right-to-left' 
+                  ? `translateX(${200 - offset}%)` 
+                  : `translateX(${-(200 - offset)}%)`
               }}
             >
               {row}
