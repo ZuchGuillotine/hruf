@@ -35,8 +35,8 @@ export const BackgroundWords: React.FC = () => {
     let currentIndex = 0;
 
     while (currentIndex < shuffled.length) {
-      // Determine number of phrases for this row (1-3)
-      const phrasesInRow = Math.floor(Math.random() * 2) + 1; // 1-2 phrases per row for better spacing
+      // For better spacing, alternate between 1 and 2 phrases per row
+      const phrasesInRow = (rows.length % 2 === 0) ? 2 : 1;
       const row = shuffled.slice(currentIndex, currentIndex + phrasesInRow);
       rows.push(row);
       currentIndex += phrasesInRow;
@@ -54,17 +54,17 @@ export const BackgroundWords: React.FC = () => {
         return (
           <div key={rowIndex} className="word-row">
             {row.map((phrase, phraseIndex) => {
-              // Calculate fixed spacing between phrases
-              const spacing = 100 / row.length;
-              const startPosition = phraseIndex * spacing;
+              // Calculate fixed spacing with wide gaps between phrases
+              const gap = row.length === 1 ? 0 : 150; // Large gap when multiple phrases
+              const initialOffset = row.length === 1 ? 0 : phraseIndex * gap;
 
               return (
                 <div
                   key={`${rowIndex}-${phraseIndex}`}
                   className={`word-line ${size} ${direction}`}
                   style={{
-                    animationDelay: '0s', // No delay, start immediately
-                    [direction === 'right-to-left' ? 'right' : 'left']: `${startPosition}%`,
+                    animationDelay: '0s',
+                    [direction === 'right-to-left' ? 'right' : 'left']: `${initialOffset}%`,
                   }}
                 >
                   {phrase}
