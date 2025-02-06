@@ -16,7 +16,13 @@ const phrases = [
   "What supplements are good for improved VO2 max?",
   "How much is too much vitamin A?",
   "Which amino acids help with hormone therapy?",
-  "Convert the recommended dose for someone my weight"
+  "Convert the recommended dose for someone my weight",
+  "Is turmeric really effective for reducing inflammation?",
+  "Is there a recommended collagen supplement for stronger joints?",
+  "Could NAC (N-Acetyl Cysteine) improve liver function?",
+  "Are herbal supplements helpful for managing stress levels?",
+  "What's the safest way to boost vitamin B12 intake?",
+  "Does CoQ10 play a key role in supporting heart health?"
 ];
 
 export const BackgroundWords: React.FC = () => {
