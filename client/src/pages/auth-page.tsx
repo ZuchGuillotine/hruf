@@ -168,7 +168,7 @@ export default function AuthPage() {
             <CardDescription>
               {isLogin
                 ? "Sign in to your account using your email or username"
-                : "Join StackTracker to improve your supplementation protocol journey"}
+                : "Join StackTracker to improve your supplementation protocol"}
             </CardDescription>
           </CardHeader>
           <form onSubmit={form.handleSubmit(onSubmit)}>
