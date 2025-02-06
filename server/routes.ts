@@ -23,11 +23,14 @@ export function registerRoutes(app: Express): Server {
       await sendWelcomeEmail(email, "Test User");
       res.json({ message: "Test email sent successfully" });
     } catch (error) {
-      console.error("Test email error:", error);
+      console.error("Test email error:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        details: error instanceof Error && 'response' in error ? (error as any).response?.body : undefined
+      });
       res.status(500).json({ 
         error: "Failed to send test email",
-        details: error.message,
-        response: error.response?.body
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -368,13 +371,25 @@ export function registerRoutes(app: Express): Server {
           .where(eq(users.isAdmin, false))
           .returning();
 
+        console.log('Successfully deleted non-admin users:', {
+          count: result.length,
+          timestamp: new Date().toISOString()
+        });
+
         res.json({ 
           message: `Successfully deleted ${result.length} non-admin users`,
           deletedCount: result.length 
         });
       } catch (error) {
-        console.error("Error deleting non-admin users:", error);
-        res.status(500).send("Failed to delete non-admin users");
+        console.error("Error deleting non-admin users:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        res.status(500).json({
+          error: "Failed to delete non-admin users",
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     });
   

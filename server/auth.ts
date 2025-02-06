@@ -34,9 +34,10 @@ declare global {
       id: number;
       username: string;
       email: string;
-      name?: string;
-      phoneNumber?: string;
-      isPro?: boolean;
+      name?: string | null;
+      phoneNumber?: string | null;
+      isPro?: boolean | null;
+      isAdmin?: boolean | null;
     }
   }
 }
