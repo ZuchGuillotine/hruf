@@ -16,22 +16,16 @@ export default function LandingHeader() {
           </Link>
         </div>
         <nav className="flex items-center space-x-6">
-          <Link href="/about">
-            <a className="text-foreground/60 hover:text-foreground transition-colors">
-              About
-            </a>
+          <Link href="/about" className="text-foreground/60 hover:text-foreground transition-colors">
+            About
           </Link>
-          <Link href="/learn">
-            <a className="text-foreground/60 hover:text-foreground transition-colors">
-              Learn
-            </a>
+          <Link href="/learn" className="text-foreground/60 hover:text-foreground transition-colors">
+            Learn
           </Link>
           {!user && (
             <Button variant="ghost" asChild>
-              <Link href="/auth">
-                <a className="text-foreground hover:text-foreground/80 transition-colors">
-                  Log in
-                </a>
+              <Link href="/auth" className="text-foreground hover:text-foreground/80 transition-colors">
+                Log in
               </Link>
             </Button>
           )}
