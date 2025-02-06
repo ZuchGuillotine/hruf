@@ -49,16 +49,17 @@
   @apply absolute whitespace-nowrap opacity-20 text-primary/80;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+  width: max-content;
 }
 
 .word-line.right-to-left {
   animation-name: scrollRightToLeft;
-  animation-duration: 60s; /* Increased for smoother movement */
+  animation-duration: 60s;
 }
 
 .word-line.left-to-right {
   animation-name: scrollLeftToRight;
-  animation-duration: 60s; /* Increased for smoother movement */
+  animation-duration: 60s;
 }
 
 .word-line.large {
@@ -75,7 +76,7 @@
 
 @keyframes scrollRightToLeft {
   0% {
-    transform: translateX(200vw);
+    transform: translateX(var(--initial-position, 0));
   }
   100% {
     transform: translateX(-200vw);
@@ -84,7 +85,7 @@
 
 @keyframes scrollLeftToRight {
   0% {
-    transform: translateX(-200vw);
+    transform: translateX(var(--initial-position, 0));
   }
   100% {
     transform: translateX(200vw);

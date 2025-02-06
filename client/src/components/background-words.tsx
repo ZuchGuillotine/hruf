@@ -34,8 +34,7 @@ export const BackgroundWords: React.FC = () => {
     let currentIndex = 0;
 
     while (currentIndex < shuffled.length) {
-      // Get 2-3 phrases for this row
-      const phrasesInRow = 2 + (rows.length % 2); // Alternates between 2 and 3
+      const phrasesInRow = 2 + (rows.length % 2); 
       const rowPhrases = shuffled.slice(currentIndex, currentIndex + phrasesInRow);
       const combinedPhrase = rowPhrases.join('            •            ');
       rows.push(combinedPhrase);
@@ -51,10 +50,17 @@ export const BackgroundWords: React.FC = () => {
         const direction = rowIndex % 2 === 0 ? 'right-to-left' : 'left-to-right';
         const size = rowIndex % 3 === 0 ? 'large' : rowIndex % 3 === 1 ? 'medium' : 'small';
 
+        const initialPosition = -25 + (rowIndex * 15); 
+
         return (
           <div key={rowIndex} className="word-row">
             <div
               className={`word-line ${size} ${direction}`}
+              style={{
+                transform: direction === 'right-to-left' 
+                  ? `translateX(${initialPosition}%)` 
+                  : `translateX(${-initialPosition}%)`,
+              }}
             >
               {row}
             </div>
