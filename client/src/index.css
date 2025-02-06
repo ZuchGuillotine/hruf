@@ -41,57 +41,54 @@
 
 .word-row {
   @apply relative w-full;
-  height: 8vh; /* Reduced height for more rows */
-  margin: 1vh 0; /* Reduced margin for tighter spacing */
+  height: 10vh; /* Increased height for better spacing */
+  margin: 2vh 0; /* Vertical spacing between rows */
 }
 
 .word-line {
   @apply absolute whitespace-nowrap opacity-20 text-primary/80;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  transform: translateX(0);
   min-width: max-content;
-  transition: opacity 0.3s ease;
 }
 
 .word-line.right-to-left {
   animation-name: scrollRightToLeft;
+  animation-duration: 30s;
 }
 
 .word-line.left-to-right {
   animation-name: scrollLeftToRight;
+  animation-duration: 30s;
 }
 
 .word-line.large {
-  @apply text-3xl; /* Slightly reduced size */
-  animation-duration: 45s;
+  @apply text-3xl;
 }
 
 .word-line.medium {
   @apply text-xl;
-  animation-duration: 35s;
 }
 
 .word-line.small {
   @apply text-lg;
-  animation-duration: 30s;
 }
 
 @keyframes scrollRightToLeft {
-  0% {
-    transform: translateX(100%);
+  from {
+    transform: translateX(100vw);
   }
-  100% {
+  to {
     transform: translateX(-100%);
   }
 }
 
 @keyframes scrollLeftToRight {
-  0% {
+  from {
     transform: translateX(-100%);
   }
-  100% {
-    transform: translateX(100%);
+  to {
+    transform: translateX(100vw);
   }
 }
 

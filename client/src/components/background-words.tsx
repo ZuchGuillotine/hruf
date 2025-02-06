@@ -28,7 +28,7 @@ const phrases = [
 ];
 
 export const BackgroundWords: React.FC = () => {
-  // Distribute phrases across rows with varied counts
+  // Distribute phrases across rows with fixed spacing
   const createRows = () => {
     const shuffled = [...phrases].sort(() => Math.random() - 0.5);
     const rows: string[][] = [];
@@ -36,7 +36,7 @@ export const BackgroundWords: React.FC = () => {
 
     while (currentIndex < shuffled.length) {
       // Determine number of phrases for this row (1-3)
-      const phrasesInRow = Math.floor(Math.random() * 3) + 1;
+      const phrasesInRow = Math.floor(Math.random() * 2) + 1; // 1-2 phrases per row for better spacing
       const row = shuffled.slice(currentIndex, currentIndex + phrasesInRow);
       rows.push(row);
       currentIndex += phrasesInRow;
@@ -50,23 +50,21 @@ export const BackgroundWords: React.FC = () => {
       {createRows().map((row, rowIndex) => {
         const direction = rowIndex % 2 === 0 ? 'right-to-left' : 'left-to-right';
         const size = rowIndex % 3 === 0 ? 'large' : rowIndex % 3 === 1 ? 'medium' : 'small';
-        const baseDelay = Math.random() * 5; // Random base delay for natural appearance
 
         return (
           <div key={rowIndex} className="word-row">
             {row.map((phrase, phraseIndex) => {
-              // Calculate staggered delays and positions
-              const phraseDelay = baseDelay + (phraseIndex * 1.5) + (Math.random() * 2);
-              const startOffsetPercent = (phraseIndex * 40) + (Math.random() * 20);
+              // Calculate fixed spacing between phrases
+              const spacing = 100 / row.length;
+              const startPosition = phraseIndex * spacing;
 
               return (
                 <div
                   key={`${rowIndex}-${phraseIndex}`}
                   className={`word-line ${size} ${direction}`}
                   style={{
-                    animationDelay: `${phraseDelay}s`,
-                    top: `${Math.random() * 2}vh`, // Small random vertical offset within row
-                    [direction === 'right-to-left' ? 'right' : 'left']: `${startOffsetPercent}%`,
+                    animationDelay: '0s', // No delay, start immediately
+                    [direction === 'right-to-left' ? 'right' : 'left']: `${startPosition}%`,
                   }}
                 >
                   {phrase}
