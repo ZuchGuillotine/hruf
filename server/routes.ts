@@ -313,6 +313,38 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
+    try {
+      const date = req.params.date;
+      const logs = await db
+        .select()
+        .from(supplementLogs)
+        .where(
+          and(
+            eq(supplementLogs.userId, req.user!.id),
+            sql`DATE(${supplementLogs.timestamp}) = ${date}`
+          )
+        );
+
+      // Format the logs with supplement details
+      const formattedLogs = {
+        supplements: logs.map(log => ({
+          supplementId: log.supplementId,
+          name: log.supplementName,
+          dosage: log.dosage,
+          frequency: log.frequency,
+          taken: log.taken,
+          timestamp: log.timestamp
+        }))
+      };
+
+      res.json(formattedLogs);
+    } catch (error) {
+      console.error("Error fetching supplement logs by date:", error);
+      res.status(500).send("Failed to fetch supplement logs");
+    }
+  });
+
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
 

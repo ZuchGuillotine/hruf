@@ -7,6 +7,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ProfilePage from "@/pages/profile";
 import HealthStatsPage from "@/pages/health-stats";
+import SupplementHistory from "@/pages/supplement-history";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import AdminSupplements from "@/pages/admin/supplements";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
+      <Route path="/supplement-history" component={SupplementHistory} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
