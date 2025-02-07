@@ -43,7 +43,10 @@ type GoogleResponse = {
 };
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(window.location.search.includes('login=true'));
+  const [isLogin, setIsLogin] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('login') === 'true';
+  });
   const [verificationSent, setVerificationSent] = useState(false);
   const { login, register, googleLogin } = useUser();
   const { toast } = useToast();
