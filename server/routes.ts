@@ -317,24 +317,36 @@ export function registerRoutes(app: Express): Server {
     try {
       const date = req.params.date;
       const logs = await db
-        .select()
+        .select({
+          id: supplementLogs.id,
+          supplementId: supplementLogs.supplementId,
+          takenAt: supplementLogs.takenAt,
+          notes: supplementLogs.notes,
+          effects: supplementLogs.effects,
+          name: supplements.name,
+          dosage: supplements.dosage,
+          frequency: supplements.frequency
+        })
         .from(supplementLogs)
+        .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.timestamp}) = ${date}`
+            sql`DATE(${supplementLogs.takenAt}) = ${date}`
           )
         );
 
-      // Format the logs with supplement details
+      // Format the logs for the frontend
       const formattedLogs = {
         supplements: logs.map(log => ({
           supplementId: log.supplementId,
-          name: log.supplementName,
+          name: log.name,
           dosage: log.dosage,
           frequency: log.frequency,
-          taken: log.taken,
-          timestamp: log.timestamp
+          taken: true, // If there's a log, it means it was taken
+          takenAt: log.takenAt,
+          notes: log.notes,
+          effects: log.effects
         }))
       };
 
