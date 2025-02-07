@@ -85,7 +85,9 @@ export default function SupplementList() {
         dosage: supplement.dosage,
         frequency: supplement.frequency,
         taken: true,
-        takenAt: new Date().toISOString(),
+        takenAt: new Date().toISOString(), // Ensure we're creating a new Date object
+        notes: null,
+        effects: null
       }));
 
       // Save supplement logs to the database
