@@ -39,7 +39,6 @@ export default function SupplementList() {
   const [supplementStates, setSupplementStates] = useState<Record<number, { taken: boolean }>>({});
   const { toast } = useToast();
 
-  // Initialize supplement states and check for missing logs
   useEffect(() => {
     const newStates = supplements.reduce((acc, supplement) => {
       if (!supplementStates[supplement.id]) {
@@ -79,13 +78,14 @@ export default function SupplementList() {
       });
 
       // Create logs with complete supplement information
+      const currentTime = new Date();
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
         name: supplement.name,
         dosage: supplement.dosage,
         frequency: supplement.frequency,
         taken: true,
-        takenAt: new Date().toISOString(), // Ensure we're creating a new Date object
+        takenAt: currentTime,
         notes: null,
         effects: null
       }));
