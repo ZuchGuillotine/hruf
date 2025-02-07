@@ -300,16 +300,33 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/supplement-logs", requireAuth, async (req, res) => {
     try {
-      const [newLog] = await db
-        .insert(supplementLogs)
-        .values({
-          ...req.body,
-          userId: req.user!.id,
+      const { logs } = req.body;
+
+      if (!Array.isArray(logs)) {
+        return res.status(400).json({ error: "Logs must be an array" });
+      }
+
+      // Insert all logs for the current day
+      const insertedLogs = await Promise.all(
+        logs.map(async (log) => {
+          const [newLog] = await db
+            .insert(supplementLogs)
+            .values({
+              userId: req.user!.id,
+              supplementId: log.supplementId,
+              takenAt: log.takenAt,
+              notes: log.notes || null,
+              effects: log.effects || null,
+            })
+            .returning();
+          return newLog;
         })
-        .returning();
-      res.json(newLog);
+      );
+
+      res.json(insertedLogs);
     } catch (error) {
-      res.status(500).send("Failed to create supplement log");
+      console.error("Error creating supplement logs:", error);
+      res.status(500).send("Failed to create supplement logs");
     }
   });
 

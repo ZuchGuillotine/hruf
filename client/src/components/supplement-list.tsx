@@ -50,7 +50,6 @@ export default function SupplementList() {
       return acc;
     }, {} as Record<number, { taken: boolean }>);
 
-    // Only update state if there are actual changes
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
     }
@@ -71,6 +70,19 @@ export default function SupplementList() {
 
   const handleSaveChanges = async () => {
     try {
+      // Get only the supplements that were marked as taken
+      const takenSupplements = supplements.filter(supp => supplementStates[supp.id]?.taken);
+
+      // Create logs with complete supplement information
+      const logsToSave = takenSupplements.map(supplement => ({
+        supplementId: supplement.id,
+        name: supplement.name,
+        dosage: supplement.dosage,
+        frequency: supplement.frequency,
+        taken: true,
+        takenAt: new Date().toISOString(),
+      }));
+
       // Save supplement logs to the database
       const response = await fetch('/api/supplement-logs', {
         method: 'POST',
@@ -78,11 +90,7 @@ export default function SupplementList() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          logs: Object.entries(supplementStates).map(([supplementId, state]) => ({
-            supplementId: parseInt(supplementId),
-            taken: state.taken,
-            takenAt: new Date().toISOString(),
-          })),
+          logs: logsToSave
         }),
       });
 
