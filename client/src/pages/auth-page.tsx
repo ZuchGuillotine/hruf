@@ -45,7 +45,7 @@ type GoogleResponse = {
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('login') === 'true';
+    return params.has('login');
   });
   const [verificationSent, setVerificationSent] = useState(false);
   const { login, register, googleLogin } = useUser();
