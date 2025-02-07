@@ -73,6 +73,11 @@ export default function SupplementList() {
       // Get only the supplements that were marked as taken
       const takenSupplements = supplements.filter(supp => supplementStates[supp.id]?.taken);
 
+      console.log('Preparing to save supplement logs:', {
+        supplementCount: takenSupplements.length,
+        timestamp: new Date().toISOString()
+      });
+
       // Create logs with complete supplement information
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
@@ -95,8 +100,15 @@ export default function SupplementList() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save supplement logs');
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to save supplement logs');
       }
+
+      const savedLogs = await response.json();
+      console.log('Successfully saved logs:', {
+        count: savedLogs.length,
+        timestamp: new Date().toISOString()
+      });
 
       setShowSaveConfirmation(false);
       toast({
@@ -104,10 +116,14 @@ export default function SupplementList() {
         description: "Your supplement intake has been logged successfully.",
       });
     } catch (error) {
-      console.error('Error saving changes:', error);
+      console.error('Error saving changes:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+
       toast({
         title: "Error",
-        description: "Failed to save your supplement intake. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save your supplement intake. Please try again.",
         variant: "destructive",
       });
     }

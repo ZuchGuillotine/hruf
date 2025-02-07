@@ -306,27 +306,56 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "Logs must be an array" });
       }
 
+      console.log('Attempting to save supplement logs:', {
+        userId: req.user!.id,
+        logCount: logs.length,
+        sampleLog: logs[0],
+        timestamp: new Date().toISOString()
+      });
+
       // Insert all logs for the current day
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
-          const [newLog] = await db
-            .insert(supplementLogs)
-            .values({
-              userId: req.user!.id,
+          try {
+            const [newLog] = await db
+              .insert(supplementLogs)
+              .values({
+                userId: req.user!.id,
+                supplementId: log.supplementId,
+                takenAt: log.takenAt,
+                notes: log.notes || null,
+                effects: log.effects || null,
+              })
+              .returning();
+            return newLog;
+          } catch (error) {
+            console.error('Error inserting individual log:', {
+              error: error instanceof Error ? error.message : 'Unknown error',
               supplementId: log.supplementId,
-              takenAt: log.takenAt,
-              notes: log.notes || null,
-              effects: log.effects || null,
-            })
-            .returning();
-          return newLog;
+              timestamp: new Date().toISOString()
+            });
+            throw error;
+          }
         })
       );
 
+      console.log('Successfully saved supplement logs:', {
+        count: insertedLogs.length,
+        timestamp: new Date().toISOString()
+      });
+
       res.json(insertedLogs);
     } catch (error) {
-      console.error("Error creating supplement logs:", error);
-      res.status(500).send("Failed to create supplement logs");
+      console.error("Error creating supplement logs:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+
+      res.status(500).json({
+        error: "Failed to create supplement logs",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
