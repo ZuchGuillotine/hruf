@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart, Database, Home, BookOpen, Info } from 'lucide-react';
+import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -103,6 +103,12 @@ export default function Header() {
               <DropdownMenuItem className="cursor-pointer">
                 <LineChart className="mr-2 h-4 w-4" />
                 <span>Health Stats</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/supplement-history">
+              <DropdownMenuItem className="cursor-pointer">
+                <History className="mr-2 h-4 w-4" />
+                <span>Supplement History</span>
               </DropdownMenuItem>
             </Link>
             {user?.isAdmin && (

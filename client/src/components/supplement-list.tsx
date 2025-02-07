@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import SupplementForm from "./supplement-form";
 import { useState, useEffect } from "react";
 import React from "react";
+import { Link } from "wouter";
 
 export default function SupplementList() {
   const { supplements, isLoading, deleteSupplement, updateSupplement } = useSupplements();
@@ -189,8 +190,13 @@ export default function SupplementList() {
         ))}
       </div>
 
-      {/* Save Button and Confirmation Dialog */}
-      <div className="mt-6 flex justify-end">
+      {/* Save Button and History Link */}
+      <div className="mt-6 flex justify-between">
+        <Link href="/supplement-history">
+          <Button className="bg-white text-[#1b4332] hover:bg-white/90">
+            My History
+          </Button>
+        </Link>
         <AlertDialog open={showSaveConfirmation} onOpenChange={setShowSaveConfirmation}>
           <AlertDialogTrigger asChild>
             <Button className="bg-white text-[#1b4332] hover:bg-white/90">
