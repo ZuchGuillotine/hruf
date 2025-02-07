@@ -45,8 +45,8 @@ type GoogleResponse = {
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    // Default to login form if no parameter is specified
-    return !params.has('signup');
+    // Default to signup form unless login parameter is present
+    return params.has('login');
   });
   const [verificationSent, setVerificationSent] = useState(false);
   const { login, register, googleLogin } = useUser();
@@ -99,7 +99,7 @@ export default function AuthPage() {
         await login(data);
       } else {
         const response = await register(data);
-        if (response.status === 'verification_required') { // Changed to check status
+        if (response.status === 'verification_required') {
           setVerificationSent(true);
         }
       }
