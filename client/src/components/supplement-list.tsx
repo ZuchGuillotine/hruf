@@ -26,8 +26,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import SupplementForm from "./supplement-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 
 export default function SupplementList() {
@@ -35,11 +36,11 @@ export default function SupplementList() {
   const [editingSupplement, setEditingSupplement] = useState<number | null>(null);
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [supplementStates, setSupplementStates] = useState<Record<number, { taken: boolean }>>({});
+  const { toast } = useToast();
 
-  // Initialize supplement states only when supplements change
-  React.useEffect(() => {
+  // Initialize supplement states and check for missing logs
+  useEffect(() => {
     const newStates = supplements.reduce((acc, supplement) => {
-      // Only update if the state doesn't exist or has changed
       if (!supplementStates[supplement.id]) {
         acc[supplement.id] = { taken: true }; // Default to taken
       } else {
@@ -52,16 +53,54 @@ export default function SupplementList() {
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
     }
-  }, [supplements, supplementStates]); // Only run when supplements change
+
+    // Check if user hasn't logged supplements today
+    const now = new Date();
+    if (now.getHours() >= 20 && supplements.length > 0) { // After 8 PM
+      const hasUnloggedSupplements = Object.values(supplementStates).length === 0;
+      if (hasUnloggedSupplements) {
+        toast({
+          title: "Daily Supplement Log Reminder",
+          description: "Don't forget to log your supplements for today!",
+          duration: 5000,
+        });
+      }
+    }
+  }, [supplements, supplementStates, toast]);
 
   const handleSaveChanges = async () => {
     try {
-      // Here we'll implement the save functionality
-      // This will be connected to the backend to store the tracking data
+      // Save supplement logs to the database
+      const response = await fetch('/api/supplement-logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          logs: Object.entries(supplementStates).map(([supplementId, state]) => ({
+            supplementId: parseInt(supplementId),
+            taken: state.taken,
+            takenAt: new Date().toISOString(),
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save supplement logs');
+      }
+
       setShowSaveConfirmation(false);
-      // TODO: Implement actual save logic
+      toast({
+        title: "Success",
+        description: "Your supplement intake has been logged successfully.",
+      });
     } catch (error) {
       console.error('Error saving changes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your supplement intake. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -134,7 +173,7 @@ export default function SupplementList() {
             <CardContent>
               {supplement.notes && <p className="text-sm mb-4">{supplement.notes}</p>}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Today</span>
+                <span className="text-sm font-medium">Did you take this today?</span>
                 <Switch
                   checked={supplementStates[supplement.id]?.taken ?? true}
                   onCheckedChange={(checked) => {
@@ -164,7 +203,7 @@ export default function SupplementList() {
               <AlertDialogTitle>Save Changes</AlertDialogTitle>
               <AlertDialogDescription>
                 Do you want to update your supplement tracking information? This will
-                override your previous entries for today.
+                record your supplement intake for today.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
