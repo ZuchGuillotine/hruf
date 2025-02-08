@@ -51,11 +51,11 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
       <Route path="/about" component={AboutPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
+      <Route path="/" component={Dashboard} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />

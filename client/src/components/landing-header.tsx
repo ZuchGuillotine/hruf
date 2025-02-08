@@ -16,9 +16,9 @@ export default function LandingHeader() {
           </Link>
         </div>
         <nav className="flex items-center space-x-6">
-          <Link href="/about" className="text-foreground/60 hover:text-foreground transition-colors">
+          <a href="/about" className="text-foreground/60 hover:text-foreground transition-colors">
             About
-          </Link>
+          </a>
           <Link href="/learn" className="text-foreground/60 hover:text-foreground transition-colors">
             Learn
           </Link>
