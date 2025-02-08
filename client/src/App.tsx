@@ -45,6 +45,7 @@ function Router() {
     );
   }
 
+  const searchParams = new URLSearchParams(window.location.search);
   if (!user && window.location.pathname !== '/terms' && window.location.pathname !== '/privacy' && window.location.pathname !== '/about') {
     return <AuthPage />;
   }

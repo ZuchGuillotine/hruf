@@ -24,9 +24,9 @@ export default function LandingHeader() {
           </Link>
           {!user && (
             <Button variant="ghost" asChild>
-              <Link href="?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
+              <a href="?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
                 Log in
-              </Link>
+              </a>
             </Button>
           )}
         </nav>
