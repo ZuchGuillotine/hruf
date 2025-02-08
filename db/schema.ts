@@ -74,9 +74,23 @@ export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
 export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
 
 export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
+export const blogPosts = pgTable("blog_posts", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").unique().notNull(),
+  excerpt: text("excerpt").notNull(),
+  content: text("content").notNull(),
+  thumbnailUrl: text("thumbnail_url").notNull(),
+  publishedAt: timestamp("published_at").default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
 
 export type InsertUser = typeof users.$inferInsert;
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertHealthStats = typeof healthStats.$inferInsert;
 export type SelectHealthStats = typeof healthStats.$inferSelect;
