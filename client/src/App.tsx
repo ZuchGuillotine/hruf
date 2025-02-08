@@ -80,7 +80,19 @@ function Router() {
         );
       }} />
       <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
-      <Route path="/admin/blog" component={(props) => <AdminRoute component={() => import("@/pages/admin/blog").then(m => m.default)} {...props} />} />
+      <Route path="/admin/blog" component={(props) => {
+        const AdminBlog = React.lazy(() => import("@/pages/admin/blog"));
+        return (
+          <AdminRoute 
+            component={() => (
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <AdminBlog />
+              </React.Suspense>
+            )} 
+            {...props} 
+          />
+        );
+      }} />
       <Route path="/learn" component={LearnPage} />
       <Route path="/learn/:slug" component={BlogPostPage} />
       <Route component={NotFound} />
