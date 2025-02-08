@@ -325,7 +325,7 @@ export function registerRoutes(app: Express): Server {
                 and(
                   eq(supplementLogs.userId, req.user!.id),
                   eq(supplementLogs.supplementId, log.supplementId),
-                  sql`DATE(${supplementLogs.takenAt}) = DATE(${new Date(log.takenAt)})`
+                  sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${new Date(log.takenAt)}::timestamp)`
                 )
               )
               .limit(1);
@@ -408,7 +408,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date})`
+            sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${date}::timestamp)`
           )
         );
 
