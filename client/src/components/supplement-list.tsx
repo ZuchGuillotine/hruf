@@ -81,11 +81,8 @@ export default function SupplementList() {
       const currentTime = new Date();
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
-        name: supplement.name,
-        dosage: supplement.dosage,
-        frequency: supplement.frequency,
-        taken: true,
-        takenAt: currentTime,
+        userId: null, // This will be set by the server
+        takenAt: new Date(currentTime).toISOString(),
         notes: null,
         effects: null
       }));

@@ -42,7 +42,7 @@ export function registerRoutes(app: Express): Server {
     }
     next();
   };
-  
+
   // Middleware to check admin role
   const requireAdmin = (req: Request, res: Response, next: Function) => {
     if (!req.user?.isAdmin) {
@@ -322,7 +322,7 @@ export function registerRoutes(app: Express): Server {
               .values({
                 userId: req.user!.id,
                 supplementId: log.supplementId,
-                takenAt: log.takenAt,
+                takenAt: new Date(log.takenAt),
                 notes: log.notes || null,
                 effects: log.effects || null,
               })
@@ -452,7 +452,7 @@ export function registerRoutes(app: Express): Server {
         res.status(500).send("Failed to update profile");
       }
     });
-  
+
     // Admin endpoint to delete non-admin users
     app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
       try {
@@ -482,7 +482,7 @@ export function registerRoutes(app: Express): Server {
         });
       }
     });
-  
+
 
   const httpServer = createServer(app);
   return httpServer;
