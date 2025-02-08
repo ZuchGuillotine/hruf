@@ -333,9 +333,20 @@ export function registerRoutes(app: Express): Server {
             if (existingLog.length > 0) {
               // Check if any values besides timestamp have changed
               const existing = existingLog[0];
+              // Join with supplements table to get current values
+              const [existingSupp] = await db
+                .select()
+                .from(supplements)
+                .where(eq(supplements.id, existing.supplementId));
+
               const hasChanges = 
                 (log.notes !== existing.notes) || 
-                (JSON.stringify(log.effects) !== JSON.stringify(existing.effects));
+                (JSON.stringify(log.effects) !== JSON.stringify(existing.effects)) ||
+                (existingSupp && (
+                  existingSupp.dosage !== existing.dosage ||
+                  existingSupp.name !== existing.name ||
+                  existingSupp.frequency !== existing.frequency
+                ));
               
               // Only update if there are changes
               if (hasChanges) {
