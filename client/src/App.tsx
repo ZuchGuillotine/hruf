@@ -48,7 +48,11 @@ function Router() {
   }
 
   const searchParams = new URLSearchParams(window.location.search);
-  if (!user && window.location.pathname !== '/terms' && window.location.pathname !== '/privacy' && window.location.pathname !== '/about') {
+  if (!user && 
+      window.location.pathname !== '/terms' && 
+      window.location.pathname !== '/privacy' && 
+      window.location.pathname !== '/about' && 
+      !window.location.pathname.startsWith('/learn')) {
     return <AuthPage />;
   }
 
