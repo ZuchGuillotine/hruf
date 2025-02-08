@@ -120,10 +120,10 @@ export default function Header() {
             {user?.isAdmin && (
               <>
                 <DropdownMenuSeparator />
-                <Link href="/admin/supplements">
+                <Link href="/admin">
                   <DropdownMenuItem className="cursor-pointer">
                     <Database className="mr-2 h-4 w-4" />
-                    <span>Manage Supplements</span>
+                    <span>Admin Dashboard</span>
                   </DropdownMenuItem>
                 </Link>
               </>
