@@ -19,9 +19,9 @@ export default function LandingHeader() {
           <a href="/about" className="text-foreground/60 hover:text-foreground transition-colors">
             About
           </a>
-          <Link href="/learn" className="text-foreground/60 hover:text-foreground transition-colors">
+          <a href="/learn" className="text-foreground/60 hover:text-foreground transition-colors">
             Learn
-          </Link>
+          </a>
           {!user && (
             <Button variant="ghost" asChild>
               <a href="/?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
