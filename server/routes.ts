@@ -390,6 +390,8 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
+      console.log('Fetching logs for date:', date);
+      
       const logs = await db
         .select({
           id: supplementLogs.id,
@@ -406,10 +408,12 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt}) = ${date}`
+            sql`DATE(${supplementLogs.takenAt}::timestamp) = DATE(${date}::timestamp)`
           )
         );
 
+      console.log('Found logs:', logs);
+      
       res.json({
         supplements: logs.map(log => ({
           id: log.id,
