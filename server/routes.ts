@@ -331,17 +331,26 @@ export function registerRoutes(app: Express): Server {
               .limit(1);
 
             if (existingLog.length > 0) {
-              // Update existing log
-              const [updatedLog] = await db
-                .update(supplementLogs)
-                .set({
-                  takenAt: new Date(log.takenAt),
-                  notes: log.notes || null,
-                  effects: log.effects || null,
-                })
-                .where(eq(supplementLogs.id, existingLog[0].id))
-                .returning();
-              return updatedLog;
+              // Check if any values besides timestamp have changed
+              const existing = existingLog[0];
+              const hasChanges = 
+                (log.notes !== existing.notes) || 
+                (JSON.stringify(log.effects) !== JSON.stringify(existing.effects));
+              
+              // Only update if there are changes
+              if (hasChanges) {
+                const [updatedLog] = await db
+                  .update(supplementLogs)
+                  .set({
+                    takenAt: new Date(log.takenAt),
+                    notes: log.notes || null,
+                    effects: log.effects || null,
+                  })
+                  .where(eq(supplementLogs.id, existing.id))
+                  .returning();
+                return updatedLog;
+              }
+              return existing;
             } else {
               // Create new log
               const [newLog] = await db
