@@ -10,7 +10,7 @@ export default function AboutPage() {
         <article className="prose prose-slate dark:prose-invert max-w-none text-center">
           <h1 className="text-3xl font-bold text-primary">About StackTracker</h1>
           <p className="text-lg">
-            Welcome to StackTracker—a friendly yet science-savvy platform designed to help you take control of your well-being. We believe that knowledge is power, especially when it comes to your unique health journey. Whether you're a long-time supplement enthusiast or you're just getting started, StackTracker makes it easy to log, reflect on, and optimize every aspect of your supplement regimen.
+            Welcome to StackTracker— the science based supplement tracking platform designed to help you take control of your well-being. We believe that knowledge is power, especially when it comes to your unique health journey. Whether you're a long-time supplement enthusiast or you're just getting started, StackTracker makes it easy to log, reflect on, and optimize every aspect of your supplement regimen.
           </p>
 
           <h2 className="text-2xl font-bold mt-8 text-primary">What StackTracker Does</h2>
