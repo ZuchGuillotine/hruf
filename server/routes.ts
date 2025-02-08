@@ -369,11 +369,9 @@ export function registerRoutes(app: Express): Server {
           takenAt: supplementLogs.takenAt,
           notes: supplementLogs.notes,
           effects: supplementLogs.effects,
-          supplement: {
-            name: supplements.name,
-            dosage: supplements.dosage,
-            frequency: supplements.frequency
-          }
+          name: supplements.name,
+          dosage: supplements.dosage,
+          frequency: supplements.frequency
         })
         .from(supplementLogs)
         .innerJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
@@ -384,21 +382,18 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
-      // Format the logs for the frontend
-      const formattedLogs = {
+      res.json({
         supplements: logs.map(log => ({
+          id: log.id,
           supplementId: log.supplementId,
           name: log.name,
           dosage: log.dosage,
           frequency: log.frequency,
-          taken: true, // If there's a log, it means it was taken
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects
         }))
-      };
-
-      res.json(formattedLogs);
+      });
     } catch (error) {
       console.error("Error fetching supplement logs by date:", error);
       res.status(500).send("Failed to fetch supplement logs");
