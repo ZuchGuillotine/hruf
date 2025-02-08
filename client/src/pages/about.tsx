@@ -25,6 +25,11 @@ export default function AboutPage() {
             When it comes to health, personalization is everything. We're all different, and what works wonders for one person might not work for another. By marrying hard data (like dosage and timing) with your subjective experience (how you feel physically and emotionally), StackTracker gives you the full story behind your supplement use. You'll discover what genuinely benefits you and what might need adjusting.
           </p>
 
+          <h2 className="text-2xl font-bold mt-8 text-center text-primary">The Future of Health</h2>
+          <p>
+            At StackTracker, we believe the future of health lies in integrating cutting-edge AI to deliver truly personalized guidance. Every individual's health journey is unique, and StackTracker's AI-powered platform evolves alongside your needs, providing insights and recommendations tailored specifically to you. By leveraging technology to create a deeply customized experience, we're paving the way for a smarter, more individualized approach to wellness.
+          </p>
+
           <h2 className="text-2xl font-bold mt-8 text-center text-primary"> {/* Added text-center and text-primary */}Designed for You</h2>
           <p>
             StackTracker was built with a user-first approach, creating a sleek interface that's easy to navigate on any device. Think of it as your personal supplement journal—always up-to-date, always ready to offer meaningful insights. Whether you're tracking a complex regimen or experimenting with a single new supplement, StackTracker's flexible features adapt to your style.
