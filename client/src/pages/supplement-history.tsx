@@ -107,15 +107,19 @@ export default function SupplementHistory() {
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold mb-2">Supplement Intake</h3>
                     {supplementLogs.supplements?.map((log: any) => (
-                      <div key={log.supplementId} className="flex items-center justify-between p-2 rounded-md bg-white/5">
-                        <div>
-                          <p className="font-medium">{log.name}</p>
-                          <p className="text-sm text-white/70">{log.dosage} • {log.frequency}</p>
+                      <div key={log.supplementId} className="p-3 rounded-md bg-white/5">
+                        <div className="flex items-center space-x-2">
+                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                          <div className="flex-grow">
+                            <p className="font-medium">{log.name}</p>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-white/70">{log.dosage}</p>
+                              <p className="text-xs text-white/50">
+                                {new Date(log.takenAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <Switch
-                          checked={log.taken}
-                          disabled
-                        />
                       </div>
                     ))}
                   </div>
