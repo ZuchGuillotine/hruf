@@ -65,7 +65,19 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/privacy" component={PrivacyPolicy} />
-      <Route path="/admin" component={(props) => <AdminRoute component={() => import("@/pages/admin").then(m => m.default)} {...props} />} />
+      <Route path="/admin" component={(props) => {
+        const AdminDashboard = React.lazy(() => import("@/pages/admin"));
+        return (
+          <AdminRoute 
+            component={() => (
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <AdminDashboard />
+              </React.Suspense>
+            )} 
+            {...props} 
+          />
+        );
+      }} />
       <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
       <Route path="/learn" component={LearnPage} />
       <Route path="/learn/:slug" component={BlogPostPage} />
