@@ -408,7 +408,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt}::timestamp) = DATE(${date}::timestamp)`
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date})`
           )
         );
 
