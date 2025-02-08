@@ -115,7 +115,7 @@ export default function SupplementHistory() {
                             <div className="flex justify-between items-center">
                               <p className="text-sm text-white/70">{log.dosage}</p>
                               <p className="text-xs text-white/50">
-                                {new Date(log.takenAt).toLocaleTimeString()}
+                                {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>

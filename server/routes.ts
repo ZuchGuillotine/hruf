@@ -317,17 +317,45 @@ export function registerRoutes(app: Express): Server {
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
           try {
-            const [newLog] = await db
-              .insert(supplementLogs)
-              .values({
-                userId: req.user!.id,
-                supplementId: log.supplementId,
-                takenAt: new Date(log.takenAt),
-                notes: log.notes || null,
-                effects: log.effects || null,
-              })
-              .returning();
-            return newLog;
+            // Check if a log exists for this supplement on this day
+            const existingLog = await db
+              .select()
+              .from(supplementLogs)
+              .where(
+                and(
+                  eq(supplementLogs.userId, req.user!.id),
+                  eq(supplementLogs.supplementId, log.supplementId),
+                  sql`DATE(${supplementLogs.takenAt}) = DATE(${new Date(log.takenAt)})`
+                )
+              )
+              .limit(1);
+
+            if (existingLog.length > 0) {
+              // Update existing log
+              const [updatedLog] = await db
+                .update(supplementLogs)
+                .set({
+                  takenAt: new Date(log.takenAt),
+                  notes: log.notes || null,
+                  effects: log.effects || null,
+                })
+                .where(eq(supplementLogs.id, existingLog[0].id))
+                .returning();
+              return updatedLog;
+            } else {
+              // Create new log
+              const [newLog] = await db
+                .insert(supplementLogs)
+                .values({
+                  userId: req.user!.id,
+                  supplementId: log.supplementId,
+                  takenAt: new Date(log.takenAt),
+                  notes: log.notes || null,
+                  effects: log.effects || null,
+                })
+                .returning();
+              return newLog;
+            }
           } catch (error) {
             console.error('Error inserting individual log:', {
               error: error instanceof Error ? error.message : 'Unknown error',
