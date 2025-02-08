@@ -15,6 +15,8 @@ import AdminSupplements from "@/pages/admin/supplements";
 import CookieConsent from "@/components/cookie-consent";
 import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
+import LearnPage from "./pages/learn";
+import BlogPostPage from "./pages/learn/[slug]";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useUser();
@@ -60,6 +62,8 @@ function Router() {
       <Route path="/terms" component={TermsOfService} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
+      <Route path="/learn" component={LearnPage} />
+      <Route path="/learn/:slug" component={BlogPostPage} />
       <Route component={NotFound} />
     </Switch>
   );
