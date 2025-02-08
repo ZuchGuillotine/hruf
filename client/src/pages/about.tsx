@@ -6,7 +6,7 @@ export default function AboutPage() {
   return (
     <Fragment>
       <LandingHeader />
-      <main className="container py-12 max-w-4xl" style={{ backgroundColor: '#f9e4bc' }}>
+      <main className="container mx-auto py-12 px-4 md:px-8 max-w-4xl w-full" style={{ backgroundColor: '#f9e4bc' }}>
         <article className="prose prose-slate dark:prose-invert max-w-none text-center">
           <h1 className="text-3xl font-bold text-primary">About StackTracker</h1>
           <p className="text-lg">
