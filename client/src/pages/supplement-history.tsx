@@ -107,7 +107,7 @@ export default function SupplementHistory() {
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold mb-2">Supplement Intake</h3>
                     {supplementLogs.supplements?.map((log: any) => (
-                      <div key={log.supplementId} className="p-3 rounded-md bg-white/5">
+                      <div key={log.id} className="p-3 rounded-md bg-white/5">
                         <div className="flex items-center space-x-2">
                           <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
                           <div className="flex-grow">

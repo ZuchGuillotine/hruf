@@ -369,12 +369,14 @@ export function registerRoutes(app: Express): Server {
           takenAt: supplementLogs.takenAt,
           notes: supplementLogs.notes,
           effects: supplementLogs.effects,
-          name: supplements.name,
-          dosage: supplements.dosage,
-          frequency: supplements.frequency
+          supplement: {
+            name: supplements.name,
+            dosage: supplements.dosage,
+            frequency: supplements.frequency
+          }
         })
         .from(supplementLogs)
-        .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
+        .innerJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
