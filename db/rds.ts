@@ -26,6 +26,34 @@ const getRootUrl = (url: string) => {
 const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
 const rootUrl = getRootUrl(rdsUrl);
 
+// Enhanced pool configuration with aggressive timeouts and retry strategy
+const poolConfig = {
+  ssl: {
+    rejectUnauthorized: false,
+    sslmode: 'no-verify',
+    ssl: true,
+    sslConnectTimeout: 10000
+  },
+  connectionTimeoutMillis: 300000, // 5 minutes
+  idleTimeoutMillis: 300000,
+  max: 1,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 5000,
+  statement_timeout: 120000,
+  query_timeout: 120000,
+  application_name: 'supplement-tracker',
+  retry_strategy: {
+    retries: 5,
+    factor: 1.5,
+    minTimeout: 2000,
+    maxTimeout: 120000
+  },
+  tcp_keepalive: true,
+  tcp_keepalive_time: 60,
+  tcp_keepalive_interval: 30,
+  tcp_keepalive_count: 5
+};
+
 console.log('Attempting to connect to RDS with URL pattern:', 
   rdsUrl.replace(/:[^:@]+@/, ':****@'));
 console.log('Network Configuration:', {
@@ -37,9 +65,6 @@ console.log('Network Configuration:', {
   port: 5432,
   connectionTimeout: poolConfig.connectionTimeoutMillis
 });
-
-// Enhanced pool configuration with aggressive timeouts and retry strategy
-const poolConfig = {
   ssl: {
     rejectUnauthorized: false,
     sslmode: 'no-verify',
