@@ -27,12 +27,14 @@ const poolConfig = {
     rejectUnauthorized: false,
     sslmode: 'no-verify',
     ssl: true,
-    sslConnectTimeout: 10000
+    sslConnectTimeout: 30000
   },
-  connectionTimeoutMillis: 300000,
-  idleTimeoutMillis: 300000,
-  max: 1,
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 30000,
+  max: 2,
   keepAlive: true,
+  keepalives: 1,
+  keepalives_idle: 30,
   keepAliveInitialDelayMillis: 5000,
   statement_timeout: 120000,
   query_timeout: 120000,
