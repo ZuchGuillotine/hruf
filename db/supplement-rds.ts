@@ -10,10 +10,22 @@ const supplementPool = new Pool({
   ssl: {
     rejectUnauthorized: false
   },
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000, // Increased timeout
   // Required for AWS RDS connection from Replit
   keepAlive: true,
-  keepAliveInitialDelayMillis: 5000
+  keepAliveInitialDelayMillis: 5000,
+  // Additional debug settings
+  statement_timeout: 10000,
+  query_timeout: 10000
+});
+
+// Log connection details
+console.log('Attempting to connect with:', {
+  host: process.env.SUPPLEMENT_RDS_HOST,
+  port: process.env.SUPPLEMENT_RDS_PORT,
+  database: process.env.SUPPLEMENT_RDS_DATABASE,
+  user: process.env.SUPPLEMENT_RDS_USER,
+  ssl: true
 });
 
 // Log connection details (excluding sensitive info)
