@@ -53,13 +53,25 @@ const pool = new Pool({
   ...poolConfig
 });
 
-pool.on('connect', (client) => {
+pool.on('connect', async (client) => {
   console.log('Connected to RDS:', {
     timestamp: new Date().toISOString(),
     database: pool.options.database,
     host: pool.options.host,
     port: pool.options.port,
   });
+  
+  // Verify tables exist
+  try {
+    const tables = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    console.log('Available tables:', tables.rows.map(r => r.table_name));
+  } catch (err) {
+    console.error('Error checking tables:', err);
+  }
 });
 
 pool.on('error', (err) => {
