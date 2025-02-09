@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef } from "react";
+import { ChatHistory } from "@/components/ChatHistory";
 
 export default function SupplementHistory() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -125,16 +126,10 @@ export default function SupplementHistory() {
                     ))}
                   </div>
 
-                  {/* Notes Section (Placeholder for future text data) */}
+                  {/* Chat History Section */}
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Daily Notes</h3>
-                    <Card className="bg-white/5 border-none">
-                      <CardContent className="p-4">
-                        <p className="text-white/70">
-                          Notes feature coming soon. Track your supplement effects and experiences.
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <ChatHistory selectedDate={selectedDate} />
                   </div>
                 </div>
               ) : (
@@ -144,7 +139,7 @@ export default function SupplementHistory() {
               )}
             </CardContent>
           </Card>
-          
+
           {/* Back to Dashboard Button */}
           <div className="mt-6">
             <Link href="/">
