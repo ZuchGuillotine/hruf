@@ -52,7 +52,20 @@ export default function SupplementList() {
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
     }
-  }, [supplements, supplementStates]);
+
+    // Check if supplements have been logged today
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const lastLoggedDate = localStorage.getItem('lastSupplementLogDate');
+    
+    if (today !== lastLoggedDate && supplements.length > 0) {
+      toast({
+        title: "Daily Supplement Log Reminder",
+        description: "Don't forget to log your supplements for today!",
+        duration: 5000,
+      });
+    }
+  }, [supplements, supplementStates, toast]);
 
   const handleSaveChanges = async () => {
     try {
@@ -97,6 +110,9 @@ export default function SupplementList() {
       });
 
       setShowSaveConfirmation(false);
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem('lastSupplementLogDate', today);
+      
       toast({
         title: "Success",
         description: "Your supplement intake has been logged successfully.",
