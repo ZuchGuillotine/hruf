@@ -53,6 +53,38 @@ export default function AdminBlogPosts() {
     },
   });
 
+  const updatePost = useMutation({
+    mutationFn: async (data: Partial<BlogPost>) => {
+      const res = await fetch(`/api/admin/blog/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
+      toast({ title: "Success", description: "Blog post updated successfully" });
+      setOpen(false);
+      setEditingPost(null);
+    },
+  });
+
+  const deletePost = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/blog/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
+      toast({ title: "Success", description: "Blog post deleted successfully" });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -62,7 +94,18 @@ export default function AdminBlogPosts() {
       content: formData.get('content') as string,
       thumbnailUrl: formData.get('thumbnailUrl') as string,
     };
-    addPost.mutate(data);
+
+    if (editingPost) {
+      updatePost.mutate({ ...data, id: editingPost.id });
+    } else {
+      addPost.mutate(data);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      deletePost.mutate(id);
+    }
   };
 
   return (
@@ -73,12 +116,12 @@ export default function AdminBlogPosts() {
           <h1 className="text-2xl font-bold">Manage Blog Posts</h1>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={() => setEditingPost(null)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Post
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-3xl">
               <DialogHeader>
                 <DialogTitle>
                   {editingPost ? 'Edit Blog Post' : 'Add New Blog Post'}
@@ -109,7 +152,7 @@ export default function AdminBlogPosts() {
                     id="content"
                     name="content"
                     required
-                    className="min-h-[200px]"
+                    className="min-h-[300px] font-mono"
                     defaultValue={editingPost?.content}
                   />
                 </div>
@@ -122,13 +165,20 @@ export default function AdminBlogPosts() {
                     required
                     defaultValue={editingPost?.thumbnailUrl}
                   />
+                  {editingPost?.thumbnailUrl && (
+                    <img 
+                      src={editingPost.thumbnailUrl} 
+                      alt="Thumbnail preview" 
+                      className="mt-2 max-h-40 object-cover rounded"
+                    />
+                  )}
                 </div>
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={addPost.isPending}
+                  disabled={addPost.isPending || updatePost.isPending}
                 >
-                  {addPost.isPending && (
+                  {(addPost.isPending || updatePost.isPending) && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   {editingPost ? 'Update Post' : 'Add Post'}
@@ -160,6 +210,13 @@ export default function AdminBlogPosts() {
                   }}
                 >
                   <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(post.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
             </div>
