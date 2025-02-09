@@ -132,13 +132,15 @@ export default function LLMChat() {
           </Button>
         </form>
 
-        <Button
-          onClick={handleSaveChat}
-          disabled={messages.length === 0 || isLoading}
-          className="mx-auto w-2/3 bg-white text-[#1b4332] hover:bg-white/90"
-        >
-          Save Chat History
-        </Button>
+        <div className="flex justify-center"> {/* This line was added */}
+          <Button
+            onClick={handleSaveChat}
+            disabled={messages.length === 0 || isLoading}
+            className="w-2/3 bg-white text-[#1b4332] hover:bg-white/90"
+          >
+            Save Chat History
+          </Button>
+        </div> {/* This line was added */}
       </div>
     </div>
   );

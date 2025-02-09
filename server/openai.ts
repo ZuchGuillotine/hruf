@@ -25,7 +25,7 @@ When discussing supplements:
 
 Format responses in a clear, easy-to-read manner. Use markdown for formatting when helpful.`;
 
-export async function chatWithAI(messages: Array<{ role: string; content: string }>) {
+export async function chatWithAI(messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>) {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",

@@ -29,6 +29,6 @@ export function useLLM() {
 
   return {
     chat: chatMutation.mutateAsync,
-    isLoading: chatMutation.isLoading,
+    isLoading: chatMutation.isPending,
   };
 }
