@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +38,10 @@ export default function AdminBlogPosts() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to add post');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -56,13 +60,16 @@ export default function AdminBlogPosts() {
   });
 
   const updatePost = useMutation({
-    mutationFn: async (data: Partial<BlogPost> & { id: string }) => {
+    mutationFn: async (data: Partial<BlogPost> & { id: number }) => {
       const res = await fetch(`/api/admin/blog/${data.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update post');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -81,11 +88,14 @@ export default function AdminBlogPosts() {
   });
 
   const deletePost = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: number) => {
       const res = await fetch(`/api/admin/blog/${id}`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete post');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -122,7 +132,7 @@ export default function AdminBlogPosts() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
       try {
         await deletePost.mutateAsync(id);
@@ -166,6 +176,11 @@ export default function AdminBlogPosts() {
                 <DialogTitle>
                   {editingPost ? 'Edit Blog Post' : 'Add New Blog Post'}
                 </DialogTitle>
+                <DialogDescription>
+                  {editingPost 
+                    ? 'Update the blog post details below.' 
+                    : 'Fill in the blog post details below.'}
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">

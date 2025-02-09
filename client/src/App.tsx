@@ -1,5 +1,5 @@
-import React, { Suspense } from "react";
-import { Switch, Route } from "wouter";
+import React, { Suspense, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -35,7 +35,7 @@ function useAuth() {
       return res.json();
     },
     retry: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false
   });
 
   return { user, isLoading, error };
@@ -61,6 +61,24 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 
 function Router() {
   const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    // Handle redirections in useEffect to avoid state updates during render
+    if (!isLoading) {
+      const publicPaths = ['/terms', '/privacy', '/about', '/learn'];
+      const isPublicPath = publicPaths.some(path => 
+        window.location.pathname === path || 
+        window.location.pathname.startsWith('/learn/')
+      );
+
+      if (!user && !isPublicPath && window.location.pathname !== '/auth') {
+        setLocation('/auth');
+      } else if (user && window.location.pathname === '/auth') {
+        setLocation('/');
+      }
+    }
+  }, [user, isLoading, setLocation]);
 
   if (isLoading) {
     return (
@@ -68,18 +86,6 @@ function Router() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  // Public routes that don't require authentication
-  const publicPaths = ['/terms', '/privacy', '/about', '/learn'];
-  const isPublicPath = publicPaths.some(path => 
-    window.location.pathname === path || 
-    window.location.pathname.startsWith('/learn/')
-  );
-
-  // If not authenticated and not on a public path, show auth page
-  if (!user && !isPublicPath) {
-    return <AuthPage />;
   }
 
   return (
@@ -93,6 +99,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/learn" component={LearnPage} />
       <Route path="/learn/:slug" component={BlogPostPage} />
+      <Route path="/auth" component={AuthPage} />
 
       {/* Admin Routes */}
       <Route path="/admin" component={() => (

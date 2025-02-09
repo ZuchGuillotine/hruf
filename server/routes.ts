@@ -124,7 +124,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
   // Health Stats endpoints
   app.get("/api/health-stats", requireAuth, async (req, res) => {
     try {
@@ -542,10 +541,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update the blog post edit endpoint
   app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { title, content, excerpt, thumbnailUrl } = req.body;
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const postId = parseInt(req.params.id);
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
 
       const [post] = await db
         .update(blogPosts)
@@ -557,7 +562,7 @@ export function registerRoutes(app: Express): Server {
           thumbnailUrl,
           updatedAt: new Date(),
         })
-        .where(eq(blogPosts.id, parseInt(req.params.id)))
+        .where(eq(blogPosts.id, postId))
         .returning();
 
       if (!post) {
@@ -566,16 +571,26 @@ export function registerRoutes(app: Express): Server {
 
       res.json(post);
     } catch (error) {
-      console.error("Error updating blog post:", error);
+      console.error("Error updating blog post:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: "Failed to update blog post" });
     }
   });
 
+  // Update the blog post delete endpoint
   app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
+      const postId = parseInt(req.params.id);
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ error: "Invalid post ID" });
+      }
+
       const [post] = await db
         .delete(blogPosts)
-        .where(eq(blogPosts.id, parseInt(req.params.id)))
+        .where(eq(blogPosts.id, postId))
         .returning();
 
       if (!post) {
@@ -584,7 +599,10 @@ export function registerRoutes(app: Express): Server {
 
       res.json({ message: "Blog post deleted successfully" });
     } catch (error) {
-      console.error("Error deleting blog post:", error);
+      console.error("Error deleting blog post:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: "Failed to delete blog post" });
     }
   });
