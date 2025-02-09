@@ -55,12 +55,6 @@ export default function LLMChat() {
   const handleSaveChat = async () => {
     if (messages.length === 0) return;
 
-    // Get the last user message and AI response
-    const lastUserMessage = messages[messages.length - 2];
-    const lastAIResponse = messages[messages.length - 1];
-
-    if (!lastUserMessage || !lastAIResponse) return;
-
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -68,10 +62,7 @@ export default function LLMChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [{
-            userMessage: lastUserMessage,
-            aiResponse: lastAIResponse,
-          }],
+          messages: [...messages]
         }),
       });
 
@@ -80,7 +71,7 @@ export default function LLMChat() {
       }
 
       // Invalidate the chat history query to refresh the history view
-      queryClient.invalidateQueries(['chatHistory']);
+      queryClient.invalidateQueries({ queryKey: ['chatHistory'] });
 
       toast({
         title: 'Success',
@@ -111,6 +102,7 @@ export default function LLMChat() {
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {/* Add save button at the end of each conversation */}
                   {index === messages.length - 1 && messages.length >= 2 && (
                     <Button
                       variant="ghost"
