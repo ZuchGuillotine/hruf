@@ -1,4 +1,32 @@
 4. Backend Structures Document
+
+Database Architecture
+1. Primary Database (NeonDB in Replit)
+   - Purpose: Stores user authentication data, health statistics, and user supplement selections
+   - Tables:
+     - users Table:
+       Fields: id, username, email, password, isVerified, verificationToken, isPro (Pro/Admin status), timestamps
+     - supplements Table:
+       Fields: id, name, dosage, frequency, userId (foreign key), activeStatus, startDate, timestamps
+       Relationships: Each supplement is associated with a user
+     - supplementLogs Table:
+       Fields: id, supplementId, userId, takenAt (timestamp), mood, energy, sleep, sideEffects, timestamps
+     - healthStats Table:
+       Fields: id, userId, weight, sleepPattern, heartRate, allergies (JSON array), timestamps
+
+2. Search Database (AWS RDS - stacktrackertest1)
+   - Purpose: Handles fuzzy search and tree search functionality for supplement autocomplete
+   - Powers the intelligent search feature in the 'add supplement form'
+   - Optimized for fast text search operations
+   - Contains comprehensive supplement reference data
+   - Additional Tables:
+     - supplement_logs Table:
+       Fields: id, userId, supplementId, takenAt, mood, energy, sleep, sideEffects, timestamps
+       Purpose: Track detailed supplement intake history and effects
+     - qualitative_logs Table:
+       Fields: id, userId, chatContent, timestamp, category
+       Purpose: Store chat interactions and qualitative feedback
+
 API Routes (from routes.ts)
 Authentication Routes
 POST /api/register
