@@ -17,16 +17,11 @@ const ensureCorrectProtocol = (url: string) => {
   return url;
 };
 
-// Remove database name from URL for initial connection
 const getRootUrl = (url: string) => {
   const match = url.match(/(postgres:\/\/[^:]+:[^@]+@[^:]+:\d+)\/.*/);
-  return match ? match[1] + '/postgres' : url; // Connect to 'postgres' database initially
+  return match ? match[1] + '/postgres' : url;
 };
 
-const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
-const rootUrl = getRootUrl(rdsUrl);
-
-// Enhanced pool configuration with aggressive timeouts and retry strategy
 const poolConfig = {
   ssl: {
     rejectUnauthorized: false,
@@ -34,7 +29,7 @@ const poolConfig = {
     ssl: true,
     sslConnectTimeout: 10000
   },
-  connectionTimeoutMillis: 300000, // 5 minutes
+  connectionTimeoutMillis: 300000,
   idleTimeoutMillis: 300000,
   max: 1,
   keepAlive: true,
@@ -54,6 +49,9 @@ const poolConfig = {
   tcp_keepalive_count: 5
 };
 
+const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
+const rootUrl = getRootUrl(rdsUrl);
+
 console.log('Attempting to connect to RDS with URL pattern:', 
   rdsUrl.replace(/:[^:@]+@/, ':****@'));
 console.log('Network Configuration:', {
@@ -65,56 +63,24 @@ console.log('Network Configuration:', {
   port: 5432,
   connectionTimeout: poolConfig.connectionTimeoutMillis
 });
-  ssl: {
-    rejectUnauthorized: false,
-    sslmode: 'no-verify',
-    ssl: true,
-    sslConnectTimeout: 10000
-  },
-  connectionTimeoutMillis: 300000, // 5 minutes
-  idleTimeoutMillis: 300000,
-  max: 1, // Single connection to avoid overhead
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 5000,
-  statement_timeout: 120000, // 2 minutes
-  query_timeout: 120000,
-  application_name: 'supplement-tracker',
-  retry_strategy: {
-    retries: 5,
-    factor: 1.5,
-    minTimeout: 2000,
-    maxTimeout: 120000
-  },
-  // Network-level timeouts
-  tcp_keepalive: true,
-  tcp_keepalive_time: 60,
-  tcp_keepalive_interval: 30,
-  tcp_keepalive_count: 5
-};
 
-// Construct a connection string with explicit parameters
 const getConnectionString = (url: string) => {
   const parsed = new URL(url);
   return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=no-verify&ssl=true&connect_timeout=300&application_name=supplement-tracker&keepalives=1&keepalives_idle=60&keepalives_interval=30&keepalives_count=5`;
 };
 
-// First create a pool for root connection (no database specified)
 const rootPool = new Pool({
   connectionString: getConnectionString(rootUrl),
   ...poolConfig
 });
 
-// Create the database if it doesn't exist
 export const createDatabaseIfNotExists = async () => {
   const client = await rootPool.connect();
   try {
-    // Extract database name from full URL
     const dbName = rdsUrl.split('/').pop()?.split('?')[0];
     if (!dbName) throw new Error('Could not extract database name from URL');
 
     console.log('Checking if database exists:', dbName);
-
-    // Check if database exists
     const result = await client.query(
       "SELECT 1 FROM pg_database WHERE datname = $1",
       [dbName]
@@ -139,13 +105,11 @@ export const createDatabaseIfNotExists = async () => {
   }
 };
 
-// Pool for actual application connection (with database)
 const pool = new Pool({
   connectionString: getConnectionString(rdsUrl),
   ...poolConfig
 });
 
-// Enhanced connection event logging
 pool.on('connect', (client) => {
   console.log('New client connected to PostgreSQL:', {
     timestamp: new Date().toISOString(),
