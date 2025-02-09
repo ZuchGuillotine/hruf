@@ -1,4 +1,3 @@
-
 import { useSupplements } from "@/hooks/use-supplements";
 import {
   Card,
@@ -41,11 +40,11 @@ import { Link } from "wouter";
 export default function SupplementList() {
   // Custom hook for supplement CRUD operations
   const { supplements, isLoading, deleteSupplement, updateSupplement } = useSupplements();
-  
+
   // State management for editing supplements and UI controls
   const [editingSupplement, setEditingSupplement] = useState<number | null>(null);
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  
+
   // Track which supplements have been marked as taken
   const [supplementStates, setSupplementStates] = useState<Record<number, { taken: boolean }>>({});
   const { toast } = useToast();
@@ -65,17 +64,15 @@ export default function SupplementList() {
       return acc;
     }, {} as Record<number, { taken: boolean }>);
 
-    // Only update state if changes detected
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
     }
 
     // Daily reminder notification logic
     // Shows notification if supplements haven't been logged for the current calendar day
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
     const lastLoggedDate = localStorage.getItem('lastSupplementLogDate');
-    
+
     if (today !== lastLoggedDate && supplements.length > 0) {
       toast({
         title: "Daily Supplement Log Reminder",
@@ -135,7 +132,7 @@ export default function SupplementList() {
       setShowSaveConfirmation(false);
       const today = new Date().toISOString().split('T')[0];
       localStorage.setItem('lastSupplementLogDate', today);
-      
+
       toast({
         title: "Success",
         description: "Your supplement intake has been logged successfully.",
