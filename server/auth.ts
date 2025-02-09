@@ -116,7 +116,7 @@ export function setupAuth(app: Express) {
 
   const CALLBACK_URL = app.get("env") === "production"
     ? process.env.PRODUCTION_URL + "/auth/google/callback"
-    : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
+    : "https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/auth/google/callback";
 
   console.log('Initializing Google OAuth with:', {
     callbackUrl: CALLBACK_URL,
