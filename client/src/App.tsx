@@ -18,6 +18,18 @@ import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
+import { ErrorBoundary } from "react-error-boundary";
+
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="p-4">
+        <h2>Something went wrong:</h2>
+        <pre className="text-red-500">{error.message}</pre>
+      </div>
+    </div>
+  );
+}
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useUser();
@@ -48,7 +60,6 @@ function Router() {
     );
   }
 
-  const searchParams = new URLSearchParams(window.location.search);
   if (!user && 
       window.location.pathname !== '/terms' && 
       window.location.pathname !== '/privacy' && 
@@ -71,9 +82,9 @@ function Router() {
         return (
           <AdminRoute 
             component={() => (
-              <React.Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<div>Loading...</div>}>
                 <AdminDashboard />
-              </React.Suspense>
+              </Suspense>
             )} 
             {...props} 
           />
@@ -85,9 +96,9 @@ function Router() {
         return (
           <AdminRoute 
             component={() => (
-              <React.Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<div>Loading...</div>}>
                 <AdminBlog />
-              </React.Suspense>
+              </Suspense>
             )} 
             {...props} 
           />
@@ -102,11 +113,13 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-      <CookieConsent />
-      <Toaster />
-    </QueryClientProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <QueryClientProvider client={queryClient}>
+        <Router />
+        <CookieConsent />
+        <Toaster />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
