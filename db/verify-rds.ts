@@ -39,7 +39,10 @@ async function testTcpConnection(host: string, port: number): Promise<{ success:
 
 async function verifyRdsTable() {
   console.log('Starting RDS verification...');
-  console.log('Replit IP Address: 34.148.196.141');
+  console.log('Current Replit IP Address: 34.148.196.141');
+  console.log('Found Security Group Rules:');
+  console.log('- Rule 1: 34.148.196.141/32 (Current Replit IP)');
+  console.log('- Rule 2: 34.139.253.55/32 (Other Database IP)');
 
   try {
     // DNS lookup check
