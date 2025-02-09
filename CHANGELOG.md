@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Enhanced navigation in supplement history page
+  - Back to tracking button for better UX
+  - Improved routing between dashboard and history
 - Blog post management system
   - Complete CRUD operations for blog posts
   - Admin dashboard interface

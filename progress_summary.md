@@ -3,6 +3,8 @@
 ## Latest Status (February 09, 2025)
 
 ### Recent Changes and Fixes
+- Enhanced supplement history navigation with back to tracking button
+- Improved navigation flow between dashboard and history pages
 - Enhanced blog management system with SEO-optimized URL slugs and rich text editing
 - Improved timezone handling in supplement logs endpoint
 - Added proper error handling for authentication flows
