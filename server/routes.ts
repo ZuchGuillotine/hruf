@@ -347,7 +347,7 @@ export function registerRoutes(app: Express): Server {
                   existingSupp.name !== existing.name ||
                   existingSupp.frequency !== existing.frequency
                 ));
-              
+
               // Only update if there are changes
               if (hasChanges) {
                 const [updatedLog] = await db
@@ -411,7 +411,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const date = req.params.date;
       console.log('Fetching logs for date:', date);
-      
+
       const logs = await db
         .select({
           id: supplementLogs.id,
@@ -433,7 +433,7 @@ export function registerRoutes(app: Express): Server {
         );
 
       console.log('Found logs:', logs);
-      
+
       res.json({
         supplements: logs.map(log => ({
           id: log.id,
