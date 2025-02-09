@@ -16,8 +16,10 @@
 
 ### Current Issues
 1. Authentication & Security
-   - Google OAuth authentication experiencing 403 errors
-   - Callback URL configuration needs adjustment
+   - Google OAuth authentication experiencing authorization failures
+   - Callback URL configuration verified but still encountering issues
+   - Environment variables and secrets configuration needs review
+   - Testing environment URL (APP_URL_TEST) may need adjustment
    - Enhanced session management implementation needed
    - Additional HIPAA compliance documentation required
    - Need to implement more comprehensive audit logging

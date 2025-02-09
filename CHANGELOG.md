@@ -38,8 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API endpoint authentication checks
 
 ### Known Issues
-- Google OAuth authentication experiencing 403 errors
-- Need to finalize callback URL configuration for Google authentication
+- Google OAuth authentication failing despite correct client credentials
+- Environment URL configuration may need adjustment for development environment
+- Callback URL verified but authorization still failing
+- Logging shows credentials exist but authentication flow incomplete
 
 ## [0.1.0] - 2025-02-09
 ### Added
