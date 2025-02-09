@@ -192,31 +192,36 @@ export default function AdminBlogPosts() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="p-4 border rounded-lg flex justify-between items-center"
+              className="p-4 border rounded-lg flex justify-between items-start"
             >
-              <div>
+              <div className="flex-1">
                 <h2 className="font-semibold">{post.title}</h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mb-2">
                   Published: {new Date(post.publishedAt).toLocaleDateString()}
                 </p>
+                <p className="text-sm text-gray-600 line-clamp-2">{post.excerpt}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 ml-4">
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setEditingPost(post);
                     setOpen(true);
                   }}
+                  className="flex items-center gap-2"
                 >
                   <Pencil className="h-4 w-4" />
+                  Edit
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => handleDelete(post.id)}
+                  className="flex items-center gap-2 text-destructive hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Trash2 className="h-4 w-4" />
+                  Delete
                 </Button>
               </div>
             </div>
