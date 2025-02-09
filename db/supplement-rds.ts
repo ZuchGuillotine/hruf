@@ -56,8 +56,21 @@ supplementPool.query('SELECT NOW()', (err, res) => {
 // Handle pool errors
 supplementPool.on('error', (err) => {
   console.error('Unexpected error on supplement RDS idle client:', {
-    error: err.message,
-    stack: err.stack,
+    error: err instanceof Error ? err.message : String(err),
+    code: err instanceof Error && 'code' in err ? (err as any).code : undefined,
+    errno: err instanceof Error && 'errno' in err ? (err as any).errno : undefined,
+    address: err instanceof Error && 'address' in err ? (err as any).address : undefined,
+    port: err instanceof Error && 'port' in err ? (err as any).port : undefined,
+    stack: err instanceof Error ? err.stack : undefined,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Add connection event logging
+supplementPool.on('connect', (client) => {
+  console.log('New client connected to supplement RDS:', {
+    host: process.env.SUPPLEMENT_RDS_HOST,
+    database: process.env.SUPPLEMENT_RDS_DATABASE,
     timestamp: new Date().toISOString()
   });
 });
