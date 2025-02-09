@@ -33,6 +33,11 @@ export default function AdminBlogPosts() {
 
   const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
     queryKey: ['/api/admin/blog'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/blog');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      return res.json();
+    }
   });
 
   const addPost = useMutation({
