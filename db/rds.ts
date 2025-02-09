@@ -3,19 +3,6 @@ const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import { supplementReference, supplementLogs, qualitativeLogs } from "./schema";
 
-/**
- * Database: AWS RDS
- * Purpose: Combined database for:
- * 1. Supplement reference data (autocomplete/fuzzy search)
- * 2. User supplement intake logs
- * 3. User chat/interaction logs
- * 
- * Features: 
- * - pg_trgm extension for fuzzy search
- * - JSONB for flexible data storage
- * - Optimized indexes for common queries
- */
-
 if (!process.env.AWS_RDS_URL) {
   throw new Error("AWS_RDS_URL must be set for RDS database connection");
 }
@@ -33,38 +20,17 @@ const ensureCorrectProtocol = (url: string) => {
 const poolConfig = {
   ssl: {
     rejectUnauthorized: false,
-    sslmode: 'prefer', // Changed from require to prefer
+    sslmode: 'prefer',
   },
-  connectionTimeoutMillis: 60000, // Increased timeout further
+  connectionTimeoutMillis: 60000,
   idleTimeoutMillis: 30000,
-  max: 5, // Further reduced pool size
+  max: 5,
   keepAlive: true,
   statement_timeout: 30000,
   query_timeout: 30000,
   application_name: 'stacktracker-rds',
   keepaliveInitialDelayMillis: 10000
 };
-
-// Add detailed connection logging
-pool.on('connect', (client) => {
-  console.log('New client connected to RDS:', {
-    pid: client.processID,
-    database: pool.options.database,
-    user: pool.options.user,
-    host: pool.options.host,
-    port: pool.options.port
-  });
-});
-
-pool.on('error', (err) => {
-  console.error('RDS Pool Error:', {
-    message: err.message,
-    code: err.code,
-    detail: err.detail,
-    stack: err.stack,
-    timestamp: new Date().toISOString()
-  });
-});
 
 const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
 
@@ -73,6 +39,7 @@ const pool = new Pool({
   ...poolConfig
 });
 
+// Event handlers after pool initialization
 pool.on('connect', async (client) => {
   console.log('Connected to RDS:', {
     timestamp: new Date().toISOString(),
@@ -80,8 +47,7 @@ pool.on('connect', async (client) => {
     host: pool.options.host,
     port: pool.options.port,
   });
-  
-  // Verify tables exist
+
   try {
     const tables = await client.query(`
       SELECT table_name 
@@ -96,8 +62,10 @@ pool.on('connect', async (client) => {
 
 pool.on('error', (err) => {
   console.error('RDS Pool Error:', {
-    message: err instanceof Error ? err.message : String(err),
-    code: err instanceof Error && 'code' in err ? (err as any).code : undefined,
+    message: err.message,
+    code: err.code,
+    detail: err.detail,
+    stack: err.stack,
     timestamp: new Date().toISOString()
   });
 });
