@@ -143,6 +143,16 @@ export default function SupplementHistory() {
               )}
             </CardContent>
           </Card>
+          
+          {/* Back to Dashboard Button */}
+          <div className="mt-6">
+            <Link href="/dashboard">
+              <Button className="bg-white text-[#1b4332] hover:bg-white/90 flex items-center gap-2">
+                <ChevronLeft className="h-4 w-4" />
+                Back to Tracking
+              </Button>
+            </Link>
+          </div>
         </div>
       </main>
       <Footer />
