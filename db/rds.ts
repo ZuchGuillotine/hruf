@@ -28,6 +28,15 @@ const rootUrl = getRootUrl(rdsUrl);
 
 console.log('Attempting to connect to RDS with URL pattern:', 
   rdsUrl.replace(/:[^:@]+@/, ':****@'));
+console.log('Network Configuration:', {
+  sourceRegion: 'us-east-1',
+  targetRegion: 'us-east-2',
+  internetGateway: 'igw-0f7c57458c5d92051',
+  sourceIP: '34.148.196.141',
+  targetIP: '18.190.138.254',
+  port: 5432,
+  connectionTimeout: poolConfig.connectionTimeoutMillis
+});
 
 // Enhanced pool configuration with aggressive timeouts and retry strategy
 const poolConfig = {
