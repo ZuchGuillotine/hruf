@@ -216,14 +216,33 @@ export function setupAuth(app: Express) {
     (req, res, next) => {
       console.log('Starting Google OAuth flow:', {
         callbackUrl: CALLBACK_URL,
-        timestamp: new Date().toISOString()
+        environment: app.get("env"),
+        clientIdExists: !!GOOGLE_CLIENT_ID,
+        clientSecretExists: !!GOOGLE_CLIENT_SECRET,
+        timestamp: new Date().toISOString(),
+        repl: {
+          slug: process.env.REPL_SLUG,
+          owner: process.env.REPL_OWNER,
+          id: process.env.REPL_ID
+        }
       });
       next();
     },
-    passport.authenticate('google', { 
-      scope: ['profile', 'email'],
-      prompt: 'select_account'
-    })
+    (req, res, next) => {
+      try {
+        passport.authenticate('google', { 
+          scope: ['profile', 'email'],
+          prompt: 'select_account'
+        })(req, res, next);
+      } catch (error) {
+        console.error('Google OAuth authentication error:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        next(error);
+      }
+    }
   );
 
   app.get('/auth/google/callback',
