@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db";
-import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
+import { supplements, supplementLogs, supplementReference, healthStats, users } from "@db/schema";
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
@@ -38,8 +38,7 @@ export function registerRoutes(app: Express): Server {
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
     if (!req.isAuthenticated()) {
-      console.log('Authentication required but user not authenticated');
-      return res.status(401).json({ error: "Authentication required" });
+      return res.status(401).send("Authentication required");
     }
     next();
   };
@@ -47,8 +46,7 @@ export function registerRoutes(app: Express): Server {
   // Middleware to check admin role
   const requireAdmin = (req: Request, res: Response, next: Function) => {
     if (!req.user?.isAdmin) {
-      console.log('Admin access required but user is not admin:', req.user?.username);
-      return res.status(403).json({ error: "Admin access required" });
+      return res.status(403).send("Admin access required");
     }
     next();
   };
@@ -123,6 +121,7 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
 
   // Health Stats endpoints
   app.get("/api/health-stats", requireAuth, async (req, res) => {
@@ -338,16 +337,15 @@ export function registerRoutes(app: Express): Server {
               const [existingSupp] = await db
                 .select()
                 .from(supplements)
-                .where(eq(supplements.id, existing.supplementId))
-                .limit(1);
+                .where(eq(supplements.id, existing.supplementId));
 
               const hasChanges = 
                 (log.notes !== existing.notes) || 
                 (JSON.stringify(log.effects) !== JSON.stringify(existing.effects)) ||
                 (existingSupp && (
-                  existingSupp.dosage !== log.dosage ||
-                  existingSupp.name !== log.name ||
-                  existingSupp.frequency !== log.frequency
+                  existingSupp.dosage !== existing.dosage ||
+                  existingSupp.name !== existing.name ||
+                  existingSupp.frequency !== existing.frequency
                 ));
 
               // Only update if there are changes
@@ -504,8 +502,9 @@ export function registerRoutes(app: Express): Server {
       }
     });
 
-  // Admin blog management endpoints
-  app.get("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
+    // Admin endpoint to delete non-admin users
+    // Blog management endpoints
+  app.get("/api/blog", async (req, res) => {
     try {
       const posts = await db
         .select()
@@ -514,7 +513,25 @@ export function registerRoutes(app: Express): Server {
       res.json(posts);
     } catch (error) {
       console.error("Error fetching blog posts:", error);
-      res.status(500).json({ error: "Failed to fetch blog posts" });
+      res.status(500).send("Failed to fetch blog posts");
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, req.params.slug))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).send("Blog post not found");
+      }
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching blog post:", error);
+      res.status(500).send("Failed to fetch blog post");
     }
   });
 
@@ -537,20 +554,14 @@ export function registerRoutes(app: Express): Server {
       res.json(post);
     } catch (error) {
       console.error("Error creating blog post:", error);
-      res.status(500).json({ error: "Failed to create blog post" });
+      res.status(500).send("Failed to create blog post");
     }
   });
 
-  // Update the blog post edit endpoint
   app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { title, content, excerpt, thumbnailUrl } = req.body;
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const postId = parseInt(req.params.id);
-
-      if (isNaN(postId)) {
-        return res.status(400).json({ error: "Invalid post ID" });
-      }
 
       const [post] = await db
         .update(blogPosts)
@@ -562,80 +573,66 @@ export function registerRoutes(app: Express): Server {
           thumbnailUrl,
           updatedAt: new Date(),
         })
-        .where(eq(blogPosts.id, postId))
+        .where(eq(blogPosts.id, parseInt(req.params.id)))
         .returning();
 
       if (!post) {
-        return res.status(404).json({ error: "Blog post not found" });
+        return res.status(404).send("Blog post not found");
       }
 
       res.json(post);
     } catch (error) {
-      console.error("Error updating blog post:", {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      res.status(500).json({ error: "Failed to update blog post" });
+      console.error("Error updating blog post:", error);
+      res.status(500).send("Failed to update blog post");
     }
   });
 
-  // Update the blog post delete endpoint
   app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const postId = parseInt(req.params.id);
-
-      if (isNaN(postId)) {
-        return res.status(400).json({ error: "Invalid post ID" });
-      }
-
       const [post] = await db
         .delete(blogPosts)
-        .where(eq(blogPosts.id, postId))
+        .where(eq(blogPosts.id, parseInt(req.params.id)))
         .returning();
 
       if (!post) {
-        return res.status(404).json({ error: "Blog post not found" });
+        return res.status(404).send("Blog post not found");
       }
 
       res.json({ message: "Blog post deleted successfully" });
     } catch (error) {
-      console.error("Error deleting blog post:", {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      res.status(500).json({ error: "Failed to delete blog post" });
+      console.error("Error deleting blog post:", error);
+      res.status(500).send("Failed to delete blog post");
     }
   });
 
-    // Admin endpoint to delete non-admin users
-    app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
-        try {
-          const result = await db
-            .delete(users)
-            .where(eq(users.isAdmin, false))
-            .returning();
+  app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const result = await db
+          .delete(users)
+          .where(eq(users.isAdmin, false))
+          .returning();
 
-          console.log('Successfully deleted non-admin users:', {
-            count: result.length,
-            timestamp: new Date().toISOString()
-          });
+        console.log('Successfully deleted non-admin users:', {
+          count: result.length,
+          timestamp: new Date().toISOString()
+        });
 
-          res.json({ 
-            message: `Successfully deleted ${result.length} non-admin users`,
-            deletedCount: result.length 
-          });
-        } catch (error) {
-          console.error("Error deleting non-admin users:", {
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
-            timestamp: new Date().toISOString()
-          });
-          res.status(500).json({
-            error: "Failed to delete non-admin users",
-            details: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-      });
+        res.json({ 
+          message: `Successfully deleted ${result.length} non-admin users`,
+          deletedCount: result.length 
+        });
+      } catch (error) {
+        console.error("Error deleting non-admin users:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        res.status(500).json({
+          error: "Failed to delete non-admin users",
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
 
 
   const httpServer = createServer(app);
