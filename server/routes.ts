@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db";
-import { supplements, supplementLogs, supplementReference, healthStats, users } from "@db/schema";
+import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
 import { eq, and, ilike, sql } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
@@ -504,135 +504,135 @@ export function registerRoutes(app: Express): Server {
 
     // Admin endpoint to delete non-admin users
     // Blog management endpoints
-  app.get("/api/blog", async (req, res) => {
-    try {
-      const posts = await db
-        .select()
-        .from(blogPosts)
-        .orderBy(sql`${blogPosts.publishedAt} DESC`);
-      res.json(posts);
-    } catch (error) {
-      console.error("Error fetching blog posts:", error);
-      res.status(500).send("Failed to fetch blog posts");
-    }
-  });
-
-  app.get("/api/blog/:slug", async (req, res) => {
-    try {
-      const [post] = await db
-        .select()
-        .from(blogPosts)
-        .where(eq(blogPosts.slug, req.params.slug))
-        .limit(1);
-
-      if (!post) {
-        return res.status(404).send("Blog post not found");
-      }
-      res.json(post);
-    } catch (error) {
-      console.error("Error fetching blog post:", error);
-      res.status(500).send("Failed to fetch blog post");
-    }
-  });
-
-  app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { title, content, excerpt, thumbnailUrl } = req.body;
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-      const [post] = await db
-        .insert(blogPosts)
-        .values({
-          title,
-          slug,
-          content,
-          excerpt,
-          thumbnailUrl,
-        })
-        .returning();
-
-      res.json(post);
-    } catch (error) {
-      console.error("Error creating blog post:", error);
-      res.status(500).send("Failed to create blog post");
-    }
-  });
-
-  app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const { title, content, excerpt, thumbnailUrl } = req.body;
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-      const [post] = await db
-        .update(blogPosts)
-        .set({
-          title,
-          slug,
-          content,
-          excerpt,
-          thumbnailUrl,
-          updatedAt: new Date(),
-        })
-        .where(eq(blogPosts.id, parseInt(req.params.id)))
-        .returning();
-
-      if (!post) {
-        return res.status(404).send("Blog post not found");
-      }
-
-      res.json(post);
-    } catch (error) {
-      console.error("Error updating blog post:", error);
-      res.status(500).send("Failed to update blog post");
-    }
-  });
-
-  app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const [post] = await db
-        .delete(blogPosts)
-        .where(eq(blogPosts.id, parseInt(req.params.id)))
-        .returning();
-
-      if (!post) {
-        return res.status(404).send("Blog post not found");
-      }
-
-      res.json({ message: "Blog post deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting blog post:", error);
-      res.status(500).send("Failed to delete blog post");
-    }
-  });
-
-  app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
+    app.get("/api/blog", async (req, res) => {
       try {
-        const result = await db
-          .delete(users)
-          .where(eq(users.isAdmin, false))
-          .returning();
-
-        console.log('Successfully deleted non-admin users:', {
-          count: result.length,
-          timestamp: new Date().toISOString()
-        });
-
-        res.json({ 
-          message: `Successfully deleted ${result.length} non-admin users`,
-          deletedCount: result.length 
-        });
+        const posts = await db
+          .select()
+          .from(blogPosts)
+          .orderBy(sql`${blogPosts.publishedAt} DESC`);
+        res.json(posts);
       } catch (error) {
-        console.error("Error deleting non-admin users:", {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
-        res.status(500).json({
-          error: "Failed to delete non-admin users",
-          details: error instanceof Error ? error.message : 'Unknown error'
-        });
+        console.error("Error fetching blog posts:", error);
+        res.status(500).send("Failed to fetch blog posts");
       }
     });
+
+    app.get("/api/blog/:slug", async (req, res) => {
+      try {
+        const [post] = await db
+          .select()
+          .from(blogPosts)
+          .where(eq(blogPosts.slug, req.params.slug))
+          .limit(1);
+
+        if (!post) {
+          return res.status(404).send("Blog post not found");
+        }
+        res.json(post);
+      } catch (error) {
+        console.error("Error fetching blog post:", error);
+        res.status(500).send("Failed to fetch blog post");
+      }
+    });
+
+    app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const { title, content, excerpt, thumbnailUrl } = req.body;
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        const [post] = await db
+          .insert(blogPosts)
+          .values({
+            title,
+            slug,
+            content,
+            excerpt,
+            thumbnailUrl,
+          })
+          .returning();
+
+        res.json(post);
+      } catch (error) {
+        console.error("Error creating blog post:", error);
+        res.status(500).send("Failed to create blog post");
+      }
+    });
+
+    app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const { title, content, excerpt, thumbnailUrl } = req.body;
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        const [post] = await db
+          .update(blogPosts)
+          .set({
+            title,
+            slug,
+            content,
+            excerpt,
+            thumbnailUrl,
+            updatedAt: new Date(),
+          })
+          .where(eq(blogPosts.id, parseInt(req.params.id)))
+          .returning();
+
+        if (!post) {
+          return res.status(404).send("Blog post not found");
+        }
+
+        res.json(post);
+      } catch (error) {
+        console.error("Error updating blog post:", error);
+        res.status(500).send("Failed to update blog post");
+      }
+    });
+
+    app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
+      try {
+        const [post] = await db
+          .delete(blogPosts)
+          .where(eq(blogPosts.id, parseInt(req.params.id)))
+          .returning();
+
+        if (!post) {
+          return res.status(404).send("Blog post not found");
+        }
+
+        res.json({ message: "Blog post deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting blog post:", error);
+        res.status(500).send("Failed to delete blog post");
+      }
+    });
+
+    app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
+        try {
+          const result = await db
+            .delete(users)
+            .where(eq(users.isAdmin, false))
+            .returning();
+
+          console.log('Successfully deleted non-admin users:', {
+            count: result.length,
+            timestamp: new Date().toISOString()
+          });
+
+          res.json({ 
+            message: `Successfully deleted ${result.length} non-admin users`,
+            deletedCount: result.length 
+          });
+        } catch (error) {
+          console.error("Error deleting non-admin users:", {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString()
+          });
+          res.status(500).json({
+            error: "Failed to delete non-admin users",
+            details: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      });
 
 
   const httpServer = createServer(app);
