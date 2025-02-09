@@ -1,9 +1,16 @@
+/**
+ * IMPORTANT: This file manages the schema for the Reference/Autocomplete RDS Database
+ * This database is used ONLY for supplement name autocomplete functionality
+ * DO NOT MODIFY this schema as it may break the autocomplete feature
+ * 
+ * For supplement tracking and chat logging schema, see supplement-rds-schema.ts
+ */
 import { rdsDb } from "../rds";
 import { sql } from "drizzle-orm";
 
 async function main() {
   try {
-    console.log("Starting RDS schema creation...");
+    console.log("Starting Reference/Autocomplete RDS schema creation...");
 
     // Enable pg_trgm extension for fuzzy search
     console.log("Attempting to enable pg_trgm extension...");
@@ -40,10 +47,10 @@ async function main() {
         ON supplement_reference (category);
     `);
 
-    console.log("Supplement reference schema created successfully");
+    console.log("Reference/Autocomplete schema created successfully");
 
   } catch (error) {
-    console.error("Error creating RDS schema:", error);
+    console.error("Error creating Reference/Autocomplete RDS schema:", error);
     throw error;
   }
 }

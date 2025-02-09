@@ -3,6 +3,17 @@ const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import { supplementReference } from "./schema";
 
+/**
+ * Database: AWS RDS (stacktrackertest1)
+ * Purpose: Supplement name autocomplete with fuzzy search
+ * Features: pg_trgm extension enabled
+ * Tables: supplement_reference
+ * 
+ * NOTE: This database is SEPARATE from:
+ * 1. NeonDB (Replit) - Core user data & health stats
+ * 2. STusertest (AWS RDS) - Supplement & chat logging
+ */
+
 if (!process.env.AWS_RDS_URL) {
   throw new Error("AWS_RDS_URL must be set for supplement reference database");
 }
@@ -38,7 +49,7 @@ const poolConfig = {
   keepAliveInitialDelayMillis: 5000,
   statement_timeout: 120000,
   query_timeout: 120000,
-  application_name: 'supplement-tracker',
+  application_name: 'supplement-reference-autocomplete',
   retry_strategy: {
     retries: 5,
     factor: 1.5,
@@ -54,21 +65,9 @@ const poolConfig = {
 const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
 const rootUrl = getRootUrl(rdsUrl);
 
-console.log('Attempting to connect to RDS with URL pattern:', 
-  rdsUrl.replace(/:[^:@]+@/, ':****@'));
-console.log('Network Configuration:', {
-  sourceRegion: 'us-east-1',
-  targetRegion: 'us-east-2',
-  internetGateway: 'igw-0f7c57458c5d92051',
-  sourceIP: '34.148.196.141',
-  targetIP: '18.190.138.254',
-  port: 5432,
-  connectionTimeout: poolConfig.connectionTimeoutMillis
-});
-
 const getConnectionString = (url: string) => {
   const parsed = new URL(url);
-  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=require&connect_timeout=10&application_name=supplement-tracker`;
+  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=require&connect_timeout=10&application_name=supplement-reference-autocomplete`;
 };
 
 const rootPool = new Pool({
@@ -76,68 +75,28 @@ const rootPool = new Pool({
   ...poolConfig
 });
 
-export const createDatabaseIfNotExists = async () => {
-  const client = await rootPool.connect();
-  try {
-    const dbName = rdsUrl.split('/').pop()?.split('?')[0];
-    if (!dbName) throw new Error('Could not extract database name from URL');
-
-    console.log('Checking if database exists:', dbName);
-    const result = await client.query(
-      "SELECT 1 FROM pg_database WHERE datname = $1",
-      [dbName]
-    );
-
-    if (result.rows.length === 0) {
-      console.log(`Creating database ${dbName}...`);
-      await client.query(`CREATE DATABASE "${dbName}"`);
-      console.log('Database created successfully');
-    } else {
-      console.log('Database already exists');
-    }
-  } catch (error) {
-    console.error('Error in createDatabaseIfNotExists:', {
-      message: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString(),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    throw error;
-  } finally {
-    client.release();
-  }
-};
-
 const pool = new Pool({
   connectionString: getConnectionString(rdsUrl),
   ...poolConfig
 });
 
 pool.on('connect', (client) => {
-  console.log('New client connected to PostgreSQL:', {
+  console.log('Connected to stacktrackertest1 (Autocomplete RDS):', {
     timestamp: new Date().toISOString(),
     database: pool.options.database,
     host: pool.options.host,
     port: pool.options.port,
     user: pool.options.user,
-    application_name: pool.options.application_name
   });
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected PostgreSQL error:', {
+  console.error('Error in stacktrackertest1 (Autocomplete RDS):', {
     message: err instanceof Error ? err.message : String(err),
     code: err instanceof Error && 'code' in err ? (err as any).code : undefined,
     stack: err instanceof Error ? err.stack : undefined,
     timestamp: new Date().toISOString()
   });
-});
-
-pool.on('acquire', () => {
-  console.log('Client acquired from pool');
-});
-
-pool.on('remove', () => {
-  console.log('Client removed from pool');
 });
 
 export const rdsDb = drizzle(pool);
