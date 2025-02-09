@@ -20,16 +20,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Loading states and error handling
 - Protected admin routes
 - Blog post schema with proper timestamps
+- Supplemental RDS database integration for enhanced data storage
+- Google OAuth authentication system (in progress)
+  - Support for both login and signup flows
+  - Passport.js Google Strategy implementation
 
 ### Changed
 - Updated frontend routing to include blog management
 - Enhanced admin dashboard layout
 - Improved data consistency between admin and public views
+- Modified authentication system to support multiple strategies
+- Updated database connection to use supplemental RDS
 
 ### Fixed
 - Blog post schema implementation
 - Data synchronization between admin dashboard and public views
 - API endpoint authentication checks
+
+### Known Issues
+- Google OAuth authentication experiencing 403 errors
+- Need to finalize callback URL configuration for Google authentication
 
 ## [0.1.0] - 2025-02-09
 ### Added
