@@ -50,45 +50,6 @@ export default function LLMChat() {
     }
   };
 
-  const handleSaveChat = async () => {
-    if (messages.length === 0) {
-      toast({
-        variant: 'default',
-        title: 'Nothing to save',
-        description: 'Have a conversation first before saving.',
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/chat/history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages,
-        }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save chat history');
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Chat history saved successfully',
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save chat history',
-      });
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 pr-4">
@@ -110,38 +71,26 @@ export default function LLMChat() {
         </div>
       </ScrollArea>
 
-      <div className="mt-4 space-y-4">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about supplements, interactions, or health advice..."
-            className="bg-white/10 text-white placeholder:text-white/60"
-            disabled={isLoading}
-          />
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="bg-white text-[#1b4332] hover:bg-white/90"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <SendHorizontal className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
-
-        <div className="flex justify-center"> {/* This line was added */}
-          <Button
-            onClick={handleSaveChat}
-            disabled={messages.length === 0 || isLoading}
-            className="w-2/3 bg-white text-[#1b4332] hover:bg-white/90"
-          >
-            Save Chat History
-          </Button>
-        </div> {/* This line was added */}
-      </div>
+      <form onSubmit={handleSubmit} className="mt-4 flex gap-2">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about supplements, interactions, or health advice..."
+          className="bg-white/10 text-white placeholder:text-white/60"
+          disabled={isLoading}
+        />
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="bg-white text-[#1b4332] hover:bg-white/90"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <SendHorizontal className="h-4 w-4" />
+          )}
+        </Button>
+      </form>
     </div>
   );
 }
