@@ -33,18 +33,38 @@ const ensureCorrectProtocol = (url: string) => {
 const poolConfig = {
   ssl: {
     rejectUnauthorized: false,
-    sslmode: 'require',
-    ssl: true,
+    sslmode: 'prefer', // Changed from require to prefer
   },
-  connectionTimeoutMillis: 30000, // Increased timeout
+  connectionTimeoutMillis: 60000, // Increased timeout further
   idleTimeoutMillis: 30000,
-  max: 10, // Reduced pool size for better stability
+  max: 5, // Further reduced pool size
   keepAlive: true,
   statement_timeout: 30000,
   query_timeout: 30000,
   application_name: 'stacktracker-rds',
   keepaliveInitialDelayMillis: 10000
 };
+
+// Add detailed connection logging
+pool.on('connect', (client) => {
+  console.log('New client connected to RDS:', {
+    pid: client.processID,
+    database: pool.options.database,
+    user: pool.options.user,
+    host: pool.options.host,
+    port: pool.options.port
+  });
+});
+
+pool.on('error', (err) => {
+  console.error('RDS Pool Error:', {
+    message: err.message,
+    code: err.code,
+    detail: err.detail,
+    stack: err.stack,
+    timestamp: new Date().toISOString()
+  });
+});
 
 const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
 
