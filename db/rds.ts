@@ -36,13 +36,14 @@ const poolConfig = {
     sslmode: 'require',
     ssl: true,
   },
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 10000,
-  max: 20, // Increased pool size for multiple tables
+  connectionTimeoutMillis: 30000, // Increased timeout
+  idleTimeoutMillis: 30000,
+  max: 10, // Reduced pool size for better stability
   keepAlive: true,
-  statement_timeout: 120000,
-  query_timeout: 120000,
+  statement_timeout: 30000,
+  query_timeout: 30000,
   application_name: 'stacktracker-rds',
+  keepaliveInitialDelayMillis: 10000
 };
 
 const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);

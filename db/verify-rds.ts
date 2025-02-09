@@ -5,9 +5,15 @@ import { sql } from "drizzle-orm";
 async function verifyRdsConnection() {
   try {
     console.log('Verifying RDS connection and tables...');
+    console.log('Connection URL pattern:', process.env.AWS_RDS_URL?.replace(/:[^:@]*@/, ':****@'));
 
-    // Test general connectivity
-    await rdsDb.execute(sql`SELECT 1`);
+    // Test general connectivity with timeout
+    await Promise.race([
+      rdsDb.execute(sql`SELECT 1`),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout after 30s')), 30000)
+      )
+    ]);
     console.log('Basic connection successful');
 
     // Test supplement_reference table
