@@ -115,8 +115,16 @@ export function setupAuth(app: Express) {
     : process.env.GOOGLE_CLIENT_SECRET_TEST;
 
   const CALLBACK_URL = app.get("env") === "production"
-    ? "https://your-production-url/auth/google/callback"  // This will be replaced with actual production URL
-    : "https://" + process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co/auth/google/callback";
+    ? process.env.PRODUCTION_URL + "/auth/google/callback"
+    : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
+
+  console.log('Initializing Google OAuth with:', {
+    callbackUrl: CALLBACK_URL,
+    environment: app.get("env"),
+    hasClientId: !!GOOGLE_CLIENT_ID,
+    hasClientSecret: !!GOOGLE_CLIENT_SECRET,
+    timestamp: new Date().toISOString()
+  });
 
   passport.use(
     new GoogleStrategy(
@@ -128,6 +136,12 @@ export function setupAuth(app: Express) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
+          console.log('Google OAuth callback received:', {
+            profileId: profile.id,
+            email: profile.emails?.[0]?.value,
+            timestamp: new Date().toISOString()
+          });
+
           // Check if user exists
           const [existingUser] = await db
             .select()
@@ -136,21 +150,32 @@ export function setupAuth(app: Express) {
             .limit(1);
 
           if (existingUser) {
-            // Update user's Google-specific info if needed
+            console.log('Existing user found:', {
+              userId: existingUser.id,
+              email: existingUser.email,
+              timestamp: new Date().toISOString()
+            });
             return done(null, existingUser);
           }
 
+          console.log('Creating new user from Google profile');
           // Create new user
           const [newUser] = await db
             .insert(users)
             .values({
               email: profile.emails![0].value,
-              username: profile.emails![0].value.split('@')[0], // Create username from email
-              password: await crypto.hash(randomBytes(32).toString('hex')), // Random secure password
+              username: profile.emails![0].value.split('@')[0],
+              password: await crypto.hash(randomBytes(32).toString('hex')),
               name: profile.displayName,
-              emailVerified: true, // Google accounts are pre-verified
+              emailVerified: true,
             })
             .returning();
+
+          console.log('New user created:', {
+            userId: newUser.id,
+            email: newUser.email,
+            timestamp: new Date().toISOString()
+          });
 
           return done(null, newUser);
         } catch (error) {
@@ -165,25 +190,15 @@ export function setupAuth(app: Express) {
     )
   );
 
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
-
   // Google OAuth routes
   app.get('/auth/google',
+    (req, res, next) => {
+      console.log('Starting Google OAuth flow:', {
+        callbackUrl: CALLBACK_URL,
+        timestamp: new Date().toISOString()
+      });
+      next();
+    },
     passport.authenticate('google', { 
       scope: ['profile', 'email'],
       prompt: 'select_account'
@@ -191,11 +206,19 @@ export function setupAuth(app: Express) {
   );
 
   app.get('/auth/google/callback',
+    (req, res, next) => {
+      console.log('Received Google OAuth callback:', {
+        query: req.query,
+        timestamp: new Date().toISOString()
+      });
+      next();
+    },
     passport.authenticate('google', { 
       failureRedirect: '/login',
       failureMessage: true
     }),
     (req, res) => {
+      console.log('Google OAuth authentication successful, redirecting to dashboard');
       res.redirect('/dashboard');
     }
   );
