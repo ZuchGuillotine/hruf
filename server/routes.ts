@@ -148,23 +148,34 @@ export function registerRoutes(app: Express): Server {
       // Get AI response
       const response = await chatWithAI(messages);
 
-      // Store the conversation in qualitative_logs
+      // Store the conversation in qualitative_logs with enhanced metadata
       const lastUserMessage = messages[messages.length - 1];
-      await supplementRdsDb
+      const logResult = await supplementRdsDb
         .insert(qualitativeLogs)
         .values({
           userId: req.user!.id,
           content: JSON.stringify({
             userMessage: lastUserMessage,
-            aiResponse: response
+            aiResponse: response,
+            fullContext: messages
           }),
           type: 'chat',
           tags: ['ai_conversation'],
           metadata: {
             messageCount: messages.length,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            conversationLength: messages.length,
+            userMessageCount: messages.filter(m => m.role === 'user').length,
+            assistantMessageCount: messages.filter(m => m.role === 'assistant').length
           }
-        });
+        })
+        .returning();
+
+      console.log('Chat log saved:', {
+        logId: logResult[0].id,
+        userId: req.user!.id,
+        timestamp: new Date().toISOString()
+      });
 
       res.json(response);
     } catch (error: any) {
