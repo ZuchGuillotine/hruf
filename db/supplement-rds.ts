@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import postgres from 'pg';
+const { Pool } = postgres;
 
 const supplementPool = new Pool({
   host: process.env.SUPPLEMENT_RDS_HOST,
@@ -12,13 +12,28 @@ const supplementPool = new Pool({
   }
 });
 
+import { drizzle } from 'drizzle-orm/node-postgres';
+
 export const supplementRdsDb = drizzle(supplementPool);
 
 // Verify connection
 supplementPool.query('SELECT NOW()', (err, res) => {
   if (err) {
-    console.error('Error connecting to supplement RDS:', err);
+    console.error('Error connecting to supplement RDS:', {
+      error: err.message,
+      stack: err.stack,
+      timestamp: new Date().toISOString()
+    });
   } else {
     console.log('Successfully connected to supplement RDS database');
   }
+});
+
+// Handle pool errors
+supplementPool.on('error', (err) => {
+  console.error('Unexpected error on supplement RDS idle client:', {
+    error: err.message,
+    stack: err.stack,
+    timestamp: new Date().toISOString()
+  });
 });

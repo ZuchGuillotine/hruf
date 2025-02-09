@@ -1,5 +1,6 @@
 import passport from "passport";
 import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { type Express } from "express";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -67,15 +68,15 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Local Strategy
   passport.use(
     new LocalStrategy(
       {
-        usernameField: "email", // We'll use this field for both email and username
+        usernameField: "email",
         passwordField: "password",
       },
       async (emailOrUsername, password, done) => {
         try {
-          // Check both email and username fields
           const [user] = await db
             .select()
             .from(users)
@@ -104,6 +105,66 @@ export function setupAuth(app: Express) {
     )
   );
 
+  // Google OAuth Strategy
+  const GOOGLE_CLIENT_ID = app.get("env") === "production"
+    ? process.env.GOOGLE_CLIENT_ID_PROD
+    : process.env.GOOGLE_CLIENT_ID_TEST;
+
+  const GOOGLE_CLIENT_SECRET = app.get("env") === "production"
+    ? process.env.GOOGLE_CLIENT_SECRET_PROD
+    : process.env.GOOGLE_CLIENT_SECRET_TEST;
+
+  const CALLBACK_URL = app.get("env") === "production"
+    ? "https://your-production-url/auth/google/callback"  // This will be replaced with actual production URL
+    : "https://" + process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co/auth/google/callback";
+
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID!,
+        clientSecret: GOOGLE_CLIENT_SECRET!,
+        callbackURL: CALLBACK_URL,
+        userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          // Check if user exists
+          const [existingUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, profile.emails![0].value))
+            .limit(1);
+
+          if (existingUser) {
+            // Update user's Google-specific info if needed
+            return done(null, existingUser);
+          }
+
+          // Create new user
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email: profile.emails![0].value,
+              username: profile.emails![0].value.split('@')[0], // Create username from email
+              password: await crypto.hash(randomBytes(32).toString('hex')), // Random secure password
+              name: profile.displayName,
+              emailVerified: true, // Google accounts are pre-verified
+            })
+            .returning();
+
+          return done(null, newUser);
+        } catch (error) {
+          console.error('Google auth error:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString()
+          });
+          return done(error as Error);
+        }
+      }
+    )
+  );
+
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
@@ -121,6 +182,25 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Google OAuth routes
+  app.get('/auth/google',
+    passport.authenticate('google', { 
+      scope: ['profile', 'email'],
+      prompt: 'select_account'
+    })
+  );
+
+  app.get('/auth/google/callback',
+    passport.authenticate('google', { 
+      failureRedirect: '/login',
+      failureMessage: true
+    }),
+    (req, res) => {
+      res.redirect('/dashboard');
+    }
+  );
+
+  // Local auth routes (unchanged from original)
   app.post("/api/register", async (req, res, next) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
@@ -202,7 +282,7 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error, user: Express.User, info: IVerifyOptions) => {
       if (err) return next(err);
-      if (!user) return res.status(401).send(info.message);
+      if (!user) return res.status(401).json({ error: info.message });
 
       req.login(user, (err) => {
         if (err) return next(err);
@@ -223,14 +303,14 @@ export function setupAuth(app: Express) {
 
   app.post("/api/logout", (req, res) => {
     req.logout((err) => {
-      if (err) return res.status(500).send("Logout failed");
+      if (err) return res.status(500).json({ error: "Logout failed" });
       res.json({ message: "Logged out successfully" });
     });
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
+      return res.status(401).json({ error: "Not authenticated" });
     }
     res.json(req.user);
   });

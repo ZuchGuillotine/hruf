@@ -19,37 +19,19 @@ import { Separator } from "@/components/ui/separator";
 import LandingHeader from "@/components/landing-header";
 import BackgroundWords from "@/components/background-words";
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-        };
-      };
-    };
-  }
-}
-
 type FormData = {
   email: string;
   password: string;
   username?: string;
 };
 
-type GoogleResponse = {
-  credential: string;
-};
-
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    // Default to signup form unless login parameter is present
     return params.has('login');
   });
   const [verificationSent, setVerificationSent] = useState(false);
-  const { login, register, googleLogin } = useUser();
+  const { login, register } = useUser();
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -59,39 +41,6 @@ export default function AuthPage() {
       username: "",
     },
   });
-
-  const handleGoogleResponse = async (response: GoogleResponse) => {
-    try {
-      await googleLogin(response.credential);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    }
-  };
-
-  useEffect(() => {
-    const initializeGoogle = () => {
-      if (!window.google?.accounts?.id) return;
-
-      window.google.accounts.id.initialize({
-        client_id: "798510659255-vhb18ruokhvkbft5ddjo0pke399fhjgi.apps.googleusercontent.com",
-        callback: handleGoogleResponse,
-      });
-
-      const buttonContainer = document.getElementById("google-signin");
-      if (buttonContainer) {
-        window.google.accounts.id.renderButton(buttonContainer, {
-          theme: "outline",
-          size: "large",
-        });
-      }
-    };
-
-    setTimeout(initializeGoogle, 100);
-  }, [googleLogin]);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -104,9 +53,11 @@ export default function AuthPage() {
         }
       }
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('Authentication error:', error);
 
-      let errorMessage = "Registration failed. Please try again.";
+      let errorMessage = isLogin 
+        ? "Login failed. Please check your credentials."
+        : "Registration failed. Please try again.";
 
       if (error.response?.data) {
         errorMessage = error.response.data.message || errorMessage;
@@ -116,11 +67,16 @@ export default function AuthPage() {
 
       toast({
         variant: "destructive",
-        title: "Registration Error",
+        title: isLogin ? "Login Error" : "Registration Error",
         description: errorMessage,
         duration: 5000,
       });
     }
+  };
+
+  const handleGoogleLogin = () => {
+    // Redirect to the backend's Google authentication route
+    window.location.href = '/auth/google';
   };
 
   if (verificationSent) {
@@ -168,7 +124,7 @@ export default function AuthPage() {
       <div className="flex-grow flex items-center justify-center px-4 relative z-10">
         <Card className="auth-card w-full max-w-[380px]">
           <CardHeader className="text-center">
-            <CardTitle>{isLogin ? "Login" : "Signup"}</CardTitle>
+            <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
             <CardDescription>
               {isLogin
                 ? "Sign in to your account using your email or username"
@@ -223,7 +179,17 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <div id="google-signin" className="flex justify-center mt-4"></div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleLogin}
+              >
+                <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                  <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                </svg>
+                Continue with Google
+              </Button>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button
@@ -234,7 +200,7 @@ export default function AuthPage() {
                 {form.formState.isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isLogin ? "Sign In" : "Signup"}
+                {isLogin ? "Sign In" : "Sign Up"}
               </Button>
               <Button
                 type="button"

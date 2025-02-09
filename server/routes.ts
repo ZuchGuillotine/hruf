@@ -4,13 +4,42 @@ import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db";
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
-import { eq, and, ilike, sql } from "drizzle-orm";
+import { eq, and, ilike, sql, desc } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
+import { qualitativeLogs } from "@db/schema";
+import { supplementRdsDb } from "../db/supplement-rds";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+
+  // Middleware to check authentication
+  const requireAuth = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      console.log('Authentication check failed:', {
+        session: req.session,
+        user: req.user,
+        timestamp: new Date().toISOString()
+      });
+      return res.status(401).json({ 
+        error: "Authentication required",
+        redirect: "/login"
+      });
+    }
+    next();
+  };
+
+  // Middleware to check admin role
+  const requireAdmin = (req: Request, res: Response, next: Function) => {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ 
+        error: "Admin access required",
+        message: "You do not have admin privileges"
+      });
+    }
+    next();
+  };
 
   // Test email endpoint (remove in production)
   app.post("/api/test-email", async (req, res) => {
@@ -34,22 +63,6 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-
-  // Middleware to check authentication
-  const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Authentication required");
-    }
-    next();
-  };
-
-  // Middleware to check admin role
-  const requireAdmin = (req: Request, res: Response, next: Function) => {
-    if (!req.user?.isAdmin) {
-      return res.status(403).send("Admin access required");
-    }
-    next();
-  };
 
 
   // Add 2FA endpoint
@@ -123,6 +136,79 @@ export function registerRoutes(app: Express): Server {
   });
 
 
+  // Chat endpoint with storage
+  app.post("/api/chat", requireAuth, async (req, res) => {
+    try {
+      const { messages } = req.body;
+
+      if (!Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages must be an array" });
+      }
+
+      // Get AI response
+      const response = await chatWithAI(messages);
+
+      // Store the conversation in qualitative_logs
+      const lastUserMessage = messages[messages.length - 1];
+      await supplementRdsDb
+        .insert(qualitativeLogs)
+        .values({
+          userId: req.user!.id,
+          content: JSON.stringify({
+            userMessage: lastUserMessage,
+            aiResponse: response
+          }),
+          type: 'chat',
+          tags: ['ai_conversation'],
+          metadata: {
+            messageCount: messages.length,
+            timestamp: new Date().toISOString()
+          }
+        });
+
+      res.json(response);
+    } catch (error: any) {
+      console.error("Error in chat endpoint:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({ 
+        error: "Chat error",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Add endpoint to retrieve chat history
+  app.get("/api/chat/history", requireAuth, async (req, res) => {
+    try {
+      const history = await supplementRdsDb
+        .select()
+        .from(qualitativeLogs)
+        .where(
+          and(
+            eq(qualitativeLogs.userId, req.user!.id),
+            eq(qualitativeLogs.type, 'chat')
+          )
+        )
+        .orderBy(desc(qualitativeLogs.loggedAt))
+        .limit(50);
+
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching chat history:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({
+        error: "Failed to fetch chat history",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Health Stats endpoints
   app.get("/api/health-stats", requireAuth, async (req, res) => {
     try {
@@ -193,22 +279,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error creating supplement reference:", error);
       res.status(500).send("Failed to create supplement reference");
-    }
-  });
-
-  // Chat endpoint
-  app.post("/api/chat", requireAuth, async (req, res) => {
-    try {
-      const { messages } = req.body;
-
-      if (!Array.isArray(messages)) {
-        return res.status(400).send("Messages must be an array");
-      }
-
-      const response = await chatWithAI(messages);
-      res.json(response);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
     }
   });
 
