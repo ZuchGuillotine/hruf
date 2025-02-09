@@ -1,6 +1,6 @@
-
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,24 +12,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  thumbnailUrl: string;
-  publishedAt: string;
-}
+import type { BlogPost } from "@/lib/types";
 
 export default function AdminBlogPosts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
   const [editingPost, setEditingPost] = React.useState<BlogPost | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [postToDelete, setPostToDelete] = React.useState<string | null>(null);
 
   const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
     queryKey: ['/api/admin/blog'],
@@ -56,6 +59,13 @@ export default function AdminBlogPosts() {
       setOpen(false);
       setEditingPost(null);
     },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to add post",
+        variant: "destructive"
+      });
+    }
   });
 
   const updatePost = useMutation({
@@ -74,6 +84,13 @@ export default function AdminBlogPosts() {
       setOpen(false);
       setEditingPost(null);
     },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to update post",
+        variant: "destructive" 
+      });
+    }
   });
 
   const deletePost = useMutation({
@@ -87,7 +104,16 @@ export default function AdminBlogPosts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
       toast({ title: "Success", description: "Blog post deleted successfully" });
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
     },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to delete post",
+        variant: "destructive"
+      });
+    }
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -107,11 +133,29 @@ export default function AdminBlogPosts() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      deletePost.mutate(id);
+  const handleDelete = (id: string) => {
+    setPostToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (postToDelete) {
+      deletePost.mutate(postToDelete);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,16 +241,27 @@ export default function AdminBlogPosts() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="p-4 border rounded-lg flex justify-between items-start"
+              className="p-4 border rounded-lg flex justify-between items-start bg-card"
             >
               <div className="flex-1">
-                <h2 className="font-semibold">{post.title}</h2>
-                <p className="text-sm text-gray-500 mb-2">
+                <h2 className="font-semibold text-lg">{post.title}</h2>
+                <p className="text-sm text-muted-foreground mb-2">
                   Published: {new Date(post.publishedAt).toLocaleDateString()}
+                  {post.updatedAt && ` • Updated: ${new Date(post.updatedAt).toLocaleDateString()}`}
                 </p>
-                <p className="text-sm text-gray-600 line-clamp-2">{post.excerpt}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
               </div>
               <div className="flex gap-2 ml-4">
+                <Link href={`/learn/${post.slug}`} target="_blank">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </Button>
+                </Link>
                 <Button
                   variant="outline"
                   size="sm"
@@ -233,6 +288,23 @@ export default function AdminBlogPosts() {
           ))}
         </div>
       </main>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the blog post.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
