@@ -35,11 +35,16 @@ export default function AdminBlogPosts() {
   const [postToDelete, setPostToDelete] = React.useState<string | null>(null);
 
   const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
-    queryKey: ['/api/admin/blog'],
+    queryKey: ['/api/blog'],
     queryFn: async () => {
-      const res = await fetch('/api/admin/blog');
-      if (!res.ok) throw new Error('Failed to fetch posts');
-      return res.json();
+      const res = await fetch('/api/blog');
+      if (!res.ok) {
+        console.error('Failed to fetch posts:', await res.text());
+        throw new Error('Failed to fetch posts');
+      }
+      const data = await res.json();
+      console.log('Fetched posts:', data);
+      return data;
     }
   });
 
@@ -54,7 +59,7 @@ export default function AdminBlogPosts() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
       toast({ title: "Success", description: "Blog post added successfully" });
       setOpen(false);
       setEditingPost(null);
@@ -79,7 +84,7 @@ export default function AdminBlogPosts() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
       toast({ title: "Success", description: "Blog post updated successfully" });
       setOpen(false);
       setEditingPost(null);
@@ -102,7 +107,7 @@ export default function AdminBlogPosts() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
       toast({ title: "Success", description: "Blog post deleted successfully" });
       setDeleteDialogOpen(false);
       setPostToDelete(null);
@@ -156,6 +161,8 @@ export default function AdminBlogPosts() {
       </div>
     );
   }
+
+  console.log('Rendering with posts:', posts);
 
   return (
     <div className="min-h-screen bg-background">
