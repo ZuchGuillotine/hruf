@@ -3,15 +3,31 @@ import { supplementReference } from "@db/schema";
 import { sql } from "drizzle-orm";
 import { Trie } from "../utils/trie";
 
+/**
+ * SupplementService
+ * 
+ * This service manages supplement reference data and provides search functionality.
+ * It uses a hybrid approach combining SQL database queries and an in-memory Trie
+ * data structure for efficient prefix-based searching and fuzzy matching.
+ * 
+ * The service maintains a synchronized state between the database and the Trie,
+ * ensuring fast lookups while maintaining data persistence.
+ */
 class SupplementService {
-  private trie: Trie;
-  private initialized: boolean;
+  private trie: Trie;               // In-memory search optimization structure
+  private initialized: boolean;      // Tracks if the service has loaded its data
 
   constructor() {
     this.trie = new Trie();
     this.initialized = false;
   }
 
+  /**
+   * Initializes the service by loading supplement reference data from the database
+   * into the Trie data structure. If no data exists, it runs the initial seeding.
+   * 
+   * @throws Error if initialization fails
+   */
   async initialize() {
     try {
       console.log("Initializing supplement service...");
@@ -45,11 +61,27 @@ class SupplementService {
     }
   }
 
+  /**
+   * Loads supplement data into the Trie data structure for fast searching
+   * @param supplements Array of supplement reference data to load
+   */
   private loadSupplements(supplements: any[]) {
     console.log(`Loading ${supplements.length} supplements into service`);
     this.trie.loadSupplements(supplements);
   }
 
+  /**
+   * Searches for supplements using a hybrid approach:
+   * 1. First tries a direct database search using ILIKE
+   * 2. Falls back to Trie-based search if no database results
+   * 
+   * The Trie search provides fuzzy matching capabilities for better
+   * user experience when exact matches aren't found.
+   * 
+   * @param query Search term from user input
+   * @param limit Maximum number of results to return
+   * @returns Array of matching supplement references
+   */
   async search(query: string, limit: number = 4) {
     try {
       if (!this.initialized) {
@@ -83,4 +115,5 @@ class SupplementService {
   }
 }
 
+// Singleton instance of the supplement service
 export const supplementService = new SupplementService();

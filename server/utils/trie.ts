@@ -1,9 +1,13 @@
 import { SelectSupplementReference } from "@db/schema";
 
+/**
+ * TrieNode class represents a node in the Trie data structure
+ * Used for efficient prefix-based searching of supplement names
+ */
 class TrieNode {
-  children: Map<string, TrieNode>;
-  isEndOfWord: boolean;
-  data: SelectSupplementReference | null;
+  children: Map<string, TrieNode>;     // Maps characters to child nodes
+  isEndOfWord: boolean;                // Marks if this node represents a complete word
+  data: SelectSupplementReference | null; // Stores supplement data at complete words
 
   constructor() {
     this.children = new Map();
@@ -12,6 +16,14 @@ class TrieNode {
   }
 }
 
+/**
+ * Calculates the Levenshtein distance between two strings
+ * Used for fuzzy matching when exact matches aren't found
+ * 
+ * @param str1 First string to compare
+ * @param str2 Second string to compare
+ * @returns Number representing the edit distance between strings
+ */
 function levenshteinDistance(str1: string, str2: string): number {
   const m = str1.length;
   const n = str2.length;
@@ -41,6 +53,13 @@ function levenshteinDistance(str1: string, str2: string): number {
   return dp[m][n];
 }
 
+/**
+ * Normalizes vitamin and supplement names for consistent searching
+ * Handles common misspellings and variations in supplement names
+ * 
+ * @param input Raw supplement name input
+ * @returns Normalized string for consistent matching
+ */
 function normalizeVitaminName(input: string): string {
   if (!input) return '';
 
@@ -58,23 +77,35 @@ function normalizeVitaminName(input: string): string {
   return normalized;
 }
 
+/**
+ * Trie data structure implementation for efficient supplement name searching
+ * Provides both exact prefix matching and fuzzy matching capabilities
+ */
 export class Trie {
   private root: TrieNode;
   private supplements: Map<string, SelectSupplementReference>;
-  private baseMaxDistance: number = 2;
+  private baseMaxDistance: number = 2;  // Base Levenshtein distance for fuzzy matching
 
   constructor() {
     this.root = new TrieNode();
     this.supplements = new Map();
   }
 
+  /**
+   * Determines maximum allowed edit distance based on word length
+   * Longer words allow for more variations in spelling
+   */
   private getMaxDistance(wordLength: number): number {
-    // Scale max distance based on word length
     if (wordLength <= 4) return this.baseMaxDistance;
     if (wordLength <= 8) return this.baseMaxDistance + 1;
     return this.baseMaxDistance + 2;
   }
 
+  /**
+   * Inserts a supplement into the Trie
+   * @param word Supplement name
+   * @param data Complete supplement reference data
+   */
   insert(word: string, data: SelectSupplementReference) {
     if (!word || !data) {
       console.warn('Attempted to insert invalid data into Trie:', { word, data });
@@ -96,6 +127,12 @@ export class Trie {
     this.supplements.set(normalizedWord, data);
   }
 
+  /**
+   * Searches for supplements by prefix with fuzzy matching fallback
+   * @param prefix Search prefix
+   * @param limit Maximum number of results to return
+   * @returns Array of matching supplement references
+   */
   search(prefix: string, limit: number = 4): SelectSupplementReference[] {
     const results: SelectSupplementReference[] = [];
     if (!prefix) {
@@ -133,6 +170,12 @@ export class Trie {
     return results;
   }
 
+  /**
+   * Performs fuzzy matching using Levenshtein distance
+   * @param query Search query
+   * @param limit Maximum number of results
+   * @returns Array of fuzzy-matched supplements
+   */
   private _fuzzySearch(query: string, limit: number): SelectSupplementReference[] {
     const results: SelectSupplementReference[] = [];
     const matches = new Map<string, { distance: number; data: SelectSupplementReference }>();
@@ -158,6 +201,10 @@ export class Trie {
     return results;
   }
 
+  /**
+   * Recursively finds all words in the Trie starting from a given node
+   * Used for collecting all matches for a prefix
+   */
   private _findAllWords(
     node: TrieNode, 
     prefix: string, 
@@ -176,6 +223,10 @@ export class Trie {
     });
   }
 
+  /**
+   * Bulk loads supplements into the Trie
+   * @param supplements Array of supplement references to load
+   */
   loadSupplements(supplements: SelectSupplementReference[]) {
     if (!Array.isArray(supplements)) {
       console.error('Invalid supplements data provided to loadSupplements');

@@ -1,7 +1,9 @@
+// Core database schema definitions for the supplement tracking application
 import { pgTable, text, serial, integer, boolean, timestamp, json, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
+// User account management and authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
@@ -18,6 +20,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// User health profile and statistics
 export const healthStats = pgTable("health_stats", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -29,6 +32,8 @@ export const healthStats = pgTable("health_stats", {
   lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Primary supplement tracking table - Stores user's active supplements
+// This table is in the main database and links to the external RDS for logs
 export const supplements = pgTable("supplements", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -42,6 +47,8 @@ export const supplements = pgTable("supplements", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Supplement tracking logs - This schema is mirrored in the external RDS database
+// Used for storing detailed supplement intake history and effects
 export const supplementLogs = pgTable("supplement_logs", {
   id: serial("id").primaryKey(),
   supplementId: integer("supplement_id").references(() => supplements.id),
@@ -56,6 +63,9 @@ export const supplementLogs = pgTable("supplement_logs", {
   }>(),
 });
 
+// Reference table for supplement names and categories
+// Used by the autocomplete feature when users search for supplements
+// This is in the main database and powers the Trie-based search functionality
 export const supplementReference = pgTable("supplement_reference", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
@@ -64,6 +74,7 @@ export const supplementReference = pgTable("supplement_reference", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Blog content management
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -76,7 +87,8 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// New qualitative_logs table
+// Qualitative user logs for AI interactions and general notes
+// Stored in the external RDS database for better scalability
 export const qualitativeLogs = pgTable("qualitative_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -88,6 +100,7 @@ export const qualitativeLogs = pgTable("qualitative_logs", {
   metadata: json("metadata").$type<Record<string, unknown>>(),
 });
 
+// Zod schemas for type-safe database operations
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
 export const insertHealthStatsSchema = createInsertSchema(healthStats);
@@ -100,10 +113,10 @@ export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
 export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
 export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
 
-// Add new schemas for the qualitative logs
 export const insertQualitativeLogSchema = createInsertSchema(qualitativeLogs);
 export const selectQualitativeLogSchema = createSelectSchema(qualitativeLogs);
 
+// TypeScript type definitions for database operations
 export type InsertUser = typeof users.$inferInsert;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
@@ -117,6 +130,5 @@ export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
 export type InsertSupplementReference = typeof supplementReference.$inferInsert;
 export type SelectSupplementReference = typeof supplementReference.$inferSelect;
 
-// Add new types
 export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;

@@ -2,8 +2,13 @@ import { db } from "@db";
 import { supplementReference } from "@db/schema";
 import { sql } from 'drizzle-orm';
 
+/**
+ * Initial supplement reference data
+ * This data serves as the base dataset for the supplement autocomplete feature
+ * Categories are used for organizing supplements in the UI and filtering
+ */
 const initialSupplements = [
-  // General Supplements
+  // General Supplements - Basic supplement forms
   { name: "Acai (General)", category: "General" },
   { name: "Amla (General)", category: "General" },
   { name: "Amla Extract", category: "Extracts" },
@@ -122,6 +127,18 @@ const initialSupplements = [
   { name: "Creatine HCL", category: "Amino Acids" },
 ];
 
+/**
+ * Seed function for populating the supplement reference database
+ * This is used by the autocomplete feature when users are adding supplements
+ * 
+ * Features:
+ * - Checks for existing data to prevent duplicate seeding
+ * - Performs batch inserts for better performance
+ * - Includes comprehensive error handling and logging
+ * 
+ * Note: This is different from the supplement logs database (RDS)
+ * which stores actual user supplement intake data.
+ */
 export async function seedSupplements() {
   try {
     console.log("Starting supplement reference data seeding...");
@@ -140,7 +157,7 @@ export async function seedSupplements() {
 
     console.log(`Preparing to seed ${initialSupplements.length} supplements...`);
 
-    // Insert supplements in batches
+    // Insert supplements in batches for better performance
     const batchSize = 50;
     for (let i = 0; i < initialSupplements.length; i += batchSize) {
       const batch = initialSupplements.slice(i, i + batchSize);
