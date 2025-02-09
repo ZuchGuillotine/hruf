@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLLM } from '@/hooks/use-llm';
-import { Loader2, SendHorizontal, Save } from 'lucide-react';
+import { Loader2, SendHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type Message = {
@@ -135,9 +135,8 @@ export default function LLMChat() {
         <Button
           onClick={handleSaveChat}
           disabled={messages.length === 0 || isLoading}
-          className="w-full bg-white/10 text-white hover:bg-white/20"
+          className="mx-auto w-2/3 bg-white text-[#1b4332] hover:bg-white/90"
         >
-          <Save className="h-4 w-4 mr-2" />
           Save Chat History
         </Button>
       </div>
