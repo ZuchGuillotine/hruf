@@ -1,0 +1,29 @@
+2025-02-09 07:00:55 UTC::@:[707]:LOG: starting PostgreSQL 16.3 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 7.3.1 20180712 (Red Hat 7.3.1-17), 64-bit
+2025-02-09 07:00:55 UTC::@:[707]:LOG: listening on IPv4 address "0.0.0.0", port 5432
+2025-02-09 07:00:55 UTC::@:[707]:LOG: listening on IPv6 address "::", port 5432
+2025-02-09 07:00:55 UTC::@:[707]:LOG: listening on Unix socket "/tmp/.s.PGSQL.5432"
+2025-02-09 07:00:55 UTC::@:[711]:LOG: database system was shut down at 2024-10-24 19:25:10 UTC
+2025-02-09 07:00:55 UTC::@:[707]:LOG: database system is ready to accept connections
+2025-02-09 07:05:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:06:12 UTC::@:[709]:LOG: checkpoint complete: wrote 170 buffers (0.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=16.140 s, sync=0.005 s, total=16.266 s; sync files=89, longest=0.002 s, average=0.001 s; distance=439 kB, estimate=439 kB; lsn=0/8000060, redo lsn=0/4C53A18
+2025-02-09 07:10:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:11:06 UTC::@:[709]:LOG: checkpoint complete: wrote 109 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=10.372 s, sync=0.002 s, total=10.382 s; sync files=70, longest=0.002 s, average=0.001 s; distance=53197 kB, estimate=53197 kB; lsn=0/C000098, redo lsn=0/80471E8
+2025-02-09 07:15:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:15:57 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.205 s, sync=0.001 s, total=0.314 s; sync files=2, longest=0.001 s, average=0.001 s; distance=65252 kB, estimate=65252 kB; lsn=0/10000060, redo lsn=0/C000408
+2025-02-09 07:20:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:20:56 UTC::@:[709]:LOG: checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.318 s, sync=0.002 s, total=0.429 s; sync files=3, longest=0.002 s, average=0.001 s; distance=65540 kB, estimate=65540 kB; lsn=0/14000060, redo lsn=0/10001520
+2025-02-09 07:25:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:25:57 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.214 s, sync=0.001 s, total=0.337 s; sync files=2, longest=0.001 s, average=0.001 s; distance=65531 kB, estimate=65539 kB; lsn=0/18000060, redo lsn=0/14000430
+2025-02-09 07:30:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:30:56 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.201 s, sync=0.001 s, total=0.325 s; sync files=2, longest=0.001 s, average=0.001 s; distance=65536 kB, estimate=65539 kB; lsn=0/1C000060, redo lsn=0/18000438
+2025-02-09 07:35:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:35:56 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.194 s, sync=0.001 s, total=0.312 s; sync files=2, longest=0.001 s, average=0.001 s; distance=65535 kB, estimate=65538 kB; lsn=0/20000060, redo lsn=0/1C000418
+2025-02-09 07:40:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:40:57 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.232 s, sync=0.001 s, total=0.372 s; sync files=2, longest=0.001 s, average=0.001 s; distance=65536 kB, estimate=65538 kB; lsn=0/24000060, redo lsn=0/20000460
+2025-02-09 07:45:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:45:56 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.103 s, sync=0.002 s, total=0.110 s; sync files=2, longest=0.002 s, average=0.001 s; distance=65536 kB, estimate=65538 kB; lsn=0/240004A0, redo lsn=0/24000468
+2025-02-09 07:50:56 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:50:56 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.103 s, sync=0.003 s, total=0.110 s; sync files=2, longest=0.002 s, average=0.002 s; distance=65535 kB, estimate=65538 kB; lsn=0/28000408, redo lsn=0/280003D0
+2025-02-09 07:55:57 UTC::@:[709]:LOG: checkpoint starting: time
+2025-02-09 07:55:57 UTC::@:[709]:LOG: checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.201 s, sync=0.001 s, total=0.300 s; sync files=2, longest=0.001 s, average=0.001 s; distance=65536 kB, estimate=65537 kB; lsn=0/30000060, redo lsn=0/2C0003E0
+----------------------- END OF LOG ----------------------
