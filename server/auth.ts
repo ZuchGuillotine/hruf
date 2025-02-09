@@ -51,11 +51,11 @@ export function setupAuth(app: Express) {
     cookie: {
       secure: app.get("env") === "production",
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
     store: new MemoryStore({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // prune expired entries every 24h
     }),
   };
 
@@ -67,32 +67,57 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Setup authentication endpoints
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: IVerifyOptions) => {
+      if (err) return next(err);
+      if (!user) return res.status(401).json({ error: info.message || "Authentication failed" });
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        return res.json(user);
+      });
+    })(req, res, next);
+  });
+
+  app.post("/api/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    res.json(req.user);
+  });
+
   passport.use(
     new LocalStrategy(
       {
         usernameField: "email",
         passwordField: "password",
       },
-      async (emailOrUsername, password, done) => {
+      async (email, password, done) => {
         try {
           const [user] = await db
             .select()
             .from(users)
-            .where(
-              or(
-                eq(users.email, emailOrUsername),
-                eq(users.username, emailOrUsername)
-              )
-            )
+            .where(eq(users.email, email))
             .limit(1);
 
           if (!user) {
-            return done(null, false, { message: "Invalid credentials." });
+            return done(null, false, { message: "Invalid credentials" });
           }
 
           const isMatch = await crypto.compare(password, user.password);
           if (!isMatch) {
-            return done(null, false, { message: "Invalid credentials." });
+            return done(null, false, { message: "Invalid credentials" });
           }
 
           return done(null, {
@@ -102,7 +127,7 @@ export function setupAuth(app: Express) {
             name: user.name,
             phoneNumber: user.phoneNumber,
             isPro: user.isPro,
-            isAdmin: user.isAdmin
+            isAdmin: user.isAdmin,
           });
         } catch (err) {
           return done(err);
@@ -134,23 +159,22 @@ export function setupAuth(app: Express) {
         name: user.name,
         phoneNumber: user.phoneNumber,
         isPro: user.isPro,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
       });
     } catch (err) {
       done(err);
     }
   });
 
-  // Error handling middleware for auth errors
+  // Error handling middleware
   app.use((err: Error, req: any, res: any, next: any) => {
-    console.error('Auth error:', {
+    console.error("Auth error:", {
       name: err.name,
       message: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    res.status(500).json({ error: 'Authentication error occurred' });
+    res.status(500).json({ error: "Authentication error occurred" });
   });
-
   // Create an admin user if none exists
   createAdminIfNotExists().catch(console.error);
 }
