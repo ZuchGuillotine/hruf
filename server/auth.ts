@@ -115,14 +115,17 @@ export function setupAuth(app: Express) {
     : process.env.GOOGLE_CLIENT_SECRET_TEST;
 
   const CALLBACK_URL = app.get("env") === "production"
-    ? process.env.PRODUCTION_URL + "/auth/google/callback"
-    : "https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/auth/google/callback";
+    ? `${process.env.APP_URL}/auth/google/callback`
+    : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
 
   console.log('Initializing Google OAuth with:', {
     callbackUrl: CALLBACK_URL,
     environment: app.get("env"),
     hasClientId: !!GOOGLE_CLIENT_ID,
     hasClientSecret: !!GOOGLE_CLIENT_SECRET,
+    replSlug: process.env.REPL_SLUG,
+    replOwner: process.env.REPL_OWNER,
+    appUrl: process.env.APP_URL,
     timestamp: new Date().toISOString()
   });
 
