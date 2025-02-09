@@ -234,13 +234,44 @@ export function setupAuth(app: Express) {
       });
       next();
     },
-    passport.authenticate('google', { 
-      failureRedirect: '/login',
-      failureMessage: true
-    }),
-    (req, res) => {
-      console.log('Google OAuth authentication successful, redirecting to dashboard');
-      res.redirect('/dashboard');
+    (req, res, next) => {
+      passport.authenticate('google', (err, user, info) => {
+        if (err) {
+          console.error('Google OAuth error:', {
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+          });
+          return res.redirect('/login?error=auth_failed');
+        }
+        
+        if (!user) {
+          console.error('Google OAuth authentication failed:', {
+            info,
+            timestamp: new Date().toISOString()
+          });
+          return res.redirect('/login?error=no_user');
+        }
+
+        req.logIn(user, (loginErr) => {
+          if (loginErr) {
+            console.error('Login error:', {
+              error: loginErr.message,
+              stack: loginErr.stack,
+              timestamp: new Date().toISOString()
+            });
+            return res.redirect('/login?error=login_failed');
+          }
+          
+          console.log('Google OAuth authentication successful:', {
+            userId: user.id,
+            email: user.email,
+            timestamp: new Date().toISOString()
+          });
+          
+          res.redirect('/dashboard');
+        });
+      })(req, res, next);
     }
   );
 
