@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { useSupplements } from "@/hooks/use-supplements";
 import { useToast } from "@/hooks/use-toast";
@@ -17,34 +18,52 @@ import {
 import { Loader2 } from "lucide-react";
 import cn from 'classnames';
 
+/**
+ * Type definition for form data structure
+ * Defines the shape of data collected from the supplement form
+ */
 type FormData = {
-  name: string;
-  dosageAmount: string;
-  dosageUnit: string;
-  frequencyAmount: string;
-  frequencyUnit: string;
-  notes?: string;
+  name: string;                // Name of the supplement
+  dosageAmount: string;        // Numerical value of dosage
+  dosageUnit: string;         // Unit of measurement for dosage (e.g., mg, g)
+  frequencyAmount: string;    // How often the supplement is taken (numerical)
+  frequencyUnit: string;      // Time unit for frequency (e.g., daily, weekly)
+  notes?: string;            // Optional notes about the supplement
 };
 
+/**
+ * Interface for SupplementForm component props
+ */
 interface SupplementFormProps {
-  supplementId?: number;
-  onSuccess: () => void;
+  supplementId?: number;     // Optional ID for editing existing supplements
+  onSuccess: () => void;    // Callback function executed after successful form submission
 }
 
+/**
+ * SupplementForm Component
+ * Handles both creation and editing of supplements
+ * 
+ * @param supplementId - Optional ID of supplement being edited
+ * @param onSuccess - Callback function after successful submission
+ */
 export default function SupplementForm({
   supplementId,
   onSuccess
 }: SupplementFormProps) {
+  // Custom hooks for supplement management, notifications, and responsive design
   const { addSupplement, updateSupplement, supplements } = useSupplements();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Find existing supplement if editing
+  // Find existing supplement data if editing mode
   const existingSupplement = supplementId 
     ? supplements.find(s => s.id === supplementId)
     : null;
 
-  // Parse existing dosage and frequency if available
+  /**
+   * Parses dosage string into amount and unit
+   * Example: "500 mg" -> { amount: "500", unit: "mg" }
+   */
   const parseDosage = (dosage?: string) => {
     if (!dosage) return { amount: "1", unit: "mg" };
     const match = dosage.match(/(\d+)\s*(\w+)/);
@@ -54,6 +73,10 @@ export default function SupplementForm({
     };
   };
 
+  /**
+   * Parses frequency string into amount and unit
+   * Example: "2x daily" -> { amount: "2", unit: "daily" }
+   */
   const parseFrequency = (frequency?: string) => {
     if (!frequency) return { amount: "1", unit: "daily" };
     const match = frequency.match(/(\d+)x\s*(\w+)/);
@@ -63,9 +86,11 @@ export default function SupplementForm({
     };
   };
 
+  // Parse existing supplement data if in edit mode
   const existingDosage = parseDosage(existingSupplement?.dosage);
   const existingFrequency = parseFrequency(existingSupplement?.frequency);
 
+  // Initialize form with react-hook-form
   const form = useForm<FormData>({
     defaultValues: {
       name: existingSupplement?.name || "",
@@ -77,8 +102,13 @@ export default function SupplementForm({
     },
   });
 
+  /**
+   * Form submission handler
+   * Processes form data and calls appropriate API endpoints
+   */
   const onSubmit = async (data: FormData) => {
     try {
+      // Construct supplement data object
       const supplementData = {
         name: data.name,
         dosage: `${data.dosageAmount} ${data.dosageUnit}`,
@@ -86,6 +116,7 @@ export default function SupplementForm({
         notes: data.notes,
       };
 
+      // Update existing or create new supplement based on supplementId
       if (supplementId) {
         await updateSupplement({ id: supplementId, data: supplementData });
         toast({
@@ -109,11 +140,13 @@ export default function SupplementForm({
     }
   };
 
+  // Responsive styling classes
   const inputClassName = isMobile ? "h-12 text-base" : "h-10 text-sm";
   const selectClassName = isMobile ? "h-12" : "h-10";
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      {/* Supplement Name Field */}
       <div className="space-y-2">
         <Label htmlFor="name" className="text-sm font-medium text-white">
           Supplement Name
@@ -125,11 +158,13 @@ export default function SupplementForm({
         />
       </div>
 
+      {/* Dosage Selection Fields */}
       <div className="space-y-2">
         <Label htmlFor="dosage" className="text-sm font-medium text-white">
           Dosage
         </Label>
         <div className="flex gap-3">
+          {/* Dosage Amount Dropdown */}
           <Select
             defaultValue={form.getValues("dosageAmount")}
             onValueChange={(value) => form.setValue("dosageAmount", value)}
@@ -145,6 +180,7 @@ export default function SupplementForm({
               ))}
             </SelectContent>
           </Select>
+          {/* Dosage Unit Dropdown */}
           <Select
             defaultValue={form.getValues("dosageUnit")}
             onValueChange={(value) => form.setValue("dosageUnit", value)}
@@ -160,11 +196,13 @@ export default function SupplementForm({
         </div>
       </div>
 
+      {/* Frequency Selection Fields */}
       <div className="space-y-2">
         <Label htmlFor="frequency" className="text-sm font-medium text-white">
           Frequency
         </Label>
         <div className="flex gap-3">
+          {/* Frequency Amount Dropdown */}
           <Select
             defaultValue={form.getValues("frequencyAmount")}
             onValueChange={(value) => form.setValue("frequencyAmount", value)}
@@ -180,6 +218,7 @@ export default function SupplementForm({
               ))}
             </SelectContent>
           </Select>
+          {/* Frequency Unit Dropdown */}
           <Select
             defaultValue={form.getValues("frequencyUnit")}
             onValueChange={(value) => form.setValue("frequencyUnit", value)}
@@ -196,6 +235,7 @@ export default function SupplementForm({
         </div>
       </div>
 
+      {/* Optional Notes Field */}
       <div className="space-y-2">
         <Label htmlFor="notes" className="text-sm font-medium text-white">
           Notes
@@ -210,6 +250,7 @@ export default function SupplementForm({
         />
       </div>
 
+      {/* Submit Button */}
       <Button
         type="submit"
         className={cn(
