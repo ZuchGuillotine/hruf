@@ -9,7 +9,7 @@ import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
 import { qualitativeLogs } from "@db/schema";
-import { supplementRdsDb } from "../db/supplement-rds";
+import { rdsDb } from "../db/rds";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);

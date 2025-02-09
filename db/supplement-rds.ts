@@ -1,1 +1,2 @@
-// Removing this file as we're consolidating into the main RDS database
+
+// This file is deprecated as we're consolidating into the main RDS database
