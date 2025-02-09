@@ -135,11 +135,15 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
   // Chat endpoint with storage
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
       const { messages } = req.body;
+      console.log('Chat request received:', {
+        messageCount: messages.length,
+        lastMessage: messages[messages.length - 1],
+        timestamp: new Date().toISOString()
+      });
 
       if (!Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages must be an array" });
@@ -147,6 +151,10 @@ export function registerRoutes(app: Express): Server {
 
       // Get AI response
       const response = await chatWithAI(messages);
+      console.log('OpenAI response received:', {
+        response: response,
+        timestamp: new Date().toISOString()
+      });
 
       // Store the conversation in qualitative_logs
       const lastUserMessage = messages[messages.length - 1];

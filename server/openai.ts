@@ -27,6 +27,11 @@ Format responses in a clear, easy-to-read manner. Use markdown for formatting wh
 
 export async function chatWithAI(messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>) {
   try {
+    console.log('Making OpenAI request:', {
+      messageCount: messages.length,
+      timestamp: new Date().toISOString()
+    });
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -37,11 +42,21 @@ export async function chatWithAI(messages: Array<{ role: 'user' | 'assistant' | 
       max_tokens: 500,
     });
 
+    console.log('OpenAI response received:', {
+      status: 'success',
+      messageContent: response.choices[0].message.content,
+      timestamp: new Date().toISOString()
+    });
+
     return {
       response: response.choices[0].message.content,
     };
   } catch (error: any) {
-    console.error("OpenAI API Error:", error);
-    throw new Error(error.message);
+    console.error("OpenAI API Error:", {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    throw new Error(error instanceof Error ? error.message : 'Failed to get AI response');
   }
 }
