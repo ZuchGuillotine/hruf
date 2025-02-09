@@ -38,7 +38,8 @@ export function registerRoutes(app: Express): Server {
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).send("Authentication required");
+      console.log('Authentication required but user not authenticated');
+      return res.status(401).json({ error: "Authentication required" });
     }
     next();
   };
@@ -46,7 +47,8 @@ export function registerRoutes(app: Express): Server {
   // Middleware to check admin role
   const requireAdmin = (req: Request, res: Response, next: Function) => {
     if (!req.user?.isAdmin) {
-      return res.status(403).send("Admin access required");
+      console.log('Admin access required but user is not admin:', req.user?.username);
+      return res.status(403).json({ error: "Admin access required" });
     }
     next();
   };
@@ -503,109 +505,91 @@ export function registerRoutes(app: Express): Server {
       }
     });
 
+  // Admin blog management endpoints
+  app.get("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const posts = await db
+        .select()
+        .from(blogPosts)
+        .orderBy(sql`${blogPosts.publishedAt} DESC`);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      res.status(500).json({ error: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { title, content, excerpt, thumbnailUrl } = req.body;
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      const [post] = await db
+        .insert(blogPosts)
+        .values({
+          title,
+          slug,
+          content,
+          excerpt,
+          thumbnailUrl,
+        })
+        .returning();
+
+      res.json(post);
+    } catch (error) {
+      console.error("Error creating blog post:", error);
+      res.status(500).json({ error: "Failed to create blog post" });
+    }
+  });
+
+  app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { title, content, excerpt, thumbnailUrl } = req.body;
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      const [post] = await db
+        .update(blogPosts)
+        .set({
+          title,
+          slug,
+          content,
+          excerpt,
+          thumbnailUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(blogPosts.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!post) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      res.json(post);
+    } catch (error) {
+      console.error("Error updating blog post:", error);
+      res.status(500).json({ error: "Failed to update blog post" });
+    }
+  });
+
+  app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const [post] = await db
+        .delete(blogPosts)
+        .where(eq(blogPosts.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!post) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      res.json({ message: "Blog post deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting blog post:", error);
+      res.status(500).json({ error: "Failed to delete blog post" });
+    }
+  });
+
     // Admin endpoint to delete non-admin users
-    // Blog management endpoints
-    app.get("/api/blog", async (req, res) => {
-      try {
-        const posts = await db
-          .select()
-          .from(blogPosts)
-          .orderBy(sql`${blogPosts.publishedAt} DESC`);
-        res.json(posts);
-      } catch (error) {
-        console.error("Error fetching blog posts:", error);
-        res.status(500).send("Failed to fetch blog posts");
-      }
-    });
-
-    app.get("/api/blog/:slug", async (req, res) => {
-      try {
-        const [post] = await db
-          .select()
-          .from(blogPosts)
-          .where(eq(blogPosts.slug, req.params.slug))
-          .limit(1);
-
-        if (!post) {
-          return res.status(404).send("Blog post not found");
-        }
-        res.json(post);
-      } catch (error) {
-        console.error("Error fetching blog post:", error);
-        res.status(500).send("Failed to fetch blog post");
-      }
-    });
-
-    app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
-      try {
-        const { title, content, excerpt, thumbnailUrl } = req.body;
-        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-        const [post] = await db
-          .insert(blogPosts)
-          .values({
-            title,
-            slug,
-            content,
-            excerpt,
-            thumbnailUrl,
-          })
-          .returning();
-
-        res.json(post);
-      } catch (error) {
-        console.error("Error creating blog post:", error);
-        res.status(500).send("Failed to create blog post");
-      }
-    });
-
-    app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
-      try {
-        const { title, content, excerpt, thumbnailUrl } = req.body;
-        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-        const [post] = await db
-          .update(blogPosts)
-          .set({
-            title,
-            slug,
-            content,
-            excerpt,
-            thumbnailUrl,
-            updatedAt: new Date(),
-          })
-          .where(eq(blogPosts.id, parseInt(req.params.id)))
-          .returning();
-
-        if (!post) {
-          return res.status(404).send("Blog post not found");
-        }
-
-        res.json(post);
-      } catch (error) {
-        console.error("Error updating blog post:", error);
-        res.status(500).send("Failed to update blog post");
-      }
-    });
-
-    app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
-      try {
-        const [post] = await db
-          .delete(blogPosts)
-          .where(eq(blogPosts.id, parseInt(req.params.id)))
-          .returning();
-
-        if (!post) {
-          return res.status(404).send("Blog post not found");
-        }
-
-        res.json({ message: "Blog post deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting blog post:", error);
-        res.status(500).send("Failed to delete blog post");
-      }
-    });
-
     app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
         try {
           const result = await db
