@@ -8,8 +8,20 @@ const supplementPool = new Pool({
   user: process.env.SUPPLEMENT_RDS_USER,
   password: process.env.SUPPLEMENT_RDS_PASSWORD,
   ssl: {
-    rejectUnauthorized: false // For development, should be configured properly in production
-  }
+    rejectUnauthorized: false
+  },
+  connectionTimeoutMillis: 5000,
+  // Required for AWS RDS connection from Replit
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 5000
+});
+
+// Log connection details (excluding sensitive info)
+console.log('Supplement RDS Connection Config:', {
+  host: process.env.SUPPLEMENT_RDS_HOST,
+  port: process.env.SUPPLEMENT_RDS_PORT,
+  database: process.env.SUPPLEMENT_RDS_DATABASE,
+  user: process.env.SUPPLEMENT_RDS_USER
 });
 
 import { drizzle } from 'drizzle-orm/node-postgres';
