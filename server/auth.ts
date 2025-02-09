@@ -230,8 +230,23 @@ export function setupAuth(app: Express) {
     (req, res, next) => {
       console.log('Received Google OAuth callback:', {
         query: req.query,
+        error: req.query.error,
+        errorDescription: req.query.error_description,
+        state: req.query.state,
+        code: req.query.code,
+        scope: req.query.scope,
+        authuser: req.query.authuser,
+        prompt: req.query.prompt,
         timestamp: new Date().toISOString()
       });
+
+      if (req.query.error) {
+        console.error('Google OAuth error in callback:', {
+          error: req.query.error,
+          description: req.query.error_description,
+          timestamp: new Date().toISOString()
+        });
+      }
       next();
     },
     (req, res, next) => {
