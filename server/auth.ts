@@ -69,33 +69,28 @@ export function setupAuth(app: Express) {
         usernameField: "email",
         passwordField: "password",
       },
-      async (emailOrUsername, password, done) => {
+      async (email, password, done) => {
         try {
-          console.log("Attempting authentication for:", emailOrUsername);
+          console.log("Attempting authentication for:", email);
 
           const [user] = await db
             .select()
             .from(users)
-            .where(
-              or(
-                eq(users.email, emailOrUsername),
-                eq(users.username, emailOrUsername)
-              )
-            )
+            .where(eq(users.email, email))
             .limit(1);
 
           if (!user) {
-            console.log("No user found for:", emailOrUsername);
+            console.log("No user found for:", email);
             return done(null, false, { message: "Invalid credentials" });
           }
 
           const isMatch = await crypto.compare(password, user.password);
           if (!isMatch) {
-            console.log("Password mismatch for user:", emailOrUsername);
+            console.log("Password mismatch for user:", email);
             return done(null, false, { message: "Invalid credentials" });
           }
 
-          console.log("Authentication successful for:", emailOrUsername, "isAdmin:", user.isAdmin);
+          console.log("Authentication successful for:", email, "isAdmin:", user.isAdmin);
 
           return done(null, {
             id: user.id,
@@ -153,6 +148,10 @@ export function setupAuth(app: Express) {
 
   // Authentication endpoints
   app.post("/api/login", (req, res, next) => {
+    if (!req.body.email || !req.body.password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: IVerifyOptions) => {
       if (err) {
         console.error("Login error:", err);
@@ -193,6 +192,16 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     res.json(req.user);
+  });
+
+  // Error handling middleware
+  app.use((err: Error, req: any, res: any, next: any) => {
+    console.error("Auth error:", {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    });
+    res.status(500).json({ error: "Authentication error occurred" });
   });
 }
 
