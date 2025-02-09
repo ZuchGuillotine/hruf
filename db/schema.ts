@@ -64,16 +64,6 @@ export const supplementReference = pgTable("supplement_reference", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
-export const insertHealthStatsSchema = createInsertSchema(healthStats);
-export const selectHealthStatsSchema = createSelectSchema(healthStats);
-export const insertSupplementSchema = createInsertSchema(supplements);
-export const selectSupplementSchema = createSelectSchema(supplements);
-export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
-export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
-
-export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -86,7 +76,33 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// New qualitative_logs table
+export const qualitativeLogs = pgTable("qualitative_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  loggedAt: timestamp("logged_at").default(sql`CURRENT_TIMESTAMP`),
+  type: text("type"),
+  tags: json("tags").$type<string[]>(),
+  sentimentScore: integer("sentiment_score"),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+});
+
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
+export const insertHealthStatsSchema = createInsertSchema(healthStats);
+export const selectHealthStatsSchema = createSelectSchema(healthStats);
+export const insertSupplementSchema = createInsertSchema(supplements);
+export const selectSupplementSchema = createSelectSchema(supplements);
+export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
+export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
+
+export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
 export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
+
+// Add new schemas for the qualitative logs
+export const insertQualitativeLogSchema = createInsertSchema(qualitativeLogs);
+export const selectQualitativeLogSchema = createSelectSchema(qualitativeLogs);
 
 export type InsertUser = typeof users.$inferInsert;
 export type BlogPost = typeof blogPosts.$inferSelect;
@@ -100,3 +116,7 @@ export type InsertSupplementLog = typeof supplementLogs.$inferInsert;
 export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
 export type InsertSupplementReference = typeof supplementReference.$inferInsert;
 export type SelectSupplementReference = typeof supplementReference.$inferSelect;
+
+// Add new types
+export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
+export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
