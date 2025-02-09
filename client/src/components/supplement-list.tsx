@@ -52,22 +52,7 @@ export default function SupplementList() {
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
     }
-
-    // Check if user hasn't logged supplements today
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const lastLogged = localStorage.getItem('lastSupplementLog');
-    const hasLoggedToday = lastLogged && lastLogged === today;
-
-    if (supplements.length > 0 && !hasLoggedToday) {
-      toast({
-        title: "Daily Supplement Log Reminder",
-          description: "Don't forget to log your supplements for today!",
-          duration: 5000,
-        });
-      }
-    }
-  }, [supplements, supplementStates, toast]);
+  }, [supplements, supplementStates]);
 
   const handleSaveChanges = async () => {
     try {
