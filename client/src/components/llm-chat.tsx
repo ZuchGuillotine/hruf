@@ -4,9 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLLM } from '@/hooks/use-llm';
-import { Loader2, SendHorizontal, Save } from 'lucide-react';
+import { Loader2, SendHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -18,7 +17,6 @@ export default function LLMChat() {
   const [input, setInput] = useState('');
   const { chat, isLoading } = useLLM();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,40 +50,6 @@ export default function LLMChat() {
     }
   };
 
-  const handleSaveChat = async () => {
-    if (messages.length === 0) return;
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages]
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      // Invalidate the chat history query to refresh the history view
-      queryClient.invalidateQueries({ queryKey: ['chatHistory'] });
-
-      toast({
-        title: 'Success',
-        description: 'Chat saved successfully',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to save chat',
-      });
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 pr-4">
@@ -100,21 +64,7 @@ export default function LLMChat() {
               }`}
             >
               <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  {/* Add save button at the end of each conversation */}
-                  {index === messages.length - 1 && messages.length >= 2 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleSaveChat}
-                      className="ml-2 text-white/70 hover:text-white"
-                      title="Save chat"
-                    >
-                      <Save className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </CardContent>
             </Card>
           ))}

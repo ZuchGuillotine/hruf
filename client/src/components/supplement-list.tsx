@@ -32,17 +32,32 @@ import { useState, useEffect } from "react";
 import React from "react";
 import { Link } from "wouter";
 
+/**
+ * SupplementList Component
+ * Displays a grid of supplement cards with tracking functionality.
+ * Allows users to mark supplements as taken/not taken and save their daily intake.
+ */
 export default function SupplementList() {
+  // Custom hook for supplement CRUD operations
   const { supplements, isLoading, deleteSupplement, updateSupplement } = useSupplements();
+
+  // State management for editing supplements and UI controls
   const [editingSupplement, setEditingSupplement] = useState<number | null>(null);
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+
+  // Track which supplements have been marked as taken
   const [supplementStates, setSupplementStates] = useState<Record<number, { taken: boolean }>>({});
   const { toast } = useToast();
 
+  /**
+   * Effect hook to initialize and maintain supplement states
+   * Also handles daily reminder notification logic
+   */
   useEffect(() => {
+    // Create a new state object for tracking supplement intake
     const newStates = supplements.reduce((acc, supplement) => {
       if (!supplementStates[supplement.id]) {
-        acc[supplement.id] = { taken: true }; 
+        acc[supplement.id] = { taken: true }; // Default to taken
       } else {
         acc[supplement.id] = supplementStates[supplement.id];
       }
@@ -53,6 +68,8 @@ export default function SupplementList() {
       setSupplementStates(newStates);
     }
 
+    // Daily reminder notification logic
+    // Shows notification if supplements haven't been logged for the current calendar day
     const today = new Date().toISOString().split('T')[0];
     const lastLoggedDate = localStorage.getItem('lastSupplementLogDate');
 
@@ -65,18 +82,31 @@ export default function SupplementList() {
     }
   }, [supplements, supplementStates, toast]);
 
+  /**
+   * Handles saving the daily supplement intake log
+   * Creates log entries for supplements marked as taken
+   */
   const handleSaveChanges = async () => {
     try {
+      // Filter supplements marked as taken
       const takenSupplements = supplements.filter(supp => supplementStates[supp.id]?.taken);
+
+      console.log('Preparing to save supplement logs:', {
+        supplementCount: takenSupplements.length,
+        timestamp: new Date().toISOString()
+      });
+
+      // Prepare log entries with current timestamp
       const currentTime = new Date();
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
-        userId: null,
+        userId: null, // Set by server based on session
         takenAt: new Date(currentTime).toISOString(),
         notes: null,
         effects: null
       }));
 
+      // Send logs to server
       const response = await fetch('/api/supplement-logs', {
         method: 'POST',
         headers: {
@@ -93,6 +123,12 @@ export default function SupplementList() {
       }
 
       const savedLogs = await response.json();
+      console.log('Successfully saved logs:', {
+        count: savedLogs.length,
+        timestamp: new Date().toISOString()
+      });
+
+      // Update UI and store last logged date
       setShowSaveConfirmation(false);
       const today = new Date().toISOString().split('T')[0];
       localStorage.setItem('lastSupplementLogDate', today);
@@ -102,6 +138,11 @@ export default function SupplementList() {
         description: "Your supplement intake has been logged successfully.",
       });
     } catch (error) {
+      console.error('Error saving changes:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save your supplement intake. Please try again.",
@@ -110,6 +151,7 @@ export default function SupplementList() {
     }
   };
 
+  // Show loading state while fetching supplements
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -118,6 +160,7 @@ export default function SupplementList() {
     );
   }
 
+  // Show empty state when no supplements are added
   if (supplements.length === 0) {
     return (
       <Card>
@@ -130,6 +173,7 @@ export default function SupplementList() {
 
   return (
     <>
+      {/* Supplement Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {supplements.map((supplement) => (
           <Card key={supplement.id}>
@@ -141,7 +185,9 @@ export default function SupplementList() {
                     {supplement.dosage} • {supplement.frequency}
                   </CardDescription>
                 </div>
+                {/* Supplement Action Buttons */}
                 <div className="flex flex-col gap-2">
+                  {/* Edit Button */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -149,6 +195,7 @@ export default function SupplementList() {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
+                  {/* Delete Confirmation Dialog */}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon">
@@ -177,7 +224,9 @@ export default function SupplementList() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Optional supplement notes */}
               {supplement.notes && <p className="text-sm mb-4">{supplement.notes}</p>}
+              {/* Taken/Not taken toggle switch */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Did you take this today?</span>
                 <Switch
@@ -195,12 +244,15 @@ export default function SupplementList() {
         ))}
       </div>
 
+      {/* Bottom Action Bar */}
       <div className="mt-6 flex justify-between">
+        {/* History Link */}
         <Link href="/supplement-history">
           <Button className="bg-white text-[#1b4332] hover:bg-white/90">
             My History
           </Button>
         </Link>
+        {/* Save Changes Dialog */}
         <AlertDialog open={showSaveConfirmation} onOpenChange={setShowSaveConfirmation}>
           <AlertDialogTrigger asChild>
             <Button className="bg-white text-[#1b4332] hover:bg-white/90">
@@ -226,6 +278,7 @@ export default function SupplementList() {
         </AlertDialog>
       </div>
 
+      {/* Edit Supplement Dialog */}
       <Dialog
         open={editingSupplement !== null}
         onOpenChange={(open) => !open && setEditingSupplement(null)}

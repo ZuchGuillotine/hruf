@@ -209,38 +209,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/chat/history/:date", requireAuth, async (req, res) => {
-    try {
-      const date = req.params.date;
-      console.log('Fetching chat history for date:', date);
-
-      const history = await supplementRdsDb
-        .select()
-        .from(qualitativeLogs)
-        .where(
-          and(
-            eq(qualitativeLogs.userId, req.user!.id),
-            eq(qualitativeLogs.type, 'chat'),
-            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
-          )
-        )
-        .orderBy(desc(qualitativeLogs.loggedAt))
-        .limit(50);
-
-      res.json(history);
-    } catch (error) {
-      console.error("Error fetching chat history:", {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
-      res.status(500).json({
-        error: "Failed to fetch chat history",
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
   // Health Stats endpoints
   app.get("/api/health-stats", requireAuth, async (req, res) => {
     try {
