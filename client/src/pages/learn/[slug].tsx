@@ -1,24 +1,50 @@
-
 import { Fragment } from "react";
 import { useRoute } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
+import { Loader2 } from "lucide-react";
+import type { BlogPost } from "@/lib/types";
 
 export default function BlogPostPage() {
   const [, params] = useRoute("/learn/:slug");
   const slug = params?.slug;
 
-  // TODO: Replace with actual API call
-  const post = {
-    title: "Understanding Supplements",
-    content: `
-      <p>Supplements play a crucial role in modern health and wellness...</p>
-      <h2>The Science Behind Supplements</h2>
-      <p>When we talk about supplements, it's important to understand...</p>
-    `,
-    publishedAt: new Date().toISOString(),
-    thumbnailUrl: "https://picsum.photos/seed/1/800/400"
-  };
+  const { data: post, isLoading } = useQuery<BlogPost>({
+    queryKey: ['/api/blog', slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/blog/${slug}`);
+      if (!res.ok) throw new Error('Failed to fetch post');
+      return res.json();
+    },
+    enabled: !!slug
+  });
+
+  if (isLoading) {
+    return (
+      <Fragment>
+        <LandingHeader />
+        <main className="container mx-auto py-12 px-4">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </main>
+        <Footer />
+      </Fragment>
+    );
+  }
+
+  if (!post) {
+    return (
+      <Fragment>
+        <LandingHeader />
+        <main className="container mx-auto py-12 px-4">
+          <h1 className="text-4xl font-bold mb-8">Post not found</h1>
+        </main>
+        <Footer />
+      </Fragment>
+    );
+  }
 
   return (
     <Fragment>

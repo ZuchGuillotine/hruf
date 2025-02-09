@@ -1,27 +1,43 @@
-
 import { Fragment } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-
-// Temporary mock data - replace with actual API call later
-const posts = Array.from({ length: 10 }, (_, i) => ({
-  id: `${i + 1}`,
-  title: `Understanding Supplement ${i + 1}`,
-  excerpt: "Learn about the science behind supplements and how they can benefit your health journey.",
-  thumbnailUrl: `https://picsum.photos/seed/${i + 1}/400/300`,
-  publishedAt: new Date().toISOString(),
-  slug: `post-${i + 1}`
-}));
+import { Loader2 } from "lucide-react";
+import type { BlogPost } from "@/lib/types";
 
 const POSTS_PER_PAGE = 6;
 
 export default function LearnPage() {
   const page = 1; // TODO: Get from URL params
+
+  const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
+    queryKey: ['/api/blog'],
+    queryFn: async () => {
+      const res = await fetch('/api/blog');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      return res.json();
+    }
+  });
+
   const startIndex = (page - 1) * POSTS_PER_PAGE;
   const paginatedPosts = posts.slice(startIndex, startIndex + POSTS_PER_PAGE);
   const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
+
+  if (isLoading) {
+    return (
+      <Fragment>
+        <LandingHeader />
+        <main className="container mx-auto py-12 px-4">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </main>
+        <Footer />
+      </Fragment>
+    );
+  }
 
   return (
     <Fragment>
