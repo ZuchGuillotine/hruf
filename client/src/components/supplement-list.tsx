@@ -55,11 +55,13 @@ export default function SupplementList() {
 
     // Check if user hasn't logged supplements today
     const now = new Date();
-    if (now.getHours() >= 20 && supplements.length > 0) { // After 8 PM
-      const hasUnloggedSupplements = Object.values(supplementStates).length === 0;
-      if (hasUnloggedSupplements) {
-        toast({
-          title: "Daily Supplement Log Reminder",
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const lastLogged = localStorage.getItem('lastSupplementLog');
+    const hasLoggedToday = lastLogged && lastLogged === today;
+
+    if (supplements.length > 0 && !hasLoggedToday) {
+      toast({
+        title: "Daily Supplement Log Reminder",
           description: "Don't forget to log your supplements for today!",
           duration: 5000,
         });
