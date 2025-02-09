@@ -25,13 +25,13 @@ const getRootUrl = (url: string) => {
 const poolConfig = {
   ssl: {
     rejectUnauthorized: false,
-    sslmode: 'no-verify',
+    sslmode: 'require',
     ssl: true,
-    sslConnectTimeout: 30000
+    sslConnectTimeout: 10000
   },
-  connectionTimeoutMillis: 30000,
-  idleTimeoutMillis: 30000,
-  max: 2,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 10000,
+  max: 1,
   keepAlive: true,
   keepalives: 1,
   keepalives_idle: 30,
@@ -68,7 +68,7 @@ console.log('Network Configuration:', {
 
 const getConnectionString = (url: string) => {
   const parsed = new URL(url);
-  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=no-verify&ssl=true&connect_timeout=300&application_name=supplement-tracker&keepalives=1&keepalives_idle=60&keepalives_interval=30&keepalives_count=5`;
+  return `postgres://${parsed.username}:${parsed.password}@${parsed.hostname}:${parsed.port}${parsed.pathname}?sslmode=require&connect_timeout=10&application_name=supplement-tracker`;
 };
 
 const rootPool = new Pool({
