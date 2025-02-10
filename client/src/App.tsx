@@ -19,6 +19,11 @@ import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
 
+/**
+ * AdminRoute Component
+ * Higher-order component that protects admin-only routes
+ * Checks for user authentication and admin status before rendering
+ */
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useUser();
 
@@ -30,6 +35,7 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
     );
   }
 
+  // Redirect to NotFound if user is not an admin
   if (!user?.isAdmin) {
     return <NotFound />;
   }
@@ -37,10 +43,19 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
   return <Component />;
 }
 
+/**
+ * Router Component
+ * Handles application routing and authentication logic
+ * Manages three types of routes:
+ * 1. Public routes (accessible to all users)
+ * 2. Authentication routes (login/signup)
+ * 3. Protected routes (require authentication)
+ */
 function Router() {
   const { user, isLoading } = useUser();
   const [location] = useLocation();
 
+  // Show loading spinner while checking authentication status
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -49,14 +64,15 @@ function Router() {
     );
   }
 
-  // Define public routes that are always accessible
+  // Define routes that should be accessible without authentication
   const isPublicRoute = [
     "/terms-of-service",
     "/privacy-policy",
     "/about"
   ].includes(location);
 
-  // If the route is public, render it regardless of authentication
+  // Always render public routes regardless of authentication status
+  // This ensures legal pages are always accessible
   if (isPublicRoute) {
     return (
       <Switch>
@@ -67,7 +83,7 @@ function Router() {
     );
   }
 
-  // If user is not authenticated and not on a public route, show auth page
+  // Show auth page for non-authenticated users attempting to access protected routes
   if (!user) {
     return <AuthPage />;
   }
@@ -79,6 +95,7 @@ function Router() {
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
       <Route path="/" component={Dashboard} />
+      {/* Admin routes with lazy loading for better performance */}
       <Route path="/admin" component={(props) => {
         const AdminDashboard = React.lazy(() => import("@/pages/admin"));
         return (
@@ -113,6 +130,10 @@ function Router() {
   );
 }
 
+/**
+ * Main App Component
+ * Initializes core application providers and renders the router
+ */
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
