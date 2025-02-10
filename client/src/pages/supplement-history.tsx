@@ -6,26 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
-import { Loader2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef } from "react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 export default function SupplementHistory() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
   const daysInMonth = eachDayOfInterval({
     start: startOfMonth(currentMonth),
     end: endOfMonth(currentMonth),
   });
 
-  const { data: supplementLogs, isLoading: isLoadingSupplements } = useQuery({
+  const { data: supplementLogs, isLoading } = useQuery({
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       const response = await fetch(`/api/supplement-logs/${format(selectedDate, 'yyyy-MM-dd')}`);
@@ -33,28 +27,6 @@ export default function SupplementHistory() {
       return response.json();
     },
   });
-
-  const { data: qualitativeLogs, isLoading: isLoadingQualitative } = useQuery({
-    queryKey: ['qualitative-logs', format(selectedDate, 'yyyy-MM-dd')],
-    queryFn: async () => {
-      const response = await fetch(`/api/qualitative-logs/${format(selectedDate, 'yyyy-MM-dd')}`);
-      if (!response.ok) throw new Error('Failed to fetch qualitative logs');
-      const data = await response.json();
-      return data || []; // Ensure we always return an array
-    },
-  });
-
-  const toggleLogExpansion = (logId: number) => {
-    setExpandedLogs(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(logId)) {
-        newSet.delete(logId);
-      } else {
-        newSet.add(logId);
-      }
-      return newSet;
-    });
-  };
 
   const nextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
@@ -126,96 +98,53 @@ export default function SupplementHistory() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoadingSupplements || isLoadingQualitative ? (
+              {isLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
-              ) : (
+              ) : supplementLogs ? (
                 <div className="space-y-4">
                   {/* Quantitative Data Section */}
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold mb-2">Supplement Intake</h3>
-                    {supplementLogs?.supplements?.length > 0 ? (
-                      supplementLogs.supplements.map((log: any) => (
-                        <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
-                          <div className="flex items-center space-x-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                            <div className="flex-grow">
-                              <p className="font-medium">{log.name}</p>
-                              <div className="flex justify-between items-center">
-                                <p className="text-sm text-white/70">{log.dosage}</p>
-                                <p className="text-xs text-white/50">
-                                  {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              </div>
+                    {supplementLogs?.supplements?.map((log: any) => (
+                      <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
+                        <div className="flex items-center space-x-2">
+                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                          <div className="flex-grow">
+                            <p className="font-medium">{log.name}</p>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-white/70">{log.dosage}</p>
+                              <p className="text-xs text-white/50">
+                                {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             </div>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-white/70">No supplement logs for this date</p>
-                    )}
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Qualitative Logs Section */}
+                  {/* Notes Section (Placeholder for future text data) */}
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Daily Notes</h3>
-                    {Array.isArray(qualitativeLogs) && qualitativeLogs.length > 0 ? (
-                      <div className="space-y-3">
-                        {qualitativeLogs.map((log: any) => (
-                          <Collapsible
-                            key={`qual-log-${log.id}`}
-                            open={expandedLogs.has(log.id)}
-                            onOpenChange={() => toggleLogExpansion(log.id)}
-                          >
-                            <Card className="bg-white/5 border-none">
-                              <CardContent className="p-4">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <p className="text-white/90 mb-2">
-                                      {expandedLogs.has(log.id) ? log.displayText : log.previewText}
-                                    </p>
-                                    <p className="text-xs text-white/50">
-                                      {new Date(log.loggedAt).toLocaleTimeString([], { 
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </p>
-                                  </div>
-                                  <CollapsibleTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="ml-2 p-0 hover:bg-white/10"
-                                    >
-                                      {expandedLogs.has(log.id) ? (
-                                        <ChevronUp className="h-4 w-4" />
-                                      ) : (
-                                        <ChevronDown className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </CollapsibleTrigger>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </Collapsible>
-                        ))}
-                      </div>
-                    ) : (
-                      <Card className="bg-white/5 border-none">
-                        <CardContent className="p-4">
-                          <p className="text-white/70">
-                            No notes found for this date
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
+                    <Card className="bg-white/5 border-none">
+                      <CardContent className="p-4">
+                        <p className="text-white/70">
+                          Notes feature coming soon. Track your supplement effects and experiences.
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
+              ) : (
+                <p className="text-white/70">
+                  No logs found for this date
+                </p>
               )}
             </CardContent>
           </Card>
-
+          
           {/* Back to Dashboard Button */}
           <div className="mt-6">
             <Link href="/">
