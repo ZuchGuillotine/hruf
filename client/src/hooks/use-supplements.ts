@@ -56,11 +56,13 @@ export function useSupplements() {
     mutationFn: async (id) => {
       const res = await fetch(`/api/supplements/${id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
 
       if (!res.ok) {
-        throw new Error(await res.text());
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete supplement");
       }
     },
     onSuccess: () => {

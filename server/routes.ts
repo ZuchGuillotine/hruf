@@ -346,19 +346,30 @@ export function registerRoutes(app: Express): Server {
 
   app.delete("/api/supplements/:id", requireAuth, async (req, res) => {
     try {
-      const [deleted] = await db
-        .delete(supplements)
-        .where(
-          and(
-            eq(supplements.id, parseInt(req.params.id)),
-            eq(supplements.userId, req.user!.id)
-          )
-        )
-        .returning();
+      const supplementId = parseInt(req.params.id);
+      const userId = req.user!.id;
 
-      if (!deleted) {
-        return res.status(404).send("Supplement not found");
+      // Verify supplement belongs to user before deletion
+      const supplement = await db
+        .select()
+        .from(supplements)
+        .where(and(
+          eq(supplements.id, supplementId),
+          eq(supplements.userId, userId)
+        ))
+        .limit(1);
+
+      if (!supplement || supplement.length === 0) {
+        return res.status(404).json({ error: "Supplement not found or unauthorized" });
       }
+
+      // Perform deletion
+      await db
+        .delete(supplements)
+        .where(and(
+          eq(supplements.id, supplementId),
+          eq(supplements.userId, userId)
+        ));
 
       res.json({ message: "Supplement deleted successfully" });
     } catch (error) {
