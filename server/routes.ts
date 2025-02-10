@@ -544,6 +544,59 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get qualitative logs for a specific date
+  app.get("/api/qualitative-logs/:date", requireAuth, async (req, res) => {
+    try {
+      const date = req.params.date;
+      console.log('Fetching qualitative logs for date:', date);
+
+      const logs = await rdsDb
+        .select({
+          id: qualitativeLogs.id,
+          content: qualitativeLogs.content,
+          loggedAt: qualitativeLogs.loggedAt,
+          type: qualitativeLogs.type,
+          tags: qualitativeLogs.tags,
+          metadata: qualitativeLogs.metadata
+        })
+        .from(qualitativeLogs)
+        .where(
+          and(
+            eq(qualitativeLogs.userId, req.user!.id),
+            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
+          )
+        )
+        .orderBy(desc(qualitativeLogs.loggedAt))
+        .limit(10); // Limit to 10 most recent logs for performance
+
+      console.log('Found qualitative logs:', logs.length);
+
+      // Parse the content for chat logs to extract relevant text
+      const processedLogs = logs.map(log => {
+        let displayText = log.content;
+        if (log.type === 'chat') {
+          try {
+            const chatData = JSON.parse(log.content);
+            displayText = chatData.userMessage.content || chatData.userMessage;
+          } catch (e) {
+            console.error('Error parsing chat content:', e);
+          }
+        }
+        return {
+          ...log,
+          displayText,
+          // Truncate text for preview
+          previewText: displayText.substring(0, 150) + (displayText.length > 150 ? '...' : '')
+        };
+      });
+
+      res.json(processedLogs);
+    } catch (error) {
+      console.error("Error fetching qualitative logs by date:", error);
+      res.status(500).send("Failed to fetch qualitative logs");
+    }
+  });
+
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
 
