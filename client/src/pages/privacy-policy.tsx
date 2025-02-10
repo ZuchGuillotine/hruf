@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Header from "@/components/header";
+import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
 
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
-      <Header />
+      <LandingHeader />
       <main className="container mx-auto px-4 py-6 flex-grow">
         <Card className="max-w-4xl mx-auto">
           <CardHeader>

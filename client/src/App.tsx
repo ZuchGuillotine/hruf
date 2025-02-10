@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -39,6 +39,7 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 
 function Router() {
   const { user, isLoading } = useUser();
+  const [location] = useLocation();
 
   if (isLoading) {
     return (
@@ -48,29 +49,32 @@ function Router() {
     );
   }
 
-  // Public routes that should be accessible without authentication
-  const publicRoutes = (
-    <Switch>
-      <Route path="/terms-of-service" component={TermsOfService} />
-      <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/about" component={AboutPage} />
-    </Switch>
-  );
+  // Define public routes that are always accessible
+  const isPublicRoute = [
+    "/terms-of-service",
+    "/privacy-policy",
+    "/about"
+  ].includes(location);
 
-  // If user is not authenticated, show public routes or auth page
-  if (!user) {
+  // If the route is public, render it regardless of authentication
+  if (isPublicRoute) {
     return (
-      <>
-        {publicRoutes}
-        <Route path="*" component={AuthPage} />
-      </>
+      <Switch>
+        <Route path="/terms-of-service" component={TermsOfService} />
+        <Route path="/privacy-policy" component={PrivacyPolicy} />
+        <Route path="/about" component={AboutPage} />
+      </Switch>
     );
+  }
+
+  // If user is not authenticated and not on a public route, show auth page
+  if (!user) {
+    return <AuthPage />;
   }
 
   // Protected routes for authenticated users
   return (
     <Switch>
-      {publicRoutes}
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
