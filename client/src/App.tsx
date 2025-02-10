@@ -51,8 +51,8 @@ function Router() {
   // Public routes that should be accessible without authentication
   const publicRoutes = (
     <Switch>
-      <Route path="/terms" component={TermsOfService} />
-      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/about" component={AboutPage} />
     </Switch>
   );
