@@ -44,14 +44,14 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 }
 
 /**
- * Router Component
+ * AppRouter Component
  * Handles application routing and authentication logic
  * Manages three types of routes:
  * 1. Public routes (accessible to all users)
  * 2. Authentication routes (login/signup)
  * 3. Protected routes (require authentication)
  */
-function Router() {
+function AppRouter() {
   const { user, isLoading } = useUser();
   const [location] = useLocation();
 
@@ -68,17 +68,22 @@ function Router() {
   const isPublicRoute = [
     "/terms-of-service",
     "/privacy-policy",
-    "/about"
-  ].includes(location);
+    "/about",
+    "/learn",
+    // Allow access to individual blog posts without authentication
+    location.startsWith("/learn/") ? location : null
+  ].filter(Boolean).includes(location);
 
   // Always render public routes regardless of authentication status
-  // This ensures legal pages are always accessible
+  // This ensures legal pages and learn section are always accessible
   if (isPublicRoute) {
     return (
       <Switch>
         <Route path="/terms-of-service" component={TermsOfService} />
         <Route path="/privacy-policy" component={PrivacyPolicy} />
         <Route path="/about" component={AboutPage} />
+        <Route path="/learn" component={LearnPage} />
+        <Route path="/learn/:slug" component={BlogPostPage} />
       </Switch>
     );
   }
@@ -137,7 +142,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <AppRouter />
       <CookieConsent />
       <Toaster />
     </QueryClientProvider>
