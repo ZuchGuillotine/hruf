@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced navigation in supplement history page
   - Back to tracking button for better UX
   - Improved routing between dashboard and history
+- Blog post management system
+  - Complete CRUD operations for blog posts
+  - Admin dashboard interface
+  - Public blog/learn section
+  - SEO-friendly URLs with slugs
+- Rich text editing capabilities
+- Thumbnail URL support for blog posts
+- Responsive grid layout for blog listing
+- Loading states and error handling
+- Protected admin routes
+- Blog post schema with proper timestamps
+- Supplemental RDS database integration for enhanced data storage
+- Google OAuth authentication system (in progress)
+  - Support for both login and signup flows
+  - Passport.js Google Strategy implementation
 
 ### Changed
 - Improved public pages routing and layout
