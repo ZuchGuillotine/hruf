@@ -9,12 +9,12 @@ export default function Footer() {
             <span className="text-lg font-semibold">StackTracker</span>
           </div>
           <nav className="flex space-x-6">
-            <Link href="/terms-of-service">
+            <Link href="/terms">
               <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Terms of Service
               </span>
             </Link>
-            <Link href="/privacy-policy">
+            <Link href="/privacy">
               <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Privacy Policy
               </span>
