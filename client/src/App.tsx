@@ -48,21 +48,33 @@ function Router() {
     );
   }
 
-  const searchParams = new URLSearchParams(window.location.search);
-  // Removed unnecessary check for specific paths, allowing access to all paths regardless of authentication status.
-  if (!user ) {
-    return <AuthPage />;
+  // Public routes that should be accessible without authentication
+  const publicRoutes = (
+    <Switch>
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/about" component={AboutPage} />
+    </Switch>
+  );
+
+  // If user is not authenticated, show public routes or auth page
+  if (!user) {
+    return (
+      <>
+        {publicRoutes}
+        <Route path="*" component={AuthPage} />
+      </>
+    );
   }
 
+  // Protected routes for authenticated users
   return (
     <Switch>
-      <Route path="/about" component={AboutPage} />
+      {publicRoutes}
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
       <Route path="/" component={Dashboard} />
-      <Route path="/terms" component={TermsOfService} />
-      <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/admin" component={(props) => {
         const AdminDashboard = React.lazy(() => import("@/pages/admin"));
         return (
