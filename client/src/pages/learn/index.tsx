@@ -54,7 +54,7 @@ export default function LearnPage() {
               />
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-2">
-                  <Link to={`/learn/${post.slug}`} className="text-primary hover:underline">
+                  <Link href={`/learn/${post.slug}`} className="text-primary hover:underline">
                     {post.title}
                   </Link>
                 </h2>
