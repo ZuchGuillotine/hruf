@@ -10,14 +10,14 @@ export default function Footer() {
           </div>
           <nav className="flex space-x-6">
             <Link href="/terms-of-service">
-              <a className="text-white/80 hover:text-white transition-colors cursor-pointer">
+              <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Terms of Service
-              </a>
+              </span>
             </Link>
             <Link href="/privacy-policy">
-              <a className="text-white/80 hover:text-white transition-colors cursor-pointer">
+              <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Privacy Policy
-              </a>
+              </span>
             </Link>
             <Link href="/contact">
               <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
