@@ -39,7 +39,8 @@ export default function SupplementHistory() {
     queryFn: async () => {
       const response = await fetch(`/api/qualitative-logs/${format(selectedDate, 'yyyy-MM-dd')}`);
       if (!response.ok) throw new Error('Failed to fetch qualitative logs');
-      return response.json();
+      const data = await response.json();
+      return data || []; // Ensure we always return an array
     },
   });
 
@@ -159,7 +160,7 @@ export default function SupplementHistory() {
                   {/* Qualitative Logs Section */}
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Daily Notes</h3>
-                    {qualitativeLogs?.length > 0 ? (
+                    {Array.isArray(qualitativeLogs) && qualitativeLogs.length > 0 ? (
                       <div className="space-y-3">
                         {qualitativeLogs.map((log: any) => (
                           <Collapsible
