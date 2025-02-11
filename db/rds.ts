@@ -12,15 +12,16 @@ if (!rdsUrl) {
 
 // Enhanced pool configuration for better stability
 const poolConfig: PoolConfig = {
-  connectionTimeoutMillis: 5000, // Reduced connection timeout
-  idleTimeoutMillis: 10000, // Reduced idle timeout
-  max: 10, // Reduced max connections
-  min: 2, // Minimum pool size
+  connectionTimeoutMillis: 30000, // Increased for reliability
+  idleTimeoutMillis: 30000, // Increased idle timeout
+  max: 5, // Limited pool size
+  min: 1, // Minimum pool size
   keepAlive: true,
-  keepaliveInitialDelayMillis: 5000,
-  statement_timeout: 5000,
-  query_timeout: 5000,
-  allowExitOnIdle: true
+  keepaliveInitialDelayMillis: 10000,
+  statement_timeout: 30000,
+  query_timeout: 30000,
+  allowExitOnIdle: true,
+  connectionRetryTimeout: 30000
 };
 
 const pool = new Pool({

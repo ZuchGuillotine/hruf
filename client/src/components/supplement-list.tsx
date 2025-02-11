@@ -122,7 +122,12 @@ export default function SupplementList() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to save supplement logs');
+        console.error('Save response error:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: errorData
+        });
+        throw new Error(errorData.details || errorData.error || 'Failed to save supplement logs');
       }
 
       const savedLogs = await response.json();

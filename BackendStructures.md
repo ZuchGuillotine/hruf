@@ -19,6 +19,36 @@
     - Enhanced with real-time synchronization
     - Implements overwrite logic for same-day entries
   - qualitative_logs: Chat interactions and AI responses
+  - supplement_reference: Used for supplement autocomplete functionality
+    - Fields:
+      - id: SERIAL PRIMARY KEY
+      - name: TEXT NOT NULL UNIQUE
+      - category: TEXT NOT NULL DEFAULT 'General'
+      - created_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      - updated_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  - supplement_logs: Stores user supplement intake tracking
+    - Fields:
+      - id: SERIAL PRIMARY KEY
+      - supplement_id: INTEGER NOT NULL
+      - user_id: INTEGER NOT NULL
+      - taken_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      - notes: TEXT
+      - effects: JSONB DEFAULT '{}'
+      - created_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      - updated_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  - qualitative_logs: Stores chat and other qualitative data
+    - Fields:
+      - id: SERIAL PRIMARY KEY
+      - user_id: INTEGER NOT NULL
+      - content: TEXT NOT NULL
+      - logged_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      - type: TEXT NOT NULL
+      - tags: JSONB DEFAULT '[]'
+      - sentiment_score: INTEGER
+      - metadata: JSONB DEFAULT '{}'
+      - created_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      - updated_at: TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+
 
 ### Data Flow
 1. Supplement Management:
