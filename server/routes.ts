@@ -568,7 +568,15 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
-      console.log('Fetching logs for date:', date);
+      console.log('Fetching logs for date:', date, {
+        userId: req.user?.id,
+        date: date,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!rdsDb) {
+        throw new Error('Database connection not initialized');
+      }
 
       // First, get the logs from RDS
       const logs = await rdsDb
