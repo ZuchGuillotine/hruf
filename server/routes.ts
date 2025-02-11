@@ -380,10 +380,22 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
-      console.log('Fetching logs for date:', date);
+      console.log('Fetching logs for date:', {
+        date,
+        userId: req.user?.id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Verify RDS connection
+      if (!rdsDb) {
+        console.error('RDS Database connection not initialized');
+        return res.status(500).json({
+          error: "Database connection error",
+          details: "RDS connection not initialized"
+        });
+      }
 
       // Step 1: Retrieve supplement logs from RDS
-      // These logs contain the tracking data (when supplements were taken) but not the supplement details
       const logs = await rdsDb
         .select()
         .from(supplementLogs)
@@ -394,14 +406,17 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
-      // If no logs found for this date, return early
+      console.log('RDS logs retrieved:', {
+        logCount: logs.length,
+        sampleLog: logs[0],
+        timestamp: new Date().toISOString()
+      });
+
       if (logs.length === 0) {
         return res.json({ supplements: [] });
       }
 
       // Step 2: Fetch supplement details from NeonDB
-      // This gets the user's supplement information (name, dosage, frequency)
-      // We get all user's supplements to avoid multiple database calls for each log
       const supplementDetails = await db
         .select()
         .from(supplements)
@@ -409,15 +424,19 @@ export function registerRoutes(app: Express): Server {
           eq(supplements.userId, req.user!.id)
         );
 
+      console.log('NeonDB supplement details retrieved:', {
+        supplementCount: supplementDetails.length,
+        sampleSupplement: supplementDetails[0],
+        timestamp: new Date().toISOString()
+      });
+
       // Step 3: Create a lookup map for quick supplement detail access
-      // This improves performance by avoiding repeated array searches
       const supplementMap = supplementDetails.reduce((acc, supp) => {
         acc[supp.id] = supp;
         return acc;
       }, {} as Record<number, any>);
 
       // Step 4: Combine data from both databases
-      // Enrich each log entry with its corresponding supplement details
       const enrichedLogs = logs.map(log => {
         const supplement = supplementMap[log.supplementId] || {};
         return {
@@ -426,24 +445,30 @@ export function registerRoutes(app: Express): Server {
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects,
-          // Provide fallback values in case supplement details are not found
           name: supplement.name || 'Unknown Supplement',
           dosage: supplement.dosage || '',
           frequency: supplement.frequency || ''
         };
       });
 
-      console.log('Found logs:', {
-        logCount: logs.length,
+      console.log('Enriched logs created:', {
         enrichedCount: enrichedLogs.length,
-        sampleLog: enrichedLogs[0]
+        sampleEnrichedLog: enrichedLogs[0],
+        timestamp: new Date().toISOString()
       });
 
       res.json({
         supplements: enrichedLogs
       });
     } catch (error) {
-      console.error("Error fetching supplement logs by date:", error);
+      console.error("Error fetching supplement logs by date:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: req.user?.id,
+        date: req.params.date,
+        timestamp: new Date().toISOString()
+      });
+
       res.status(500).json({
         error: "Failed to fetch supplement logs",
         details: error instanceof Error ? error.message : String(error)
@@ -499,8 +524,8 @@ export function registerRoutes(app: Express): Server {
             if (existingLog.length > 0) {
               // Only update if data has changed
               const hasChanged = existingLog[0].dosage !== log.dosage ||
-                               existingLog[0].frequency !== log.frequency ||
-                               existingLog[0].name !== log.name;
+                                existingLog[0].frequency !== log.frequency ||
+                                existingLog[0].name !== log.name;
 
               if (hasChanged) {
                 const [updatedLog] = await rdsDb
@@ -565,80 +590,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
-    try {
-      const date = req.params.date;
-      console.log('Fetching logs for date:', date, {
-        userId: req.user?.id,
-        date: date,
-        timestamp: new Date().toISOString()
-      });
-
-      if (!rdsDb) {
-        throw new Error('Database connection not initialized');
-      }
-
-      // First, get the logs from RDS
-      const logs = await rdsDb
-        .select()
-        .from(supplementLogs)
-        .where(
-          and(
-            eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
-          )
-        );
-
-      if (logs.length === 0) {
-        return res.json({ supplements: [] });
-      }
-
-      // Then get the supplement details from NeonDB
-      const supplementDetails = await db
-        .select()
-        .from(supplements)
-        .where(
-          eq(supplements.userId, req.user!.id)
-        );
-
-      // Create a lookup map for supplement details
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
-        acc[supp.id] = supp;
-        return acc;
-      }, {} as Record<number, any>);
-
-      // Combine the data
-      const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap[log.supplementId] || {};
-        return {
-          id: log.id,
-          supplementId: log.supplementId,
-          takenAt: log.takenAt,
-          notes: log.notes,
-          effects: log.effects,
-          name: supplement.name || 'Unknown Supplement',
-          dosage: supplement.dosage || '',
-          frequency: supplement.frequency || ''
-        };
-      });
-
-      console.log('Found logs:', {
-        logCount: logs.length,
-        enrichedCount: enrichedLogs.length,
-        sampleLog: enrichedLogs[0]
-      });
-
-      res.json({
-        supplements: enrichedLogs
-      });
-    } catch (error) {
-      console.error("Error fetching supplement logs by date:", error);
-      res.status(500).json({
-        error: "Failed to fetch supplement logs",
-        details: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
 
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
