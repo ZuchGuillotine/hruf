@@ -1,0 +1,167 @@
+Attempting to save supplement logs: {
+  userId: 1,
+  logCount: 12,
+  sampleLog: {
+    supplementId: 1,
+    userId: null,
+    takenAt: '2025-02-11T07:00:48.158Z',
+    notes: null,
+    effects: null
+  },
+  timestamp: '2025-02-11T07:00:48.739Z'
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.033Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.034Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.035Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.035Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.051Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 1,
+  timestamp: '2025-02-11T07:00:49.113Z'
+}
+Error creating supplement logs: {
+  error: 'relation "supplement_logs" does not exist',
+  stack: 'error: relation "supplement_logs" does not exist\n' +
+    '    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)\n' +
+    '    at async <anonymous> (/home/runner/workspace/server/routes.ts:412:33)\n' +
+    '    at async Promise.all (index 0)\n' +
+    '    at async <anonymous> (/home/runner/workspace/server/routes.ts:408:28)',
+  timestamp: '2025-02-11T07:00:49.117Z'
+}
+7:00:49 AM [express] POST /api/supplement-logs 500 in 404ms :: {"error":"Failed to create supplement…
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 6,
+  timestamp: '2025-02-11T07:00:49.119Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 1002,
+  timestamp: '2025-02-11T07:00:49.120Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 11,
+  timestamp: '2025-02-11T07:00:49.121Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 4,
+  timestamp: '2025-02-11T07:00:49.124Z'
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.383Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.392Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.393Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.401Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.403Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 12,
+  timestamp: '2025-02-11T07:00:49.458Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 19,
+  timestamp: '2025-02-11T07:00:49.463Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 15,
+  timestamp: '2025-02-11T07:00:49.465Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 14,
+  timestamp: '2025-02-11T07:00:49.471Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 13,
+  timestamp: '2025-02-11T07:00:49.474Z'
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.707Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Connected to RDS: {
+  timestamp: '2025-02-11T07:00:49.712Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Available RDS tables: [ 'supplements', 'supplement_reference' ]
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 20,
+  timestamp: '2025-02-11T07:00:49.779Z'
+}
+Error inserting individual log: {
+  error: 'relation "supplement_logs" does not exist',
+  supplementId: 21,
+  timestamp: '2025-02-11T07:00:49.783Z'
