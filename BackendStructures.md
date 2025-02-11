@@ -7,7 +7,7 @@
 - Purpose: Core user data and persistent supplement selections
 - Tables:
   - users: User authentication and profiles
-  - supplements: User's persistent supplement selections
+  - supplements: User's persistent supplement selections (CRUD operations for supplement tracking card)
   - health_stats: User health data
   - blog_posts: Content management
 
@@ -22,10 +22,16 @@
 1. Supplement Management:
    - User selections stored in NeonDB supplements table
    - Daily tracking stored in RDS supplement_logs table
-
-2. Logging Flow:
+   - Card operations (add/edit/delete) update NeonDB
    - "Save Changes" button triggers RDS supplement_logs entry
-   - History view queries RDS for date-specific logs
+
+2. Database Integration Flow:
+   - Supplement card data managed in NeonDB supplements table
+   - Save operation triggers data storage in RDS supplement_logs
+   - History view combines data from both databases:
+     - Logs from RDS supplement_logs
+     - Supplement details from NeonDB supplements
+     - Data enrichment happens server-side
 
 3. Chat System:
    - Interactions stored in RDS qualitative_logs
