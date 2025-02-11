@@ -5,7 +5,7 @@ import { chatWithAI } from "./openai";
 import { db } from "@db"; // NeonDB connection
 import { rdsDb } from "../db/rds"; // RDS connection for logs only
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
-import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
+import { eq, and, ilike, sql, desc, notInArray, inArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
@@ -380,12 +380,21 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
-      console.log('Fetching logs for date:', date);
+      console.log('Fetching logs for date:', {
+        date,
+        userId: req.user?.id,
+        timestamp: new Date().toISOString()
+      });
 
-      // Step 1: Retrieve supplement logs from RDS
-      // These logs contain the tracking data (when supplements were taken) but not the supplement details
+      // Step 1: Get logs from RDS
       const logs = await rdsDb
-        .select()
+        .select({
+          id: supplementLogs.id,
+          supplementId: supplementLogs.supplementId,
+          takenAt: supplementLogs.takenAt,
+          notes: supplementLogs.notes,
+          effects: supplementLogs.effects
+        })
         .from(supplementLogs)
         .where(
           and(
@@ -394,56 +403,79 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
-      // If no logs found for this date, return early
       if (logs.length === 0) {
         return res.json({ supplements: [] });
       }
 
-      // Step 2: Fetch supplement details from NeonDB
-      // This gets the user's supplement information (name, dosage, frequency)
-      // We get all user's supplements to avoid multiple database calls for each log
+      console.log('Found RDS logs:', {
+        count: logs.length,
+        sampleLogId: logs[0]?.id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Step 2: Get supplement details from NeonDB
+      const supplementIds = logs.map(log => log.supplementId).filter(Boolean);
       const supplementDetails = await db
-        .select()
+        .select({
+          id: supplements.id,
+          name: supplements.name,
+          dosage: supplements.dosage,
+          frequency: supplements.frequency
+        })
         .from(supplements)
         .where(
-          eq(supplements.userId, req.user!.id)
+          and(
+            eq(supplements.userId, req.user!.id),
+            inArray(supplements.id, supplementIds)
+          )
         );
 
-      // Step 3: Create a lookup map for quick supplement detail access
-      // This improves performance by avoiding repeated array searches
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
-        acc[supp.id] = supp;
-        return acc;
-      }, {} as Record<number, any>);
+      console.log('Found supplement details:', {
+        count: supplementDetails.length,
+        sampleId: supplementDetails[0]?.id,
+        timestamp: new Date().toISOString()
+      });
 
-      // Step 4: Combine data from both databases
-      // Enrich each log entry with its corresponding supplement details
+      // Step 3: Create lookup map
+      const supplementMap = supplementDetails.reduce((acc, supp) => {
+        if (supp.id) {
+          acc[supp.id] = supp;
+        }
+        return acc;
+      }, {} as Record<number, typeof supplementDetails[0]>);
+
+      // Step 4: Combine data
       const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap[log.supplementId] || {};
+        const supplement = log.supplementId ? supplementMap[log.supplementId] : null;
         return {
           id: log.id,
           supplementId: log.supplementId,
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects,
-          // Provide fallback values in case supplement details are not found
-          name: supplement.name || 'Unknown Supplement',
-          dosage: supplement.dosage || '',
-          frequency: supplement.frequency || ''
+          name: supplement?.name || 'Unknown Supplement',
+          dosage: supplement?.dosage || '',
+          frequency: supplement?.frequency || ''
         };
       });
 
-      console.log('Found logs:', {
-        logCount: logs.length,
-        enrichedCount: enrichedLogs.length,
-        sampleLog: enrichedLogs[0]
+      console.log('Enriched logs:', {
+        count: enrichedLogs.length,
+        sampleLog: enrichedLogs[0],
+        timestamp: new Date().toISOString()
       });
 
       res.json({
         supplements: enrichedLogs
       });
     } catch (error) {
-      console.error("Error fetching supplement logs by date:", error);
+      console.error("Error fetching supplement logs by date:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: req.user?.id,
+        date: req.params.date,
+        timestamp: new Date().toISOString()
+      });
       res.status(500).json({
         error: "Failed to fetch supplement logs",
         details: error instanceof Error ? error.message : String(error)
@@ -499,8 +531,8 @@ export function registerRoutes(app: Express): Server {
             if (existingLog.length > 0) {
               // Only update if data has changed
               const hasChanged = existingLog[0].dosage !== log.dosage ||
-                               existingLog[0].frequency !== log.frequency ||
-                               existingLog[0].name !== log.name;
+                                existingLog[0].frequency !== log.frequency ||
+                                existingLog[0].name !== log.name;
 
               if (hasChanged) {
                 const [updatedLog] = await rdsDb
@@ -565,80 +597,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
-    try {
-      const date = req.params.date;
-      console.log('Fetching logs for date:', date, {
-        userId: req.user?.id,
-        date: date,
-        timestamp: new Date().toISOString()
-      });
-
-      if (!rdsDb) {
-        throw new Error('Database connection not initialized');
-      }
-
-      // First, get the logs from RDS
-      const logs = await rdsDb
-        .select()
-        .from(supplementLogs)
-        .where(
-          and(
-            eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
-          )
-        );
-
-      if (logs.length === 0) {
-        return res.json({ supplements: [] });
-      }
-
-      // Then get the supplement details from NeonDB
-      const supplementDetails = await db
-        .select()
-        .from(supplements)
-        .where(
-          eq(supplements.userId, req.user!.id)
-        );
-
-      // Create a lookup map for supplement details
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
-        acc[supp.id] = supp;
-        return acc;
-      }, {} as Record<number, any>);
-
-      // Combine the data
-      const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap[log.supplementId] || {};
-        return {
-          id: log.id,
-          supplementId: log.supplementId,
-          takenAt: log.takenAt,
-          notes: log.notes,
-          effects: log.effects,
-          name: supplement.name || 'Unknown Supplement',
-          dosage: supplement.dosage || '',
-          frequency: supplement.frequency || ''
-        };
-      });
-
-      console.log('Found logs:', {
-        logCount: logs.length,
-        enrichedCount: enrichedLogs.length,
-        sampleLog: enrichedLogs[0]
-      });
-
-      res.json({
-        supplements: enrichedLogs
-      });
-    } catch (error) {
-      console.error("Error fetching supplement logs by date:", error);
-      res.status(500).json({
-        error: "Failed to fetch supplement logs",
-        details: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
 
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
@@ -794,33 +752,33 @@ export function registerRoutes(app: Express): Server {
     });
 
     app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
-        try {
-          const result = await db
-            .delete(users)
-            .where(eq(users.isAdmin, false))
-            .returning();
+      try {
+        const result = await db
+          .delete(users)
+          .where(eq(users.isAdmin, false))
+          .returning();
 
-          console.log('Successfully deleted non-admin users:', {
-            count: result.length,
-            timestamp: new Date().toISOString()
-          });
+        console.log('Successfully deleted non-admin users:', {
+          count: result.length,
+          timestamp: new Date().toISOString()
+        });
 
-          res.json({ 
-            message: `Successfully deleted ${result.length} non-admin users`,
-            deletedCount: result.length 
-          });
-        } catch (error) {
-          console.error("Error deleting non-admin users:", {
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
-            timestamp: new Date().toISOString()
-          });
-          res.status(500).json({
-            error: "Failed to delete non-admin users",
-            details: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-      });
+        res.json({ 
+          message: `Successfully deleted ${result.length} non-admin users`,
+          deletedCount: result.length 
+        });
+      } catch (error) {
+        console.error("Error deleting non-admin users:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        res.status(500).json({
+          error: "Failed to delete non-admin users",
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
 
 
   const httpServer = createServer(app);
