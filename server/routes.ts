@@ -2,7 +2,7 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
-import { db } from "@db";
+import { db } from "../db/rds";
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
 import { eq, and, ilike, sql, desc } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
@@ -149,7 +149,7 @@ export function registerRoutes(app: Express): Server {
 
       // Store the conversation in qualitative_logs with enhanced metadata
       const lastUserMessage = messages[messages.length - 1];
-      const logResult = await supplementRdsDb
+      const logResult = await db
         .insert(qualitativeLogs)
         .values({
           userId: req.user!.id,
@@ -193,7 +193,7 @@ export function registerRoutes(app: Express): Server {
   // Add endpoint to retrieve chat history
   app.get("/api/chat/history", requireAuth, async (req, res) => {
     try {
-      const history = await supplementRdsDb
+      const history = await db
         .select()
         .from(qualitativeLogs)
         .where(
@@ -379,7 +379,7 @@ export function registerRoutes(app: Express): Server {
   // Supplement Logs
   app.get("/api/supplement-logs", requireAuth, async (req, res) => {
     try {
-      const logs = await supplementRdsDb
+      const logs = await db
         .select()
         .from(supplementLogs)
         .where(eq(supplementLogs.userId, req.user!.id));
@@ -409,7 +409,7 @@ export function registerRoutes(app: Express): Server {
         logs.map(async (log) => {
           try {
             // Check if a log exists for this supplement on this day
-            const existingLog = await supplementRdsDb
+            const existingLog = await db
               .select()
               .from(supplementLogs)
               .where(
@@ -422,40 +422,20 @@ export function registerRoutes(app: Express): Server {
               .limit(1);
 
             if (existingLog.length > 0) {
-              // Check if any values besides timestamp have changed
-              const existing = existingLog[0];
-              // Join with supplements table to get current values
-              const [existingSupp] = await db
-                .select()
-                .from(supplements)
-                .where(eq(supplements.id, existing.supplementId));
-
-              const hasChanges = 
-                (log.notes !== existing.notes) || 
-                (JSON.stringify(log.effects) !== JSON.stringify(existing.effects)) ||
-                (existingSupp && (
-                  existingSupp.dosage !== existing.dosage ||
-                  existingSupp.name !== existing.name ||
-                  existingSupp.frequency !== existing.frequency
-                ));
-
-              // Only update if there are changes
-              if (hasChanges) {
-                const [updatedLog] = await supplementRdsDb
-                  .update(supplementLogs)
-                  .set({
-                    takenAt: new Date(log.takenAt),
-                    notes: log.notes || null,
-                    effects: log.effects || null,
-                  })
-                  .where(eq(supplementLogs.id, existing.id))
-                  .returning();
-                return updatedLog;
-              }
-              return existing;
+              // Update existing log
+              const [updatedLog] = await db
+                .update(supplementLogs)
+                .set({
+                  takenAt: new Date(log.takenAt),
+                  notes: log.notes || null,
+                  effects: log.effects || null,
+                })
+                .where(eq(supplementLogs.id, existingLog[0].id))
+                .returning();
+              return updatedLog;
             } else {
               // Create new log
-              const [newLog] = await supplementRdsDb
+              const [newLog] = await db
                 .insert(supplementLogs)
                 .values({
                   userId: req.user!.id,
@@ -469,7 +449,7 @@ export function registerRoutes(app: Express): Server {
             }
           } catch (error) {
             console.error('Error inserting individual log:', {
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error instanceof Error ? error.message : String(error),
               supplementId: log.supplementId,
               timestamp: new Date().toISOString()
             });
@@ -486,14 +466,14 @@ export function registerRoutes(app: Express): Server {
       res.json(insertedLogs);
     } catch (error) {
       console.error("Error creating supplement logs:", {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString()
       });
 
       res.status(500).json({
         error: "Failed to create supplement logs",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });
