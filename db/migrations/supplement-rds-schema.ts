@@ -1,19 +1,38 @@
+
 /**
  * Database: AWS RDS (STusertest)
- * Purpose: Track supplement intake logs and chat interactions
- * 
- * This database is separate from:
- * 1. NeonDB (Replit) - Core user data, authentication, and health stats
- * 2. stacktrackertest1 (AWS RDS) - Supplement name autocomplete with fuzzy search
+ * Purpose: Combined schema for supplement tracking, chat interactions, and supplement reference
  */
 import { supplementRdsDb } from "../supplement-rds";
 import { sql } from "drizzle-orm";
 
 async function main() {
   try {
-    console.log("Starting STusertest schema creation...");
+    console.log("Starting RDS schema creation...");
 
-    // Create supplement_logs table for tracking supplement intake
+    // Enable required extensions for fuzzy search
+    await supplementRdsDb.execute(sql`
+      CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public;
+      CREATE EXTENSION IF NOT EXISTS fuzzystrmatch SCHEMA public;
+    `);
+    console.log("Enabled extensions");
+
+    // Create supplement_reference table for autocomplete
+    await supplementRdsDb.execute(sql`
+      CREATE TABLE IF NOT EXISTS supplement_reference (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        category TEXT NOT NULL DEFAULT 'General',
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_supplement_reference_name_trgm
+        ON supplement_reference USING gin (name gin_trgm_ops);
+    `);
+    console.log("Created supplement_reference table");
+
+    // Create supplement_logs table
     await supplementRdsDb.execute(sql`
       CREATE TABLE IF NOT EXISTS supplement_logs (
         id SERIAL PRIMARY KEY,
@@ -27,7 +46,6 @@ async function main() {
         CONSTRAINT valid_effects CHECK (effects IS NULL OR jsonb_typeof(effects) = 'object')
       );
 
-      -- Create indexes for better query performance
       CREATE INDEX IF NOT EXISTS idx_supplement_logs_user_id 
         ON supplement_logs (user_id);
       CREATE INDEX IF NOT EXISTS idx_supplement_logs_taken_at 
@@ -37,7 +55,7 @@ async function main() {
     `);
     console.log("Created supplement_logs table");
 
-    // Create qualitative_logs table for chat interactions
+    // Create qualitative_logs table
     await supplementRdsDb.execute(sql`
       CREATE TABLE IF NOT EXISTS qualitative_logs (
         id SERIAL PRIMARY KEY,
@@ -54,19 +72,16 @@ async function main() {
         CONSTRAINT valid_metadata CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object')
       );
 
-      -- Create indexes for better query performance
       CREATE INDEX IF NOT EXISTS idx_qualitative_logs_user_id 
         ON qualitative_logs (user_id);
       CREATE INDEX IF NOT EXISTS idx_qualitative_logs_logged_at 
         ON qualitative_logs (logged_at);
       CREATE INDEX IF NOT EXISTS idx_qualitative_logs_type 
         ON qualitative_logs (type);
-      CREATE INDEX IF NOT EXISTS idx_qualitative_logs_sentiment 
-        ON qualitative_logs (sentiment_score);
     `);
     console.log("Created qualitative_logs table");
 
-    // Add triggers for updated_at timestamp
+    // Add updated_at trigger for all tables
     await supplementRdsDb.execute(sql`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -87,13 +102,19 @@ async function main() {
           BEFORE UPDATE ON qualitative_logs
           FOR EACH ROW
           EXECUTE FUNCTION update_updated_at_column();
+
+      DROP TRIGGER IF EXISTS update_supplement_reference_updated_at ON supplement_reference;
+      CREATE TRIGGER update_supplement_reference_updated_at
+          BEFORE UPDATE ON supplement_reference
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
     `);
     console.log("Created update triggers");
 
-    console.log("STusertest schema creation completed successfully");
+    console.log("RDS schema creation completed successfully");
 
   } catch (error) {
-    console.error("Error creating STusertest schema:", {
+    console.error("Error creating RDS schema:", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
