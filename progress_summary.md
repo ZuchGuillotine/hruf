@@ -172,3 +172,11 @@
 - Set up CDN for blog assets
 - Implement proper SSL/TLS
 - Configure proper CORS policies
+
+### Recent Issues (February 11, 2025)
+- Supplement logs in deployment environment not functioning:
+  - Working properly in development environment
+  - AWS_RDS_URL environment variable confirmed present
+  - Initial fix for database URL variable did not resolve
+  - Currently experiencing 401 unauthorized and 500 internal server errors
+  - Further investigation needed for deployment environment specific issues
