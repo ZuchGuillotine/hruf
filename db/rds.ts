@@ -12,11 +12,15 @@ if (!rdsUrl) {
 
 // Enhanced pool configuration for better stability
 const poolConfig: PoolConfig = {
-  connectionTimeoutMillis: 10000, // Connection timeout
-  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-  max: 20, // Maximum number of clients in the pool
-  keepAlive: true, // Keep connections alive
-  statement_timeout: 30000, // Statement timeout in milliseconds
+  connectionTimeoutMillis: 5000, // Reduced connection timeout
+  idleTimeoutMillis: 10000, // Reduced idle timeout
+  max: 10, // Reduced max connections
+  min: 2, // Minimum pool size
+  keepAlive: true,
+  keepaliveInitialDelayMillis: 5000,
+  statement_timeout: 5000,
+  query_timeout: 5000,
+  allowExitOnIdle: true
 };
 
 const pool = new Pool({
@@ -71,13 +75,36 @@ pool.on('connect', async (client) => {
   }
 });
 
-pool.on('error', (err: Error & { code?: string, detail?: string }) => {
+pool.on('error', async (err: Error & { code?: string, detail?: string }) => {
   console.error('RDS Pool Error:', {
     message: err.message,
     code: err.code,
     detail: err.detail,
     stack: err.stack,
     timestamp: new Date().toISOString()
+  });
+
+  // Attempt to handle connection errors
+  if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+    try {
+      console.log('Attempting to recover pool connection...');
+      const client = await pool.connect();
+      client.release();
+      console.log('Pool connection recovered');
+    } catch (recoverError) {
+      console.error('Failed to recover pool connection:', recoverError);
+    }
+  }
+});
+
+// Add connect success handler
+pool.on('connect', (client) => {
+  client.on('error', (err) => {
+    console.error('RDS Client Error:', {
+      message: err.message,
+      code: 'code' in err ? err.code : undefined,
+      timestamp: new Date().toISOString()
+    });
   });
 });
 
