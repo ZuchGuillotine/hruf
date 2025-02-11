@@ -459,6 +459,20 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "Logs must be an array" });
       }
 
+      // Verify RDS connection before proceeding
+      try {
+        await rdsDb.execute(sql`SELECT 1`);
+      } catch (connError) {
+        console.error("RDS connection test failed:", {
+          error: connError instanceof Error ? connError.message : String(connError),
+          timestamp: new Date().toISOString()
+        });
+        return res.status(503).json({ 
+          error: "Database connection unavailable",
+          details: "Please try again in a few moments"
+        });
+      }
+
       console.log('Attempting to save supplement logs:', {
         userId: req.user!.id,
         logCount: logs.length,
@@ -469,7 +483,7 @@ export function registerRoutes(app: Express): Server {
       // First, delete all logs for the current day that aren't in the new logs
       const today = new Date();
       const supplementIds = logs.map(log => log.supplementId);
-      
+
       await rdsDb
         .delete(supplementLogs)
         .where(

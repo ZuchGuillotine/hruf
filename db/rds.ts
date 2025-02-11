@@ -1,37 +1,23 @@
 import pkg from 'pg';
-const { Pool } = pkg;
+const { Pool, PoolConfig } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "./schema";
 
-if (!process.env.AWS_RDS_URL) {
-  throw new Error("AWS_RDS_URL must be set for RDS database connection");
+// Get RDS connection URL from environment
+const rdsUrl = process.env.AWS_RDS_URL;
+
+if (!rdsUrl) {
+  throw new Error('AWS_RDS_URL environment variable is required');
 }
 
-const ensureCorrectProtocol = (url: string) => {
-  if (url.startsWith('postgresql://')) {
-    return url.replace('postgresql://', 'postgres://');
-  }
-  if (!url.startsWith('postgres://')) {
-    return `postgres://${url}`;
-  }
-  return url;
+// Enhanced pool configuration for better stability
+const poolConfig: PoolConfig = {
+  connectionTimeoutMillis: 10000, // Connection timeout
+  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
+  max: 20, // Maximum number of clients in the pool
+  keepAlive: true, // Keep connections alive
+  statement_timeout: 30000, // Statement timeout in milliseconds
 };
-
-const poolConfig = {
-  ssl: {
-    rejectUnauthorized: false,
-    sslmode: 'prefer',
-  },
-  connectionTimeoutMillis: 60000,
-  idleTimeoutMillis: 30000,
-  max: 5,
-  keepAlive: true,
-  statement_timeout: 30000,
-  query_timeout: 30000,
-  application_name: 'stacktracker-rds',
-  keepaliveInitialDelayMillis: 10000
-};
-
-const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
 
 const pool = new Pool({
   connectionString: rdsUrl,
@@ -96,4 +82,5 @@ pool.on('error', (err: Error & { code?: string, detail?: string }) => {
 });
 
 // Export RDS connection for supplement logs only
-export const rdsDb = drizzle(pool);
+export const rdsDb = drizzle(pool, { schema });
+export { pool as rdsPool };
