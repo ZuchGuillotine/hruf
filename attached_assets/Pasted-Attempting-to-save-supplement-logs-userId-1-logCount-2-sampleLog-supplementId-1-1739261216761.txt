@@ -1,0 +1,38 @@
+Attempting to save supplement logs: {
+  userId: 1,
+  logCount: 2,
+  sampleLog: {
+    supplementId: 13,
+    userId: null,
+    takenAt: '2025-02-11T08:05:51.252Z',
+    dosage: '4 g',
+    frequency: '1x daily',
+    name: 'Vitamin B1',
+    notes: null,
+    effects: null
+  },
+  timestamp: '2025-02-11T08:05:51.772Z'
+}
+Error creating supplement logs: {
+  error: 'notInArray is not defined',
+  stack: 'ReferenceError: notInArray is not defined\n' +
+    '    at <anonymous> (/home/runner/workspace/server/routes.ts:478:13)\n' +
+    '    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)\n' +
+    '    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)\n' +
+    '    at requireAuth (/home/runner/workspace/server/routes.ts:30:5)\n' +
+    '    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)\n' +
+    '    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)\n' +
+    '    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)\n' +
+    '    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15\n' +
+    '    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)\n' +
+    '    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)\n' +
+    '    at strategy.pass (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:355:9)\n' +
+    '    at /home/runner/workspace/node_modules/passport/lib/strategies/session.js:120:12\n' +
+    '    at pass (/home/runner/workspace/node_modules/passport/lib/authenticator.js:352:31)\n' +
+    '    at deserialized (/home/runner/workspace/node_modules/passport/lib/authenticator.js:364:7)\n' +
+    '    at <anonymous> (/home/runner/workspace/server/auth.ts:212:7)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)',
+  timestamp: '2025-02-11T08:05:51.778Z'
+}
+8:05:51 AM [express] POST /api/supplement-logs 500 in 38ms :: {"error":"Failed to create supplement …
