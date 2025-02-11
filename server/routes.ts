@@ -418,11 +418,14 @@ export function registerRoutes(app: Express): Server {
 
       // Step 2: Fetch supplement details from NeonDB
       const supplementDetails = await db
-        .select()
+        .select({
+          id: supplements.id,
+          name: supplements.name,
+          dosage: supplements.dosage,
+          frequency: supplements.frequency,
+        })
         .from(supplements)
-        .where(
-          eq(supplements.userId, req.user!.id)
-        );
+        .where(eq(supplements.userId, req.user!.id));
 
       console.log('NeonDB supplement details retrieved:', {
         supplementCount: supplementDetails.length,
@@ -431,23 +434,22 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Step 3: Create a lookup map for quick supplement detail access
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
-        acc[supp.id] = supp;
-        return acc;
-      }, {} as Record<number, any>);
+      const supplementMap = new Map(
+        supplementDetails.map(supp => [supp.id, supp])
+      );
 
       // Step 4: Combine data from both databases
       const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap[log.supplementId] || {};
+        const supplement = supplementMap.get(log.supplementId ?? 0);
         return {
           id: log.id,
           supplementId: log.supplementId,
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects,
-          name: supplement.name || 'Unknown Supplement',
-          dosage: supplement.dosage || '',
-          frequency: supplement.frequency || ''
+          name: supplement?.name ?? 'Unknown Supplement',
+          dosage: supplement?.dosage ?? '',
+          frequency: supplement?.frequency ?? ''
         };
       });
 
@@ -491,81 +493,45 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
-      // First, delete all logs for the current day that aren't in the new logs
-      const today = new Date();
-      const supplementIds = logs.map(log => log.supplementId);
-      
-      await rdsDb
-        .delete(supplementLogs)
-        .where(
-          and(
-            eq(supplementLogs.userId, req.user!.id),
-            sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${today}::timestamp)`,
-            notInArray(supplementLogs.supplementId, supplementIds)
-          )
-        );
-
-      // Then update or insert new logs
+      // Only insert the fields that match our schema
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
-          try {
-            const existingLog = await rdsDb
-              .select()
-              .from(supplementLogs)
-              .where(
-                and(
-                  eq(supplementLogs.userId, req.user!.id),
-                  eq(supplementLogs.supplementId, log.supplementId),
-                  sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${new Date(log.takenAt)}::timestamp)`
-                )
+          const logData = {
+            userId: req.user!.id,
+            supplementId: log.supplementId,
+            takenAt: new Date(log.takenAt),
+            notes: log.notes || null,
+            effects: log.effects || null,
+          };
+
+          // First try to find an existing log
+          const existingLog = await rdsDb
+            .select()
+            .from(supplementLogs)
+            .where(
+              and(
+                eq(supplementLogs.userId, req.user!.id),
+                eq(supplementLogs.supplementId, log.supplementId),
+                sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${new Date(log.takenAt)}::timestamp)`
               )
-              .limit(1);
+            )
+            .limit(1);
 
-            if (existingLog.length > 0) {
-              // Only update if data has changed
-              const hasChanged = existingLog[0].dosage !== log.dosage ||
-                                existingLog[0].frequency !== log.frequency ||
-                                existingLog[0].name !== log.name;
-
-              if (hasChanged) {
-                const [updatedLog] = await rdsDb
-                  .update(supplementLogs)
-                  .set({
-                    dosage: log.dosage,
-                    frequency: log.frequency,
-                    name: log.name,
-                    notes: log.notes || null,
-                    effects: log.effects || null,
-                    takenAt: new Date() // Only update timestamp if data changed
-                  })
-                  .where(eq(supplementLogs.id, existingLog[0].id))
-                  .returning();
-                return updatedLog;
-              }
-              return existingLog[0];
-            } else {
-              const [newLog] = await rdsDb
-                .insert(supplementLogs)
-                .values({
-                  userId: req.user!.id,
-                  supplementId: log.supplementId,
-                  dosage: log.dosage,
-                  frequency: log.frequency,
-                  name: log.name,
-                  takenAt: new Date(log.takenAt),
-                  notes: log.notes || null,
-                  effects: log.effects || null,
-                })
-                .returning();
-              return newLog;
-            }
-          } catch (error) {
-            console.error('Error inserting individual log:', {
-              error: error instanceof Error ? error.message : String(error),
-              supplementId: log.supplementId,
-              timestamp: new Date().toISOString()
-            });
-            throw error;
+          if (existingLog.length > 0) {
+            // Update existing log
+            const [updatedLog] = await rdsDb
+              .update(supplementLogs)
+              .set(logData)
+              .where(eq(supplementLogs.id, existingLog[0].id))
+              .returning();
+            return updatedLog;
+          } else {
+            // Insert new log
+            const [newLog] = await rdsDb
+              .insert(supplementLogs)
+              .values(logData)
+              .returning();
+            return newLog;
           }
         })
       );
