@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db"; // NeonDB connection
-import { rdsDb } from "@db/rds"; // Update import to use the correct path
+import { rdsDb } from "../db/rds"; // RDS connection for logs only
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
 import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
@@ -380,25 +380,10 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
-      console.log('Fetching logs for date:', {
-        date,
-        userId: req.user?.id,
-        timestamp: new Date().toISOString()
-      });
-
-      // Verify RDS connection
-      try {
-        await rdsDb.execute(sql`SELECT 1`);
-      } catch (connError) {
-        console.error('RDS connection test failed:', {
-          error: connError instanceof Error ? connError.message : String(connError),
-          stack: connError instanceof Error ? connError.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
-        throw new Error('Failed to connect to RDS database');
-      }
+      console.log('Fetching logs for date:', date);
 
       // Step 1: Retrieve supplement logs from RDS
+      // These logs contain the tracking data (when supplements were taken) but not the supplement details
       const logs = await rdsDb
         .select()
         .from(supplementLogs)
@@ -409,71 +394,56 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
-      console.log('RDS logs retrieved:', {
-        logCount: logs.length,
-        sampleLog: logs[0],
-        timestamp: new Date().toISOString()
-      });
-
+      // If no logs found for this date, return early
       if (logs.length === 0) {
         return res.json({ supplements: [] });
       }
 
       // Step 2: Fetch supplement details from NeonDB
+      // This gets the user's supplement information (name, dosage, frequency)
+      // We get all user's supplements to avoid multiple database calls for each log
       const supplementDetails = await db
-        .select({
-          id: supplements.id,
-          name: supplements.name,
-          dosage: supplements.dosage,
-          frequency: supplements.frequency,
-        })
+        .select()
         .from(supplements)
-        .where(eq(supplements.userId, req.user!.id));
-
-      console.log('NeonDB supplement details retrieved:', {
-        supplementCount: supplementDetails.length,
-        sampleSupplement: supplementDetails[0],
-        timestamp: new Date().toISOString()
-      });
+        .where(
+          eq(supplements.userId, req.user!.id)
+        );
 
       // Step 3: Create a lookup map for quick supplement detail access
-      const supplementMap = new Map(
-        supplementDetails.map(supp => [supp.id, supp])
-      );
+      // This improves performance by avoiding repeated array searches
+      const supplementMap = supplementDetails.reduce((acc, supp) => {
+        acc[supp.id] = supp;
+        return acc;
+      }, {} as Record<number, any>);
 
       // Step 4: Combine data from both databases
+      // Enrich each log entry with its corresponding supplement details
       const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap.get(log.supplementId ?? 0);
+        const supplement = supplementMap[log.supplementId] || {};
         return {
           id: log.id,
           supplementId: log.supplementId,
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects,
-          name: supplement?.name ?? 'Unknown Supplement',
-          dosage: supplement?.dosage ?? '',
-          frequency: supplement?.frequency ?? ''
+          // Provide fallback values in case supplement details are not found
+          name: supplement.name || 'Unknown Supplement',
+          dosage: supplement.dosage || '',
+          frequency: supplement.frequency || ''
         };
       });
 
-      console.log('Enriched logs created:', {
+      console.log('Found logs:', {
+        logCount: logs.length,
         enrichedCount: enrichedLogs.length,
-        sampleEnrichedLog: enrichedLogs[0],
-        timestamp: new Date().toISOString()
+        sampleLog: enrichedLogs[0]
       });
 
       res.json({
         supplements: enrichedLogs
       });
     } catch (error) {
-      console.error("Error fetching supplement logs by date:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        userId: req.user?.id,
-        date: req.params.date,
-        timestamp: new Date().toISOString()
-      });
-
+      console.error("Error fetching supplement logs by date:", error);
       res.status(500).json({
         error: "Failed to fetch supplement logs",
         details: error instanceof Error ? error.message : String(error)
@@ -496,45 +466,81 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
-      // Only insert the fields that match our schema
+      // First, delete all logs for the current day that aren't in the new logs
+      const today = new Date();
+      const supplementIds = logs.map(log => log.supplementId);
+      
+      await rdsDb
+        .delete(supplementLogs)
+        .where(
+          and(
+            eq(supplementLogs.userId, req.user!.id),
+            sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${today}::timestamp)`,
+            notInArray(supplementLogs.supplementId, supplementIds)
+          )
+        );
+
+      // Then update or insert new logs
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
-          const logData = {
-            userId: req.user!.id,
-            supplementId: log.supplementId,
-            takenAt: new Date(log.takenAt),
-            notes: log.notes || null,
-            effects: log.effects || null,
-          };
-
-          // First try to find an existing log
-          const existingLog = await rdsDb
-            .select()
-            .from(supplementLogs)
-            .where(
-              and(
-                eq(supplementLogs.userId, req.user!.id),
-                eq(supplementLogs.supplementId, log.supplementId),
-                sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${new Date(log.takenAt)}::timestamp)`
+          try {
+            const existingLog = await rdsDb
+              .select()
+              .from(supplementLogs)
+              .where(
+                and(
+                  eq(supplementLogs.userId, req.user!.id),
+                  eq(supplementLogs.supplementId, log.supplementId),
+                  sql`DATE_TRUNC('day', ${supplementLogs.takenAt}) = DATE_TRUNC('day', ${new Date(log.takenAt)}::timestamp)`
+                )
               )
-            )
-            .limit(1);
+              .limit(1);
 
-          if (existingLog.length > 0) {
-            // Update existing log
-            const [updatedLog] = await rdsDb
-              .update(supplementLogs)
-              .set(logData)
-              .where(eq(supplementLogs.id, existingLog[0].id))
-              .returning();
-            return updatedLog;
-          } else {
-            // Insert new log
-            const [newLog] = await rdsDb
-              .insert(supplementLogs)
-              .values(logData)
-              .returning();
-            return newLog;
+            if (existingLog.length > 0) {
+              // Only update if data has changed
+              const hasChanged = existingLog[0].dosage !== log.dosage ||
+                               existingLog[0].frequency !== log.frequency ||
+                               existingLog[0].name !== log.name;
+
+              if (hasChanged) {
+                const [updatedLog] = await rdsDb
+                  .update(supplementLogs)
+                  .set({
+                    dosage: log.dosage,
+                    frequency: log.frequency,
+                    name: log.name,
+                    notes: log.notes || null,
+                    effects: log.effects || null,
+                    takenAt: new Date() // Only update timestamp if data changed
+                  })
+                  .where(eq(supplementLogs.id, existingLog[0].id))
+                  .returning();
+                return updatedLog;
+              }
+              return existingLog[0];
+            } else {
+              const [newLog] = await rdsDb
+                .insert(supplementLogs)
+                .values({
+                  userId: req.user!.id,
+                  supplementId: log.supplementId,
+                  dosage: log.dosage,
+                  frequency: log.frequency,
+                  name: log.name,
+                  takenAt: new Date(log.takenAt),
+                  notes: log.notes || null,
+                  effects: log.effects || null,
+                })
+                .returning();
+              return newLog;
+            }
+          } catch (error) {
+            console.error('Error inserting individual log:', {
+              error: error instanceof Error ? error.message : String(error),
+              supplementId: log.supplementId,
+              timestamp: new Date().toISOString()
+            });
+            throw error;
           }
         })
       );
@@ -559,6 +565,80 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
+    try {
+      const date = req.params.date;
+      console.log('Fetching logs for date:', date, {
+        userId: req.user?.id,
+        date: date,
+        timestamp: new Date().toISOString()
+      });
+
+      if (!rdsDb) {
+        throw new Error('Database connection not initialized');
+      }
+
+      // First, get the logs from RDS
+      const logs = await rdsDb
+        .select()
+        .from(supplementLogs)
+        .where(
+          and(
+            eq(supplementLogs.userId, req.user!.id),
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
+          )
+        );
+
+      if (logs.length === 0) {
+        return res.json({ supplements: [] });
+      }
+
+      // Then get the supplement details from NeonDB
+      const supplementDetails = await db
+        .select()
+        .from(supplements)
+        .where(
+          eq(supplements.userId, req.user!.id)
+        );
+
+      // Create a lookup map for supplement details
+      const supplementMap = supplementDetails.reduce((acc, supp) => {
+        acc[supp.id] = supp;
+        return acc;
+      }, {} as Record<number, any>);
+
+      // Combine the data
+      const enrichedLogs = logs.map(log => {
+        const supplement = supplementMap[log.supplementId] || {};
+        return {
+          id: log.id,
+          supplementId: log.supplementId,
+          takenAt: log.takenAt,
+          notes: log.notes,
+          effects: log.effects,
+          name: supplement.name || 'Unknown Supplement',
+          dosage: supplement.dosage || '',
+          frequency: supplement.frequency || ''
+        };
+      });
+
+      console.log('Found logs:', {
+        logCount: logs.length,
+        enrichedCount: enrichedLogs.length,
+        sampleLog: enrichedLogs[0]
+      });
+
+      res.json({
+        supplements: enrichedLogs
+      });
+    } catch (error) {
+      console.error("Error fetching supplement logs by date:", error);
+      res.status(500).json({
+        error: "Failed to fetch supplement logs",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
