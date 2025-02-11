@@ -495,37 +495,44 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
+      if (logs.length === 0) {
+        return res.json({ supplements: [] });
+      }
+
       // Then get the supplement details from NeonDB
-      const supplementIds = logs.map(log => log.supplementId);
       const supplementDetails = await db
         .select()
         .from(supplements)
         .where(
-          and(
-            eq(supplements.userId, req.user!.id),
-            sql`${supplements.id} = ANY(${supplementIds})`
-          )
+          eq(supplements.userId, req.user!.id)
         );
 
       // Create a lookup map for supplement details
       const supplementMap = supplementDetails.reduce((acc, supp) => {
         acc[supp.id] = supp;
         return acc;
-      }, {} as Record<number, typeof supplementDetails[0]>);
+      }, {} as Record<number, any>);
 
       // Combine the data
-      const enrichedLogs = logs.map(log => ({
-        id: log.id,
-        supplementId: log.supplementId,
-        takenAt: log.takenAt,
-        notes: log.notes,
-        effects: log.effects,
-        name: supplementMap[log.supplementId]?.name || 'Unknown Supplement',
-        dosage: supplementMap[log.supplementId]?.dosage || '',
-        frequency: supplementMap[log.supplementId]?.frequency || ''
-      }));
+      const enrichedLogs = logs.map(log => {
+        const supplement = supplementMap[log.supplementId] || {};
+        return {
+          id: log.id,
+          supplementId: log.supplementId,
+          takenAt: log.takenAt,
+          notes: log.notes,
+          effects: log.effects,
+          name: supplement.name || 'Unknown Supplement',
+          dosage: supplement.dosage || '',
+          frequency: supplement.frequency || ''
+        };
+      });
 
-      console.log('Found logs:', enrichedLogs);
+      console.log('Found logs:', {
+        logCount: logs.length,
+        enrichedCount: enrichedLogs.length,
+        sampleLog: enrichedLogs[0]
+      });
 
       res.json({
         supplements: enrichedLogs
