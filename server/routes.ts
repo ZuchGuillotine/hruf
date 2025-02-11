@@ -380,7 +380,7 @@ export function registerRoutes(app: Express): Server {
   // Supplement Logs
   app.get("/api/supplement-logs", requireAuth, async (req, res) => {
     try {
-      const logs = await db
+      const logs = await supplementRdsDb
         .select()
         .from(supplementLogs)
         .where(eq(supplementLogs.userId, req.user!.id));
@@ -410,7 +410,7 @@ export function registerRoutes(app: Express): Server {
         logs.map(async (log) => {
           try {
             // Check if a log exists for this supplement on this day
-            const existingLog = await db
+            const existingLog = await supplementRdsDb
               .select()
               .from(supplementLogs)
               .where(
@@ -442,7 +442,7 @@ export function registerRoutes(app: Express): Server {
 
               // Only update if there are changes
               if (hasChanges) {
-                const [updatedLog] = await db
+                const [updatedLog] = await supplementRdsDb
                   .update(supplementLogs)
                   .set({
                     takenAt: new Date(log.takenAt),
@@ -456,7 +456,7 @@ export function registerRoutes(app: Express): Server {
               return existing;
             } else {
               // Create new log
-              const [newLog] = await db
+              const [newLog] = await supplementRdsDb
                 .insert(supplementLogs)
                 .values({
                   userId: req.user!.id,
