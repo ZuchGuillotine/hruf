@@ -1,6 +1,6 @@
 
-const { supplementRdsDb } = require("../supplement-rds");
-const { sql } = require("drizzle-orm");
+import { supplementRdsDb } from "../supplement-rds.js";
+import { sql } from "drizzle-orm";
 
 async function main() {
   try {
