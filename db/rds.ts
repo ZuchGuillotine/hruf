@@ -12,22 +12,31 @@ if (!rdsUrl) {
 
 // Enhanced pool configuration for better stability
 const poolConfig: PoolConfig = {
-  connectionTimeoutMillis: 30000, // Increased for reliability
-  idleTimeoutMillis: 30000, // Increased idle timeout
-  max: 5, // Limited pool size
-  min: 1, // Minimum pool size
-  keepAlive: true,
-  keepaliveInitialDelayMillis: 10000,
-  statement_timeout: 30000,
-  query_timeout: 30000,
-  allowExitOnIdle: true,
-  connectionRetryTimeout: 30000
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 10000,
+  max: 3,
+  min: 0,
+  keepAlive: false,
+  statement_timeout: 5000,
+  query_timeout: 5000,
+  allowExitOnIdle: true
 };
 
-const pool = new Pool({
-  connectionString: rdsUrl,
-  ...poolConfig
-});
+let pool: Pool;
+try {
+  pool = new Pool({
+    connectionString: rdsUrl,
+    ...poolConfig
+  });
+  
+  // Test connection immediately
+  pool.query('SELECT 1')
+    .then(() => console.log('Initial RDS connection successful'))
+    .catch(err => console.error('Initial RDS connection failed:', err));
+} catch (error) {
+  console.error('Failed to create RDS pool:', error);
+  throw error;
+}
 
 // Event handlers for connection monitoring
 pool.on('connect', async (client) => {
