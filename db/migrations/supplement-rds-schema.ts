@@ -1,10 +1,19 @@
-
 /**
- * Database: AWS RDS (STusertest)
- * Purpose: Combined schema for supplement tracking, chat interactions, and supplement reference
+ * Database: AWS RDS
+ * Purpose: Combined schema for supplement tracking and qualitative logs
  */
-import { supplementRdsDb } from "../supplement-rds";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { sql } from "drizzle-orm";
+
+// Create a PostgreSQL pool for RDS
+const pool = new Pool({
+  connectionString: process.env.AWS_RDS_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+});
+
+// Create Drizzle instance
+const supplementRdsDb = drizzle(pool);
 
 async function main() {
   try {
@@ -17,22 +26,7 @@ async function main() {
     `);
     console.log("Enabled extensions");
 
-    // Create supplement_reference table for autocomplete
-    await supplementRdsDb.execute(sql`
-      CREATE TABLE IF NOT EXISTS supplement_reference (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        category TEXT NOT NULL DEFAULT 'General',
-        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_supplement_reference_name_trgm
-        ON supplement_reference USING gin (name gin_trgm_ops);
-    `);
-    console.log("Created supplement_reference table");
-
-    // Create supplement_logs table
+    // Create supplement_logs table with enhanced structure
     await supplementRdsDb.execute(sql`
       CREATE TABLE IF NOT EXISTS supplement_logs (
         id SERIAL PRIMARY KEY,
@@ -81,7 +75,7 @@ async function main() {
     `);
     console.log("Created qualitative_logs table");
 
-    // Add updated_at trigger for all tables
+    // Add updated_at trigger for both tables
     await supplementRdsDb.execute(sql`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -102,12 +96,6 @@ async function main() {
           BEFORE UPDATE ON qualitative_logs
           FOR EACH ROW
           EXECUTE FUNCTION update_updated_at_column();
-
-      DROP TRIGGER IF EXISTS update_supplement_reference_updated_at ON supplement_reference;
-      CREATE TRIGGER update_supplement_reference_updated_at
-          BEFORE UPDATE ON supplement_reference
-          FOR EACH ROW
-          EXECUTE FUNCTION update_updated_at_column();
     `);
     console.log("Created update triggers");
 
@@ -120,6 +108,8 @@ async function main() {
       timestamp: new Date().toISOString()
     });
     throw error;
+  } finally {
+    await pool.end();
   }
 }
 

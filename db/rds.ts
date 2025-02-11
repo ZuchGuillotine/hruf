@@ -1,7 +1,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
-import { supplementReference, supplementLogs, qualitativeLogs } from "./schema";
+import { supplementLogs, qualitativeLogs } from "./schema";
 
 if (!process.env.AWS_RDS_URL) {
   throw new Error("AWS_RDS_URL must be set for RDS database connection");
@@ -39,7 +39,7 @@ const pool = new Pool({
   ...poolConfig
 });
 
-// Event handlers after pool initialization
+// Event handlers for connection monitoring
 pool.on('connect', async (client) => {
   console.log('Connected to RDS:', {
     timestamp: new Date().toISOString(),
@@ -54,9 +54,13 @@ pool.on('connect', async (client) => {
       FROM information_schema.tables 
       WHERE table_schema = 'public'
     `);
-    console.log('Available tables:', tables.rows.map(r => r.table_name));
+    console.log('Available RDS tables:', tables.rows.map(r => r.table_name));
   } catch (err) {
-    console.error('Error checking tables:', err);
+    console.error('Error checking RDS tables:', {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
