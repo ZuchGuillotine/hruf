@@ -484,19 +484,10 @@ export function registerRoutes(app: Express): Server {
       const date = req.params.date;
       console.log('Fetching logs for date:', date);
 
+      // First, get the logs from RDS
       const logs = await rdsDb
-        .select({
-          id: supplementLogs.id,
-          supplementId: supplementLogs.supplementId,
-          takenAt: supplementLogs.takenAt,
-          notes: supplementLogs.notes,
-          effects: supplementLogs.effects,
-          name: supplements.name,
-          dosage: supplements.dosage,
-          frequency: supplements.frequency
-        })
+        .select()
         .from(supplementLogs)
-        .innerJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
@@ -504,23 +495,47 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
-      console.log('Found logs:', logs);
+      // Then get the supplement details from NeonDB
+      const supplementIds = logs.map(log => log.supplementId);
+      const supplementDetails = await db
+        .select()
+        .from(supplements)
+        .where(
+          and(
+            eq(supplements.userId, req.user!.id),
+            sql`${supplements.id} = ANY(${supplementIds})`
+          )
+        );
+
+      // Create a lookup map for supplement details
+      const supplementMap = supplementDetails.reduce((acc, supp) => {
+        acc[supp.id] = supp;
+        return acc;
+      }, {} as Record<number, typeof supplementDetails[0]>);
+
+      // Combine the data
+      const enrichedLogs = logs.map(log => ({
+        id: log.id,
+        supplementId: log.supplementId,
+        takenAt: log.takenAt,
+        notes: log.notes,
+        effects: log.effects,
+        name: supplementMap[log.supplementId]?.name || 'Unknown Supplement',
+        dosage: supplementMap[log.supplementId]?.dosage || '',
+        frequency: supplementMap[log.supplementId]?.frequency || ''
+      }));
+
+      console.log('Found logs:', enrichedLogs);
 
       res.json({
-        supplements: logs.map(log => ({
-          id: log.id,
-          supplementId: log.supplementId,
-          name: log.name,
-          dosage: log.dosage,
-          frequency: log.frequency,
-          takenAt: log.takenAt,
-          notes: log.notes,
-          effects: log.effects
-        }))
+        supplements: enrichedLogs
       });
     } catch (error) {
       console.error("Error fetching supplement logs by date:", error);
-      res.status(500).send("Failed to fetch supplement logs");
+      res.status(500).json({
+        error: "Failed to fetch supplement logs",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

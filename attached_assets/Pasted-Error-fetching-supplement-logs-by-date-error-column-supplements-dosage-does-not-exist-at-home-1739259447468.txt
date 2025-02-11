@@ -1,0 +1,188 @@
+Error fetching supplement logs by date: error: column supplements.dosage does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:487:20) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '175',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3727',
+  routine: 'errorMissingColumn'
+}
+7:34:28 AM [express] GET /api/supplement-logs/2025-02-10 500 in 483ms
+Error checking/initializing RDS tables: {
+  error: 'Connection terminated',
+  stack: 'Error: Connection terminated\n' +
+    '    at /home/runner/workspace/node_modules/pg/lib/client.js:535:17\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async BoundPool.<anonymous> (/home/runner/workspace/db/rds.ts:73:20)',
+  timestamp: '2025-02-11T07:34:28.967Z'
+}
+Fetching logs for date: 2025-02-11
+Connected to RDS: {
+  timestamp: '2025-02-11T07:34:32.736Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Error fetching supplement logs by date: error: column supplements.dosage does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:487:20) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '175',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3727',
+  routine: 'errorMissingColumn'
+}
+7:34:32 AM [express] GET /api/supplement-logs/2025-02-11 500 in 361ms
+Error checking/initializing RDS tables: {
+  error: 'Connection terminated',
+  stack: 'Error: Connection terminated\n' +
+    '    at /home/runner/workspace/node_modules/pg/lib/client.js:535:17\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async BoundPool.<anonymous> (/home/runner/workspace/db/rds.ts:73:20)',
+  timestamp: '2025-02-11T07:34:32.838Z'
+}
+Fetching logs for date: 2025-02-10
+Connected to RDS: {
+  timestamp: '2025-02-11T07:34:34.361Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Error fetching supplement logs by date: error: column supplements.dosage does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:487:20) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '175',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3727',
+  routine: 'errorMissingColumn'
+}
+7:34:34 AM [express] GET /api/supplement-logs/2025-02-10 500 in 364ms
+Error checking/initializing RDS tables: {
+  error: 'Connection terminated',
+  stack: 'Error: Connection terminated\n' +
+    '    at /home/runner/workspace/node_modules/pg/lib/client.js:535:17\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async BoundPool.<anonymous> (/home/runner/workspace/db/rds.ts:73:20)',
+  timestamp: '2025-02-11T07:34:34.466Z'
+}
+Fetching logs for date: 2025-02-09
+Connected to RDS: {
+  timestamp: '2025-02-11T07:34:35.557Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Error fetching supplement logs by date: error: column supplements.dosage does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:487:20) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '175',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3727',
+  routine: 'errorMissingColumn'
+}
+7:34:35 AM [express] GET /api/supplement-logs/2025-02-09 500 in 356ms
+Error checking/initializing RDS tables: {
+  error: 'Connection terminated',
+  stack: 'Error: Connection terminated\n' +
+    '    at /home/runner/workspace/node_modules/pg/lib/client.js:535:17\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async BoundPool.<anonymous> (/home/runner/workspace/db/rds.ts:73:20)',
+  timestamp: '2025-02-11T07:34:35.663Z'
+}
+Fetching logs for date: 2025-02-11
+Connected to RDS: {
+  timestamp: '2025-02-11T07:34:37.674Z',
+  database: undefined,
+  host: undefined,
+  port: undefined
+}
+Error fetching supplement logs by date: error: column supplements.dosage does not exist
+    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:487:20) {
+  length: 117,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '175',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3727',
+  routine: 'errorMissingColumn'
+}
+7:34:37 AM [express] GET /api/supplement-logs/2025-02-11 500 in 349ms
+Error checking/initializing RDS tables: {
+  error: 'Connection terminated',
+  stack: 'Error: Connection terminated\n' +
+    '    at /home/runner/workspace/node_modules/pg/lib/client.js:535:17\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async BoundPool.<anonymous> (/home/runner/workspace/db/rds.ts:73:20)',
+  timestamp: '2025-02-11T07:34:37.776Z'
+}
