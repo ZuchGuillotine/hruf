@@ -1,4 +1,4 @@
-4. Backend Structures Document
+# Backend Structures Document
 
 ## Database Structure
 
@@ -16,6 +16,8 @@
 - Purpose: Historical tracking and qualitative data
 - Tables:
   - supplement_logs: Daily supplement intake records
+    - Enhanced with real-time synchronization
+    - Implements overwrite logic for same-day entries
   - qualitative_logs: Chat interactions and AI responses
 
 ### Data Flow
@@ -24,6 +26,7 @@
    - Daily tracking stored in RDS supplement_logs table
    - Card operations (add/edit/delete) update NeonDB
    - "Save Changes" button triggers RDS supplement_logs entry
+   - Real-time UI updates via query invalidation
 
 2. Database Integration Flow:
    - Supplement card data managed in NeonDB supplements table
@@ -32,10 +35,25 @@
      - Logs from RDS supplement_logs
      - Supplement details from NeonDB supplements
      - Data enrichment happens server-side
+   - Automatic query invalidation ensures UI consistency
 
-3. Chat System:
+3. Real-time Updates:
+   - useSupplements hook manages state:
+     - Invalidates supplement queries on changes
+     - Invalidates supplement logs for current date
+     - Ensures history view stays current
+   - Implemented in add/update/delete operations
+   - Prevents stale data display
+
+4. Chat System:
    - Interactions stored in RDS qualitative_logs
    - Requires UI verification components
+
+## Code Structure Updates
+- Enhanced useSupplements hook with query invalidation
+- Improved RDS connection handling
+- Added overwrite logic for same-day supplement logs
+- Implemented proper error handling and logging
 
 API Routes (from routes.ts)
 Authentication Routes
