@@ -3,21 +3,21 @@
  * Purpose: Combined schema for supplement tracking and qualitative logs
  */
 import { sql } from "drizzle-orm";
-import { supplementRdsDb } from "../rds";
+import { rdsDb } from "../rds";
 
 async function main() {
   try {
     console.log("Starting RDS schema creation...");
 
     // Enable required extensions for fuzzy search
-    await supplementRdsDb.execute(sql`
+    await rdsDb.execute(sql`
       CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public;
       CREATE EXTENSION IF NOT EXISTS fuzzystrmatch SCHEMA public;
     `);
     console.log("Enabled extensions");
 
     // Create supplement_logs table with enhanced structure
-    await supplementRdsDb.execute(sql`
+    await rdsDb.execute(sql`
       CREATE TABLE IF NOT EXISTS supplement_logs (
         id SERIAL PRIMARY KEY,
         supplement_id INTEGER NOT NULL,
@@ -40,7 +40,7 @@ async function main() {
     console.log("Created supplement_logs table");
 
     // Create qualitative_logs table
-    await supplementRdsDb.execute(sql`
+    await rdsDb.execute(sql`
       CREATE TABLE IF NOT EXISTS qualitative_logs (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -66,7 +66,7 @@ async function main() {
     console.log("Created qualitative_logs table");
 
     // Add updated_at trigger for both tables
-    await supplementRdsDb.execute(sql`
+    await rdsDb.execute(sql`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
       BEGIN

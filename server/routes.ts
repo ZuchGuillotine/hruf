@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { db } from "@db"; // NeonDB connection
-import { rdsDb } from "../db/rds"; // RDS connection for logs only
+import { rdsDb } from "@db/rds"; // Update import to use the correct path
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
 import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
@@ -387,12 +387,15 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Verify RDS connection
-      if (!rdsDb) {
-        console.error('RDS Database connection not initialized');
-        return res.status(500).json({
-          error: "Database connection error",
-          details: "RDS connection not initialized"
+      try {
+        await rdsDb.execute(sql`SELECT 1`);
+      } catch (connError) {
+        console.error('RDS connection test failed:', {
+          error: connError instanceof Error ? connError.message : String(connError),
+          stack: connError instanceof Error ? connError.stack : undefined,
+          timestamp: new Date().toISOString()
         });
+        throw new Error('Failed to connect to RDS database');
       }
 
       // Step 1: Retrieve supplement logs from RDS
