@@ -1,7 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
-import { supplementLogs } from "./schema";
 
 if (!process.env.AWS_RDS_URL) {
   throw new Error("AWS_RDS_URL must be set for RDS database connection");
@@ -49,7 +48,7 @@ pool.on('connect', async (client) => {
   });
 
   try {
-    // Initialize schema on connection
+    // Initialize supplement_logs table on RDS if it doesn't exist
     await client.query(`
       CREATE TABLE IF NOT EXISTS supplement_logs (
         id SERIAL PRIMARY KEY,
@@ -96,4 +95,5 @@ pool.on('error', (err: Error & { code?: string, detail?: string }) => {
   });
 });
 
-export const db = drizzle(pool);
+// Export RDS connection for supplement logs only
+export const rdsDb = drizzle(pool);

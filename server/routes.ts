@@ -2,14 +2,15 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
-import { db } from "../db/rds";
+import { db } from "@db"; // NeonDB connection
+import { rdsDb } from "../db/rds"; // RDS connection for logs only
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
 import { eq, and, ilike, sql, desc } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
 import { qualitativeLogs } from "@db/schema";
-import { supplementRdsDb } from "../db/rds";
+
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
@@ -133,7 +134,6 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-
 
   // Chat endpoint with storage
   app.post("/api/chat", requireAuth, async (req, res) => {
@@ -376,15 +376,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Supplement Logs
+  // Supplement Logs endpoints
   app.get("/api/supplement-logs", requireAuth, async (req, res) => {
     try {
-      const logs = await db
+      const logs = await rdsDb
         .select()
         .from(supplementLogs)
         .where(eq(supplementLogs.userId, req.user!.id));
       res.json(logs);
     } catch (error) {
+      console.error("Error fetching supplement logs:", error);
       res.status(500).send("Failed to fetch supplement logs");
     }
   });
@@ -409,7 +410,7 @@ export function registerRoutes(app: Express): Server {
         logs.map(async (log) => {
           try {
             // Check if a log exists for this supplement on this day
-            const existingLog = await db
+            const existingLog = await rdsDb
               .select()
               .from(supplementLogs)
               .where(
@@ -423,7 +424,7 @@ export function registerRoutes(app: Express): Server {
 
             if (existingLog.length > 0) {
               // Update existing log
-              const [updatedLog] = await db
+              const [updatedLog] = await rdsDb
                 .update(supplementLogs)
                 .set({
                   takenAt: new Date(log.takenAt),
@@ -435,7 +436,7 @@ export function registerRoutes(app: Express): Server {
               return updatedLog;
             } else {
               // Create new log
-              const [newLog] = await db
+              const [newLog] = await rdsDb
                 .insert(supplementLogs)
                 .values({
                   userId: req.user!.id,
@@ -483,7 +484,7 @@ export function registerRoutes(app: Express): Server {
       const date = req.params.date;
       console.log('Fetching logs for date:', date);
 
-      const logs = await db
+      const logs = await rdsDb
         .select({
           id: supplementLogs.id,
           supplementId: supplementLogs.supplementId,
