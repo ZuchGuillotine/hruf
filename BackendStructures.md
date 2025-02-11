@@ -1,31 +1,35 @@
 4. Backend Structures Document
 
-Database Architecture
-1. Primary Database (NeonDB in Replit)
-   - Purpose: Stores user authentication data, health statistics, and user supplement selections
-   - Tables:
-     - users Table:
-       Fields: id, username, email, password, isVerified, verificationToken, isPro (Pro/Admin status), timestamps
-     - supplements Table:
-       Fields: id, name, dosage, frequency, userId (foreign key), activeStatus, startDate, timestamps
-       Relationships: Each supplement is associated with a user
-     - supplementLogs Table:
-       Fields: id, supplementId, userId, takenAt (timestamp), mood, energy, sleep, sideEffects, timestamps
-     - healthStats Table:
-       Fields: id, userId, weight, sleepPattern, heartRate, allergies (JSON array), timestamps
+## Database Structure
 
-2. Search Database (AWS RDS - stacktrackertest1)
-   - Purpose: Handles fuzzy search and tree search functionality for supplement autocomplete
-   - Powers the intelligent search feature in the 'add supplement form'
-   - Optimized for fast text search operations
-   - Contains comprehensive supplement reference data
-   - Additional Tables:
-     - supplement_logs Table:
-       Fields: id, userId, supplementId, takenAt, mood, energy, sleep, sideEffects, timestamps
-       Purpose: Track detailed supplement intake history and effects
-     - qualitative_logs Table:
-       Fields: id, userId, chatContent, timestamp, category
-       Purpose: Store chat interactions and qualitative feedback
+### Primary Database (NeonDB)
+- Location: Replit PostgreSQL
+- Purpose: Core user data and persistent supplement selections
+- Tables:
+  - users: User authentication and profiles
+  - supplements: User's persistent supplement selections
+  - health_stats: User health data
+  - blog_posts: Content management
+
+### Tracking Database (AWS RDS)
+- Location: AWS RDS PostgreSQL
+- Purpose: Historical tracking and qualitative data
+- Tables:
+  - supplement_logs: Daily supplement intake records
+  - qualitative_logs: Chat interactions and AI responses
+
+### Data Flow
+1. Supplement Management:
+   - User selections stored in NeonDB supplements table
+   - Daily tracking stored in RDS supplement_logs table
+
+2. Logging Flow:
+   - "Save Changes" button triggers RDS supplement_logs entry
+   - History view queries RDS for date-specific logs
+
+3. Chat System:
+   - Interactions stored in RDS qualitative_logs
+   - Requires UI verification components
 
 API Routes (from routes.ts)
 Authentication Routes

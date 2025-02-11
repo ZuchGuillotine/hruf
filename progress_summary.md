@@ -3,6 +3,28 @@
 ## Latest Status (February 10, 2025)
 
 ### Recent Changes and Fixes
+
+### Known Issues (As of February 11, 2025):
+1. Database Structure:
+   - Supplement logs incorrectly stored in NeonDB
+   - Migration to RDS needed for proper separation
+   - Chat system database connection errors
+
+2. UI Issues:
+   - Delete functionality not working in supplement list
+   - Missing chat storage verification components
+   - History view needs updating after database migration
+
+### Next Steps:
+1. Database:
+   - Migrate supplement_logs table to RDS
+   - Update backend routes for new database structure
+   - Fix chat system database connection
+
+2. UI Improvements:
+   - Implement delete functionality in supplement list
+   - Add chat storage verification components
+   - Update history view to use RDS connection
 - Fixed public pages routing and layout issues:
   - Corrected routing paths for Terms of Service and Privacy Policy
   - Implemented proper header component usage for non-authenticated pages
