@@ -5,7 +5,7 @@ import { chatWithAI } from "./openai";
 import { db } from "@db"; // NeonDB connection
 import { rdsDb } from "../db/rds"; // RDS connection for logs only
 import { supplements, supplementLogs, supplementReference, healthStats, users, blogPosts } from "@db/schema";
-import { eq, and, ilike, sql, desc } from "drizzle-orm";
+import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
