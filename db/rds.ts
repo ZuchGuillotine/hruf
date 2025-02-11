@@ -74,4 +74,6 @@ pool.on('error', (err) => {
   });
 });
 
-export const rdsDb = drizzle(pool);
+// Export the database instance as supplementRdsDb to match usage in other files
+export const supplementRdsDb = drizzle(pool);
+export const rdsDb = supplementRdsDb; // Alias for backward compatibility

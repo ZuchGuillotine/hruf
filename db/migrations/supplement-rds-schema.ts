@@ -2,18 +2,8 @@
  * Database: AWS RDS
  * Purpose: Combined schema for supplement tracking and qualitative logs
  */
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
 import { sql } from "drizzle-orm";
-
-// Create a PostgreSQL pool for RDS
-const pool = new Pool({
-  connectionString: process.env.AWS_RDS_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
-});
-
-// Create Drizzle instance
-const supplementRdsDb = drizzle(pool);
+import { supplementRdsDb } from "../rds";
 
 async function main() {
   try {
@@ -100,7 +90,6 @@ async function main() {
     console.log("Created update triggers");
 
     console.log("RDS schema creation completed successfully");
-
   } catch (error) {
     console.error("Error creating RDS schema:", {
       error: error instanceof Error ? error.message : String(error),
@@ -108,8 +97,6 @@ async function main() {
       timestamp: new Date().toISOString()
     });
     throw error;
-  } finally {
-    await pool.end();
   }
 }
 
