@@ -25,6 +25,9 @@ export function useSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      // Also invalidate today's supplement logs
+      const today = new Date().toISOString().split('T')[0];
+      queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
 
@@ -49,6 +52,9 @@ export function useSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      // Also invalidate today's supplement logs
+      const today = new Date().toISOString().split('T')[0];
+      queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
 
@@ -67,6 +73,9 @@ export function useSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      // Also invalidate today's supplement logs
+      const today = new Date().toISOString().split('T')[0];
+      queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
 
