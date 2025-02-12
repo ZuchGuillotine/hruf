@@ -1,49 +1,32 @@
-import { db } from "@db";
-import { supplementReference } from "@db/schema";
+import { supplementReference } from "@db/rds-schema";
+import { rdsDb } from "@db/rds";
 import { sql } from "drizzle-orm";
 import { Trie } from "../utils/trie";
 
-/**
- * SupplementService
- * 
- * This service manages supplement reference data and provides search functionality.
- * It uses a hybrid approach combining SQL database queries and an in-memory Trie
- * data structure for efficient prefix-based searching and fuzzy matching.
- * 
- * The service maintains a synchronized state between the database and the Trie,
- * ensuring fast lookups while maintaining data persistence.
- */
 class SupplementService {
-  private trie: Trie;               // In-memory search optimization structure
-  private initialized: boolean;      // Tracks if the service has loaded its data
+  private trie: Trie;
+  private initialized: boolean;
 
   constructor() {
     this.trie = new Trie();
     this.initialized = false;
   }
 
-  /**
-   * Initializes the service by loading supplement reference data from the database
-   * into the Trie data structure. If no data exists, it runs the initial seeding.
-   * 
-   * @throws Error if initialization fails
-   */
   async initialize() {
     try {
       console.log("Initializing supplement service...");
 
-      const supplements = await db.select().from(supplementReference);
+      const supplements = await rdsDb.select().from(supplementReference);
       console.log(`Retrieved ${supplements.length} supplements from database`);
 
-      this.trie = new Trie(); // Reset trie
+      this.trie = new Trie();
 
       if (supplements.length === 0) {
         console.warn("No supplements found in database. Running seed...");
         const seedModule = require("../../db/migrations/supplements");
         await seedModule.seedSupplements();
 
-        // Fetch supplements again after seeding
-        const seededSupplements = await db.select().from(supplementReference);
+        const seededSupplements = await rdsDb.select().from(supplementReference);
         console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
         this.loadSupplements(seededSupplements);
       } else {
@@ -61,27 +44,11 @@ class SupplementService {
     }
   }
 
-  /**
-   * Loads supplement data into the Trie data structure for fast searching
-   * @param supplements Array of supplement reference data to load
-   */
   private loadSupplements(supplements: any[]) {
     console.log(`Loading ${supplements.length} supplements into service`);
     this.trie.loadSupplements(supplements);
   }
 
-  /**
-   * Searches for supplements using a hybrid approach:
-   * 1. First tries a direct database search using ILIKE
-   * 2. Falls back to Trie-based search if no database results
-   * 
-   * The Trie search provides fuzzy matching capabilities for better
-   * user experience when exact matches aren't found.
-   * 
-   * @param query Search term from user input
-   * @param limit Maximum number of results to return
-   * @returns Array of matching supplement references
-   */
   async search(query: string, limit: number = 4) {
     try {
       if (!this.initialized) {
@@ -91,8 +58,7 @@ class SupplementService {
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
-      // Simple database search using ILIKE
-      const dbResults = await db
+      const dbResults = await rdsDb
         .select()
         .from(supplementReference)
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
@@ -101,7 +67,6 @@ class SupplementService {
       console.log('Database search results:', dbResults);
 
       if (dbResults.length === 0) {
-        // Try Trie search as fallback
         const trieResults = this.trie.search(query, limit);
         console.log('Trie search results:', trieResults);
         return trieResults || [];
@@ -115,5 +80,4 @@ class SupplementService {
   }
 }
 
-// Singleton instance of the supplement service
 export const supplementService = new SupplementService();
