@@ -5,7 +5,18 @@ import { sql } from "drizzle-orm";
 async function verifyRdsConnection() {
   try {
     console.log('Verifying RDS connection and tables...');
-    console.log('Connection URL pattern:', process.env.AWS_RDS_URL?.replace(/:[^:@]*@/, ':****@'));
+    const connectionUrl = process.env.AWS_RDS_URL;
+    if (!connectionUrl) {
+      throw new Error('AWS_RDS_URL environment variable is not set');
+    }
+    
+    // Parse connection URL to log host/port
+    const matches = connectionUrl.match(/postgres:\/\/[^:]+:[^@]+@([^:]+):(\d+)\/\w+/);
+    if (!matches) {
+      throw new Error('Invalid connection URL format');
+    }
+    const [_, host, port] = matches;
+    console.log(`Attempting to connect to ${host}:${port}`);
 
     // Test general connectivity with timeout
     await Promise.race([
