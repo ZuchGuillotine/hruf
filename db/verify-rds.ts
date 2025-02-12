@@ -2,7 +2,6 @@ import { rdsDb } from "./rds";
 import { supplementReference } from "./schema";
 import { sql } from "drizzle-orm";
 
-
 // Verify and parse RDS endpoint
 function verifyRdsEndpoint(endpoint: string | undefined): { host: string, port: number } {
   if (!endpoint) {
@@ -25,20 +24,16 @@ function verifyRdsEndpoint(endpoint: string | undefined): { host: string, port: 
 async function verifyRdsConnection() {
   try {
     console.log('Verifying RDS connection and tables...');
-    const connectionUrl = process.env.AWS_RDS_URL;
-    if (!connectionUrl) {
-      throw new Error('AWS_RDS_URL environment variable is not set');
+    const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT;
+    if (!proxyEndpoint) {
+      throw new Error('AWS_RDS_PROXY_ENDPOINT environment variable is not set');
     }
-    
-    // Parse connection URL to log host/port
-    const matches = connectionUrl.match(/postgres:\/\/[^:]+:[^@]+@([^:]+):(\d+)\/\w+/);
-    if (!matches) {
-      throw new Error('Invalid connection URL format');
-    }
-    const [_, host, port] = matches;
+
+    // Log actual connection details
+    const { host, port } = verifyRdsEndpoint(proxyEndpoint);
     console.log(`Attempting to connect to ${host}:${port}`);
 
-    // Test general connectivity with timeout
+    // Test general connectivity with increased timeout
     await Promise.race([
       rdsDb.execute(sql`SELECT 1`),
       new Promise((_, reject) => 
@@ -65,6 +60,7 @@ async function verifyRdsConnection() {
     console.error("RDS Verification Error:", {
       message: error instanceof Error ? error.message : String(error),
       code: error instanceof Error && 'code' in error ? (error as any).code : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
     return false;
