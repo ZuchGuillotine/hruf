@@ -12,17 +12,22 @@ if (!process.env.AWS_RDS_PROXY_ENDPOINT || !process.env.AWS_REGION) {
 const region = process.env.AWS_REGION;
 const dbName = process.env.AWS_RDS_DB_NAME || 'stacktrackertest1';
 const dbUser = process.env.AWS_RDS_USERNAME || 'postgres';
-const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT;
+const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT || '';
+const [host, port] = proxyEndpoint.split(':');
+
+if (!host) {
+  throw new Error('AWS_RDS_PROXY_ENDPOINT must include a valid hostname');
+}
 
 const poolConfig = {
   database: dbName,
   user: dbUser,
-  host: proxyEndpoint,
+  host: host,
   ssl: {
     rejectUnauthorized: false,
     sslmode: 'prefer',
   },
-  port: 5432,
+  port: parseInt(port || '5432', 10),
   connectionTimeoutMillis: 30000,
   idleTimeoutMillis: 30000,
   max: 10,

@@ -2,6 +2,26 @@ import { rdsDb } from "./rds";
 import { supplementReference } from "./schema";
 import { sql } from "drizzle-orm";
 
+
+// Verify and parse RDS endpoint
+function verifyRdsEndpoint(endpoint: string | undefined): { host: string, port: number } {
+  if (!endpoint) {
+    throw new Error('AWS_RDS_PROXY_ENDPOINT environment variable is not set');
+  }
+
+  const [host, portStr] = endpoint.split(':');
+  if (!host) {
+    throw new Error('Invalid RDS endpoint format - missing hostname');
+  }
+
+  const port = parseInt(portStr || '5432', 10);
+  if (isNaN(port)) {
+    throw new Error('Invalid port number in RDS endpoint');
+  }
+
+  return { host, port };
+}
+
 async function verifyRdsConnection() {
   try {
     console.log('Verifying RDS connection and tables...');
