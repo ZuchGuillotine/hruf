@@ -12,12 +12,27 @@ if (!process.env.AWS_RDS_PROXY_ENDPOINT || !process.env.AWS_REGION) {
 const region = process.env.AWS_REGION;
 const dbName = process.env.AWS_RDS_DB_NAME || 'stacktrackertest1';
 const dbUser = process.env.AWS_RDS_USERNAME || 'postgres';
-const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT || '';
-const [host, port] = proxyEndpoint.split(':');
+const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT;
 
-if (!host) {
-  throw new Error('AWS_RDS_PROXY_ENDPOINT must include a valid hostname');
+if (!proxyEndpoint) {
+  throw new Error('AWS_RDS_PROXY_ENDPOINT must be set');
 }
+
+const [host, portStr] = proxyEndpoint.split(':');
+const port = parseInt(portStr || '5432', 10);
+
+if (!host || isNaN(port)) {
+  throw new Error('AWS_RDS_PROXY_ENDPOINT must be in format hostname:port');
+}
+
+console.log('RDS Configuration:', {
+  region,
+  dbName,
+  dbUser,
+  host,
+  port,
+  timestamp: new Date().toISOString()
+});
 
 const poolConfig = {
   database: dbName,
@@ -46,8 +61,8 @@ async function getAuthToken() {
   try {
     const signer = new Signer({
       region,
-      hostname: proxyEndpoint,
-      port: 5432,
+      hostname: host,
+      port: port,
       username: dbUser,
     });
     return await signer.getAuthToken();
