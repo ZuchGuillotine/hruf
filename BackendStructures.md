@@ -8,15 +8,16 @@
 - Tables:
   - users: User authentication and profiles
   - supplements: User's persistent supplement selections (CRUD operations for supplement tracking card)
-  - health_stats: User health data
-  - blog_posts: Content management
+  - healthStats: User health data
+  - blogPosts: Content management
 
 ### Tracking Database (AWS RDS)
 - Location: AWS RDS PostgreSQL
 - Purpose: Historical tracking and qualitative data
 - Tables:
-  - supplement_logs: Daily supplement intake records
-  - qualitative_logs: Chat interactions and AI responses
+  - supplementLogs: Daily supplement intake records
+  - qualitativeLogs: Chat interactions and AI responses
+  - supplementReference: Autocomplete and search functionality
 
 ### Data Flow
 1. Supplement Management:
