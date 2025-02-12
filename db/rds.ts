@@ -24,13 +24,14 @@ const poolConfig = {
   user: dbUser,
   host: host,
   ssl: {
-    rejectUnauthorized: false,
-    sslmode: 'prefer',
+    rejectUnauthorized: true,
+    sslmode: 'require',
   },
   port: parseInt(port || '5432', 10),
   connectionTimeoutMillis: 30000,
   idleTimeoutMillis: 30000,
   max: 10,
+  password: await getAuthToken(), // Use IAM token as password
   keepAlive: true,
   statement_timeout: 30000,
   query_timeout: 30000,
