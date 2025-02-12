@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Reorganized database schemas into dedicated files:
+  - neon-schema.ts for core application features
+  - rds-schema.ts for tracking and logging
+- Enhanced database integration:
+  - Updated routes to use correct schema imports
+  - Improved supplement tracking across databases
+  - Enhanced search functionality in RDS
 - Verified complete database functionality:
   - Supplement tracking system operational with proper data persistence
   - Chat logging system successfully storing all AI interactions

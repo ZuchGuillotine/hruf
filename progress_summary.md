@@ -2,11 +2,15 @@
 
 ## Latest Status (February 11, 2025)
 
-### Recent Changes and Fixes
-- Fixed supplement history page data population:
-  - Implemented proper data joining between NeonDB and RDS
-  - Enhanced error handling for missing supplement data
-  - Improved log retrieval efficiency
+### Recent Changes and Fixes (February 12, 2025)
+- Reorganized database schemas:
+  - Created dedicated neon-schema.ts for core features
+  - Created rds-schema.ts for tracking and logs
+  - Improved separation of concerns between databases
+- Updated all routes and services:
+  - Modified supplement tracking to use correct schemas
+  - Enhanced history view with proper database joins
+  - Improved error handling across both databases
 - Successfully separated supplement data storage:
   - NeonDB: Core supplement data (card operations)
   - RDS: Historical tracking data (supplement logs)
