@@ -12,7 +12,7 @@ interface PostgresError extends Error {
 }
 
 // Environment validation with detailed error messages
-const required = ['AWS_RDS_PROXY_ENDPOINT', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'] as const;
+const required = ['AWS_RDS_URL', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'] as const;
 const missing = required.filter(key => !process.env[key]);
 if (missing.length > 0) {
   throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -20,19 +20,16 @@ if (missing.length > 0) {
 
 // Configuration with logging
 const region = process.env.AWS_REGION!.replace(/['"]/g, ''); // Remove any quotes
-const dbName = process.env.AWS_RDS_DB_NAME || 'stacktrackertest1';
-const dbUser = process.env.AWS_RDS_USERNAME || 'postgres';
-const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT!;
+const rdsUrl = process.env.AWS_RDS_URL!;
 
-// Parse endpoint with validation
-const [host, portStr] = proxyEndpoint.split(':');
-if (!host) {
-  throw new Error('Invalid AWS_RDS_PROXY_ENDPOINT format - missing hostname');
+// Parse RDS URL
+const matches = rdsUrl.match(/postgres:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(\w+)/);
+if (!matches) {
+  throw new Error('Invalid AWS_RDS_URL format');
 }
-const port = parseInt(portStr || '5432');
-if (isNaN(port)) {
-  throw new Error('Invalid port number in AWS_RDS_PROXY_ENDPOINT');
-}
+
+const [_, dbUser, dbPassword, host, portStr, dbName] = matches;
+const port = parseInt(portStr);
 
 console.log('Initializing RDS connection with:', {
   host,
@@ -74,7 +71,7 @@ async function getAuthToken(): Promise<string> {
   throw lastError!;
 }
 
-// Pool configuration optimized for proxy
+// Pool configuration for direct RDS connection
 const createPoolConfig = async () => ({
   database: dbName,
   user: dbUser,
@@ -82,15 +79,15 @@ const createPoolConfig = async () => ({
   port,
   password: await getAuthToken(),
   ssl: {
-    rejectUnauthorized: false, // Required for RDS proxy
-    sslmode: 'no-verify', // Changed for proxy compatibility
+    rejectUnauthorized: true, // Required for RDS direct connection
+    sslmode: 'verify-full', // Use full verification for direct connection
   },
-  // Proxy-specific settings
-  max: 5, // Reduced pool size for proxy
-  idleTimeoutMillis: 20000, // Increased from 10000
-  connectionTimeoutMillis: 15000, // Increased from 5000
-  statement_timeout: 30000, // Increased from 10000
-  query_timeout: 30000, // Increased from 10000
+  // Direct connection settings
+  max: 20, // Increased for direct connection
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 15000,
+  statement_timeout: 30000,
+  query_timeout: 30000,
   keepAlive: true,
   keepAliveInitialDelayMillis: 1000
 });
@@ -133,7 +130,7 @@ async function getPool(): Promise<pkg.Pool> {
       console.log('New client connected to pool');
     });
 
-    // Token refresh every 5 minutes (shorter interval for proxy)
+    // Token refresh every 15 minutes for direct connection
     setInterval(async () => {
       try {
         console.log('Refreshing auth token...');
@@ -147,7 +144,7 @@ async function getPool(): Promise<pkg.Pool> {
       } catch (err) {
         console.error('Failed to refresh auth token:', err);
       }
-    }, 5 * 60 * 1000);
+    }, 15 * 60 * 1000);
   }
   return pool;
 }

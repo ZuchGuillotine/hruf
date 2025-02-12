@@ -2,36 +2,37 @@ import { rdsDb } from "./rds";
 import { supplementReference } from "./schema";
 import { sql } from "drizzle-orm";
 
-// Verify and parse RDS endpoint
-function verifyRdsEndpoint(endpoint: string | undefined): { host: string, port: number } {
-  if (!endpoint) {
-    throw new Error('AWS_RDS_PROXY_ENDPOINT environment variable is not set');
+// Verify and parse RDS URL
+function verifyRdsUrl(url: string | undefined): { host: string, port: number, database: string } {
+  if (!url) {
+    throw new Error('AWS_RDS_URL environment variable is not set');
   }
 
-  const [host, portStr] = endpoint.split(':');
-  if (!host) {
-    throw new Error('Invalid RDS endpoint format - missing hostname');
+  const matches = url.match(/postgres:\/\/[^:]+:[^@]+@([^:]+):(\d+)\/(\w+)/);
+  if (!matches) {
+    throw new Error('Invalid RDS URL format');
   }
 
-  const port = parseInt(portStr || '5432', 10);
+  const [_, host, portStr, database] = matches;
+  const port = parseInt(portStr, 10);
   if (isNaN(port)) {
-    throw new Error('Invalid port number in RDS endpoint');
+    throw new Error('Invalid port number in RDS URL');
   }
 
-  return { host, port };
+  return { host, port, database };
 }
 
 async function verifyRdsConnection() {
   try {
     console.log('Verifying RDS connection and tables...');
-    const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT;
-    if (!proxyEndpoint) {
-      throw new Error('AWS_RDS_PROXY_ENDPOINT environment variable is not set');
+    const rdsUrl = process.env.AWS_RDS_URL;
+    if (!rdsUrl) {
+      throw new Error('AWS_RDS_URL environment variable is not set');
     }
 
     // Log actual connection details
-    const { host, port } = verifyRdsEndpoint(proxyEndpoint);
-    console.log(`Attempting to connect to ${host}:${port}`);
+    const { host, port, database } = verifyRdsUrl(rdsUrl);
+    console.log(`Attempting to connect to ${host}:${port}/${database}`);
 
     // Test general connectivity with increased timeout
     await Promise.race([
