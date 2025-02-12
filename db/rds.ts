@@ -28,13 +28,16 @@ const poolConfig = {
     sslmode: 'require',
   },
   port: parseInt(port || '5432', 10),
-  connectionTimeoutMillis: 30000,
-  idleTimeoutMillis: 30000,
-  max: 10,
-  password: await getAuthToken(), // Use IAM token as password
+  connectionTimeoutMillis: 60000, // Increased timeout
+  idleTimeoutMillis: 60000, // Increased timeout
+  max: 20, // Increased pool size
+  password: await getAuthToken(),
   keepAlive: true,
-  statement_timeout: 30000,
-  query_timeout: 30000,
+  keepAliveInitialDelayMillis: 10000,
+  statement_timeout: 60000, // Increased timeout
+  query_timeout: 60000, // Increased timeout
+  connectionRetryAttempts: 3,
+  connectionRetryTimeout: 10000,
   application_name: 'stacktracker-rds'
 };
 
@@ -73,13 +76,22 @@ async function createPool() {
     }
   }, 15 * 60 * 1000); // Refresh every 15 minutes
 
-  pool.on('error', (err) => {
+  pool.on('error', async (err) => {
     console.error('RDS Pool Error:', {
       message: err.message,
       code: err.code,
       detail: err.detail,
       timestamp: new Date().toISOString()
     });
+
+    // Attempt to recreate pool on critical errors
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNREFUSED') {
+      try {
+        await createPool();
+      } catch (reconnectError) {
+        console.error('Failed to recreate pool:', reconnectError);
+      }
+    }
   });
 
   pool.on('connect', async (client) => {
