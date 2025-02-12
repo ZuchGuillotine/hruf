@@ -21,14 +21,16 @@ const poolConfig = {
     rejectUnauthorized: false,
     sslmode: 'prefer',
   },
-  connectionTimeoutMillis: 60000,
+  connectionTimeoutMillis: 30000,
   idleTimeoutMillis: 30000,
-  max: 5,
+  max: 10,
   keepAlive: true,
   statement_timeout: 30000,
   query_timeout: 30000,
   application_name: 'stacktracker-rds',
-  keepaliveInitialDelayMillis: 10000
+  keepaliveInitialDelayMillis: 5000,
+  retryDelay: 1000,
+  maxRetries: 3
 };
 
 const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
