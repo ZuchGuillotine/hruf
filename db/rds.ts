@@ -3,7 +3,7 @@ const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import { RDS } from '@aws-sdk/client-rds';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
-import { getIamAuthToken } from '@aws-sdk/rds-signer';
+import { Signer } from '@aws-sdk/rds-signer';
 
 if (!process.env.AWS_RDS_PROXY_ENDPOINT || !process.env.AWS_REGION) {
   throw new Error("AWS_RDS_PROXY_ENDPOINT and AWS_REGION must be set");
@@ -35,12 +35,13 @@ const poolConfig = {
 // Get IAM auth token for RDS
 async function getAuthToken() {
   try {
-    return await getIamAuthToken({
+    const signer = new Signer({
       region,
       hostname: proxyEndpoint,
       port: 5432,
       username: dbUser,
     });
+    return await signer.getAuthToken();
   } catch (error) {
     console.error('Failed to get RDS auth token:', error);
     throw error;
