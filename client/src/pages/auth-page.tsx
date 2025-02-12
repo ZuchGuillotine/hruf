@@ -139,8 +139,7 @@ export default function AuthPage() {
                     Username
                   </label>
                   <Input
-                    id="auth-username"
-                    name="username"
+                    id="username"
                     type="text"
                     {...form.register("username")}
                     required={!isLogin}
@@ -148,24 +147,22 @@ export default function AuthPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <label htmlFor="auth-email" className="text-sm font-medium">
+                <label htmlFor="email" className="text-sm font-medium">
                   {isLogin ? "Email or Username" : "Email"}
                 </label>
                 <Input
-                  id="auth-email"
-                  name="email"
+                  id="email"
                   type={isLogin ? "text" : "email"}
                   {...form.register("email")}
                   placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="auth-password" className="text-sm font-medium">
+                <label htmlFor="password" className="text-sm font-medium">
                   Password
                 </label>
                 <Input
-                  id="auth-password"
-                  name="password" 
+                  id="password"
                   type="password"
                   {...form.register("password")}
                 />

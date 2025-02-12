@@ -6,12 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Implemented real-time UI updates for supplement tracking:
-  - Added automatic query invalidation for supplement logs
-  - Enhanced state management for real-time data synchronization
-  - Fixed history page refresh issues
-- Enhanced overwrite logic for same-day supplement entries
-- Added proper error handling and logging for supplement operations
 - Verified complete database functionality:
   - Supplement tracking system operational with proper data persistence
   - Chat logging system successfully storing all AI interactions
@@ -37,10 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Passport.js Google Strategy implementation
 
 ### Changed
-- Improved supplement tracking system:
-  - Enhanced data synchronization between NeonDB and RDS
-  - Optimized database operations for better performance
-  - Improved error handling for supplement logs
 - Improved public pages routing and layout
   - Fixed routing paths for Terms of Service and Privacy Policy
   - Corrected header component usage for non-authenticated pages
@@ -53,13 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated database connection to use supplemental RDS
 
 ### Fixed
-- Real-time UI update issues:
-  - Resolved stale data display in supplement history
-  - Fixed supplement log overwrite functionality
-  - Corrected query invalidation timing
-- Database synchronization issues:
-  - Fixed supplement log persistence in RDS
-  - Resolved data consistency between NeonDB and RDS
 - Public routes accessibility issues:
   - Corrected route naming inconsistencies
   - Fixed duplicate header/footer display

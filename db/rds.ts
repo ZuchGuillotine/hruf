@@ -1,42 +1,42 @@
 import pkg from 'pg';
-const { Pool, PoolConfig } = pkg;
+const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
-import * as schema from "./schema";
 
-// Get RDS connection URL from environment
-const rdsUrl = process.env.AWS_RDS_URL;
-
-if (!rdsUrl) {
-  throw new Error('AWS_RDS_URL environment variable is required');
+if (!process.env.AWS_RDS_URL) {
+  throw new Error("AWS_RDS_URL must be set for RDS database connection");
 }
 
-// Enhanced pool configuration for better stability
-const poolConfig: PoolConfig = {
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 10000,
-  max: 3,
-  min: 0,
-  keepAlive: false,
-  statement_timeout: 5000,
-  query_timeout: 5000,
-  allowExitOnIdle: true
+const ensureCorrectProtocol = (url: string) => {
+  if (url.startsWith('postgresql://')) {
+    return url.replace('postgresql://', 'postgres://');
+  }
+  if (!url.startsWith('postgres://')) {
+    return `postgres://${url}`;
+  }
+  return url;
 };
 
-let pool: Pool;
-try {
-  pool = new Pool({
-    connectionString: rdsUrl,
-    ...poolConfig
-  });
-  
-  // Test connection immediately
-  pool.query('SELECT 1')
-    .then(() => console.log('Initial RDS connection successful'))
-    .catch(err => console.error('Initial RDS connection failed:', err));
-} catch (error) {
-  console.error('Failed to create RDS pool:', error);
-  throw error;
-}
+const poolConfig = {
+  ssl: {
+    rejectUnauthorized: false,
+    sslmode: 'prefer',
+  },
+  connectionTimeoutMillis: 60000,
+  idleTimeoutMillis: 30000,
+  max: 5,
+  keepAlive: true,
+  statement_timeout: 30000,
+  query_timeout: 30000,
+  application_name: 'stacktracker-rds',
+  keepaliveInitialDelayMillis: 10000
+};
+
+const rdsUrl = ensureCorrectProtocol(process.env.AWS_RDS_URL);
+
+const pool = new Pool({
+  connectionString: rdsUrl,
+  ...poolConfig
+});
 
 // Event handlers for connection monitoring
 pool.on('connect', async (client) => {
@@ -85,7 +85,7 @@ pool.on('connect', async (client) => {
   }
 });
 
-pool.on('error', async (err: Error & { code?: string, detail?: string }) => {
+pool.on('error', (err: Error & { code?: string, detail?: string }) => {
   console.error('RDS Pool Error:', {
     message: err.message,
     code: err.code,
@@ -93,31 +93,7 @@ pool.on('error', async (err: Error & { code?: string, detail?: string }) => {
     stack: err.stack,
     timestamp: new Date().toISOString()
   });
-
-  // Attempt to handle connection errors
-  if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-    try {
-      console.log('Attempting to recover pool connection...');
-      const client = await pool.connect();
-      client.release();
-      console.log('Pool connection recovered');
-    } catch (recoverError) {
-      console.error('Failed to recover pool connection:', recoverError);
-    }
-  }
-});
-
-// Add connect success handler
-pool.on('connect', (client) => {
-  client.on('error', (err) => {
-    console.error('RDS Client Error:', {
-      message: err.message,
-      code: 'code' in err ? err.code : undefined,
-      timestamp: new Date().toISOString()
-    });
-  });
 });
 
 // Export RDS connection for supplement logs only
-export const rdsDb = drizzle(pool, { schema });
-export { pool as rdsPool };
+export const rdsDb = drizzle(pool);

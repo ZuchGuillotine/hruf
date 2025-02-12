@@ -47,12 +47,12 @@ export function setupAuth(app: Express) {
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID || "hipaa-compliant-secret",
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     cookie: {
-      secure: false, // Set to false to work in development
+      secure: app.get("env") === "production",
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "strict",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
     store: new MemoryStore({
