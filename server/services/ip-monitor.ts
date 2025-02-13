@@ -82,7 +82,29 @@ export class IpMonitorService {
   }
 
   async updateSecurityGroupRule(newIp: string): Promise<void> {
-    console.log(`Rule already exists for IP ${newIp}, updating current IP`);
+    console.log(`Updating security group rule for IP ${newIp}`);
+    
+    // Always attempt to clean up old rule first
+    if (this.currentIp && this.currentIp !== newIp) {
+      try {
+        await this.ec2.revokeSecurityGroupIngress({
+          GroupId: this.config.securityGroupId,
+          IpPermissions: [{
+            IpProtocol: 'tcp',
+            FromPort: this.config.port,
+            ToPort: this.config.port,
+            IpRanges: [{
+              CidrIp: `${this.currentIp}/32`,
+              Description: this.config.description
+            }]
+          }]
+        });
+        console.log(`Removed old rule for IP: ${this.currentIp}`);
+      } catch (error) {
+        console.log(`Failed to remove old rule (this is normal if it didn't exist):`, error);
+      }
+    }
+    
     this.currentIp = newIp;
 
     try {

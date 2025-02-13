@@ -28,7 +28,7 @@ if (missing.length > 0) {
 // Configuration with logging
 const region = process.env.AWS_REGION!.trim().replace(/['"]/g, '');
 const host = process.env.AWS_RDS_HOST!.trim().replace(/['"]/g, '');
-const username = process.env.AWS_RDS_USERNAME!.trim();
+const username = process.env.AWS_RDS_USERNAME!.trim().toLowerCase(); // Ensure consistent lowercase
 const port = 5432;
 const database = 'stacktracker1';
 

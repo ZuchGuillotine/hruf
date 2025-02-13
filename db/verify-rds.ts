@@ -54,9 +54,21 @@ async function verifyRdsConnection() {
       port,
       database,
       region: process.env.AWS_REGION,
+      username: process.env.AWS_RDS_USERNAME?.toLowerCase(),
       hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
-      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
+      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+      securityGroup: process.env.AWS_RDS_SECURITY_GROUP
     });
+
+    // Verify security group configuration
+    const ec2 = new EC2({ region: process.env.AWS_REGION });
+    const securityGroup = await ec2.describeSecurityGroups({
+      GroupIds: [process.env.AWS_RDS_SECURITY_GROUP!]
+    });
+    
+    console.log('Security Group Rules:', 
+      JSON.stringify(securityGroup.SecurityGroups?.[0]?.IpPermissions, null, 2)
+    );
 
     // Test basic connectivity with detailed logging
     console.log('Testing basic connectivity...');
