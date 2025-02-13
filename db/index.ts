@@ -9,8 +9,8 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set");
 }
 
-if (!process.env.RDS_URL) {
-  throw new Error("RDS_URL must be set");
+if (!process.env.AWS_RDS_URL) {
+  throw new Error("AWS_RDS_URL must be set");
 }
 
 // NeonDB connection
@@ -19,7 +19,7 @@ export const neonDb = drizzle(neonConfig, { schema: neonSchema });
 export const db = neonDb; // Alias for backward compatibility
 
 // RDS connection
-const rdsPool = new Pool({ connectionString: process.env.RDS_URL });
+const rdsPool = new Pool({ connectionString: process.env.AWS_RDS_URL });
 export const rdsDb = drizzle(rdsPool, { schema: rdsSchema });
 
 // Re-export specific schemas to maintain clear database boundaries
