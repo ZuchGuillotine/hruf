@@ -13,6 +13,7 @@ export class IpMonitorService {
   private ec2: EC2;
   private config: IpMonitorConfig;
   private updateInterval: NodeJS.Timeout | null = null;
+  private maxRetries = 3;
 
   constructor(config: IpMonitorConfig) {
     this.config = config;
@@ -21,7 +22,6 @@ export class IpMonitorService {
       credentials: defaultProvider()
     });
 
-    // Log configuration on initialization
     console.log('Initializing IP Monitor Service with config:', {
       securityGroupId: config.securityGroupId,
       port: config.port,
@@ -41,33 +41,79 @@ export class IpMonitorService {
     }
   }
 
-  async updateSecurityGroupRule(newIp: string): Promise<void> {
+  private async verifySecurityGroupRule(ip: string): Promise<boolean> {
     try {
-      // First revoke existing rule if our current IP is known
-      if (this.currentIp) {
-        try {
-          await this.ec2.revokeSecurityGroupIngress({
-            GroupId: this.config.securityGroupId,
-            IpPermissions: [{
-              IpProtocol: 'tcp',
-              FromPort: this.config.port,
-              ToPort: this.config.port,
-              IpRanges: [{
-                CidrIp: `${this.currentIp}/32`,
-                Description: this.config.description
-              }]
-            }]
-          });
-          console.log(`Revoked access for old IP: ${this.currentIp}`);
-        } catch (error: any) {
-          // Ignore if the rule doesn't exist
-          if (error.Code !== 'InvalidPermission.NotFound') {
-            console.error('Error revoking old rule:', error);
-          }
-        }
+      const response = await this.ec2.describeSecurityGroups({
+        GroupIds: [this.config.securityGroupId]
+      });
+
+      const group = response.SecurityGroups?.[0];
+      if (!group) {
+        console.error('Security group not found:', this.config.securityGroupId);
+        return false;
       }
 
+      const ruleExists = group.IpPermissions?.some(permission =>
+        permission.IpProtocol === 'tcp' &&
+        permission.FromPort === this.config.port &&
+        permission.ToPort === this.config.port &&
+        permission.IpRanges?.some(range => 
+          range.CidrIp === `${ip}/32` && 
+          range.Description === this.config.description
+        )
+      );
+
+      console.log('Security group rule verification:', {
+        ip,
+        exists: ruleExists,
+        groupId: this.config.securityGroupId,
+        timestamp: new Date().toISOString()
+      });
+
+      return !!ruleExists;
+    } catch (error) {
+      console.error('Error verifying security group rule:', error);
+      return false;
+    }
+  }
+
+  async updateSecurityGroupRule(newIp: string): Promise<void> {
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
+        console.log(`Attempt ${attempt}/${this.maxRetries} to update security group rule`);
+
+        // First verify if the rule already exists
+        const ruleExists = await this.verifySecurityGroupRule(newIp);
+
+        if (ruleExists) {
+          console.log(`Rule already exists for IP ${newIp}, updating current IP`);
+          this.currentIp = newIp;
+          return;
+        }
+
+        // Remove old rule if it exists
+        if (this.currentIp) {
+          try {
+            await this.ec2.revokeSecurityGroupIngress({
+              GroupId: this.config.securityGroupId,
+              IpPermissions: [{
+                IpProtocol: 'tcp',
+                FromPort: this.config.port,
+                ToPort: this.config.port,
+                IpRanges: [{
+                  CidrIp: `${this.currentIp}/32`,
+                  Description: this.config.description
+                }]
+              }]
+            });
+            console.log(`Revoked access for old IP: ${this.currentIp}`);
+          } catch (error: any) {
+            if (error.Code !== 'InvalidPermission.NotFound') {
+              console.error('Error revoking old rule:', error);
+            }
+          }
+        }
+
         // Add new rule
         await this.ec2.authorizeSecurityGroupIngress({
           GroupId: this.config.securityGroupId,
@@ -82,20 +128,24 @@ export class IpMonitorService {
           }]
         });
 
-        console.log(`Added access for new IP: ${newIp}`);
-        this.currentIp = newIp;
-      } catch (error: any) {
-        // If rule already exists, just update our current IP
-        if (error.Code === 'InvalidPermission.Duplicate') {
-          console.log(`Rule already exists for IP ${newIp}, updating current IP`);
-          this.currentIp = newIp;
-          return;
+        // Verify the rule was added successfully
+        const verified = await this.verifySecurityGroupRule(newIp);
+        if (!verified) {
+          throw new Error('Failed to verify security group rule after adding');
         }
-        throw error;
+
+        console.log(`Successfully added and verified access for new IP: ${newIp}`);
+        this.currentIp = newIp;
+        return;
+
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error);
+        if (attempt === this.maxRetries) {
+          throw error;
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
       }
-    } catch (error) {
-      console.error('Error updating security group:', error);
-      throw error;
     }
   }
 
@@ -114,7 +164,6 @@ export class IpMonitorService {
       }
     } catch (error) {
       console.error('Error in IP check cycle:', error);
-      // Don't throw here to keep the monitor running
     }
   }
 

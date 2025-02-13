@@ -12,7 +12,14 @@ interface PostgresError extends Error {
 }
 
 // Environment validation with detailed error messages
-const required = ['AWS_RDS_HOST', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'] as const;
+const required = [
+  'AWS_RDS_HOST',
+  'AWS_REGION',
+  'AWS_ACCESS_KEY_ID',
+  'AWS_SECRET_ACCESS_KEY',
+  'AWS_RDS_USERNAME' // Add username as required env var
+] as const;
+
 const missing = required.filter(key => !process.env[key]);
 if (missing.length > 0) {
   throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -21,12 +28,14 @@ if (missing.length > 0) {
 // Configuration with logging
 const region = process.env.AWS_REGION!.replace(/['"]/g, '');
 const host = process.env.AWS_RDS_HOST!;
+const username = process.env.AWS_RDS_USERNAME!;
 const port = 5432;
 
 console.log('Initializing RDS connection with:', {
   host,
   port,
   region,
+  username,
   timestamp: new Date().toISOString()
 });
 
@@ -40,7 +49,7 @@ async function getAuthToken(retryCount = 3): Promise<string> {
         host,
         port,
         region,
-        username: 'bencox820',
+        username,
         hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
         hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
       });
@@ -52,7 +61,7 @@ async function getAuthToken(retryCount = 3): Promise<string> {
         region,
         hostname: host,
         port,
-        username: 'bencox820',
+        username,
         credentials
       });
 
@@ -84,6 +93,7 @@ const createPoolConfig = async () => {
     port,
     database: 'stacktracker1',
     region,
+    username,
     timestamp: new Date().toISOString(),
   });
 
@@ -94,10 +104,11 @@ const createPoolConfig = async () => {
     host,
     port,
     database: 'stacktracker1',
-    user: 'bencox820',
+    user: username, // Use the username from environment variable
     password: token,
     ssl: {
-      rejectUnauthorized: false, // Allow self-signed certificates
+      rejectUnauthorized: true, // Enable SSL verification for security
+      ca: process.env.AWS_RDS_CA_CERT, // Optional: Add CA certificate if needed
     },
     // Connection pool settings
     max: 20,
@@ -112,7 +123,7 @@ const createPoolConfig = async () => {
   };
 };
 
-// Rest of the file remains the same but with pool management updates
+// Pool management
 let pool: pkg.Pool | null = null;
 let isRefreshing = false;
 
@@ -134,7 +145,8 @@ async function getPool(): Promise<pkg.Pool> {
           host,
           port,
           database: 'stacktracker1',
-          region
+          region,
+          username
         }
       });
 
