@@ -38,6 +38,27 @@ A cutting-edge health tracking and content management application that combines 
   - Notes from interactions stored in RDS qualitative_logs
 
 ### Database Schema Overview
+#### Primary Database (NeonDB) Tables:
+1. **users**:
+   - Core user authentication data
+   - Profile information
+   - Admin privileges tracking
+   - Email verification status
+
+2. **supplements**:
+   - User's persistent supplement selections
+   - Basic supplement information
+   - Active/inactive status tracking
+
+3. **healthStats**:
+   - User health metrics
+   - Historical health data
+   - Tracking of various health indicators
+
+4. **blogPosts**:
+   - Content management system
+   - Health-related articles and resources
+
 #### RDS Database Tables:
 1. **supplementLogs**:
    - Tracks daily supplement intake
@@ -132,8 +153,8 @@ A cutting-edge health tracking and content management application that combines 
      - Successfully handling user authentication
      - Managing health statistics
      - Storing user supplement selections
-   - Secondary Database (RDS): ✅ Fully operational
-     - Successfully storing supplement logs
+   - Secondary Database (RDS): Needs trouble shooting
+     - storing supplement logs (connection failing)
      - Chat interaction logs with enhanced metadata
      - Autocomplete functionality for supplement search
 
