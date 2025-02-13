@@ -216,3 +216,35 @@
 - Set up CDN for blog assets
 - Implement proper SSL/TLS
 - Configure proper CORS policies
+
+### AWS RDS Connection Troubleshooting (February 13, 2025)
+- Identified and investigated RDS proxy connection issues:
+  1. Initial Connection Analysis:
+     - Discovered application IP: 35.196.87.91
+     - Found connection timeouts due to security group restrictions
+     - Verified IAM authentication working correctly
+
+  2. Security Group Updates:
+     - Initial security group only allowed:
+       - 34.148.196.141/32
+       - 34.138.101.28/32 (marked as "replit")
+     - Added new security group rule for 35.196.87.91/32
+
+  3. VPC Configuration Analysis:
+     - Identified VPC ID: vpc-0828d71205e8b01f9
+     - Found proxy using private subnet IPs:
+       - subnet-0724c47e95b57f9a2
+       - subnet-035cb767062c7f44f
+       - subnet-0262500bb81bef74e
+     - DNS resolution showing private IPs (172.31.x.x)
+
+  4. Current Status:
+     - Security groups updated but still experiencing timeouts
+     - RDS proxy resolving to private VPC IPs
+     - Investigating public accessibility configuration
+
+  5. Next Steps:
+     - Verify subnet public accessibility
+     - Check route tables for Internet Gateway routes
+     - Confirm "Auto-assign public IPv4 address" settings
+     - Verify RDS proxy "Publicly accessible" setting

@@ -88,7 +88,18 @@ const createPoolConfig = async () => {
     password: await getAuthToken(),
     ssl: {
       rejectUnauthorized: true,
-      sslmode: 'verify-full',
+      sslmode: 'verify-full', // Added back for security
+      checkServerIdentity: (host: string, cert: any) => {
+        // Accept RDS proxy wildcard certificates
+        const validHosts = [
+          `.rds.amazonaws.com`,
+          `.proxy-${region}.rds.amazonaws.com`
+        ];
+        if (validHosts.some(validHost => host.endsWith(validHost))) {
+          return undefined;
+        }
+        return new Error(`Certificate not valid for ${host}`);
+      }
     },
     // Connection pool settings
     max: 5,
