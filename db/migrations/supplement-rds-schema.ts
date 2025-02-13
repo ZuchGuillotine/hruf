@@ -1,7 +1,11 @@
 /**
- * Database: AWS RDS
- * Purpose: Combined schema for supplement tracking and qualitative logs
+ * @deprecated This schema has been consolidated into db/migrations/combined-rds-schema.ts
+ * DO NOT USE - Kept for reference during consolidation validation
+ * Last active: February 2025
  */
+
+/*
+// Original file content commented out
 import { sql } from "drizzle-orm";
 import { supplementRdsDb } from "../rds";
 
@@ -103,3 +107,4 @@ async function main() {
 main()
   .catch(console.error)
   .finally(() => process.exit());
+*/

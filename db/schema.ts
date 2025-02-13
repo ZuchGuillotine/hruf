@@ -1,3 +1,10 @@
+/**
+ * @deprecated This schema has been consolidated into db/neon-schema.ts and db/rds-schema.ts
+ * DO NOT USE - Kept for reference during consolidation validation
+ * Last active: February 2025
+ */
+
+/*
 // Core database schema definitions for the supplement tracking application
 import { pgTable, text, serial, integer, boolean, timestamp, json, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -132,3 +139,4 @@ export type SelectSupplementReference = typeof supplementReference.$inferSelect;
 
 export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
+*/

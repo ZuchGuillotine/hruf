@@ -1,4 +1,10 @@
+/**
+ * @deprecated This schema has been consolidated into db/migrations/combined-rds-schema.ts
+ * DO NOT USE - Kept for reference during consolidation validation
+ * Last active: February 2025
+ */
 
+/*
 import { supplementRdsDb } from "../supplement-rds.js";
 import { sql } from "drizzle-orm";
 
@@ -112,3 +118,4 @@ async function main() {
 main()
   .catch(console.error)
   .finally(() => process.exit());
+*/
