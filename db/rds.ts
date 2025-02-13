@@ -1,7 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
-import { RDS } from '@aws-sdk/client-rds';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { Signer } from '@aws-sdk/rds-signer';
 
@@ -13,7 +12,7 @@ interface PostgresError extends Error {
 }
 
 // Environment validation with detailed error messages
-const required = ['AWS_RDS_PROXY_ENDPOINT', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'] as const;
+const required = ['AWS_RDS_HOST', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'] as const;
 const missing = required.filter(key => !process.env[key]);
 if (missing.length > 0) {
   throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -21,18 +20,10 @@ if (missing.length > 0) {
 
 // Configuration with logging
 const region = process.env.AWS_REGION!.replace(/['"]/g, '');
-const proxyEndpoint = process.env.AWS_RDS_PROXY_ENDPOINT!;
+const host = process.env.AWS_RDS_HOST!;
+const port = 5432;
 
-// Parse proxy endpoint
-const matches = proxyEndpoint.match(/^([^:]+):(\d+)$/);
-if (!matches) {
-  throw new Error('Invalid AWS_RDS_PROXY_ENDPOINT format. Expected format: hostname:port');
-}
-
-const [_, host, portStr] = matches;
-const port = parseInt(portStr);
-
-console.log('Initializing RDS proxy connection with:', {
+console.log('Initializing RDS connection with:', {
   host,
   port,
   region,
@@ -49,7 +40,8 @@ async function getAuthToken(retryCount = 3): Promise<string> {
         region,
         hostname: host,
         port,
-        username: 'Bencox820',
+        username: 'bencox820', // Changed to lowercase to match PostgreSQL convention
+        credentials: defaultProvider()
       });
 
       const token = await signer.getAuthToken();
@@ -69,7 +61,7 @@ async function getAuthToken(retryCount = 3): Promise<string> {
   throw lastError!;
 }
 
-// Enhanced pool configuration for RDS Proxy
+// Enhanced pool configuration
 const createPoolConfig = async () => {
   console.log('Creating pool configuration with the following network details:', {
     host,
@@ -83,19 +75,18 @@ const createPoolConfig = async () => {
     host,
     port,
     database: 'stacktracker1',
-    user: 'Bencox820',
+    user: 'bencox820', // Changed to lowercase
     password: await getAuthToken(),
     ssl: {
-      rejectUnauthorized: true,
-      sslmode: 'verify-full',
+      rejectUnauthorized: false, // Allow self-signed certificates
     },
-    // Connection pool settings optimized for RDS Proxy
-    max: 10, // Increased from 5
-    min: 2,  // Added minimum connections
-    idleTimeoutMillis: 30000, // Reduced from 120000
-    connectionTimeoutMillis: 10000, // Reduced from 60000
-    statement_timeout: 30000,  // Reduced from 60000
-    query_timeout: 30000,      // Reduced from 60000
+    // Connection pool settings
+    max: 20,
+    min: 5,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 10000,
+    statement_timeout: 30000,
+    query_timeout: 30000,
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
     application_name: 'stacktracker_app',
@@ -129,24 +120,25 @@ async function getPool(): Promise<pkg.Pool> {
       });
 
       // Reset pool on critical errors
-      if (
-        err.code === 'PROTOCOL_CONNECTION_LOST' ||
-        err.code === 'ECONNREFUSED' ||
-        err.code === '57P01' || // admin shutdown
-        err.code === '57P02' || // crash shutdown
-        err.code === '57P03' || // cannot connect now
-        err.code === '08006' || // connection failure
-        err.code === '08001' || // unable to connect
-        err.code === '08004'    // rejected connection
+      if (err.code === 'PROTOCOL_CONNECTION_LOST' ||
+          err.code === 'ECONNREFUSED' ||
+          err.code === '57P01' || // admin shutdown
+          err.code === '57P02' || // crash shutdown
+          err.code === '57P03' || // cannot connect now
+          err.code === '08006' || // connection failure
+          err.code === '08001' || // unable to connect
+          err.code === '08004'    // rejected connection
       ) {
         console.log('Critical error detected, resetting pool');
-        await pool.end();
+        if (pool) {
+          await pool.end().catch(console.error);
+        }
         pool = null;
       }
     });
 
     // Connection lifecycle logging
-    pool.on('connect', (client) => {
+    pool.on('connect', () => {
       console.log('New client connected to pool:', {
         timestamp: new Date().toISOString(),
         poolSize: (pool as any).totalCount,
@@ -157,7 +149,7 @@ async function getPool(): Promise<pkg.Pool> {
       });
     });
 
-    // Token refresh every 10 minutes (reduced from 14)
+    // Token refresh every 10 minutes
     const refreshToken = async () => {
       if (isRefreshing) return;
       try {
