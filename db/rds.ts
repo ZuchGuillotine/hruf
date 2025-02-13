@@ -40,11 +40,10 @@ console.log('Initializing RDS proxy connection with:', {
 });
 
 // Get IAM auth token with retries and exponential backoff
-async function getAuthToken(): Promise<string> {
-  const maxRetries = 3;
+async function getAuthToken(retryCount = 3): Promise<string> {
   let lastError: Error | null = null;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= retryCount; attempt++) {
     try {
       const signer = new Signer({
         region,
@@ -58,11 +57,11 @@ async function getAuthToken(): Promise<string> {
       return token;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`Failed to get IAM auth token (attempt ${attempt}/${maxRetries}):`, {
+      console.error(`Failed to get IAM auth token (attempt ${attempt}/${retryCount}):`, {
         error: lastError.message,
         timestamp: new Date().toISOString()
       });
-      if (attempt < maxRetries) {
+      if (attempt < retryCount) {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
       }
     }
@@ -70,7 +69,7 @@ async function getAuthToken(): Promise<string> {
   throw lastError!;
 }
 
-// Enhanced pool configuration for RDS Proxy with IP logging
+// Enhanced pool configuration for RDS Proxy
 const createPoolConfig = async () => {
   console.log('Creating pool configuration with the following network details:', {
     host,
@@ -88,26 +87,15 @@ const createPoolConfig = async () => {
     password: await getAuthToken(),
     ssl: {
       rejectUnauthorized: true,
-      sslmode: 'verify-full', // Added back for security
-      checkServerIdentity: (host: string, cert: any) => {
-        // Accept RDS proxy wildcard certificates
-        const validHosts = [
-          `.rds.amazonaws.com`,
-          `.proxy-${region}.rds.amazonaws.com`
-        ];
-        if (validHosts.some(validHost => host.endsWith(validHost))) {
-          return undefined;
-        }
-        return new Error(`Certificate not valid for ${host}`);
-      }
+      sslmode: 'verify-full',
     },
-    // Connection pool settings
-    max: 5,
-    min: 0,
-    idleTimeoutMillis: 120000,
-    connectionTimeoutMillis: 60000,
-    statement_timeout: 60000,
-    query_timeout: 60000,
+    // Connection pool settings optimized for RDS Proxy
+    max: 10, // Increased from 5
+    min: 2,  // Added minimum connections
+    idleTimeoutMillis: 30000, // Reduced from 120000
+    connectionTimeoutMillis: 10000, // Reduced from 60000
+    statement_timeout: 30000,  // Reduced from 60000
+    query_timeout: 30000,      // Reduced from 60000
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
     application_name: 'stacktracker_app',
@@ -116,6 +104,7 @@ const createPoolConfig = async () => {
 
 // Create and manage pool with enhanced error and connection logging
 let pool: pkg.Pool | null = null;
+let isRefreshing = false;
 
 async function getPool(): Promise<pkg.Pool> {
   if (!pool) {
@@ -139,62 +128,66 @@ async function getPool(): Promise<pkg.Pool> {
         }
       });
 
-      if (err.code === 'ECONNREFUSED') {
-        console.error('Connection refused. This might indicate a network or security group issue.');
-      }
-
       // Reset pool on critical errors
-      if (err.code === 'PROTOCOL_CONNECTION_LOST' ||
-          err.code === 'ECONNREFUSED' ||
-          err.code === '57P01' ||
-          err.code === '57P02' ||
-          err.code === '57P03' ||
-          err.code === '08006' ||
-          err.code === '08001' ||
-          err.code === '08004') {
+      if (
+        err.code === 'PROTOCOL_CONNECTION_LOST' ||
+        err.code === 'ECONNREFUSED' ||
+        err.code === '57P01' || // admin shutdown
+        err.code === '57P02' || // crash shutdown
+        err.code === '57P03' || // cannot connect now
+        err.code === '08006' || // connection failure
+        err.code === '08001' || // unable to connect
+        err.code === '08004'    // rejected connection
+      ) {
         console.log('Critical error detected, resetting pool');
+        await pool.end();
         pool = null;
       }
     });
 
-    // Connection lifecycle logging with network details
+    // Connection lifecycle logging
     pool.on('connect', (client) => {
-      const socket = (client as any).connection.stream;
       console.log('New client connected to pool:', {
         timestamp: new Date().toISOString(),
-        localAddress: socket.localAddress,
-        localPort: socket.localPort,
-        remoteAddress: socket.remoteAddress,
-        remotePort: socket.remotePort,
+        poolSize: (pool as any).totalCount,
+        activeConnections: (pool as any).waitingCount,
         host,
         port,
         database: 'stacktracker1'
       });
     });
 
-    pool.on('acquire', () => {
-      console.log('Client acquired from pool');
-    });
-
-    pool.on('remove', () => {
-      console.log('Client removed from pool');
-    });
-
-    // Token refresh every 14 minutes
-    setInterval(async () => {
+    // Token refresh every 10 minutes (reduced from 14)
+    const refreshToken = async () => {
+      if (isRefreshing) return;
       try {
+        isRefreshing = true;
         console.log('Refreshing IAM auth token...');
         const newToken = await getAuthToken();
         if (pool) {
-          await pool.end();
+          const oldPool = pool;
+          const config = await createPoolConfig();
+          pool = new Pool(config);
+
+          // Wait for new pool to establish connection before closing old one
+          try {
+            await pool.query('SELECT 1');
+            console.log('New pool connection verified');
+            await oldPool.end();
+          } catch (err) {
+            console.error('New pool verification failed, keeping old pool:', err);
+            pool = oldPool;
+          }
         }
-        const config = await createPoolConfig();
-        pool = new Pool(config);
         console.log('Successfully refreshed IAM auth token and pool');
       } catch (err) {
         console.error('Failed to refresh IAM auth token:', err);
+      } finally {
+        isRefreshing = false;
       }
-    }, 14 * 60 * 1000);
+    };
+
+    setInterval(refreshToken, 10 * 60 * 1000);
   }
   return pool;
 }
