@@ -29,10 +29,10 @@
 2. Database Integration Flow:
    - Supplement card data managed in NeonDB supplements table
    - Save operation triggers data storage in RDS supplement_logs
-   - History view combines data from both databases:
+   - History view combines data from RDS 
      - Logs from RDS supplement_logs
-     - Supplement details from NeonDB supplements
-     - Data enrichment happens server-side
+     - Notes from interactions stored in RDS qualitative_logs
+     
 
 3. Chat System:
    - Interactions stored in RDS qualitative_logs
@@ -61,7 +61,7 @@ Updates an existing supplement.
 DELETE /api/supplements/:id
 Deletes a supplement.
 GET /api/supplements/search
-Searches for supplements in the central database.
+Searches for supplements in the supplement_refference table from the rds database.
 Health Stats Routes
 GET /api/health-stats
 Retrieves the user’s health data.
