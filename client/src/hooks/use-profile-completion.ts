@@ -1,6 +1,6 @@
 import { useUser } from "./use-user";
 import { useQuery } from "@tanstack/react-query";
-import { SelectHealthStats } from "@db/schema";
+import { SelectHealthStats } from "@db/neon-schema";
 
 type ProfileStep = {
   id: string;

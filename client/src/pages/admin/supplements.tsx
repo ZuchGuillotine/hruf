@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
-import type { SelectSupplementReference, InsertSupplementReference } from "@db/schema";
+import type { SelectSupplementReference, InsertSupplementReference } from "@db/rds-schema";
 import Header from "@/components/header";
 
 type FormData = {

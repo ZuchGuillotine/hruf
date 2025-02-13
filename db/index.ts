@@ -1,5 +1,5 @@
-
 import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle as drizzlePostgres } from 'drizzle-orm/node-postgres';
 import { neon } from '@neondatabase/serverless';
 import * as neonSchema from './neon-schema';
 import * as rdsSchema from './rds-schema';
@@ -18,9 +18,9 @@ const neonConfig = neon(process.env.DATABASE_URL);
 export const neonDb = drizzle(neonConfig, { schema: neonSchema });
 export const db = neonDb; // Alias for backward compatibility
 
-// RDS connection
+// RDS connection using appropriate drizzle connector
 const rdsPool = new Pool({ connectionString: process.env.AWS_RDS_URL });
-export const rdsDb = drizzle(rdsPool, { schema: rdsSchema });
+export const rdsDb = drizzlePostgres(rdsPool, { schema: rdsSchema });
 
 // Re-export specific schemas to maintain clear database boundaries
 export { users, healthStats, supplements, blogPosts } from './neon-schema';

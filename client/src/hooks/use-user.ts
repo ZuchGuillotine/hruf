@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { InsertUser, SelectUser } from "@db/schema";
+import type { InsertUser, SelectUser } from "@db/neon-schema";
 
 type RequestResult = {
   ok: true;

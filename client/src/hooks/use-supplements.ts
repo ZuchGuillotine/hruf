@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { InsertSupplement, SelectSupplement } from "@db/schema";
+import type { InsertSupplement, SelectSupplement } from "@db/neon-schema";
 
 export function useSupplements() {
   const queryClient = useQueryClient();

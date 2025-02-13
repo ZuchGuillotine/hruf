@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { sendEmail } from '../services/emailService';
 import { db } from '@db/index';
-import { users } from '@db/schema';
+import { users } from '@db/neon-schema';
 import { eq } from 'drizzle-orm';
 
 export async function signup(req: Request, res: Response, next: NextFunction): Promise<void> {

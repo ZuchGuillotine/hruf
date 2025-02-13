@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import { Link } from "wouter";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import type { SelectHealthStats } from "@db/schema";
+import type { SelectHealthStats } from "@db/neon-schema";
 
 type HealthStatsFormData = {
   weight?: number;

@@ -2,16 +2,14 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
-import { db } from "@db"; // NeonDB connection
-import { rdsDb } from "../db/rds"; // RDS connection for logs only
+import { neonDb as db } from "@db"; // NeonDB connection
+import { rdsDb } from "@db"; // RDS connection for logs only
 import { supplements, healthStats, users, blogPosts } from "@db/neon-schema";
 import { supplementLogs, supplementReference, qualitativeLogs } from "@db/rds-schema";
-import { rdsDb } from "@db/rds";
 import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
-import { qualitativeLogs } from "@db/schema";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -501,8 +499,8 @@ export function registerRoutes(app: Express): Server {
             if (existingLog.length > 0) {
               // Only update if data has changed
               const hasChanged = existingLog[0].dosage !== log.dosage ||
-                               existingLog[0].frequency !== log.frequency ||
-                               existingLog[0].name !== log.name;
+                                existingLog[0].frequency !== log.frequency ||
+                                existingLog[0].name !== log.name;
 
               if (hasChanged) {
                 const [updatedLog] = await rdsDb
@@ -567,12 +565,14 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Supplement Logs endpoints - Handles the interaction between NeonDB (supplement details) and RDS (supplement logs)
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
       console.log('Fetching logs for date:', date);
 
-      // First, get the logs from RDS
+      // Step 1: Retrieve supplement logs from RDS
+      // These logs contain the tracking data (when supplements were taken) but not the supplement details
       const logs = await rdsDb
         .select()
         .from(supplementLogs)
@@ -583,11 +583,14 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
+      // If no logs found for this date, return early
       if (logs.length === 0) {
         return res.json({ supplements: [] });
       }
 
-      // Then get the supplement details from NeonDB
+      // Step 2: Fetch supplement details from NeonDB
+      // This gets the user's supplement information (name, dosage, frequency)
+      // We get all user's supplements to avoid multiple database calls for each log
       const supplementDetails = await db
         .select()
         .from(supplements)
@@ -595,13 +598,15 @@ export function registerRoutes(app: Express): Server {
           eq(supplements.userId, req.user!.id)
         );
 
-      // Create a lookup map for supplement details
+      // Step 3: Create a lookup map for quick supplement detail access
+      // This improves performance by avoiding repeated array searches
       const supplementMap = supplementDetails.reduce((acc, supp) => {
         acc[supp.id] = supp;
         return acc;
       }, {} as Record<number, any>);
 
-      // Combine the data
+      // Step 4: Combine data from both databases
+      // Enrich each log entry with its corresponding supplement details
       const enrichedLogs = logs.map(log => {
         const supplement = supplementMap[log.supplementId] || {};
         return {
@@ -610,6 +615,7 @@ export function registerRoutes(app: Express): Server {
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects,
+          // Provide fallback values in case supplement details are not found
           name: supplement.name || 'Unknown Supplement',
           dosage: supplement.dosage || '',
           frequency: supplement.frequency || ''
