@@ -9,7 +9,7 @@
         "rds-db:connect"
       ],
       "Resource": [
-        "arn:aws:rds-db:us-east-2:*:dbuser:*/bencox820"
+        "arn:aws:rds-db:us-east-2:*:dbuser/*/bencox820"
       ]
     },
     {
@@ -32,7 +32,11 @@
         "rds:DescribeDBClusters",
         "rds:DescribeDBProxies"
       ],
-      "Resource": "*"
+      "Resource": [
+        "arn:aws:rds:us-east-2:*:db:*",
+        "arn:aws:rds:us-east-2:*:cluster:*",
+        "arn:aws:rds:us-east-2:*:db-proxy:*"
+      ]
     }
   ]
 }
