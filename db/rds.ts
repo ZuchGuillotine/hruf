@@ -28,16 +28,19 @@ if (missing.length > 0) {
 }
 
 // Configuration with logging
-const region = process.env.AWS_REGION!.replace(/['"]/g, '');
-const host = process.env.AWS_RDS_HOST!;
-const username = process.env.AWS_RDS_USERNAME!;
+const region = process.env.AWS_REGION!.trim().replace(/['"]/g, '');
+const host = process.env.AWS_RDS_HOST!.trim().replace(/['"]/g, '');
+// Use original case from environment variable for username
+const username = process.env.AWS_RDS_USERNAME!.trim();
 const port = 5432;
+const database = 'stacktracker1';
 
 console.log('Initializing RDS connection with:', {
   host,
   port,
   region,
   username,
+  database,
   timestamp: new Date().toISOString()
 });
 
@@ -50,12 +53,23 @@ async function downloadCACert(): Promise<string> {
     // Check if we already have the cert
     if (fs.existsSync(CA_CERT_PATH)) {
       console.log('Using existing RDS CA certificate');
-      return fs.readFileSync(CA_CERT_PATH, 'utf-8');
+      const cert = fs.readFileSync(CA_CERT_PATH, 'utf-8');
+      if (cert.includes('BEGIN CERTIFICATE')) {
+        return cert;
+      }
+      // If cert file exists but is invalid, delete it and download again
+      fs.unlinkSync(CA_CERT_PATH);
     }
 
     console.log('Downloading RDS CA certificate...');
     const response = await fetch(CA_CERT_URL);
+    if (!response.ok) {
+      throw new Error(`Failed to download certificate: ${response.statusText}`);
+    }
     const cert = await response.text();
+    if (!cert.includes('BEGIN CERTIFICATE')) {
+      throw new Error('Invalid certificate format');
+    }
     fs.writeFileSync(CA_CERT_PATH, cert);
     console.log('Successfully downloaded and saved RDS CA certificate');
     return cert;
@@ -75,8 +89,10 @@ async function getAuthToken(retryCount = 3): Promise<string> {
         port,
         region,
         username,
+        database,
         hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
-        hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
+        hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+        timestamp: new Date().toISOString()
       });
 
       const credentials = await defaultProvider()();
@@ -86,12 +102,15 @@ async function getAuthToken(retryCount = 3): Promise<string> {
         region,
         hostname: host,
         port,
-        username,
+        username: username.toLowerCase(), // AWS RDS usernames are case-insensitive and stored as lowercase
         credentials
       });
 
       const token = await signer.getAuthToken();
-      console.log('Successfully obtained IAM auth token');
+      console.log('Successfully obtained IAM auth token:', {
+        tokenLength: token.length,
+        timestamp: new Date().toISOString()
+      });
       return token;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -111,26 +130,45 @@ async function getAuthToken(retryCount = 3): Promise<string> {
   throw lastError!;
 }
 
+async function testConnection(pool: pkg.Pool): Promise<boolean> {
+  try {
+    console.log('Testing database connection...');
+    const result = await pool.query('SELECT current_user, current_database()');
+    console.log('Connection test successful:', {
+      user: result.rows[0].current_user,
+      database: result.rows[0].current_database,
+      timestamp: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error('Connection test failed:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    return false;
+  }
+}
+
 const createPoolConfig = async () => {
-  console.log('Creating pool configuration with the following network details:', {
+  console.log('Creating pool configuration...', {
     host,
     port,
-    database: 'stacktracker1',
-    region,
+    database,
     username,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString()
   });
 
+  // Get auth token with retries
   const token = await getAuthToken();
-  console.log('Successfully obtained auth token for pool configuration');
-
+  // Get CA certificate
   const caCert = await downloadCACert();
 
-  return {
+  const config = {
     host,
     port,
-    database: 'stacktracker1',
-    user: username,
+    database,
+    user: username.toLowerCase(), // AWS RDS usernames are case-insensitive and stored as lowercase
     password: token,
     ssl: {
       rejectUnauthorized: true,
@@ -147,9 +185,17 @@ const createPoolConfig = async () => {
     keepAliveInitialDelayMillis: 10000,
     application_name: 'stacktracker_app',
   };
+
+  console.log('Pool configuration created:', {
+    ...config,
+    password: '[REDACTED]',
+    ssl: { ...config.ssl, ca: '[REDACTED]' },
+    timestamp: new Date().toISOString()
+  });
+
+  return config;
 };
 
-// Pool management
 let pool: pkg.Pool | null = null;
 let isRefreshing = false;
 
@@ -158,6 +204,12 @@ async function getPool(): Promise<pkg.Pool> {
     console.log('Creating new connection pool...');
     const config = await createPoolConfig();
     pool = new Pool(config);
+
+    // Test the connection immediately
+    const isConnected = await testConnection(pool);
+    if (!isConnected) {
+      throw new Error('Failed to establish initial database connection');
+    }
 
     pool.on('error', async (err: PostgresError) => {
       console.error('Pool error:', {
@@ -169,9 +221,9 @@ async function getPool(): Promise<pkg.Pool> {
         connectionDetails: {
           host,
           port,
-          database: 'stacktracker1',
+          database,
           region,
-          username
+          username: username.toLowerCase() // Log lowercase username
         }
       });
 
@@ -182,7 +234,8 @@ async function getPool(): Promise<pkg.Pool> {
           err.code === '57P03' || // cannot connect now
           err.code === '08006' || // connection failure
           err.code === '08001' || // unable to connect
-          err.code === '08004'    // rejected connection
+          err.code === '08004' ||  // rejected connection
+          err.code === '28P01'     // password authentication failed
       ) {
         console.log('Critical error detected, resetting pool');
         if (pool) {
@@ -199,10 +252,11 @@ async function getPool(): Promise<pkg.Pool> {
         activeConnections: (pool as any).waitingCount,
         host,
         port,
-        database: 'stacktracker1'
+        database
       });
     });
 
+    // Set up token refresh
     const refreshToken = async () => {
       if (isRefreshing) return;
       try {
@@ -213,12 +267,13 @@ async function getPool(): Promise<pkg.Pool> {
           const config = await createPoolConfig();
           pool = new Pool(config);
 
-          try {
-            await pool.query('SELECT 1');
+          // Test new pool before switching
+          const isConnected = await testConnection(pool);
+          if (isConnected) {
             console.log('New pool connection verified');
             await oldPool.end();
-          } catch (err) {
-            console.error('New pool verification failed, keeping old pool:', err);
+          } else {
+            console.error('New pool verification failed, keeping old pool');
             pool = oldPool;
           }
         }
@@ -230,6 +285,7 @@ async function getPool(): Promise<pkg.Pool> {
       }
     };
 
+    // Refresh token every 10 minutes
     setInterval(refreshToken, 10 * 60 * 1000);
   }
   return pool;

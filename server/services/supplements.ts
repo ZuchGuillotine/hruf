@@ -22,25 +22,35 @@ class SupplementService {
 
       while (this.retryCount < this.maxRetries) {
         try {
-          // Use the rdsDb instance that's already configured with IAM auth
+          // Check if we can query the database
+          const testQuery = await rdsDb.execute(sql`SELECT 1`);
+          console.log('Database connection test successful');
+
+          // Use the shared rdsDb instance which already has IAM auth configured
           const supplements = await rdsDb
-            .select()
-            .from(supplementReference)
-            .execute(); // Use execute() to ensure proper query execution
+            .select({
+              id: supplementReference.id,
+              name: supplementReference.name,
+              category: supplementReference.category
+            })
+            .from(supplementReference);
 
           console.log(`Retrieved ${supplements.length} supplements from database`);
 
           this.trie = new Trie();
 
           if (supplements.length === 0) {
-            console.warn("No supplements found in database. Running seed...");
+            console.log("No supplements found in database. Running seed...");
             const seedModule = require("../../db/migrations/supplements");
             await seedModule.seedSupplements();
 
             const seededSupplements = await rdsDb
-              .select()
-              .from(supplementReference)
-              .execute();
+              .select({
+                id: supplementReference.id,
+                name: supplementReference.name,
+                category: supplementReference.category
+              })
+              .from(supplementReference);
 
             console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
             this.loadSupplements(seededSupplements);
@@ -62,7 +72,6 @@ class SupplementService {
 
           if (this.retryCount < this.maxRetries) {
             console.log(`Retry attempt ${this.retryCount} of ${this.maxRetries}`);
-            // Exponential backoff
             await new Promise(resolve => setTimeout(resolve, Math.pow(2, this.retryCount) * 1000));
           } else {
             throw error;
@@ -94,11 +103,14 @@ class SupplementService {
       console.log(`Searching for "${query}" with limit ${limit}`);
 
       const dbResults = await rdsDb
-        .select()
+        .select({
+          id: supplementReference.id,
+          name: supplementReference.name,
+          category: supplementReference.category
+        })
         .from(supplementReference)
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
-        .limit(limit)
-        .execute();
+        .limit(limit);
 
       console.log('Database search results:', dbResults);
 

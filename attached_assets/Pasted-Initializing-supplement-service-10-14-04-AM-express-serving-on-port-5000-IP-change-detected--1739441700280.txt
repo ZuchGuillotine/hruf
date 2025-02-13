@@ -1,0 +1,90 @@
+Initializing supplement service...
+10:14:04 AM [express] serving on port 5000
+IP change detected: {
+  oldIp: null,
+  newIp: '35.196.87.91',
+  timestamp: '2025-02-13T10:14:05.271Z'
+}
+Rule already exists for IP 35.196.87.91, updating current IP
+Verifying security group rule for IP 35.196.87.91
+Error in supplement service initialization attempt: {
+  attempt: 1,
+  error: 'password authentication failed for user "Bencox820"',
+  stack: 'error: password authentication failed for user "Bencox820"\n' +
+    '    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)\n' +
+    '    at async SupplementService.initialize (/home/runner/workspace/server/services/supplements.ts:26:31)',
+  timestamp: '2025-02-13T10:14:05.465Z'
+}
+Retry attempt 1 of 3
+Current security group rules: [
+  {
+    "IpProtocol": "tcp",
+    "FromPort": 5432,
+    "ToPort": 5432,
+    "UserIdGroupPairs": [],
+    "IpRanges": [
+      {
+        "Description": "replit",
+        "CidrIp": "35.196.87.91/32"
+      }
+    ],
+    "Ipv6Ranges": [],
+    "PrefixListIds": []
+  },
+  {
+    "IpProtocol": "-1",
+    "UserIdGroupPairs": [
+      {
+        "UserId": "881490119784",
+        "GroupId": "sg-0cf5cb264bfc948fb"
+      }
+    ],
+    "IpRanges": [],
+    "Ipv6Ranges": [],
+    "PrefixListIds": []
+  }
+]
+Security group rule verification result: {
+  ip: '35.196.87.91',
+  exists: true,
+  groupId: 'sg-0cf5cb264bfc948fb',
+  timestamp: '2025-02-13T10:14:05.506Z'
+}
+Rule already exists and verified for IP 35.196.87.91
+Error in supplement service initialization attempt: {
+  attempt: 2,
+  error: 'password authentication failed for user "Bencox820"',
+  stack: 'error: password authentication failed for user "Bencox820"\n' +
+    '    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)\n' +
+    '    at async SupplementService.initialize (/home/runner/workspace/server/services/supplements.ts:26:31)',
+  timestamp: '2025-02-13T10:14:08.197Z'
+}
+Retry attempt 2 of 3
+10:14:08 AM [express] GET /api/user 401 in 2ms :: {"error":"Not authenticated"}
+10:14:09 AM [express] GET /api/user 401 in 1ms :: {"error":"Not authenticated"}
+Error in supplement service initialization attempt: {
+  attempt: 3,
+  error: 'password authentication failed for user "Bencox820"',
+  stack: 'error: password authentication failed for user "Bencox820"\n' +
+    '    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)\n' +
+    '    at async SupplementService.initialize (/home/runner/workspace/server/services/supplements.ts:26:31)',
+  timestamp: '2025-02-13T10:14:12.482Z'
+}
+Error initializing supplement service: {
+  error: 'password authentication failed for user "Bencox820"',
+  stack: 'error: password authentication failed for user "Bencox820"\n' +
+    '    at /home/runner/workspace/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/node_modules/src/node-postgres/session.ts:104:19)\n' +
+    '    at async SupplementService.initialize (/home/runner/workspace/server/services/supplements.ts:26:31)',
+  retryCount: 3
+}
+Error: Failed to initialize supplement service: password authentication failed for user "Bencox820"
+    at SupplementService.initialize (/home/runner/workspace/server/services/supplements.ts:78:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
