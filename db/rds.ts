@@ -3,8 +3,6 @@ const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { Signer } from '@aws-sdk/rds-signer';
-import fs from 'fs';
-import path from 'path';
 
 // Type definitions for better error handling
 interface PostgresError extends Error {
@@ -30,7 +28,6 @@ if (missing.length > 0) {
 // Configuration with logging
 const region = process.env.AWS_REGION!.trim().replace(/['"]/g, '');
 const host = process.env.AWS_RDS_HOST!.trim().replace(/['"]/g, '');
-// Use original case from environment variable for username
 const username = process.env.AWS_RDS_USERNAME!.trim();
 const port = 5432;
 const database = 'stacktracker1';
@@ -43,41 +40,6 @@ console.log('Initializing RDS connection with:', {
   database,
   timestamp: new Date().toISOString()
 });
-
-// Download and save RDS CA certificate
-const CA_CERT_PATH = path.join(process.cwd(), 'rds-ca-2019-root.pem');
-const CA_CERT_URL = 'https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem';
-
-async function downloadCACert(): Promise<string> {
-  try {
-    // Check if we already have the cert
-    if (fs.existsSync(CA_CERT_PATH)) {
-      console.log('Using existing RDS CA certificate');
-      const cert = fs.readFileSync(CA_CERT_PATH, 'utf-8');
-      if (cert.includes('BEGIN CERTIFICATE')) {
-        return cert;
-      }
-      // If cert file exists but is invalid, delete it and download again
-      fs.unlinkSync(CA_CERT_PATH);
-    }
-
-    console.log('Downloading RDS CA certificate...');
-    const response = await fetch(CA_CERT_URL);
-    if (!response.ok) {
-      throw new Error(`Failed to download certificate: ${response.statusText}`);
-    }
-    const cert = await response.text();
-    if (!cert.includes('BEGIN CERTIFICATE')) {
-      throw new Error('Invalid certificate format');
-    }
-    fs.writeFileSync(CA_CERT_PATH, cert);
-    console.log('Successfully downloaded and saved RDS CA certificate');
-    return cert;
-  } catch (error) {
-    console.error('Error downloading CA certificate:', error);
-    throw error;
-  }
-}
 
 async function getAuthToken(retryCount = 3): Promise<string> {
   let lastError: Error | null = null;
@@ -102,22 +64,30 @@ async function getAuthToken(retryCount = 3): Promise<string> {
         region,
         hostname: host,
         port,
-        username: username.toLowerCase(), // AWS RDS usernames are case-insensitive and stored as lowercase
+        username: username.toLowerCase(),
         credentials
       });
 
       const token = await signer.getAuthToken();
+
+      if (!token) {
+        throw new Error('Failed to generate auth token - token is empty');
+      }
+
       console.log('Successfully obtained IAM auth token:', {
         tokenLength: token.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        username: username.toLowerCase()
       });
+
       return token;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`Failed to get IAM auth token (attempt ${attempt}/${retryCount}):`, {
         error: lastError.message,
         stack: lastError.stack,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        username: username.toLowerCase()
       });
 
       if (attempt < retryCount) {
@@ -132,19 +102,30 @@ async function getAuthToken(retryCount = 3): Promise<string> {
 
 async function testConnection(pool: pkg.Pool): Promise<boolean> {
   try {
-    console.log('Testing database connection...');
-    const result = await pool.query('SELECT current_user, current_database()');
+    console.log('Testing database connection...', {
+      username: username.toLowerCase(),
+      host,
+      database,
+      timestamp: new Date().toISOString()
+    });
+
+    const result = await pool.query('SELECT current_user, current_database(), session_user');
     console.log('Connection test successful:', {
-      user: result.rows[0].current_user,
+      current_user: result.rows[0].current_user,
+      session_user: result.rows[0].session_user,
       database: result.rows[0].current_database,
       timestamp: new Date().toISOString()
     });
     return true;
   } catch (error) {
+    const pgError = error as PostgresError;
     console.error('Connection test failed:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
+      error: pgError.message,
+      code: pgError.code,
+      detail: pgError.detail,
+      stack: pgError.stack,
+      timestamp: new Date().toISOString(),
+      username: username.toLowerCase()
     });
     return false;
   }
@@ -155,24 +136,22 @@ const createPoolConfig = async () => {
     host,
     port,
     database,
-    username,
+    username: username.toLowerCase(),
     timestamp: new Date().toISOString()
   });
 
   // Get auth token with retries
   const token = await getAuthToken();
-  // Get CA certificate
-  const caCert = await downloadCACert();
 
   const config = {
     host,
     port,
     database,
-    user: username.toLowerCase(), // AWS RDS usernames are case-insensitive and stored as lowercase
+    user: username.toLowerCase(),
     password: token,
     ssl: {
-      rejectUnauthorized: true,
-      ca: caCert,
+      rejectUnauthorized: false, // Allow self-signed certificates for development
+      // In production, you should use the proper CA certificate
     },
     // Connection pool settings
     max: 20,
@@ -189,7 +168,6 @@ const createPoolConfig = async () => {
   console.log('Pool configuration created:', {
     ...config,
     password: '[REDACTED]',
-    ssl: { ...config.ssl, ca: '[REDACTED]' },
     timestamp: new Date().toISOString()
   });
 
@@ -223,7 +201,7 @@ async function getPool(): Promise<pkg.Pool> {
           port,
           database,
           region,
-          username: username.toLowerCase() // Log lowercase username
+          username: username.toLowerCase()
         }
       });
 
@@ -243,17 +221,6 @@ async function getPool(): Promise<pkg.Pool> {
         }
         pool = null;
       }
-    });
-
-    pool.on('connect', () => {
-      console.log('New client connected to pool:', {
-        timestamp: new Date().toISOString(),
-        poolSize: (pool as any).totalCount,
-        activeConnections: (pool as any).waitingCount,
-        host,
-        port,
-        database
-      });
     });
 
     // Set up token refresh

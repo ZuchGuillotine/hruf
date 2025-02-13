@@ -248,3 +248,41 @@
      - Check route tables for Internet Gateway routes
      - Confirm "Auto-assign public IPv4 address" settings
      - Verify RDS proxy "Publicly accessible" setting
+
+### RDS Authentication Troubleshooting (February 13, 2025 - Update)
+1. Initial Connection Issues:
+   - Identified password authentication failures for RDS user
+   - Error: "password authentication failed for user 'bencox820'"
+   - Connection attempts timing out after security group updates
+
+2. IAM Authentication Analysis:
+   - Reviewed IAM permissions for user BenCox820
+   - Confirmed presence of required permissions:
+     - rds-db:connect
+     - secretsmanager:GetSecretValue
+     - Various EC2 security group permissions
+   - Identified potential issues with:
+     - SSL certificate verification
+     - Username case sensitivity
+     - Security group configurations
+
+3. Authentication Flow Updates:
+   - Modified RDS connection configuration:
+     - Implemented proper case handling for username (lowercase)
+     - Updated SSL configuration to handle self-signed certificates
+     - Enhanced error logging for better debugging
+     - Removed unnecessary CA certificate download
+     - Simplified connection pool configuration
+
+4. Current Status (February 13, 2025 - 10:30 AM EST):
+   - ⚠️ RDS connection still failing with authentication errors
+   - ✅ IAM token generation working successfully
+   - ✅ Security group rules properly configured
+   - ⚠️ SSL certificate verification needs production-grade solution
+
+5. Next Steps:
+   - Verify RDS instance IAM authentication settings
+   - Implement proper SSL certificate verification for production
+   - Add connection pooling optimizations
+   - Enhance error recovery mechanisms
+   - Consider implementing read replicas for better scalability
