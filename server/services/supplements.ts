@@ -22,7 +22,12 @@ class SupplementService {
 
       while (this.retryCount < this.maxRetries) {
         try {
-          const supplements = await rdsDb.select().from(supplementReference);
+          // Use the rdsDb instance that's already configured with IAM auth
+          const supplements = await rdsDb
+            .select()
+            .from(supplementReference)
+            .execute(); // Use execute() to ensure proper query execution
+
           console.log(`Retrieved ${supplements.length} supplements from database`);
 
           this.trie = new Trie();
@@ -32,7 +37,11 @@ class SupplementService {
             const seedModule = require("../../db/migrations/supplements");
             await seedModule.seedSupplements();
 
-            const seededSupplements = await rdsDb.select().from(supplementReference);
+            const seededSupplements = await rdsDb
+              .select()
+              .from(supplementReference)
+              .execute();
+
             console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
             this.loadSupplements(seededSupplements);
           } else {
@@ -44,9 +53,17 @@ class SupplementService {
           return;
         } catch (error) {
           this.retryCount++;
+          console.error('Error in supplement service initialization attempt:', {
+            attempt: this.retryCount,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString()
+          });
+
           if (this.retryCount < this.maxRetries) {
             console.log(`Retry attempt ${this.retryCount} of ${this.maxRetries}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, this.retryCount) * 1000));
           } else {
             throw error;
           }
@@ -80,7 +97,8 @@ class SupplementService {
         .select()
         .from(supplementReference)
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
-        .limit(limit);
+        .limit(limit)
+        .execute();
 
       console.log('Database search results:', dbResults);
 
@@ -92,7 +110,11 @@ class SupplementService {
 
       return dbResults;
     } catch (error) {
-      console.error("Error in supplement search:", error instanceof Error ? error.message : error);
+      console.error("Error in supplement search:", {
+        error: error instanceof Error ? error.message : error,
+        query,
+        timestamp: new Date().toISOString()
+      });
       return [];
     }
   }
