@@ -36,26 +36,41 @@ async function getAuthToken(retryCount = 3): Promise<string> {
 
   for (let attempt = 1; attempt <= retryCount; attempt++) {
     try {
-      console.log(`Attempting to get IAM auth token (attempt ${attempt}/${retryCount})...`);
+      console.log(`Attempting to get IAM auth token (attempt ${attempt}/${retryCount})...`, {
+        host,
+        port,
+        region,
+        username: 'bencox820',
+        hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+        hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
+      });
+
+      const credentials = await defaultProvider()();
+      console.log('Successfully loaded AWS credentials');
+
       const signer = new Signer({
         region,
         hostname: host,
         port,
-        username: 'bencox820', // Ensure lowercase
-        credentials: defaultProvider()
+        username: 'bencox820',
+        credentials
       });
 
       const token = await signer.getAuthToken();
-      console.log(`Successfully obtained IAM auth token on attempt ${attempt}`);
+      console.log('Successfully obtained IAM auth token');
       return token;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.error(`Failed to get IAM auth token (attempt ${attempt}/${retryCount}):`, {
         error: lastError.message,
+        stack: lastError.stack,
         timestamp: new Date().toISOString()
       });
+
       if (attempt < retryCount) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
@@ -72,12 +87,15 @@ const createPoolConfig = async () => {
     timestamp: new Date().toISOString(),
   });
 
+  const token = await getAuthToken();
+  console.log('Successfully obtained auth token for pool configuration');
+
   return {
     host,
     port,
     database: 'stacktracker1',
-    user: 'bencox820', // Changed to lowercase
-    password: await getAuthToken(),
+    user: 'bencox820',
+    password: token,
     ssl: {
       rejectUnauthorized: false, // Allow self-signed certificates
     },
@@ -156,7 +174,6 @@ async function getPool(): Promise<pkg.Pool> {
       try {
         isRefreshing = true;
         console.log('Refreshing IAM auth token...');
-        const newToken = await getAuthToken();
         if (pool) {
           const oldPool = pool;
           const config = await createPoolConfig();

@@ -20,6 +20,14 @@ export class IpMonitorService {
       region: process.env.AWS_REGION,
       credentials: defaultProvider()
     });
+
+    // Log configuration on initialization
+    console.log('Initializing IP Monitor Service with config:', {
+      securityGroupId: config.securityGroupId,
+      port: config.port,
+      description: config.description,
+      timestamp: new Date().toISOString()
+    });
   }
 
   async getCurrentPublicIp(): Promise<string> {
@@ -51,30 +59,40 @@ export class IpMonitorService {
             }]
           });
           console.log(`Revoked access for old IP: ${this.currentIp}`);
-        } catch (error) {
+        } catch (error: any) {
           // Ignore if the rule doesn't exist
-          if ((error as any).Code !== 'InvalidPermission.NotFound') {
-            throw error;
+          if (error.Code !== 'InvalidPermission.NotFound') {
+            console.error('Error revoking old rule:', error);
           }
         }
       }
 
-      // Add new rule
-      await this.ec2.authorizeSecurityGroupIngress({
-        GroupId: this.config.securityGroupId,
-        IpPermissions: [{
-          IpProtocol: 'tcp',
-          FromPort: this.config.port,
-          ToPort: this.config.port,
-          IpRanges: [{
-            CidrIp: `${newIp}/32`,
-            Description: this.config.description
+      try {
+        // Add new rule
+        await this.ec2.authorizeSecurityGroupIngress({
+          GroupId: this.config.securityGroupId,
+          IpPermissions: [{
+            IpProtocol: 'tcp',
+            FromPort: this.config.port,
+            ToPort: this.config.port,
+            IpRanges: [{
+              CidrIp: `${newIp}/32`,
+              Description: this.config.description
+            }]
           }]
-        }]
-      });
+        });
 
-      this.currentIp = newIp;
-      console.log(`Added access for new IP: ${newIp}`);
+        console.log(`Added access for new IP: ${newIp}`);
+        this.currentIp = newIp;
+      } catch (error: any) {
+        // If rule already exists, just update our current IP
+        if (error.Code === 'InvalidPermission.Duplicate') {
+          console.log(`Rule already exists for IP ${newIp}, updating current IP`);
+          this.currentIp = newIp;
+          return;
+        }
+        throw error;
+      }
     } catch (error) {
       console.error('Error updating security group:', error);
       throw error;
@@ -84,18 +102,19 @@ export class IpMonitorService {
   async checkAndUpdateIp(): Promise<void> {
     try {
       const newIp = await this.getCurrentPublicIp();
-      
+
       if (newIp !== this.currentIp) {
         console.log('IP change detected:', {
           oldIp: this.currentIp,
           newIp,
           timestamp: new Date().toISOString()
         });
-        
+
         await this.updateSecurityGroupRule(newIp);
       }
     } catch (error) {
       console.error('Error in IP check cycle:', error);
+      // Don't throw here to keep the monitor running
     }
   }
 
