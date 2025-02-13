@@ -6,39 +6,57 @@ import { Trie } from "../utils/trie";
 class SupplementService {
   private trie: Trie;
   private initialized: boolean;
+  private retryCount: number;
+  private maxRetries: number;
 
   constructor() {
     this.trie = new Trie();
     this.initialized = false;
+    this.retryCount = 0;
+    this.maxRetries = 3;
   }
 
   async initialize() {
     try {
       console.log("Initializing supplement service...");
 
-      const supplements = await rdsDb.select().from(supplementReference);
-      console.log(`Retrieved ${supplements.length} supplements from database`);
+      while (this.retryCount < this.maxRetries) {
+        try {
+          const supplements = await rdsDb.select().from(supplementReference);
+          console.log(`Retrieved ${supplements.length} supplements from database`);
 
-      this.trie = new Trie();
+          this.trie = new Trie();
 
-      if (supplements.length === 0) {
-        console.warn("No supplements found in database. Running seed...");
-        const seedModule = require("../../db/migrations/supplements");
-        await seedModule.seedSupplements();
+          if (supplements.length === 0) {
+            console.warn("No supplements found in database. Running seed...");
+            const seedModule = require("../../db/migrations/supplements");
+            await seedModule.seedSupplements();
 
-        const seededSupplements = await rdsDb.select().from(supplementReference);
-        console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
-        this.loadSupplements(seededSupplements);
-      } else {
-        this.loadSupplements(supplements);
+            const seededSupplements = await rdsDb.select().from(supplementReference);
+            console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
+            this.loadSupplements(seededSupplements);
+          } else {
+            this.loadSupplements(supplements);
+          }
+
+          this.initialized = true;
+          console.log("Supplement service initialized successfully");
+          return;
+        } catch (error) {
+          this.retryCount++;
+          if (this.retryCount < this.maxRetries) {
+            console.log(`Retry attempt ${this.retryCount} of ${this.maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
+          } else {
+            throw error;
+          }
+        }
       }
-
-      this.initialized = true;
-      console.log("Supplement service initialized successfully");
     } catch (error) {
       console.error("Error initializing supplement service:", {
         error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        retryCount: this.retryCount
       });
       throw new Error(`Failed to initialize supplement service: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
