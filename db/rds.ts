@@ -32,6 +32,15 @@ const username = process.env.AWS_RDS_USERNAME!.trim().toLowerCase(); // Ensure c
 const port = 5432;
 const database = 'stacktracker1';
 
+// Verify environment variables are set correctly
+console.log('Verifying AWS credentials:', {
+  hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+  hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+  username,
+  host,
+  region
+});
+
 console.log('Initializing RDS connection with:', {
   host,
   port,
