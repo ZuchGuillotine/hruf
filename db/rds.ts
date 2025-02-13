@@ -3,6 +3,8 @@ const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { Signer } from '@aws-sdk/rds-signer';
+import fs from 'fs';
+import path from 'path';
 
 // Type definitions for better error handling
 interface PostgresError extends Error {
@@ -17,7 +19,7 @@ const required = [
   'AWS_REGION',
   'AWS_ACCESS_KEY_ID',
   'AWS_SECRET_ACCESS_KEY',
-  'AWS_RDS_USERNAME' // Add username as required env var
+  'AWS_RDS_USERNAME'
 ] as const;
 
 const missing = required.filter(key => !process.env[key]);
@@ -39,7 +41,30 @@ console.log('Initializing RDS connection with:', {
   timestamp: new Date().toISOString()
 });
 
-// Enhanced error handling with detailed error messages
+// Download and save RDS CA certificate
+const CA_CERT_PATH = path.join(process.cwd(), 'rds-ca-2019-root.pem');
+const CA_CERT_URL = 'https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem';
+
+async function downloadCACert(): Promise<string> {
+  try {
+    // Check if we already have the cert
+    if (fs.existsSync(CA_CERT_PATH)) {
+      console.log('Using existing RDS CA certificate');
+      return fs.readFileSync(CA_CERT_PATH, 'utf-8');
+    }
+
+    console.log('Downloading RDS CA certificate...');
+    const response = await fetch(CA_CERT_URL);
+    const cert = await response.text();
+    fs.writeFileSync(CA_CERT_PATH, cert);
+    console.log('Successfully downloaded and saved RDS CA certificate');
+    return cert;
+  } catch (error) {
+    console.error('Error downloading CA certificate:', error);
+    throw error;
+  }
+}
+
 async function getAuthToken(retryCount = 3): Promise<string> {
   let lastError: Error | null = null;
 
@@ -86,7 +111,6 @@ async function getAuthToken(retryCount = 3): Promise<string> {
   throw lastError!;
 }
 
-// Enhanced pool configuration with detailed logging
 const createPoolConfig = async () => {
   console.log('Creating pool configuration with the following network details:', {
     host,
@@ -100,15 +124,17 @@ const createPoolConfig = async () => {
   const token = await getAuthToken();
   console.log('Successfully obtained auth token for pool configuration');
 
+  const caCert = await downloadCACert();
+
   return {
     host,
     port,
     database: 'stacktracker1',
-    user: username, // Use the username from environment variable
+    user: username,
     password: token,
     ssl: {
-      rejectUnauthorized: true, // Enable SSL verification for security
-      ca: process.env.AWS_RDS_CA_CERT, // Optional: Add CA certificate if needed
+      rejectUnauthorized: true,
+      ca: caCert,
     },
     // Connection pool settings
     max: 20,
@@ -133,7 +159,6 @@ async function getPool(): Promise<pkg.Pool> {
     const config = await createPoolConfig();
     pool = new Pool(config);
 
-    // Enhanced error handling with detailed logging
     pool.on('error', async (err: PostgresError) => {
       console.error('Pool error:', {
         message: err.message,
@@ -150,7 +175,6 @@ async function getPool(): Promise<pkg.Pool> {
         }
       });
 
-      // Reset pool on critical errors
       if (err.code === 'PROTOCOL_CONNECTION_LOST' ||
           err.code === 'ECONNREFUSED' ||
           err.code === '57P01' || // admin shutdown
@@ -168,7 +192,6 @@ async function getPool(): Promise<pkg.Pool> {
       }
     });
 
-    // Connection lifecycle logging
     pool.on('connect', () => {
       console.log('New client connected to pool:', {
         timestamp: new Date().toISOString(),
@@ -180,7 +203,6 @@ async function getPool(): Promise<pkg.Pool> {
       });
     });
 
-    // Token refresh every 10 minutes
     const refreshToken = async () => {
       if (isRefreshing) return;
       try {
@@ -191,7 +213,6 @@ async function getPool(): Promise<pkg.Pool> {
           const config = await createPoolConfig();
           pool = new Pool(config);
 
-          // Wait for new pool to establish connection before closing old one
           try {
             await pool.query('SELECT 1');
             console.log('New pool connection verified');
