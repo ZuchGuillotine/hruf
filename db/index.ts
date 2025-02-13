@@ -16,6 +16,7 @@ if (!process.env.RDS_URL) {
 // NeonDB connection
 const neonConfig = neon(process.env.DATABASE_URL);
 export const neonDb = drizzle(neonConfig, { schema: neonSchema });
+export const db = neonDb; // Alias for backward compatibility
 
 // RDS connection
 const rdsPool = new Pool({ connectionString: process.env.RDS_URL });
