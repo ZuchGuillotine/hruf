@@ -7,7 +7,7 @@ import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { users, insertUserSchema } from "@db/schema";
-import { db } from "@db";
+import { neonDb as db } from "@db";
 import { eq, or } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
