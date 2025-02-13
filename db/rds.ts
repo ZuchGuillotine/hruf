@@ -30,17 +30,18 @@ console.log('Initializing RDS connection with:', {
   timestamp: new Date().toISOString()
 });
 
-// Get IAM auth token with retries and exponential backoff
+// Enhanced error handling with detailed error messages
 async function getAuthToken(retryCount = 3): Promise<string> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= retryCount; attempt++) {
     try {
+      console.log(`Attempting to get IAM auth token (attempt ${attempt}/${retryCount})...`);
       const signer = new Signer({
         region,
         hostname: host,
         port,
-        username: 'bencox820', // Changed to lowercase to match PostgreSQL convention
+        username: 'bencox820', // Ensure lowercase
         credentials: defaultProvider()
       });
 
@@ -61,7 +62,7 @@ async function getAuthToken(retryCount = 3): Promise<string> {
   throw lastError!;
 }
 
-// Enhanced pool configuration
+// Enhanced pool configuration with detailed logging
 const createPoolConfig = async () => {
   console.log('Creating pool configuration with the following network details:', {
     host,
@@ -93,7 +94,7 @@ const createPoolConfig = async () => {
   };
 };
 
-// Create and manage pool with enhanced error and connection logging
+// Rest of the file remains the same but with pool management updates
 let pool: pkg.Pool | null = null;
 let isRefreshing = false;
 
@@ -103,7 +104,7 @@ async function getPool(): Promise<pkg.Pool> {
     const config = await createPoolConfig();
     pool = new Pool(config);
 
-    // Enhanced error handling with detailed connection info
+    // Enhanced error handling with detailed logging
     pool.on('error', async (err: PostgresError) => {
       console.error('Pool error:', {
         message: err.message,
