@@ -22,6 +22,6 @@ export const db = neonDb; // Alias for backward compatibility
 const rdsPool = new Pool({ connectionString: process.env.RDS_URL });
 export const rdsDb = drizzle(rdsPool, { schema: rdsSchema });
 
-// Re-export schemas
-export * from './neon-schema';
-export * from './rds-schema';
+// Re-export specific schemas to maintain clear database boundaries
+export { users, healthStats, supplements, blogPosts } from './neon-schema';
+export { supplementLogs, qualitativeLogs, supplementReference } from './rds-schema';
