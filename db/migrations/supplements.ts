@@ -185,7 +185,7 @@ export async function seedSupplements() {
 }
 
 // Only run seeding if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   seedSupplements()
     .then(() => {
       console.log("Seeding completed successfully");
