@@ -22,12 +22,27 @@ if (missing.length > 0) {
 }
 
 // Configuration
-
-const host = process.env.AWS_RDS_HOST!.trim();
-const username = process.env.RDS_USERNAME!.trim();
-const password = process.env.RDS_PASSWORD!.trim();
+const host = process.env.AWS_RDS_HOST?.trim();
+const username = process.env.RDS_USERNAME?.trim();
+const password = process.env.RDS_PASSWORD?.trim();
 const port = 5432;
 const database = 'stacktracker1';
+
+if (!host || !username || !password) {
+  throw new Error(`Missing required environment variables:
+    ${!host ? 'AWS_RDS_HOST' : ''}
+    ${!username ? 'RDS_USERNAME' : ''}
+    ${!password ? 'RDS_PASSWORD' : ''}`
+  );
+}
+
+console.log('Database connection config:', {
+  host,
+  username,
+  database,
+  hasPassword: !!password,
+  timestamp: new Date().toISOString()
+});
 
 console.log('Initializing RDS connection with:', {
   host,
