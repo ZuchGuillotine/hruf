@@ -1,6 +1,9 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
+// Assuming rdsSchema is defined elsewhere, perhaps in a separate file.  This needs to be added to the project.
+import { rdsSchema } from './rds-schema'; // Or the correct path
+
 
 // Type definitions for better error handling
 interface PostgresError extends Error {
@@ -132,7 +135,7 @@ async function getPool(): Promise<pkg.Pool> {
       throw new Error('Failed to establish initial database connection');
     }
 
-    pool.on('error', async (err: PostgresError) => {
+    pool.on('error', (err: PostgresError) => {
       console.error('Pool error:', {
         message: err.message,
         code: err.code,
@@ -141,18 +144,14 @@ async function getPool(): Promise<pkg.Pool> {
         timestamp: new Date().toISOString()
       });
 
-      if (err.code === 'PROTOCOL_CONNECTION_LOST' ||
+      // Recreate pool on critical errors
+      if (pool && (
+          err.code === 'PROTOCOL_CONNECTION_LOST' ||
           err.code === 'ECONNREFUSED' ||
-          err.code === '57P01' || // admin shutdown
-          err.code === '57P02' || // crash shutdown
-          err.code === '57P03' || // cannot connect now
-          err.code === '08006' || // connection failure
-          err.code === '08001' || // unable to connect
-          err.code === '08004'    // rejected connection
-      ) {
-        if (pool) {
-          await pool.end().catch(console.error);
-        }
+          err.code?.startsWith('57P') || // PostgreSQL shutdown codes
+          err.code?.startsWith('08')     // Connection exception class
+      )) {
+        pool.end().catch(console.error);
         pool = null;
       }
     });
@@ -160,9 +159,9 @@ async function getPool(): Promise<pkg.Pool> {
   return pool;
 }
 
-// Export database instance
-console.log('Initializing database connection...');
+// Export database instance for RDS only
+console.log('Initializing RDS connection...');
 export const rdsDb = await getPool().then(pool => {
-  console.log('Database connection initialized successfully');
-  return drizzle(pool);
+  console.log('RDS connection initialized successfully');
+  return drizzle(pool, { schema: rdsSchema }); // Explicitly use RDS schema
 });
