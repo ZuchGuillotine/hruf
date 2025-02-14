@@ -41,8 +41,13 @@ class SupplementService {
 
           if (supplements.length === 0) {
             console.log("No supplements found in database. Running seed...");
-            const seedModule = require("../../db/migrations/supplements");
-            await seedModule.seedSupplements();
+            const { supplementReference } = await import("../../db/rds-schema");
+            const { initialSupplements } = await import("../../db/migrations/supplements");
+            
+            // Insert initial supplements
+            for (const supplement of initialSupplements) {
+              await rdsDb.insert(supplementReference).values(supplement);
+            }
 
             const seededSupplements = await rdsDb
               .select({

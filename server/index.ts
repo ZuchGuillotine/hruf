@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
-import { IpMonitorService } from "./services/ip-monitor";
 
 const app = express();
 
@@ -72,20 +71,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize IP monitor service before server starts
-  if (!process.env.AWS_RDS_SECURITY_GROUP) {
-    console.error('AWS_RDS_SECURITY_GROUP environment variable is required');
-    process.exit(1);
-  }
-
-  const ipMonitor = new IpMonitorService({
-    securityGroupId: process.env.AWS_RDS_SECURITY_GROUP,
-    description: 'Replit Dynamic IP',
-    port: 5432 // PostgreSQL port
-  });
-
-  // Start monitoring with 5-minute interval
-  ipMonitor.start(5);
+  // Direct RDS connection - no IP monitor needed
 
   // Create the HTTP server and register API routes first
   const server = registerRoutes(app);
