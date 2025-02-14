@@ -12,7 +12,7 @@ interface PostgresError extends Error {
 // Environment validation
 const required = [
   'AWS_RDS_HOST',
-  'AWS_RDS_USERNAME',
+  'RDS_USERNAME',
   'RDS_PASSWORD'
 ] as const;
 
@@ -24,8 +24,8 @@ if (missing.length > 0) {
 // Configuration
 
 const host = process.env.AWS_RDS_HOST!.trim();
-const username = process.env.AWS_RDS_USERNAME!.trim();
-const password = process.env.RDS_PASSWORD.trim();
+const username = process.env.RDS_USERNAME!.trim();
+const password = process.env.RDS_PASSWORD!.trim();
 const port = 5432;
 const database = 'stacktracker1';
 
