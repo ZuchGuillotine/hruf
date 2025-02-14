@@ -22,9 +22,13 @@ if (missing.length > 0) {
 }
 
 // Configuration
+if (!process.env.RDS_PASSWORD) {
+  throw new Error('RDS_PASSWORD environment variable is required');
+}
+
 const host = process.env.AWS_RDS_HOST!.trim();
-const username = process.env.AWS_RDS_USERNAME!.trim().toLowerCase();
-const password = process.env.AWS_RDS_PASSWORD!.trim();
+const username = process.env.AWS_RDS_USERNAME!.trim();
+const password = process.env.RDS_PASSWORD.trim();
 const port = 5432;
 const database = 'stacktracker1';
 
