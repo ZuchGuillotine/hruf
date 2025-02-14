@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm';
  * This data serves as the base dataset for the supplement autocomplete feature
  * Categories are used for organizing supplements in the UI and filtering
  */
-const initialSupplements = [
+export const initialSupplements = [
   // General Supplements - Basic supplement forms
   { name: "Acai (General)", category: "General" },
   { name: "Amla (General)", category: "General" },
