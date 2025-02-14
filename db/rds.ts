@@ -13,7 +13,7 @@ interface PostgresError extends Error {
 const required = [
   'AWS_RDS_HOST',
   'AWS_RDS_USERNAME',
-  'AWS_RDS_PASSWORD'
+  'RDS_PASSWORD'
 ] as const;
 
 const missing = required.filter(key => !process.env[key]);
@@ -22,9 +22,6 @@ if (missing.length > 0) {
 }
 
 // Configuration
-if (!process.env.RDS_PASSWORD) {
-  throw new Error('RDS_PASSWORD environment variable is required');
-}
 
 const host = process.env.AWS_RDS_HOST!.trim();
 const username = process.env.AWS_RDS_USERNAME!.trim();
