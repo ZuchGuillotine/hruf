@@ -94,18 +94,35 @@ async function getPool(): Promise<pkg.Pool> {
       user: username,
       password,
       ssl: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        sslmode: 'require'
       },
       max: 20,
       min: 5,
       idleTimeoutMillis: 60000,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 30000, // Increased timeout
       statement_timeout: 30000,
       query_timeout: 30000,
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
       application_name: 'stacktracker_app',
+      // Add retry logic
+      retry_strategy: {
+        retries: 5,
+        factor: 2,
+        minTimeout: 1000,
+        maxTimeout: 60000
+      }
     };
+
+    console.log('Attempting RDS connection with config:', {
+      host,
+      port,
+      database,
+      user: username,
+      ssl: true,
+      timestamp: new Date().toISOString()
+    });
 
     pool = new Pool(config);
 
