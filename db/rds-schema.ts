@@ -58,3 +58,10 @@ export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
 export type InsertSupplementReference = typeof supplementReference.$inferInsert;
 export type SelectSupplementReference = typeof supplementReference.$inferSelect;
+
+// Export the schema
+export const rdsSchema = {
+  supplementLogs,
+  qualitativeLogs,
+  supplementReference,
+};
