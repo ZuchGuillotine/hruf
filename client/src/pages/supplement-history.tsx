@@ -32,9 +32,7 @@ export default function SupplementHistory() {
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       try {
-        // Use UTC midnight
-        const utcDate = new Date(selectedDate.setUTCHours(0, 0, 0, 0));
-        const dateStr = format(utcDate, 'yyyy-MM-dd');
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
         const response = await fetch(`/api/supplement-logs/${dateStr}`);
         if (!response.ok) {
           throw new Error(await response.text());

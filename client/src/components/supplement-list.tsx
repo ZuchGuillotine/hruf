@@ -100,7 +100,7 @@ export default function SupplementList() {
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
         userId: null, // Set by server based on session
-        takenAt: new Date().toISOString(),
+        takenAt: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
         dosage: supplement.dosage,
         frequency: supplement.frequency,
         name: supplement.name,

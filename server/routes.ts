@@ -558,7 +558,7 @@ export function registerRoutes(app: Express): Server {
                 .values({
                   userId: req.user!.id,
                   supplementId: parseInt(String(log.supplementId)),
-                  takenAt: new Date(new Date(log.takenAt).setUTCHours(0, 0, 0, 0)),
+                  takenAt: log.takenAt,
                   notes: log.notes || null,
                   effects: log.effects || null
                 })
