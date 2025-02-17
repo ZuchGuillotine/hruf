@@ -96,16 +96,10 @@ export default function SupplementList() {
         timestamp: new Date().toISOString()
       });
 
-      // Prepare log entries with timezone-aware timestamp
-      const currentTime = new Date();
+      // Prepare log entries
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
-        userId: null, // Set by server based on session
-        takenAt: supplementStates[supplement.id]?.lastTakenAt || 
-          new Date(currentTime.getTime() - (currentTime.getTimezoneOffset() * 60000)).toISOString(),
-        dosage: supplement.dosage,
-        frequency: supplement.frequency,
-        name: supplement.name,
+        takenAt: new Date().toISOString(),
         notes: null,
         effects: null
       }));

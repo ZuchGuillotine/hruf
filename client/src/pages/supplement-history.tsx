@@ -28,20 +28,25 @@ export default function SupplementHistory() {
     end: endOfMonth(currentMonth),
   });
 
-  const { data: logsData, isLoading } = useQuery({
+  const { data: logsData, isLoading, error } = useQuery({
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const response = await fetch(`/api/supplement-logs/${dateStr}`);
       if (!response.ok) {
-        console.error('Failed to fetch supplement logs:', await response.text());
-        throw new Error('Failed to fetch supplement logs');
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to fetch supplement logs');
       }
       const data = await response.json();
       console.log('Fetched logs:', data);
       return data;
     },
+    retry: 1,
   });
+
+  if (error) {
+    console.error('Query error:', error);
+  }
 
   const { supplements, qualitativeLogs } = logsData || { supplements: [], qualitativeLogs: [] };
 
