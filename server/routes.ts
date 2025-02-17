@@ -443,8 +443,35 @@ export function registerRoutes(app: Express): Server {
         sampleLog: enrichedLogs[0]
       });
 
+      // Fetch qualitative logs for the same date
+      const qualitativeLogs = await db
+        .select({
+          id: qualitativeLogs.id,
+          content: qualitativeLogs.content,
+          loggedAt: qualitativeLogs.loggedAt,
+          type: qualitativeLogs.type,
+          metadata: qualitativeLogs.metadata
+        })
+        .from(qualitativeLogs)
+        .where(
+          and(
+            eq(qualitativeLogs.userId, req.user!.id),
+            sql`DATE_TRUNC('day', ${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${dateParam}::timestamp AT TIME ZONE 'UTC')`
+          )
+        )
+        .orderBy(desc(qualitativeLogs.loggedAt));
+
+      // Process logs to get summaries
+      const processedLogs = qualitativeLogs.map(log => ({
+        ...log,
+        summary: log.content.length > 150 ? 
+          log.content.substring(0, 150) + '...' : 
+          log.content
+      }));
+
       res.json({
-        supplements: enrichedLogs
+        supplements: enrichedLogs,
+        qualitativeLogs: processedLogs
       });
     } catch (error) {
       console.error("Error fetching supplement logs by date:", error);
