@@ -2,10 +2,16 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
-import { neonDb as db } from "@db"; // NeonDB connection
-import { rdsDb } from "@db"; // RDS connection for logs only
-import { supplements, healthStats, users, blogPosts } from "@db/neon-schema";
-import { supplementLogs, supplementReference, qualitativeLogs } from "@db/rds-schema";
+import { db } from "@db"; // Consolidated database connection
+import {
+  supplements,
+  healthStats,
+  users,
+  blogPosts,
+  supplementLogs,
+  supplementReference,
+  qualitativeLogs
+} from "@db/neon-schema";
 import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
@@ -22,7 +28,7 @@ export function registerRoutes(app: Express): Server {
         user: req.user,
         timestamp: new Date().toISOString()
       });
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: "Authentication required",
         redirect: "/login"
       });
@@ -33,7 +39,7 @@ export function registerRoutes(app: Express): Server {
   // Middleware to check admin role
   const requireAdmin = (req: Request, res: Response, next: Function) => {
     if (!req.user?.isAdmin) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: "Admin access required",
         message: "You do not have admin privileges"
       });
@@ -57,7 +63,7 @@ export function registerRoutes(app: Express): Server {
         stack: error instanceof Error ? error.stack : undefined,
         details: error instanceof Error && 'response' in error ? (error as any).response?.body : undefined
       });
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to send test email",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -183,7 +189,7 @@ export function registerRoutes(app: Express): Server {
         stack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString()
       });
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Chat error",
         message: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -376,15 +382,13 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Supplement Logs endpoints - Handles the interaction between NeonDB (supplement details) and RDS (supplement logs)
+  // Supplement Logs endpoints
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
       console.log('Fetching logs for date:', date);
 
-      // Step 1: Retrieve supplement logs from RDS
-      // These logs contain the tracking data (when supplements were taken) but not the supplement details
-      const logs = await rdsDb
+      const logs = await db
         .select()
         .from(supplementLogs)
         .where(
@@ -394,14 +398,10 @@ export function registerRoutes(app: Express): Server {
           )
         );
 
-      // If no logs found for this date, return early
       if (logs.length === 0) {
         return res.json({ supplements: [] });
       }
 
-      // Step 2: Fetch supplement details from NeonDB
-      // This gets the user's supplement information (name, dosage, frequency)
-      // We get all user's supplements to avoid multiple database calls for each log
       const supplementDetails = await db
         .select()
         .from(supplements)
@@ -409,15 +409,11 @@ export function registerRoutes(app: Express): Server {
           eq(supplements.userId, req.user!.id)
         );
 
-      // Step 3: Create a lookup map for quick supplement detail access
-      // This improves performance by avoiding repeated array searches
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
+      const supplementMap: Record<number, any> = supplementDetails.reduce((acc, supp) => {
         acc[supp.id] = supp;
         return acc;
-      }, {} as Record<number, any>);
+      }, {});
 
-      // Step 4: Combine data from both databases
-      // Enrich each log entry with its corresponding supplement details
       const enrichedLogs = logs.map(log => {
         const supplement = supplementMap[log.supplementId] || {};
         return {
@@ -426,7 +422,6 @@ export function registerRoutes(app: Express): Server {
           takenAt: log.takenAt,
           notes: log.notes,
           effects: log.effects,
-          // Provide fallback values in case supplement details are not found
           name: supplement.name || 'Unknown Supplement',
           dosage: supplement.dosage || '',
           frequency: supplement.frequency || ''
@@ -469,8 +464,8 @@ export function registerRoutes(app: Express): Server {
       // First, delete all logs for the current day that aren't in the new logs
       const today = new Date();
       const supplementIds = logs.map(log => log.supplementId);
-      
-      await rdsDb
+
+      await db
         .delete(supplementLogs)
         .where(
           and(
@@ -484,7 +479,7 @@ export function registerRoutes(app: Express): Server {
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
           try {
-            const existingLog = await rdsDb
+            const existingLog = await db
               .select()
               .from(supplementLogs)
               .where(
@@ -503,7 +498,7 @@ export function registerRoutes(app: Express): Server {
                                 existingLog[0].name !== log.name;
 
               if (hasChanged) {
-                const [updatedLog] = await rdsDb
+                const [updatedLog] = await db
                   .update(supplementLogs)
                   .set({
                     dosage: log.dosage,
@@ -519,7 +514,7 @@ export function registerRoutes(app: Express): Server {
               }
               return existingLog[0];
             } else {
-              const [newLog] = await rdsDb
+              const [newLog] = await db
                 .insert(supplementLogs)
                 .values({
                   userId: req.user!.id,
@@ -565,81 +560,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Supplement Logs endpoints - Handles the interaction between NeonDB (supplement details) and RDS (supplement logs)
-  app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
-    try {
-      const date = req.params.date;
-      console.log('Fetching logs for date:', date);
-
-      // Step 1: Retrieve supplement logs from RDS
-      // These logs contain the tracking data (when supplements were taken) but not the supplement details
-      const logs = await rdsDb
-        .select()
-        .from(supplementLogs)
-        .where(
-          and(
-            eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
-          )
-        );
-
-      // If no logs found for this date, return early
-      if (logs.length === 0) {
-        return res.json({ supplements: [] });
-      }
-
-      // Step 2: Fetch supplement details from NeonDB
-      // This gets the user's supplement information (name, dosage, frequency)
-      // We get all user's supplements to avoid multiple database calls for each log
-      const supplementDetails = await db
-        .select()
-        .from(supplements)
-        .where(
-          eq(supplements.userId, req.user!.id)
-        );
-
-      // Step 3: Create a lookup map for quick supplement detail access
-      // This improves performance by avoiding repeated array searches
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
-        acc[supp.id] = supp;
-        return acc;
-      }, {} as Record<number, any>);
-
-      // Step 4: Combine data from both databases
-      // Enrich each log entry with its corresponding supplement details
-      const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap[log.supplementId] || {};
-        return {
-          id: log.id,
-          supplementId: log.supplementId,
-          takenAt: log.takenAt,
-          notes: log.notes,
-          effects: log.effects,
-          // Provide fallback values in case supplement details are not found
-          name: supplement.name || 'Unknown Supplement',
-          dosage: supplement.dosage || '',
-          frequency: supplement.frequency || ''
-        };
-      });
-
-      console.log('Found logs:', {
-        logCount: logs.length,
-        enrichedCount: enrichedLogs.length,
-        sampleLog: enrichedLogs[0]
-      });
-
-      res.json({
-        supplements: enrichedLogs
-      });
-    } catch (error) {
-      console.error("Error fetching supplement logs by date:", error);
-      res.status(500).json({
-        error: "Failed to fetch supplement logs",
-        details: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
   // Initialize supplement service
   supplementService.initialize().catch(console.error);
 
@@ -664,164 +584,162 @@ export function registerRoutes(app: Express): Server {
         query: req.query.q,
         timestamp: new Date().toISOString()
       });
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to search supplements",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
 
-    // User profile endpoints
-    app.post("/api/profile", requireAuth, async (req, res) => {
-      try {
-        const [updated] = await db
-          .update(users)
-          .set({
-            ...req.body,
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, req.user!.id))
-          .returning();
+  // User profile endpoints
+  app.post("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({
+          ...req.body,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, req.user!.id))
+        .returning();
 
-        res.json({ message: "Profile updated successfully", user: updated });
-      } catch (error) {
-        console.error("Error updating profile:", error);
-        res.status(500).send("Failed to update profile");
+      res.json({ message: "Profile updated successfully", user: updated });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).send("Failed to update profile");
+    }
+  });
+
+  // Blog management endpoints
+  app.get("/api/blog", async (req, res) => {
+    try {
+      const posts = await db
+        .select()
+        .from(blogPosts)
+        .orderBy(sql`${blogPosts.publishedAt} DESC`);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      res.status(500).send("Failed to fetch blog posts");
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, req.params.slug))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).send("Blog post not found");
       }
-    });
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching blog post:", error);
+      res.status(500).send("Failed to fetch blog post");
+    }
+  });
 
-    // Admin endpoint to delete non-admin users
-    // Blog management endpoints
-    app.get("/api/blog", async (req, res) => {
-      try {
-        const posts = await db
-          .select()
-          .from(blogPosts)
-          .orderBy(sql`${blogPosts.publishedAt} DESC`);
-        res.json(posts);
-      } catch (error) {
-        console.error("Error fetching blog posts:", error);
-        res.status(500).send("Failed to fetch blog posts");
+  app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { title, content, excerpt, thumbnailUrl } = req.body;
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      const [post] = await db
+        .insert(blogPosts)
+        .values({
+          title,
+          slug,
+          content,
+          excerpt,
+          thumbnailUrl,
+        })
+        .returning();
+
+      res.json(post);
+    } catch (error) {
+      console.error("Error creating blog post:", error);
+      res.status(500).send("Failed to create blog post");
+    }
+  });
+
+  app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { title, content, excerpt, thumbnailUrl } = req.body;
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+      const [post] = await db
+        .update(blogPosts)
+        .set({
+          title,
+          slug,
+          content,
+          excerpt,
+          thumbnailUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(blogPosts.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!post) {
+        return res.status(404).send("Blog post not found");
       }
-    });
 
-    app.get("/api/blog/:slug", async (req, res) => {
-      try {
-        const [post] = await db
-          .select()
-          .from(blogPosts)
-          .where(eq(blogPosts.slug, req.params.slug))
-          .limit(1);
+      res.json(post);
+    } catch (error) {
+      console.error("Error updating blog post:", error);
+      res.status(500).send("Failed to update blog post");
+    }
+  });
 
-        if (!post) {
-          return res.status(404).send("Blog post not found");
-        }
-        res.json(post);
-      } catch (error) {
-        console.error("Error fetching blog post:", error);
-        res.status(500).send("Failed to fetch blog post");
+  app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const [post] = await db
+        .delete(blogPosts)
+        .where(eq(blogPosts.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!post) {
+        return res.status(404).send("Blog post not found");
       }
-    });
 
-    app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
-      try {
-        const { title, content, excerpt, thumbnailUrl } = req.body;
-        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      res.json({ message: "Blog post deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting blog post:", error);
+      res.status(500).send("Failed to delete blog post");
+    }
+  });
 
-        const [post] = await db
-          .insert(blogPosts)
-          .values({
-            title,
-            slug,
-            content,
-            excerpt,
-            thumbnailUrl,
-          })
-          .returning();
+  app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const result = await db
+        .delete(users)
+        .where(eq(users.isAdmin, false))
+        .returning();
 
-        res.json(post);
-      } catch (error) {
-        console.error("Error creating blog post:", error);
-        res.status(500).send("Failed to create blog post");
-      }
-    });
-
-    app.put("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
-      try {
-        const { title, content, excerpt, thumbnailUrl } = req.body;
-        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-        const [post] = await db
-          .update(blogPosts)
-          .set({
-            title,
-            slug,
-            content,
-            excerpt,
-            thumbnailUrl,
-            updatedAt: new Date(),
-          })
-          .where(eq(blogPosts.id, parseInt(req.params.id)))
-          .returning();
-
-        if (!post) {
-          return res.status(404).send("Blog post not found");
-        }
-
-        res.json(post);
-      } catch (error) {
-        console.error("Error updating blog post:", error);
-        res.status(500).send("Failed to update blog post");
-      }
-    });
-
-    app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
-      try {
-        const [post] = await db
-          .delete(blogPosts)
-          .where(eq(blogPosts.id, parseInt(req.params.id)))
-          .returning();
-
-        if (!post) {
-          return res.status(404).send("Blog post not found");
-        }
-
-        res.json({ message: "Blog post deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting blog post:", error);
-        res.status(500).send("Failed to delete blog post");
-      }
-    });
-
-    app.delete("/api/admin/users/delete-non-admin", requireAuth, requireAdmin, async (req, res) => {
-        try {
-          const result = await db
-            .delete(users)
-            .where(eq(users.isAdmin, false))
-            .returning();
-
-          console.log('Successfully deleted non-admin users:', {
-            count: result.length,
-            timestamp: new Date().toISOString()
-          });
-
-          res.json({ 
-            message: `Successfully deleted ${result.length} non-admin users`,
-            deletedCount: result.length 
-          });
-        } catch (error) {
-          console.error("Error deleting non-admin users:", {
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
-            timestamp: new Date().toISOString()
-          });
-          res.status(500).json({
-            error: "Failed to delete non-admin users",
-            details: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
+      console.log('Successfully deleted non-admin users:', {
+        count: result.length,
+        timestamp: new Date().toISOString()
       });
 
+      res.json({
+        message: `Successfully deleted ${result.length} non-admin users`,
+        deletedCount: result.length
+      });
+    } catch (error) {
+      console.error("Error deleting non-admin users:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({
+        error: "Failed to delete non-admin users",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -1,4 +1,3 @@
-
 import { pgTable, text, serial, integer, boolean, timestamp, json, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
@@ -59,6 +58,46 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Migrated from RDS: Supplement reference table for autocomplete
+export const supplementReference = pgTable("supplement_reference", {
+  id: serial("id").primaryKey(),
+  name: text("name").unique().notNull(),
+  category: text("category").notNull().default('General'),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Migrated from RDS: Supplement logs table
+export const supplementLogs = pgTable("supplement_logs", {
+  id: serial("id").primaryKey(),
+  supplementId: integer("supplement_id").references(() => supplements.id),
+  userId: integer("user_id").references(() => users.id),
+  takenAt: timestamp("taken_at").default(sql`CURRENT_TIMESTAMP`),
+  notes: text("notes"),
+  effects: json("effects").$type<{
+    mood?: number;
+    energy?: number;
+    sleep?: number;
+    sideEffects?: string[];
+  }>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
+});
+
+// Migrated from RDS: Qualitative logs table
+export const qualitativeLogs = pgTable("qualitative_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  content: text("content").notNull(),
+  loggedAt: timestamp("logged_at").default(sql`CURRENT_TIMESTAMP`),
+  type: text("type").notNull(),
+  tags: json("tags").$type<string[]>().default('[]'),
+  sentimentScore: integer("sentiment_score"),
+  metadata: json("metadata").$type<Record<string, unknown>>().default('{}'),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
+});
+
 // Zod schemas for type-safe database operations
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
@@ -66,6 +105,12 @@ export const insertHealthStatsSchema = createInsertSchema(healthStats);
 export const selectHealthStatsSchema = createSelectSchema(healthStats);
 export const insertSupplementSchema = createInsertSchema(supplements);
 export const selectSupplementSchema = createSelectSchema(supplements);
+export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
+export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
+export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
+export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
+export const insertQualitativeLogSchema = createInsertSchema(qualitativeLogs);
+export const selectQualitativeLogSchema = createSelectSchema(qualitativeLogs);
 
 // TypeScript type definitions
 export type InsertUser = typeof users.$inferInsert;
@@ -74,5 +119,11 @@ export type InsertHealthStats = typeof healthStats.$inferInsert;
 export type SelectHealthStats = typeof healthStats.$inferSelect;
 export type InsertSupplement = typeof supplements.$inferInsert;
 export type SelectSupplement = typeof supplements.$inferSelect;
+export type InsertSupplementLog = typeof supplementLogs.$inferInsert;
+export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
+export type InsertSupplementReference = typeof supplementReference.$inferInsert;
+export type SelectSupplementReference = typeof supplementReference.$inferSelect;
+export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
+export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;

@@ -8,7 +8,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { users } from "@db/neon-schema";
 import { insertUserSchema } from "@db/neon-schema";
-import { neonDb as db } from "@db";
+import { db } from "@db";
 import { eq, or } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
@@ -314,7 +314,7 @@ export function setupAuth(app: Express) {
     }
   );
 
-  // Local auth routes (unchanged from original)
+  // Local auth routes 
   app.post("/api/register", async (req, res, next) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
