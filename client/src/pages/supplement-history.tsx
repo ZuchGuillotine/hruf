@@ -31,8 +31,8 @@ export default function SupplementHistory() {
   const { data: supplementLogs, isLoading } = useQuery({
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
-      // Convert date to UTC midnight for consistent server comparison
-      const dateStr = new Date(selectedDate.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
+      // Keep date in local timezone
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const response = await fetch(`/api/supplement-logs/${dateStr}`);
       if (!response.ok) throw new Error('Failed to fetch supplement logs');
       return response.json();
