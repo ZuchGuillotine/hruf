@@ -1,42 +1,86 @@
-4. Backend Structures Document
+# Backend Structures Document
 
 ## Database Structure
 
 ### Primary Database (NeonDB)
-- Location: Replit PostgreSQL
-- Purpose: Core user data and persistent supplement selections
+- Location: Neon PostgreSQL
+- Purpose: All application data storage
 - Tables:
   - users: User authentication and profiles
-  - supplements: User's persistent supplement selections (CRUD operations for supplement tracking card)
+  - supplements: User's persistent supplement selections
   - healthStats: User health data
   - blogPosts: Content management
-
-### Tracking Database (AWS RDS)
-- Location: AWS RDS PostgreSQL
-- Purpose: Historical tracking and qualitative data
-- Tables:
   - supplementLogs: Daily supplement intake records
   - qualitativeLogs: Chat interactions and AI responses
   - supplementReference: Autocomplete and search functionality
 
 ### Data Flow
 1. Supplement Management:
-   - User selections stored in NeonDB supplements table
-   - Daily tracking stored in RDS supplement_logs table
-   - Card operations (add/edit/delete) update NeonDB
-   - "Save Changes" button triggers RDS supplement_logs entry
+   - User selections stored in supplements table
+   - Daily tracking stored in supplement_logs table
+   - Card operations (add/edit/delete) update supplements table
+   - "Save Changes" button triggers supplement_logs entry
 
 2. Database Integration Flow:
-   - Supplement card data managed in NeonDB supplements table
-   - Save operation triggers data storage in RDS supplement_logs
-   - History view combines data from RDS 
-     - Logs from RDS supplement_logs
-     - Notes from interactions stored in RDS qualitative_logs
-     
+   - Supplement card data managed in supplements table
+   - Save operation triggers data storage in supplement_logs
+   - History view combines data from supplement_logs and qualitative_logs
 
 3. Chat System:
-   - Interactions stored in RDS qualitative_logs
-   - Requires UI verification components
+   - Interactions stored in qualitative_logs
+   - Includes sentiment analysis and metadata
+
+### Tables Schema Overview
+
+#### Core Tables
+- users:
+  - Authentication data (username, email, password)
+  - Profile information
+  - Subscription status (isPro, isAdmin)
+  - Email verification fields
+
+- supplements:
+  - Active supplement tracking
+  - Dosage and frequency information
+  - User associations
+  - Status tracking
+
+- healthStats:
+  - User health metrics
+  - Biographical data
+  - Allergies and conditions
+
+#### Tracking Tables
+- supplementLogs:
+  - Daily intake records
+  - Effects tracking (mood, energy, sleep)
+  - Timestamps and notes
+  - Side effects tracking
+
+- qualitativeLogs:
+  - Chat interactions
+  - Sentiment analysis
+  - Metadata for analytics
+  - Categorization and tagging
+
+#### Reference Tables
+- supplementReference:
+  - Supplement name standardization
+  - Category classification
+  - Autocomplete support
+
+#### Content Management
+- blogPosts:
+  - Educational content
+  - SEO metadata
+  - Publishing workflow
+
+### Data Validation & Security
+- Schema validation using Drizzle-zod
+- Input sanitization
+- Rate limiting
+- Email verification
+- Two-factor authentication support
 
 API Routes (from routes.ts)
 Authentication Routes
