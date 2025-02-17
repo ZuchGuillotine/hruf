@@ -1,0 +1,58 @@
+2025-02-17T02:37:07Z info: Deployment: 8c19b3e2-8943-47ed-8f35-1301e8f029cb
+2025-02-17T02:37:07Z info: Build: 668148a7-9422-47f9-8cc0-e45211194a60
+2025-02-17T02:37:07Z info: Connecting to builder
+2025-02-17T02:37:13Z info: Builder connected
+2025-02-17T02:37:13Z info: Installing packages
+2025-02-17T02:37:13Z info: Starting Build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+
+vite v5.4.10 building for production...
+
+transforming...
+
+✓ 2073 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+../dist/public/index.html                   2.08 kB │ gzip:   0.84 kB
+
+✓ built in 11.71s
+
+
+  dist/index.js  68.3kb
+
+⚡ Done in 299ms
+
+2025-02-17T02:37:32Z info: Pushing pid1 binary layer...
+2025-02-17T02:37:34Z info: Created pid1 binary layer
+2025-02-17T02:37:35Z info: Pushing hosting layer...
+2025-02-17T02:37:35Z info: Pushing Repl layer...
+2025-02-17T02:37:35Z info: Retrieved cached nix layer
+2025-02-17T02:37:35Z info: Created hosting layer
+2025-02-17T02:37:58Z info: Created Repl layer
+2025-02-17T02:37:58Z info: Pushed image manifest
+2025-02-17T02:37:59Z info: Pushed soci index manifest
+2025-02-17T02:38:03Z info: Creating Autoscale service
+    at link (node:internal/modules/esm/module_job:95:36) {
+        ^
+starting up user application
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/module_job:96:40)
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@db/rds-schema' imported from /home/runner/workspace/dist/index.js
+  code: 'ERR_MODULE_NOT_FOUND'
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+node:internal/modules/esm/resolve:854
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+node:internal/modules/esm/resolve:854
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@db/rds-schema' imported from /home/runner/workspace/dist/index.js
+  code: 'ERR_MODULE_NOT_FOUND'
+crash loop detected
+2025-02-17T02:38:50Z error: The deployment is crash looping. This can happen if the run command fails or exits immediately after starting. Check the logs for more information.
