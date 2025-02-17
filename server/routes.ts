@@ -197,6 +197,39 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Endpoint to save chat
+  app.post("/api/chat/save", requireAuth, async (req, res) => {
+    try {
+      const { content, type, tags } = req.body;
+
+      const [log] = await db
+        .insert(qualitativeLogs)
+        .values({
+          userId: req.user!.id,
+          content,
+          type,
+          tags,
+          metadata: {
+            savedAt: new Date().toISOString(),
+            messageCount: JSON.parse(content).length
+          }
+        })
+        .returning();
+
+      res.json(log);
+    } catch (error) {
+      console.error("Error saving chat:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({
+        error: "Failed to save chat",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Add endpoint to retrieve chat history
   app.get("/api/chat/history", requireAuth, async (req, res) => {
     try {

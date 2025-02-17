@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLLM } from '@/hooks/use-llm';
-import { Loader2, SendHorizontal } from 'lucide-react';
+import { Loader2, SendHorizontal, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type Message = {
@@ -50,6 +50,37 @@ export default function LLMChat() {
     }
   };
 
+  const handleSaveChat = async () => {
+    if (messages.length === 0) return;
+
+    try {
+      const response = await fetch('/api/chat/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: JSON.stringify(messages),
+          type: 'chat',
+          tags: ['saved_chat'],
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save chat');
+
+      toast({
+        title: "Success",
+        description: "Chat saved successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save chat",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 pr-4">
@@ -71,26 +102,38 @@ export default function LLMChat() {
         </div>
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="mt-4 flex gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about supplements, interactions, or health advice..."
-          className="bg-white/10 text-white placeholder:text-white/60"
-          disabled={isLoading}
-        />
-        <Button 
-          type="submit" 
-          disabled={isLoading}
-          className="bg-white text-[#1b4332] hover:bg-white/90"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <SendHorizontal className="h-4 w-4" />
-          )}
-        </Button>
-      </form>
+      <div className="mt-4 flex flex-col gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about supplements, interactions, or health advice..."
+            className="bg-white/10 text-white placeholder:text-white/60"
+            disabled={isLoading}
+          />
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            className="bg-white text-[#1b4332] hover:bg-white/90"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <SendHorizontal className="h-4 w-4" />
+            )}
+          </Button>
+        </form>
+        
+        {messages.length > 0 && (
+          <Button
+            onClick={handleSaveChat}
+            className="bg-white text-[#1b4332] hover:bg-white/90"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Chat
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
