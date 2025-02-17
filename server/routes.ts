@@ -416,7 +416,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplements.userId, req.user!.id),
-            sql`id = ANY(${sql.array(supplementIds, 'int4')})`
+            sql`id = ANY(${supplementIds}::int[])`
           )
         ) : [];
 
@@ -514,7 +514,7 @@ export function registerRoutes(app: Express): Server {
           and(
             eq(supplementLogs.userId, req.user!.id),
             sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
-            notInArray(supplementLogs.supplementId, supplementIds)
+            sql`${supplementLogs.supplementId} != ALL(${supplementIds}::int[])`
           )
         );
 
