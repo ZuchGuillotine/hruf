@@ -153,7 +153,7 @@ export function registerRoutes(app: Express): Server {
 
       // Get AI response
       const aiResponse = await chatWithAI(messages);
-      
+
       if (!aiResponse || !aiResponse.response) {
         throw new Error('Failed to get response from AI');
       }
@@ -439,8 +439,8 @@ export function registerRoutes(app: Express): Server {
         };
       });
 
-      // Fetch qualitative logs
-      const qualitativeLogsResult = await db
+      // Fetch qualitative logs for the same date
+      const qualitativeLogs = await db
         .select({
           id: qualitativeLogs.id,
           content: qualitativeLogs.content,
@@ -457,20 +457,19 @@ export function registerRoutes(app: Express): Server {
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
+      // Process qualitative logs to include summaries
+      const processedLogs = qualitativeLogs.map(log => ({
+        ...log,
+        summary: log.content.length > 150 ? 
+          log.content.substring(0, 150) + '...' : 
+          log.content
+      }));
+
       console.log('Logs retrieved:', {
         supplementCount: enrichedLogs.length,
         qualitativeCount: qualitativeLogs.length,
         date: date
       });
-
-      // Process qualitative logs to include summaries
-      const processedLogs = qualitativeLogsResult.map(log => ({
-        ...log,
-        summary: log.content.length > 150 ? 
-          log.content.substring(0, 150) + '...' : 
-          log.content,
-        timestamp: log.loggedAt
-      }));
 
       res.json({
         supplements: enrichedLogs,
