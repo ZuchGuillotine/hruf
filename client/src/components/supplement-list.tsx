@@ -99,9 +99,12 @@ export default function SupplementList() {
       // Prepare log entries
       const logsToSave = takenSupplements.map(supplement => ({
         supplementId: supplement.id,
-        takenAt: new Date().toISOString(),
-        notes: null,
-        effects: null
+        userId: null, // Set by server based on session
+        takenAt: supplementStates[supplement.id]?.lastTakenAt || 
+          new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString(),
+        dosage: supplement.dosage,
+        frequency: supplement.frequency,
+        name: supplement.name,
       }));
 
       // Send logs to server
