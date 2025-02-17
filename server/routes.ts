@@ -437,14 +437,34 @@ export function registerRoutes(app: Express): Server {
         };
       });
 
+      // Fetch qualitative logs for the same date
+      const qualitativeLogs = await db
+        .select()
+        .from(qualitativeLogs)
+        .where(
+          and(
+            eq(qualitativeLogs.userId, req.user!.id),
+            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = ${date}::date`
+          )
+        )
+        .orderBy(desc(qualitativeLogs.loggedAt));
+
+      // Process qualitative logs for display
+      const processedQualitativeLogs = qualitativeLogs.map(log => ({
+        ...log,
+        preview: log.content.length > 150 ? `${log.content.substring(0, 150)}...` : log.content
+      }));
+
       console.log('Found logs:', {
-        logCount: logs.length,
+        supplementLogCount: logs.length,
         enrichedCount: enrichedLogs.length,
+        qualitativeLogCount: qualitativeLogs.length,
         sampleLog: enrichedLogs[0]
       });
 
       res.json({
-        supplements: enrichedLogs
+        supplements: enrichedLogs,
+        qualitativeLogs: processedQualitativeLogs
       });
     } catch (error) {
       console.error("Error fetching supplement logs by date:", error);
