@@ -118,22 +118,30 @@ export default function SupplementHistory() {
                   {/* Quantitative Data Section */}
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold mb-2">Supplement Intake</h3>
-                    {supplementLogs?.supplements?.map((log: any) => (
-                      <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
-                        <div className="flex items-center space-x-2">
-                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                          <div className="flex-grow">
-                            <p className="font-medium">{log.name}</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-white/70">{log.dosage}</p>
-                              <p className="text-xs text-white/50">
-                                {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
+                    {supplementLogs?.supplements?.length > 0 ? (
+                      supplementLogs.supplements.map((log: any) => (
+                        <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                            <div className="flex-grow">
+                              <p className="font-medium">{log.name}</p>
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm text-white/70">{log.dosage}</p>
+                                <p className="text-xs text-white/50">
+                                  {new Date(log.takenAt).toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit',
+                                    hour12: true 
+                                  })}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-white/70">No supplements logged for this date.</p>
+                    )}
                   </div>
 
                   {/* Notes Section */}
@@ -148,7 +156,8 @@ export default function SupplementHistory() {
                                 <span className="text-sm text-white/50">
                                   {new Date(log.loggedAt).toLocaleTimeString([], { 
                                     hour: '2-digit', 
-                                    minute: '2-digit' 
+                                    minute: '2-digit',
+                                    hour12: true
                                   })}
                                 </span>
                                 {log.type === 'chat' && (

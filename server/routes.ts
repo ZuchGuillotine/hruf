@@ -397,28 +397,30 @@ export function registerRoutes(app: Express): Server {
       const date = req.params.date;
       console.log('Fetching logs for date:', date);
 
+      // Fetch supplement logs
       const logs = await db
         .select()
         .from(supplementLogs)
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC' AT TIME ZONE current_setting('TIMEZONE')) = ${date}::date`
+            sql`DATE(${supplementLogs.takenAt}) = ${date}::date`
           )
         );
 
-      if (logs.length === 0) {
-        return res.json({ supplements: [] });
-      }
-
-      const supplementDetails = await db
+      // Get supplement details for enrichment
+      const supplementIds = logs.map(log => log.supplementId);
+      const supplementDetails = supplementIds.length > 0 ? await db
         .select()
         .from(supplements)
         .where(
-          eq(supplements.userId, req.user!.id)
-        );
+          and(
+            eq(supplements.userId, req.user!.id),
+            sql`id = ANY(${supplementIds})`
+          )
+        ) : [];
 
-      const supplementMap: Record<number, SelectSupplement> = supplementDetails.reduce((acc, supp) => {
+      const supplementMap = supplementDetails.reduce((acc, supp) => {
         acc[supp.id] = supp;
         return acc;
       }, {} as Record<number, SelectSupplement>);
@@ -437,13 +439,7 @@ export function registerRoutes(app: Express): Server {
         };
       });
 
-      console.log('Found logs:', {
-        logCount: logs.length,
-        enrichedCount: enrichedLogs.length,
-        sampleLog: enrichedLogs[0]
-      });
-
-      // Fetch qualitative logs for the same date
+      // Fetch qualitative logs
       const qualitativeLogs = await db
         .select({
           id: qualitativeLogs.id,
@@ -456,17 +452,24 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            sql`DATE_TRUNC('day', ${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${dateParam}::timestamp AT TIME ZONE 'UTC')`
+            sql`DATE(${qualitativeLogs.loggedAt}) = ${date}::date`
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
-      // Process logs to get summaries
+      console.log('Logs retrieved:', {
+        supplementCount: enrichedLogs.length,
+        qualitativeCount: qualitativeLogs.length,
+        date: date
+      });
+
+      // Process qualitative logs to include summaries
       const processedLogs = qualitativeLogs.map(log => ({
         ...log,
         summary: log.content.length > 150 ? 
           log.content.substring(0, 150) + '...' : 
-          log.content
+          log.content,
+        timestamp: log.loggedAt
       }));
 
       res.json({
@@ -474,9 +477,13 @@ export function registerRoutes(app: Express): Server {
         qualitativeLogs: processedLogs
       });
     } catch (error) {
-      console.error("Error fetching supplement logs by date:", error);
+      console.error("Error fetching logs by date:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        date: req.params.date
+      });
       res.status(500).json({
-        error: "Failed to fetch supplement logs",
+        error: "Failed to fetch logs",
         details: error instanceof Error ? error.message : String(error)
       });
     }
