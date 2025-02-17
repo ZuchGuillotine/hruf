@@ -507,6 +507,7 @@ export function registerRoutes(app: Express): Server {
       // First, delete all logs for the current day that aren't in the new logs
       const today = new Date();
       const supplementIds = logs.map(log => log.supplementId);
+      const supplementIdsArray = sql`ARRAY[${sql.join(supplementIds.map(id => sql`${id}`))}]::int[]`;
 
       await db
         .delete(supplementLogs)
@@ -514,7 +515,7 @@ export function registerRoutes(app: Express): Server {
           and(
             eq(supplementLogs.userId, req.user!.id),
             sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
-            sql`${supplementLogs.supplementId} != ALL(ARRAY[${sql.join(supplementIds)}]::int[])`
+            sql`${supplementLogs.supplementId} != ALL(${supplementIdsArray})`
           )
         );
 
@@ -538,7 +539,7 @@ export function registerRoutes(app: Express): Server {
             const [supplement] = await db
               .select()
               .from(supplements)
-              .where(eq(supplements.id, log.supplementId))
+              .where(eq(supplements.id, parseInt(String(log.supplementId))))
               .limit(1);
 
             if (existingLog) {
@@ -564,7 +565,7 @@ export function registerRoutes(app: Express): Server {
                 .insert(supplementLogs)
                 .values({
                   userId: req.user!.id,
-                  supplementId: log.supplementId,
+                  supplementId: parseInt(String(log.supplementId)),
                   takenAt: new Date(log.takenAt),
                   notes: log.notes || null,
                   effects: log.effects || null
