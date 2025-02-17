@@ -1,8 +1,55 @@
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.1] - 2025-02-17
+### Fixed
+- Resolved critical timezone and date display issues in supplement tracking:
+  - Fixed supplement logs appearing one day ahead in history view
+  - Corrected timestamp preservation for supplement intake logs
+  - Fixed incorrect fixed time (4:00) display issue
+  - Implemented proper UTC day boundary handling for date queries
+
+### Changed
+- Enhanced timezone handling across the application:
+  - Client-side:
+    - Modified supplement logging to preserve exact intake timestamps
+    - Removed UTC noon timestamp normalization
+    - Added detailed logging for timestamp debugging
+  - Server-side:
+    - Implemented UTC day boundary calculations
+    - Switched from DATE() casting to direct timestamp comparisons
+    - Added comprehensive timezone-aware date handling
+    - Enhanced logging for better debugging capabilities
+
+### Technical Details
+If similar issues occur in the future, here's how to fix them:
+
+1. Timestamp Preservation:
+   - Always use `toISOString()` for timestamps
+   - Don't normalize times to noon or any fixed time
+   - Preserve original intake times throughout the system
+
+2. Date Querying:
+   - Use UTC day boundaries for date range queries
+   - Calculate start/end of day in UTC:
+     ```typescript
+     const startOfDay = new Date(`${date}T00:00:00.000Z`);
+     const endOfDay = new Date(`${date}T23:59:59.999Z`);
+     ```
+   - Use direct timestamp comparisons instead of DATE() casting
+
+3. Common Pitfalls to Avoid:
+   - Don't use DATE() casting for timestamp comparisons
+   - Avoid timezone conversion in SQL queries
+   - Don't normalize timestamps to fixed times
+   - Preserve original timestamps throughout the application
+
+### Migration Guide
+No database migration required. These changes are purely logical and affect only how dates are handled in the application code.
 
 ## [Unreleased]
 ### Fixed
@@ -30,44 +77,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AWS RDS integration and dependencies
 - RDS-specific schema definitions
 - Dual-database architecture
+
 ### Added
-- Reorganized database schemas into dedicated files:
-  - neon-schema.ts for core application features
-  - rds-schema.ts for tracking and logging
-- Enhanced database integration:
-  - Updated routes to use correct schema imports
-  - Improved supplement tracking across databases
-  - Enhanced search functionality in RDS
-- Verified complete database functionality:
-  - Supplement tracking system operational with proper data persistence
-  - Chat logging system successfully storing all AI interactions
-  - Qualitative logs storing comprehensive metadata
-  - PostgreSQL WAL (Write-Ahead Logging) confirmed operational
+- Reorganized database schemas into dedicated files
+- Enhanced database integration
+- Verified complete database functionality
 - Enhanced navigation in supplement history page
-  - Back to tracking button for better UX
-  - Improved routing between dashboard and history
 - Blog post management system
-  - Complete CRUD operations for blog posts
-  - Admin dashboard interface
-  - Public blog/learn section
-  - SEO-friendly URLs with slugs
 - Rich text editing capabilities
 - Thumbnail URL support for blog posts
 - Responsive grid layout for blog listing
 - Loading states and error handling
 - Protected admin routes
 - Blog post schema with proper timestamps
-- Supplemental RDS database integration for enhanced data storage
+- Supplemental RDS database integration
 - Google OAuth authentication system (in progress)
-  - Support for both login and signup flows
-  - Passport.js Google Strategy implementation
 
 ### Changed
 - Improved public pages routing and layout
-  - Fixed routing paths for Terms of Service and Privacy Policy
-  - Corrected header component usage for non-authenticated pages
-  - Enhanced authentication flow to properly handle public routes
-  - Improved page layout consistency for public pages
 - Updated frontend routing to include blog management
 - Enhanced admin dashboard layout
 - Improved data consistency between admin and public views
@@ -75,11 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated database connection to use supplemental RDS
 
 ### Fixed
-- Public routes accessibility issues:
-  - Corrected route naming inconsistencies
-  - Fixed duplicate header/footer display
-  - Resolved auth form visibility on public pages
-  - Improved route handling for non-authenticated users
+- Public routes accessibility issues
 - Blog post schema implementation
 - Data synchronization between admin dashboard and public views
 - API endpoint authentication checks
