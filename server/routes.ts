@@ -515,7 +515,7 @@ export function registerRoutes(app: Express): Server {
             eq(supplementLogs.userId, req.user!.id),
             sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
             supplementIds.length > 0 ? 
-              sql`${supplementLogs.supplementId} NOT IN (${sql.join(supplementIds.map(id => sql`${Number(id)}`))})` : 
+              sql`${supplementLogs.supplementId} NOT IN (${supplementIds.join(',')})::int[]` : 
               undefined
           )
         );
