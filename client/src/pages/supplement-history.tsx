@@ -136,37 +136,14 @@ export default function SupplementHistory() {
                     ))}
                   </div>
 
-                  {/* Notes Section */}
+                  {/* Notes Section (Placeholder for future text data) */}
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Daily Notes</h3>
                     <Card className="bg-white/5 border-none">
-                      <CardContent className="p-4 space-y-4">
-                        {supplementLogs?.qualitativeLogs?.length > 0 ? (
-                          supplementLogs.qualitativeLogs.map((log: any) => (
-                            <div key={log.id} className="border-b border-white/10 pb-4 last:border-0 last:pb-0">
-                              <div className="flex justify-between items-start mb-2">
-                                <span className="text-sm text-white/50">
-                                  {new Date(log.loggedAt).toLocaleTimeString([], { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </span>
-                                {log.type === 'chat' && (
-                                  <span className="text-xs bg-white/10 px-2 py-1 rounded">
-                                    AI Chat
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-white/70 text-sm">
-                                {log.summary}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-white/70">
-                            No notes or chat history for this date.
-                          </p>
-                        )}
+                      <CardContent className="p-4">
+                        <p className="text-white/70">
+                          Notes feature coming soon. Track your supplement effects and experiences.
+                        </p>
                       </CardContent>
                     </Card>
                   </div>
