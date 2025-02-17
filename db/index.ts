@@ -9,8 +9,10 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set");
 }
 
-if (!process.env.AWS_RDS_URL) {
-  throw new Error("AWS_RDS_URL must be set");
+const proxyEndpoint = 'stackproxy.proxy-c9y68m0iab7h.us-east-2.rds.amazonaws.com';
+const rdsUrl = `postgres://${process.env.RDS_USERNAME}:${process.env.RDS_PASSWORD}@${proxyEndpoint}:5432/stacktracker1`;
+if (!process.env.RDS_USERNAME || !process.env.RDS_PASSWORD) {
+  throw new Error("RDS_USERNAME and RDS_PASSWORD must be set");
 }
 
 // NeonDB connection
@@ -19,7 +21,7 @@ export const neonDb = drizzle(neonConfig, { schema: neonSchema });
 export const db = neonDb; // Alias for backward compatibility
 
 // RDS connection using appropriate drizzle connector
-const rdsPool = new Pool({ connectionString: process.env.AWS_RDS_URL });
+const rdsPool = new Pool({ connectionString: rdsUrl });
 export const rdsDb = drizzlePostgres(rdsPool, { schema: rdsSchema });
 
 // Re-export specific schemas to maintain clear database boundaries

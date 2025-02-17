@@ -25,7 +25,7 @@ if (missing.length > 0) {
 }
 
 // Configuration
-const host = process.env.AWS_RDS_HOST?.trim();
+const host = 'stackproxy.proxy-c9y68m0iab7h.us-east-2.rds.amazonaws.com';
 const username = process.env.RDS_USERNAME?.trim();
 const password = process.env.RDS_PASSWORD?.trim();
 const port = 5432;
