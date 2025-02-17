@@ -444,7 +444,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = ${date}::date`
+            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC' AT TIME ZONE current_setting('TIMEZONE')) = ${date}::date`
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
