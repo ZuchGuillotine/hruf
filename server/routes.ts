@@ -158,38 +158,7 @@ export function registerRoutes(app: Express): Server {
         throw new Error('Failed to get response from AI');
       }
 
-      // Store the conversation in qualitative_logs
-      const lastUserMessage = messages[messages.length - 1];
-      const logResult = await db
-        .insert(qualitativeLogs)
-        .values({
-          userId: req.user!.id,
-          content: JSON.stringify({
-            userMessage: lastUserMessage,
-            aiResponse: aiResponse,
-            fullContext: messages
-          }),
-          type: 'chat',
-          tags: ['ai_conversation'],
-          metadata: {
-            timestamp: new Date().toISOString(),
-            messageCount: messages.length
-          }
-        })
-        .returning();
-
-      console.log('Chat log saved:', {
-        logId: logResult[0].id,
-        userId: req.user!.id,
-        timestamp: new Date().toISOString()
-      });
-
-      console.log('Chat log saved:', {
-        logId: logResult[0].id,
-        userId: req.user!.id,
-        timestamp: new Date().toISOString()
-      });
-
+      // Send AI response first
       res.json(aiResponse);
     } catch (error: any) {
       console.error("Error in chat endpoint:", {
@@ -207,7 +176,7 @@ export function registerRoutes(app: Express): Server {
   // Endpoint to save chat
   app.post("/api/chat/save", requireAuth, async (req, res) => {
     try {
-      const { content, type, tags } = req.body;
+      const { content, type = 'chat', tags = ['ai_conversation'] } = req.body;
 
       const [log] = await db
         .insert(qualitativeLogs)
@@ -217,8 +186,7 @@ export function registerRoutes(app: Express): Server {
           type,
           tags,
           metadata: {
-            savedAt: new Date().toISOString(),
-            messageCount: JSON.parse(content).length
+            savedAt: new Date().toISOString()
           }
         })
         .returning();
