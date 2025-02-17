@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Consolidated all database operations to NeonDB
+  - Migrated supplement_logs table from RDS to NeonDB
+  - Migrated qualitative_logs table from RDS to NeonDB
+  - Migrated supplement_reference table from RDS to NeonDB
+  - Removed AWS RDS dependencies and connections
+  - Updated all database queries to use NeonDB schemas
+  - Simplified database connection management
+
+### Removed
+- AWS RDS integration and dependencies
+- RDS-specific schema definitions
+- Dual-database architecture
 ### Added
 - Reorganized database schemas into dedicated files:
   - neon-schema.ts for core application features
