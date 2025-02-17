@@ -397,11 +397,16 @@ export function registerRoutes(app: Express): Server {
       const date = req.params.date;
       console.log('Fetching logs for date:', {
         requestDate: date,
-        serverTime: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        serverTime: new Date().toISOString()
       });
 
-      // Fetch supplement logs with explicit timezone handling
+      // Convert the requested date to UTC day boundaries
+      // This ensures consistent date handling regardless of user timezone
+      const startOfDay = new Date(`${date}T00:00:00.000Z`);
+      const endOfDay = new Date(`${date}T23:59:59.999Z`);
+
+      // Fetch supplement logs within the UTC day boundaries
+      // This approach avoids timezone offset issues by using direct timestamp comparison
       const logsResult = await db
         .select({
           id: supplementLogs.id,
@@ -418,11 +423,14 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamptz AT TIME ZONE 'UTC')`
+            // Use direct timestamp comparison instead of DATE() casting
+            // This preserves the exact time while maintaining correct date boundaries
+            sql`${supplementLogs.takenAt} >= ${startOfDay} AND ${supplementLogs.takenAt} <= ${endOfDay}`
           )
         )
         .orderBy(desc(supplementLogs.takenAt));
 
+      // Log retrieval results for debugging
       console.log('Retrieved supplement logs:', {
         count: logsResult.length,
         sampleLog: logsResult[0] ? {
@@ -432,18 +440,7 @@ export function registerRoutes(app: Express): Server {
         } : null
       });
 
-      const enrichedLogs = logsResult.map(log => ({
-        id: log.id,
-        supplementId: log.supplementId,
-        takenAt: new Date(log.takenAt).toISOString(),
-        notes: log.notes,
-        effects: log.effects,
-        name: log.name || 'Unknown Supplement',
-        dosage: log.dosage || '',
-        frequency: log.frequency || ''
-      }));
-
-      // Fetch qualitative logs with explicit timezone handling
+      // Apply the same UTC day boundary logic to qualitative logs
       const qualitativeLogsResult = await db
         .select({
           id: qualitativeLogs.id,
@@ -456,23 +453,27 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamptz AT TIME ZONE 'UTC')`
+            // Maintain consistent timestamp comparison approach
+            sql`${qualitativeLogs.loggedAt} >= ${startOfDay} AND ${qualitativeLogs.loggedAt} <= ${endOfDay}`
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
-      console.log('Retrieved qualitative logs:', {
-        count: qualitativeLogsResult.length,
-        sampleLog: qualitativeLogsResult[0] ? {
-          id: qualitativeLogsResult[0].id,
-          loggedAt: qualitativeLogsResult[0].loggedAt,
-          dateOnly: new Date(qualitativeLogsResult[0].loggedAt).toISOString().split('T')[0]
-        } : null
-      });
+      // Format logs while preserving original timestamps
+      const enrichedLogs = logsResult.map(log => ({
+        id: log.id,
+        supplementId: log.supplementId,
+        takenAt: log.takenAt.toISOString(), // Keep original timestamp
+        notes: log.notes,
+        effects: log.effects,
+        name: log.name || 'Unknown Supplement',
+        dosage: log.dosage || '',
+        frequency: log.frequency || ''
+      }));
 
       const processedLogs = qualitativeLogsResult.map(log => ({
         ...log,
-        loggedAt: new Date(log.loggedAt).toISOString(),
+        loggedAt: log.loggedAt.toISOString(), // Keep original timestamp
         summary: log.content.length > 150 ?
           log.content.substring(0, 150) + '...' :
           log.content
@@ -548,7 +549,7 @@ export function registerRoutes(app: Express): Server {
 
             if (existingLog) {
               const hasChanged = JSON.stringify(existingLog.effects) !== JSON.stringify(log.effects) ||
-                               existingLog.notes !== log.notes;
+                                existingLog.notes !== log.notes;
 
               if (hasChanged) {
                 const [updatedLog] = await db

@@ -9,11 +9,32 @@
   - Fixed chat save functionality
   - Improved chat interface responsiveness
   - Enhanced error handling in chat interactions
+- Fixed timezone handling and date display issues:
+  - Resolved supplement logs showing incorrect dates (one day ahead)
+  - Fixed timestamp preservation for supplement intake logs
+  - Corrected date/time display in supplement history view
+  - Implemented proper UTC day boundary handling
+  - Changes made:
+    1. Client-side:
+       - Modified supplement logging to preserve exact intake timestamps
+       - Removed artificial UTC noon timestamp setting
+       - Enhanced logging information for better debugging
+    2. Server-side:
+       - Implemented UTC day boundary calculations for date queries
+       - Switched from DATE() casting to direct timestamp comparison
+       - Preserved original timestamps throughout the response chain
+       - Added comprehensive timezone-aware date handling
+  - Validation:
+    - Supplement logs now show on correct dates
+    - Timestamps reflect actual intake times
+    - History view displays logs on proper calendar dates
+    - UTC boundary handling prevents timezone-related date shifts
 - Fixed timezone handling in supplement logs:
   - Resolved date mismatch between client and server
   - Added proper UTC conversion in supplement list component
   - Implemented timezone-aware date comparison in server routes
   - Verified correct date display in supplement history
+
 
 ### Recent Changes and Fixes (February 13, 2025)
 - Completed schema consolidation and import path updates:

@@ -85,6 +85,7 @@ export default function SupplementList() {
   /**
    * Handles saving the daily supplement intake log
    * Creates log entries for supplements marked as taken
+   * Preserves the exact timestamp when supplements were taken
    */
   const handleSaveChanges = async () => {
     try {
@@ -97,21 +98,13 @@ export default function SupplementList() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
 
-      // Prepare log entries with explicit timezone handling
+      // Prepare log entries with precise timestamp preservation
       const logsToSave = takenSupplements.map(supplement => {
         const now = new Date();
-        // Set the time to noon UTC to avoid timezone issues
-        const takenAt = new Date(Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          12, 0, 0, 0
-        )).toISOString();
-
         return {
           supplementId: supplement.id,
           userId: null, // Set by server based on session
-          takenAt,
+          takenAt: now.toISOString(), // Preserve actual time of intake
           dosage: supplement.dosage,
           frequency: supplement.frequency,
           name: supplement.name,
