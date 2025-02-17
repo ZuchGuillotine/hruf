@@ -495,22 +495,26 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
-      // Delete all logs for the current day
+      // First, delete all logs for the current day that aren't in the new logs
       const today = new Date();
-      await db
-        .delete(supplementLogs)
-        .where(
-          and(
-            eq(supplementLogs.userId, req.user!.id),
-            sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`
-          )
-        );
+      const supplementIds = logs.map(log => log.supplementId);
 
-      // Insert new logs
+      if (supplementIds.length > 0) {
+        await db
+          .delete(supplementLogs)
+          .where(
+            and(
+              eq(supplementLogs.userId, req.user!.id),
+              sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
+              notInArray(supplementLogs.supplementId, supplementIds)
+            )
+          );
+      }
+
+      // Then update or insert new logs
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
           try {
-            // Check if this log already exists for today
             const [existingLog] = await db
               .select()
               .from(supplementLogs)
@@ -523,26 +527,44 @@ export function registerRoutes(app: Express): Server {
               )
               .limit(1);
 
-            // If log exists and nothing changed, reuse the timestamp
-            const takenAt = existingLog && 
-              JSON.stringify(existingLog.effects) === JSON.stringify(log.effects) &&
-              existingLog.notes === log.notes
-                ? existingLog.takenAt 
-                : new Date(log.takenAt);
+            // Get the current supplement details
+            const [supplement] = await db
+              .select()
+              .from(supplements)
+              .where(eq(supplements.id, parseInt(String(log.supplementId))))
+              .limit(1);
 
-            // Insert the new log
-            const [newLog] = await db
-              .insert(supplementLogs)
-              .values({
-                userId: req.user!.id,
-                supplementId: parseInt(String(log.supplementId)),
-                takenAt,
-                notes: log.notes || null,
-                effects: log.effects || null
-              })
-              .returning();
-            return newLog;
-          }
+            if (existingLog) {
+              // Only update if effects or notes have changed
+              const hasChanged = JSON.stringify(existingLog.effects) !== JSON.stringify(log.effects) ||
+                               existingLog.notes !== log.notes;
+
+              if (hasChanged) {
+                const [updatedLog] = await db
+                  .update(supplementLogs)
+                  .set({
+                    notes: log.notes || null,
+                    effects: log.effects || null,
+                    takenAt: new Date()
+                  })
+                  .where(eq(supplementLogs.id, existingLog.id))
+                  .returning();
+                return updatedLog;
+              }
+              return existingLog;
+            } else {
+              const [newLog] = await db
+                .insert(supplementLogs)
+                .values({
+                  userId: req.user!.id,
+                  supplementId: parseInt(String(log.supplementId)),
+                  takenAt: new Date(log.takenAt),
+                  notes: log.notes || null,
+                  effects: log.effects || null
+                })
+                .returning();
+              return newLog;
+            }
           } catch (error) {
             console.error('Error inserting individual log:', {
               error: error instanceof Error ? error.message : String(error),
