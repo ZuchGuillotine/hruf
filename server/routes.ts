@@ -416,7 +416,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplements.userId, req.user!.id),
-            sql`id = ANY(${supplementIds})`
+            sql`id = ANY(${sql.array(supplementIds, 'int4')})`
           )
         ) : [];
 
@@ -440,7 +440,7 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Fetch qualitative logs
-      const qualitativeLogs = await db
+      const qualitativeLogsResult = await db
         .select({
           id: qualitativeLogs.id,
           content: qualitativeLogs.content,
@@ -464,7 +464,7 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Process qualitative logs to include summaries
-      const processedLogs = qualitativeLogs.map(log => ({
+      const processedLogs = qualitativeLogsResult.map(log => ({
         ...log,
         summary: log.content.length > 150 ? 
           log.content.substring(0, 150) + '...' : 
