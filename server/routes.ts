@@ -398,46 +398,37 @@ export function registerRoutes(app: Express): Server {
       console.log('Fetching logs for date:', date);
 
       // Fetch supplement logs
-      const logs = await db
-        .select()
+      const logsResult = await db
+        .select({
+          id: supplementLogs.id,
+          supplementId: supplementLogs.supplementId,
+          takenAt: supplementLogs.takenAt,
+          notes: supplementLogs.notes,
+          effects: supplementLogs.effects,
+          name: supplements.name,
+          dosage: supplements.dosage,
+          frequency: supplements.frequency
+        })
         .from(supplementLogs)
+        .leftJoin(supplements, eq(supplementLogs.supplementId, supplements.id))
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt}) = ${date}::date`
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = ${date}::date`
           )
-        );
+        )
+        .orderBy(desc(supplementLogs.takenAt));
 
-      // Get supplement details for enrichment
-      const supplementIds = logs.map(log => log.supplementId);
-      const supplementDetails = supplementIds.length > 0 ? await db
-        .select()
-        .from(supplements)
-        .where(
-          and(
-            eq(supplements.userId, req.user!.id),
-            sql`id = ANY(${sql.array(supplementIds, 'int4')})`
-          )
-        ) : [];
-
-      const supplementMap = supplementDetails.reduce((acc, supp) => {
-        acc[supp.id] = supp;
-        return acc;
-      }, {} as Record<number, SelectSupplement>);
-
-      const enrichedLogs = logs.map(log => {
-        const supplement = supplementMap[log.supplementId] || {};
-        return {
-          id: log.id,
-          supplementId: log.supplementId,
-          takenAt: log.takenAt,
-          notes: log.notes,
-          effects: log.effects,
-          name: supplement.name || 'Unknown Supplement',
-          dosage: supplement.dosage || '',
-          frequency: supplement.frequency || ''
-        };
-      });
+      const enrichedLogs = logsResult.map(log => ({
+        id: log.id,
+        supplementId: log.supplementId,
+        takenAt: log.takenAt,
+        notes: log.notes,
+        effects: log.effects,
+        name: log.name || 'Unknown Supplement',
+        dosage: log.dosage || '',
+        frequency: log.frequency || ''
+      }));
 
       // Fetch qualitative logs
       const qualitativeLogsResult = await db
@@ -452,18 +443,11 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            sql`DATE(${qualitativeLogs.loggedAt}) = ${date}::date`
+            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = ${date}::date`
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
-      console.log('Logs retrieved:', {
-        supplementCount: enrichedLogs.length,
-        qualitativeCount: qualitativeLogs.length,
-        date: date
-      });
-
-      // Process qualitative logs to include summaries
       const processedLogs = qualitativeLogsResult.map(log => ({
         ...log,
         summary: log.content.length > 150 ? 
@@ -471,6 +455,13 @@ export function registerRoutes(app: Express): Server {
           log.content,
         timestamp: log.loggedAt
       }));
+
+      console.log('Logs retrieved:', {
+        supplementCount: enrichedLogs.length,
+        qualitativeCount: qualitativeLogsResult.length,
+        date: date
+      });
+
 
       res.json({
         supplements: enrichedLogs,
