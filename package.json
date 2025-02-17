@@ -1,3 +1,4 @@
+
 {
   "name": "rest-express",
   "version": "1.0.0",
@@ -11,11 +12,6 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.746.0",
-    "@aws-sdk/client-iam": "^3.744.0",
-    "@aws-sdk/client-rds": "^3.744.0",
-    "@aws-sdk/credential-provider-node": "^3.744.0",
-    "@aws-sdk/rds-signer": "^3.744.0",
     "@hookform/resolvers": "^3.9.1",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@radix-ui/react-accordion": "^1.2.1",
