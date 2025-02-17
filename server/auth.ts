@@ -6,8 +6,8 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { users } from "@db/neon-schema";
-import { insertUserSchema } from "@db/neon-schema";
+import { users } from "@db/schema";
+import { insertUserSchema } from "@db/schema";
 import { db } from "@db";
 import { eq, or } from "drizzle-orm";
 
