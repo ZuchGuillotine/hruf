@@ -1,4 +1,5 @@
-import { supplementReference } from "@db/rds-schema";
+
+import { supplementReference } from "@db/schema";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
 import { Trie } from "../utils/trie";
@@ -23,11 +24,10 @@ class SupplementService {
       while (this.retryCount < this.maxRetries) {
         try {
           // Check if we can query the database
-          const testQuery = await rdsDb.execute(sql`SELECT 1`);
+          const testQuery = await db.execute(sql`SELECT 1`);
           console.log('Database connection test successful');
 
-          // Use the shared rdsDb instance which already has IAM auth configured
-          const supplements = await rdsDb
+          const supplements = await db
             .select({
               id: supplementReference.id,
               name: supplementReference.name,
@@ -41,15 +41,14 @@ class SupplementService {
 
           if (supplements.length === 0) {
             console.log("No supplements found in database. Running seed...");
-            const { supplementReference } = await import("../../db/rds-schema");
             const { initialSupplements } = await import("../../db/migrations/supplements");
             
             // Insert initial supplements
             for (const supplement of initialSupplements) {
-              await rdsDb.insert(supplementReference).values(supplement);
+              await db.insert(supplementReference).values(supplement);
             }
 
-            const seededSupplements = await rdsDb
+            const seededSupplements = await db
               .select({
                 id: supplementReference.id,
                 name: supplementReference.name,
@@ -107,7 +106,7 @@ class SupplementService {
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
-      const dbResults = await rdsDb
+      const dbResults = await db
         .select({
           id: supplementReference.id,
           name: supplementReference.name,
