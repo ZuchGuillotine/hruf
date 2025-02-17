@@ -153,7 +153,7 @@ export function registerRoutes(app: Express): Server {
 
       // Get AI response
       const aiResponse = await chatWithAI(messages);
-      
+
       if (!aiResponse || !aiResponse.response) {
         throw new Error('Failed to get response from AI');
       }
@@ -507,7 +507,6 @@ export function registerRoutes(app: Express): Server {
       // First, delete all logs for the current day that aren't in the new logs
       const today = new Date();
       const supplementIds = logs.map(log => log.supplementId);
-      const supplementIdsArray = sql`ARRAY[${sql.join(supplementIds.map(id => sql`${id}`))}]::int[]`;
 
       await db
         .delete(supplementLogs)
@@ -515,7 +514,9 @@ export function registerRoutes(app: Express): Server {
           and(
             eq(supplementLogs.userId, req.user!.id),
             sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
-            supplementIds.length > 0 ? sql`${supplementLogs.supplementId} != ALL(ARRAY[${sql.join(supplementIds)}]::int[])` : undefined
+            supplementIds.length > 0 ? 
+              sql`${supplementLogs.supplementId} NOT IN (${sql.join(supplementIds.map(id => sql`${id}`))})` : 
+              undefined
           )
         );
 
