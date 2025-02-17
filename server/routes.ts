@@ -416,7 +416,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplements.userId, req.user!.id),
-            sql`id = ANY(${supplementIds}::int[])`
+            sql`id = ANY(ARRAY[${supplementIds.join(',')}]::integer[])`
           )
         ) : [];
 
