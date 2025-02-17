@@ -395,7 +395,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt}) = DATE(${date}::timestamp)`
+            sql`DATE(${supplementLogs.takenAt}) = ${date}`
           )
         );
 
