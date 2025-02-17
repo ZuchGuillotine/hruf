@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
+### Changed
+- Simplified chat storage system:
+  - Removed sentiment analysis requirements
+  - Updated chat save functionality
+  - Improved error handling in chat interactions
+  - Enhanced chat interface responsiveness
 - Resolved timezone handling in supplement logs
   - Fixed date mismatch between saving and retrieving logs
   - Implemented proper UTC conversion in both client and server
