@@ -31,7 +31,7 @@ export const healthStats = pgTable("health_stats", {
   lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Primary supplement tracking table - Stores user's active supplements
+// Primary supplement tracking table
 export const supplements = pgTable("supplements", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -58,7 +58,7 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Migrated from RDS: Supplement reference table for autocomplete
+// Supplement reference table for autocomplete
 export const supplementReference = pgTable("supplement_reference", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
@@ -67,7 +67,7 @@ export const supplementReference = pgTable("supplement_reference", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
 });
 
-// Migrated from RDS: Supplement logs table
+// Supplement logs table
 export const supplementLogs = pgTable("supplement_logs", {
   id: serial("id").primaryKey(),
   supplementId: integer("supplement_id").references(() => supplements.id),
@@ -84,7 +84,7 @@ export const supplementLogs = pgTable("supplement_logs", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
 });
 
-// Migrated from RDS: Qualitative logs table
+// Qualitative logs table
 export const qualitativeLogs = pgTable("qualitative_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -125,58 +125,5 @@ export type InsertSupplementReference = typeof supplementReference.$inferInsert;
 export type SelectSupplementReference = typeof supplementReference.$inferSelect;
 export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
-// RDS Tables migrated to NeonDB
-export const supplementLogs = pgTable("supplement_logs", {
-  id: serial("id").primaryKey(),
-  supplementId: integer("supplement_id").references(() => supplements.id),
-  userId: integer("user_id").references(() => users.id),
-  takenAt: timestamp("taken_at").default(sql`CURRENT_TIMESTAMP`),
-  notes: text("notes"),
-  effects: json("effects").$type<{
-    mood?: number;
-    energy?: number;
-    sleep?: number;
-    sideEffects?: string[];
-  }>(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
-});
-
-export const qualitativeLogs = pgTable("qualitative_logs", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  content: text("content").notNull(),
-  loggedAt: timestamp("logged_at").default(sql`CURRENT_TIMESTAMP`),
-  type: text("type"),
-  tags: json("tags").$type<string[]>(),
-  sentimentScore: integer("sentiment_score"),
-  metadata: json("metadata").$type<Record<string, unknown>>(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
-});
-
-export const supplementReference = pgTable("supplement_reference", {
-  id: serial("id").primaryKey(),
-  name: text("name").unique().notNull(),
-  category: text("category").notNull(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`)
-});
-
-// Add schemas for the new tables
-export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
-export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
-export const insertQualitativeLogSchema = createInsertSchema(qualitativeLogs);
-export const selectQualitativeLogSchema = createSelectSchema(qualitativeLogs);
-export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
-export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
-
-// Add types for the new tables
-export type InsertSupplementLog = typeof supplementLogs.$inferInsert;
-export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
-export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
-export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
-export type InsertSupplementReference = typeof supplementReference.$inferInsert;
-export type SelectSupplementReference = typeof supplementReference.$inferSelect;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
