@@ -414,9 +414,9 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt}) = ${date}::date`,
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC' AT TIME ZONE CURRENT_SETTING('TIMEZONE')) = ${date}::date`,
             sql`CASE 
-              WHEN DATE(${supplementLogs.takenAt}) = CURRENT_DATE 
+              WHEN DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC' AT TIME ZONE CURRENT_SETTING('TIMEZONE')) = CURRENT_DATE 
               THEN ${supplements.id} IS NOT NULL 
               ELSE true 
             END`
@@ -563,7 +563,7 @@ export function registerRoutes(app: Express): Server {
                 .values({
                   userId: req.user!.id,
                   supplementId: parseInt(String(log.supplementId)),
-                  takenAt: new Date(new Date(log.takenAt).toISOString().split('T')[0]),
+                  takenAt: new Date(new Date(log.takenAt).setHours(0, 0, 0, 0)),
                   notes: log.notes || null,
                   effects: log.effects || null
                 })
