@@ -33,11 +33,29 @@ export default function SupplementHistory() {
     queryFn: async () => {
       try {
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        console.log('Fetching logs for date:', dateStr);
+
         const response = await fetch(`/api/supplement-logs/${dateStr}`);
         if (!response.ok) {
           throw new Error(await response.text());
         }
         const data = await response.json();
+
+        // Process dates to ensure proper timezone handling
+        if (data.supplements) {
+          data.supplements = data.supplements.map((log: any) => ({
+            ...log,
+            takenAt: new Date(log.takenAt).toISOString(),
+          }));
+        }
+
+        if (data.qualitativeLogs) {
+          data.qualitativeLogs = data.qualitativeLogs.map((log: any) => ({
+            ...log,
+            loggedAt: new Date(log.loggedAt).toISOString(),
+          }));
+        }
+
         console.log('Fetched logs:', data);
         return data;
       } catch (err) {

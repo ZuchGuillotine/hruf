@@ -395,9 +395,13 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/supplement-logs/:date", requireAuth, async (req, res) => {
     try {
       const date = req.params.date;
-      console.log('Fetching logs for date:', date);
+      console.log('Fetching logs for date:', {
+        requestDate: date,
+        serverTime: new Date().toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
 
-      // Fetch supplement logs
+      // Fetch supplement logs with explicit timezone handling
       const logsResult = await db
         .select({
           id: supplementLogs.id,
@@ -414,15 +418,24 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamp AT TIME ZONE 'UTC')`
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamptz AT TIME ZONE 'UTC')`
           )
         )
         .orderBy(desc(supplementLogs.takenAt));
 
+      console.log('Retrieved supplement logs:', {
+        count: logsResult.length,
+        sampleLog: logsResult[0] ? {
+          id: logsResult[0].id,
+          takenAt: logsResult[0].takenAt,
+          dateOnly: new Date(logsResult[0].takenAt).toISOString().split('T')[0]
+        } : null
+      });
+
       const enrichedLogs = logsResult.map(log => ({
         id: log.id,
         supplementId: log.supplementId,
-        takenAt: log.takenAt,
+        takenAt: new Date(log.takenAt).toISOString(),
         notes: log.notes,
         effects: log.effects,
         name: log.name || 'Unknown Supplement',
@@ -430,7 +443,7 @@ export function registerRoutes(app: Express): Server {
         frequency: log.frequency || ''
       }));
 
-      // Fetch qualitative logs
+      // Fetch qualitative logs with explicit timezone handling
       const qualitativeLogsResult = await db
         .select({
           id: qualitativeLogs.id,
@@ -443,25 +456,27 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            sql`DATE_TRUNC('day', ${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${date}::timestamp AT TIME ZONE 'UTC')`
+            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE(${date}::timestamptz AT TIME ZONE 'UTC')`
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
-      const processedLogs = qualitativeLogsResult.map(log => ({
-        ...log,
-        summary: log.content.length > 150 ? 
-          log.content.substring(0, 150) + '...' : 
-          log.content,
-        timestamp: log.loggedAt
-      }));
-
-      console.log('Logs retrieved:', {
-        supplementCount: enrichedLogs.length,
-        qualitativeCount: qualitativeLogsResult.length,
-        date: date
+      console.log('Retrieved qualitative logs:', {
+        count: qualitativeLogsResult.length,
+        sampleLog: qualitativeLogsResult[0] ? {
+          id: qualitativeLogsResult[0].id,
+          loggedAt: qualitativeLogsResult[0].loggedAt,
+          dateOnly: new Date(qualitativeLogsResult[0].loggedAt).toISOString().split('T')[0]
+        } : null
       });
 
+      const processedLogs = qualitativeLogsResult.map(log => ({
+        ...log,
+        loggedAt: new Date(log.loggedAt).toISOString(),
+        summary: log.content.length > 150 ?
+          log.content.substring(0, 150) + '...' :
+          log.content
+      }));
 
       res.json({
         supplements: enrichedLogs,
@@ -471,7 +486,8 @@ export function registerRoutes(app: Express): Server {
       console.error("Error fetching logs by date:", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        date: req.params.date
+        date: req.params.date,
+        serverTime: new Date().toISOString()
       });
       res.status(500).json({
         error: "Failed to fetch logs",
@@ -491,8 +507,11 @@ export function registerRoutes(app: Express): Server {
       console.log('Attempting to save supplement logs:', {
         userId: req.user!.id,
         logCount: logs.length,
-        sampleLog: logs[0],
-        timestamp: new Date().toISOString()
+        sampleLog: logs[0] ? {
+          supplementId: logs[0].supplementId,
+          takenAt: logs[0].takenAt,
+          serverTime: new Date().toISOString()
+        } : null
       });
 
       // First, delete all logs for the current day that aren't in the new logs
@@ -505,13 +524,13 @@ export function registerRoutes(app: Express): Server {
           .where(
             and(
               eq(supplementLogs.userId, req.user!.id),
-              sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
+              sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${today}::timestamptz AT TIME ZONE 'UTC')`,
               notInArray(supplementLogs.supplementId, supplementIds)
             )
           );
       }
 
-      // Then update or insert new logs
+      // Update or insert logs with explicit timezone handling
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
           try {
@@ -522,20 +541,12 @@ export function registerRoutes(app: Express): Server {
                 and(
                   eq(supplementLogs.userId, req.user!.id),
                   eq(supplementLogs.supplementId, log.supplementId),
-                  sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${new Date(log.takenAt)}::timestamp AT TIME ZONE 'UTC')`
+                  sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE(${new Date(log.takenAt)}::timestamptz AT TIME ZONE 'UTC')`
                 )
               )
               .limit(1);
 
-            // Get the current supplement details
-            const [supplement] = await db
-              .select()
-              .from(supplements)
-              .where(eq(supplements.id, parseInt(String(log.supplementId))))
-              .limit(1);
-
             if (existingLog) {
-              // Only update if effects or notes have changed
               const hasChanged = JSON.stringify(existingLog.effects) !== JSON.stringify(log.effects) ||
                                existingLog.notes !== log.notes;
 
@@ -558,7 +569,7 @@ export function registerRoutes(app: Express): Server {
                 .values({
                   userId: req.user!.id,
                   supplementId: parseInt(String(log.supplementId)),
-                  takenAt: log.takenAt,
+                  takenAt: new Date(log.takenAt),
                   notes: log.notes || null,
                   effects: log.effects || null
                 })
@@ -578,7 +589,12 @@ export function registerRoutes(app: Express): Server {
 
       console.log('Successfully saved supplement logs:', {
         count: insertedLogs.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        sampleLog: insertedLogs[0] ? {
+          id: insertedLogs[0].id,
+          takenAt: insertedLogs[0].takenAt,
+          dateOnly: new Date(insertedLogs[0].takenAt).toISOString().split('T')[0]
+        } : null
       });
 
       res.json(insertedLogs);
@@ -588,7 +604,6 @@ export function registerRoutes(app: Express): Server {
         stack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString()
       });
-
       res.status(500).json({
         error: "Failed to create supplement logs",
         details: error instanceof Error ? error.message : String(error)

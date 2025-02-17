@@ -93,18 +93,30 @@ export default function SupplementList() {
 
       console.log('Preparing to save supplement logs:', {
         supplementCount: takenSupplements.length,
-        timestamp: new Date().toISOString()
+        clientTime: new Date().toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
 
-      // Prepare log entries
-      const logsToSave = takenSupplements.map(supplement => ({
-        supplementId: supplement.id,
-        userId: null, // Set by server based on session
-        takenAt: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
-        dosage: supplement.dosage,
-        frequency: supplement.frequency,
-        name: supplement.name,
-      }));
+      // Prepare log entries with explicit timezone handling
+      const logsToSave = takenSupplements.map(supplement => {
+        const now = new Date();
+        // Set the time to noon UTC to avoid timezone issues
+        const takenAt = new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          12, 0, 0, 0
+        )).toISOString();
+
+        return {
+          supplementId: supplement.id,
+          userId: null, // Set by server based on session
+          takenAt,
+          dosage: supplement.dosage,
+          frequency: supplement.frequency,
+          name: supplement.name,
+        };
+      });
 
       // Send logs to server
       const response = await fetch('/api/supplement-logs', {
@@ -125,7 +137,12 @@ export default function SupplementList() {
       const savedLogs = await response.json();
       console.log('Successfully saved logs:', {
         count: savedLogs.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        sampleLog: savedLogs[0] ? {
+          id: savedLogs[0].id,
+          takenAt: savedLogs[0].takenAt,
+          dateOnly: new Date(savedLogs[0].takenAt).toISOString().split('T')[0]
+        } : null
       });
 
       // Update UI and store last logged date
@@ -140,7 +157,8 @@ export default function SupplementList() {
     } catch (error) {
       console.error('Error saving changes:', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
 
       toast({
