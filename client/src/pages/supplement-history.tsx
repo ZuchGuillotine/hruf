@@ -28,7 +28,7 @@ export default function SupplementHistory() {
     end: endOfMonth(currentMonth),
   });
 
-  const { data: supplementLogs, isLoading } = useQuery({
+  const { data: logsData, isLoading } = useQuery({
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -42,6 +42,8 @@ export default function SupplementHistory() {
       return data;
     },
   });
+
+  const supplementLogs = logsData || { supplements: [], qualitativeLogs: [] };
 
   const nextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
