@@ -1,5 +1,5 @@
 import { db } from "@db";
-import { supplementReference } from "@db/rds-schema";
+import { supplementReference } from "../schema";
 import { sql } from 'drizzle-orm';
 
 /**
