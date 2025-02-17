@@ -1,0 +1,29 @@
+[vite] connecting...
+[vite] connected.
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"op ANY/ALL (array) requires array on right side"}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"malformed array literal: \"26\""}
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"Cannot access 'qualitativeLogs2' before initialization"}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"op ANY/ALL (array) requires array on right side"}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"Cannot access 'qualitativeLogs2' before initialization"}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Preparing to save supplement logs: 
+Object {supplementCount: 5, timestamp: "2025-02-17T05:33:09.670Z"}
+Successfully saved logs: 
+Object {count: 5, timestamp: "2025-02-17T05:33:12.470Z"}
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"op ANY/ALL (array) requires array on right side"}
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"malformed array literal: \"26\""}
