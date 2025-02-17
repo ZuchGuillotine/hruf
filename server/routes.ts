@@ -414,7 +414,12 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = ${date}::date`
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = ${date}::date`,
+            sql`CASE 
+              WHEN DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = CURRENT_DATE 
+              THEN ${supplements.id} IS NOT NULL 
+              ELSE true 
+            END`
           )
         )
         .orderBy(desc(supplementLogs.takenAt));
