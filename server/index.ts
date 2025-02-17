@@ -102,8 +102,40 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const PORT = 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
+  const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  const MAX_PORT_ATTEMPTS = 10;
+
+  const tryPort = async (port: number): Promise<number> => {
+    try {
+      await new Promise((resolve, reject) => {
+        server.listen(port, "0.0.0.0")
+          .once('listening', () => {
+            server.removeListener('error', reject);
+            resolve(port);
+          })
+          .once('error', (err: NodeJS.ErrnoException) => {
+            server.removeListener('listening', resolve);
+            if (err.code === 'EADDRINUSE') {
+              reject(err);
+            } else {
+              reject(err);
+            }
+          });
+      });
+      return port;
+    } catch (err) {
+      if (port - BASE_PORT >= MAX_PORT_ATTEMPTS) {
+        throw new Error('No available ports found');
+      }
+      return tryPort(port + 1);
+    }
+  };
+
+  try {
+    const port = await tryPort(BASE_PORT);
+    log(`serving on port ${port}`);
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
 })();
