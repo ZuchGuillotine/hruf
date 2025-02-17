@@ -7,38 +7,37 @@ A cutting-edge health tracking and content management application that combines 
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components
 - **Backend**: Express.js with TypeScript
 - **Database Architecture**:
-  - **Primary Database (NeonDB)**:
+  - **Consolidated Database (NeonDB)**:
     - User authentication and profiles
     - Health statistics
     - Blog content management
-    - Supplement selections
-  - **Secondary Database (RDS)**:
-    - Supplement intake logs
+    - Supplement selections and tracking
     - Chat interaction history
-    - Supplement reference data (autocomplete functionality)
+    - Supplement reference data
+    - Daily supplement logs
 - **Authentication**: 
   - Passport.js with session-based auth
   - Google OAuth integration (currently in troubleshooting)
-- **AI Integration**: OpenAI GPT-4o for intelligent health insights
+- **AI Integration**: OpenAI GPT-4 for intelligent health insights
 - **Email Service**: SendGrid for verification emails (functional with basic features)
 - **Development Tools**: Drizzle ORM, TanStack Query, Wouter routing
 
 ## Data Flow Architecture
 ### Supplement Management Flow:
-- User selections stored in NeonDB supplements table
-- Daily tracking stored in RDS supplement_logs table
-- Card operations (add/edit/delete) update NeonDB
-- "Save Changes" button triggers RDS supplement_logs entry
+- User selections stored in supplements table
+- Daily tracking stored in supplement_logs table
+- Card operations (add/edit/delete) update supplements table
+- "Save Changes" button triggers supplement_logs entry
 
 ### Database Integration Flow:
-- Supplement card data managed in NeonDB supplements table
-- Save operation triggers data storage in RDS supplement_logs
-- History view combines data from both databases:
-  - Logs from RDS supplement_logs
-  - Notes from interactions stored in RDS qualitative_logs
+- Supplement card data managed in supplements table
+- Save operation triggers data storage in supplement_logs
+- History view combines data from unified database:
+  - Logs from supplement_logs table
+  - Notes from interactions stored in qualitative_logs table
 
 ### Database Schema Overview
-#### Primary Database (NeonDB) Tables:
+#### NeonDB Tables:
 1. **users**:
    - Core user authentication data
    - Profile information
@@ -59,20 +58,19 @@ A cutting-edge health tracking and content management application that combines 
    - Content management system
    - Health-related articles and resources
 
-#### RDS Database Tables:
-1. **supplementLogs**:
+5. **supplementLogs**:
    - Tracks daily supplement intake
    - Fields: id, supplementId, userId, takenAt, notes, effects (JSON)
    - Includes mood, energy, sleep tracking
    - Timestamps for creation and updates
 
-2. **qualitativeLogs**:
+6. **qualitativeLogs**:
    - Stores chat interactions and AI responses
    - Fields: id, userId, content, type, tags (JSON)
    - Includes sentiment analysis scores
    - Metadata for enhanced tracking
 
-3. **supplementReference**:
+7. **supplementReference**:
    - Powers autocomplete functionality
    - Fields: id, name, category
    - Unique constraints on supplement names
