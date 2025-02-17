@@ -10,9 +10,18 @@ import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef } from "react";
 
 export default function SupplementHistory() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [currentMonth, setCurrentMonth] = useState<Date>(today);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to today's date when component mounts
+  useEffect(() => {
+    const todayButton = scrollContainerRef.current?.querySelector(`button[data-date='${format(today, 'yyyy-MM-dd')}']`);
+    if (todayButton) {
+      todayButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, []);
 
   const daysInMonth = eachDayOfInterval({
     start: startOfMonth(currentMonth),
@@ -72,6 +81,7 @@ export default function SupplementHistory() {
                 {daysInMonth.map((date) => (
                   <Button
                     key={date.toISOString()}
+                    data-date={format(date, 'yyyy-MM-dd')}
                     variant={selectedDate.toDateString() === date.toDateString() ? "default" : "outline"}
                     className={`flex-shrink-0 w-14 h-14 rounded-full ${
                       selectedDate.toDateString() === date.toDateString()
