@@ -129,7 +129,6 @@ export default function LLMChat() {
             onClick={handleSaveChat}
             className="bg-white text-[#1b4332] hover:bg-white/90"
           >
-            <Save className="h-4 w-4 mr-2" />
             Save Chat
           </Button>
         )}
