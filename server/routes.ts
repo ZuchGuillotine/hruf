@@ -403,7 +403,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = ${date}::date`
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC' AT TIME ZONE current_setting('TIMEZONE')) = ${date}::date`
           )
         );
 
@@ -437,34 +437,41 @@ export function registerRoutes(app: Express): Server {
         };
       });
 
+      console.log('Found logs:', {
+        logCount: logs.length,
+        enrichedCount: enrichedLogs.length,
+        sampleLog: enrichedLogs[0]
+      });
+
       // Fetch qualitative logs for the same date
       const qualitativeLogs = await db
-        .select()
+        .select({
+          id: qualitativeLogs.id,
+          content: qualitativeLogs.content,
+          loggedAt: qualitativeLogs.loggedAt,
+          type: qualitativeLogs.type,
+          metadata: qualitativeLogs.metadata
+        })
         .from(qualitativeLogs)
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            sql`DATE(${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC' AT TIME ZONE current_setting('TIMEZONE')) = ${date}::date`
+            sql`DATE_TRUNC('day', ${qualitativeLogs.loggedAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${dateParam}::timestamp AT TIME ZONE 'UTC')`
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
-      // Process qualitative logs for display
-      const processedQualitativeLogs = qualitativeLogs.map(log => ({
+      // Process logs to get summaries
+      const processedLogs = qualitativeLogs.map(log => ({
         ...log,
-        preview: log.content.length > 150 ? `${log.content.substring(0, 150)}...` : log.content
+        summary: log.content.length > 150 ? 
+          log.content.substring(0, 150) + '...' : 
+          log.content
       }));
-
-      console.log('Found logs:', {
-        supplementLogCount: logs.length,
-        enrichedCount: enrichedLogs.length,
-        qualitativeLogCount: qualitativeLogs.length,
-        sampleLog: enrichedLogs[0]
-      });
 
       res.json({
         supplements: enrichedLogs,
-        qualitativeLogs: processedQualitativeLogs
+        qualitativeLogs: processedLogs
       });
     } catch (error) {
       console.error("Error fetching supplement logs by date:", error);

@@ -31,9 +31,7 @@ export default function SupplementHistory() {
   const { data: supplementLogs, isLoading } = useQuery({
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
-      const date = new Date(selectedDate);
-      const utcDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-      const dateStr = format(utcDate, 'yyyy-MM-dd');
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const response = await fetch(`/api/supplement-logs/${dateStr}`);
       if (!response.ok) throw new Error('Failed to fetch supplement logs');
       return response.json();
@@ -115,64 +113,68 @@ export default function SupplementHistory() {
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
-              ) : (
+              ) : supplementLogs ? (
                 <div className="space-y-4">
                   {/* Quantitative Data Section */}
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold mb-2">Supplement Intake</h3>
-                    {supplementLogs?.supplements && supplementLogs.supplements.length > 0 ? (
-                      supplementLogs.supplements.map((log: any) => (
-                        <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
-                          <div className="flex items-center space-x-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                            <div className="flex-grow">
-                              <p className="font-medium">{log.name}</p>
-                              <div className="flex justify-between items-center">
-                                <p className="text-sm text-white/70">{log.dosage}</p>
-                                <p className="text-xs text-white/50">
-                                  {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              </div>
+                    {supplementLogs?.supplements?.map((log: any) => (
+                      <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
+                        <div className="flex items-center space-x-2">
+                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                          <div className="flex-grow">
+                            <p className="font-medium">{log.name}</p>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-white/70">{log.dosage}</p>
+                              <p className="text-xs text-white/50">
+                                {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             </div>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-white/70">No supplements logged for this date</p>
-                    )}
+                      </div>
+                    ))}
                   </div>
 
                   {/* Notes Section */}
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold mb-2">Daily Notes</h3>
                     <Card className="bg-white/5 border-none">
-                      <CardContent className="p-4">
-                        {supplementLogs?.qualitativeLogs && supplementLogs.qualitativeLogs.length > 0 ? (
-                          <div className="space-y-4">
-                            {supplementLogs.qualitativeLogs.map((log: any) => (
-                              <div key={log.id} className="border-b border-white/10 pb-4 last:border-0">
-                                <div className="flex justify-between items-start mb-2">
-                                  <span className="text-sm text-white/50">
-                                    {new Date(log.loggedAt).toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })}
+                      <CardContent className="p-4 space-y-4">
+                        {supplementLogs?.qualitativeLogs?.length > 0 ? (
+                          supplementLogs.qualitativeLogs.map((log: any) => (
+                            <div key={log.id} className="border-b border-white/10 pb-4 last:border-0 last:pb-0">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="text-sm text-white/50">
+                                  {new Date(log.loggedAt).toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </span>
+                                {log.type === 'chat' && (
+                                  <span className="text-xs bg-white/10 px-2 py-1 rounded">
+                                    AI Chat
                                   </span>
-                                  <span className="text-xs bg-white/10 px-2 py-1 rounded-full">
-                                    {log.type === 'chat' ? 'AI Chat' : 'Note'}
-                                  </span>
-                                </div>
-                                <p className="text-white/70 text-sm">{log.preview}</p>
+                                )}
                               </div>
-                            ))}
-                          </div>
+                              <p className="text-white/70 text-sm">
+                                {log.summary}
+                              </p>
+                            </div>
+                          ))
                         ) : (
-                          <p className="text-white/70">No notes recorded for this date.</p>
+                          <p className="text-white/70">
+                            No notes or chat history for this date.
+                          </p>
                         )}
                       </CardContent>
                     </Card>
                   </div>
                 </div>
+              ) : (
+                <p className="text-white/70">
+                  No logs found for this date
+                </p>
               )}
             </CardContent>
           </Card>
