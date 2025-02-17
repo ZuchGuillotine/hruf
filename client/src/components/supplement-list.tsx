@@ -101,7 +101,7 @@ export default function SupplementList() {
         supplementId: supplement.id,
         userId: null, // Set by server based on session
         takenAt: supplementStates[supplement.id]?.lastTakenAt || 
-          new Date(new Date().setHours(0, 0, 0, 0)).toISOString(),
+          new Date().toISOString().split('T')[0],
         dosage: supplement.dosage,
         frequency: supplement.frequency,
         name: supplement.name,
