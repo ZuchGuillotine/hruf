@@ -83,7 +83,7 @@ export class IpMonitorService {
 
   async updateSecurityGroupRule(newIp: string): Promise<void> {
     console.log(`Updating security group rule for IP ${newIp}`);
-    
+
     // Always attempt to clean up old rule first
     if (this.currentIp && this.currentIp !== newIp) {
       try {
@@ -104,7 +104,7 @@ export class IpMonitorService {
         console.log(`Failed to remove old rule (this is normal if it didn't exist):`, error);
       }
     }
-    
+
     this.currentIp = newIp;
 
     try {

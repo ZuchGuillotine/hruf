@@ -1,4 +1,3 @@
-
 import { supplementReference } from "@db/schema";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -23,10 +22,7 @@ class SupplementService {
 
       while (this.retryCount < this.maxRetries) {
         try {
-          // Check if we can query the database
-          const testQuery = await db.execute(sql`SELECT 1`);
-          console.log('Database connection test successful');
-
+          // Database connection is handled through NeonDB only
           const supplements = await db
             .select({
               id: supplementReference.id,
@@ -42,7 +38,7 @@ class SupplementService {
           if (supplements.length === 0) {
             console.log("No supplements found in database. Running seed...");
             const { initialSupplements } = await import("../../db/migrations/supplements");
-            
+
             // Insert initial supplements
             for (const supplement of initialSupplements) {
               await db.insert(supplementReference).values(supplement);
