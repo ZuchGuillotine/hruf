@@ -113,27 +113,31 @@ export default function SupplementHistory() {
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
-              ) : supplementLogs ? (
+              ) : (
                 <div className="space-y-4">
                   {/* Quantitative Data Section */}
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold mb-2">Supplement Intake</h3>
-                    {supplementLogs?.supplements?.map((log: any) => (
-                      <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
-                        <div className="flex items-center space-x-2">
-                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                          <div className="flex-grow">
-                            <p className="font-medium">{log.name}</p>
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-white/70">{log.dosage}</p>
-                              <p className="text-xs text-white/50">
-                                {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
+                    {supplementLogs?.supplements && supplementLogs.supplements.length > 0 ? (
+                      supplementLogs.supplements.map((log: any) => (
+                        <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/5">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                            <div className="flex-grow">
+                              <p className="font-medium">{log.name}</p>
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm text-white/70">{log.dosage}</p>
+                                <p className="text-xs text-white/50">
+                                  {new Date(log.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-white/70">No supplements logged for this date</p>
+                    )}
                   </div>
 
                   {/* Notes Section */}
@@ -141,7 +145,7 @@ export default function SupplementHistory() {
                     <h3 className="text-lg font-semibold mb-2">Daily Notes</h3>
                     <Card className="bg-white/5 border-none">
                       <CardContent className="p-4">
-                        {supplementLogs?.qualitativeLogs?.length > 0 ? (
+                        {supplementLogs?.qualitativeLogs && supplementLogs.qualitativeLogs.length > 0 ? (
                           <div className="space-y-4">
                             {supplementLogs.qualitativeLogs.map((log: any) => (
                               <div key={log.id} className="border-b border-white/10 pb-4 last:border-0">
@@ -167,10 +171,6 @@ export default function SupplementHistory() {
                     </Card>
                   </div>
                 </div>
-              ) : (
-                <p className="text-white/70">
-                  No logs found for this date
-                </p>
               )}
             </CardContent>
           </Card>
