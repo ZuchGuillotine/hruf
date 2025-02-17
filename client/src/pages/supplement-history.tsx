@@ -43,7 +43,7 @@ export default function SupplementHistory() {
     },
   });
 
-  const supplementLogs = logsData || { supplements: [], qualitativeLogs: [] };
+  const { supplements, qualitativeLogs } = logsData || { supplements: [], qualitativeLogs: [] };
 
   const nextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
@@ -124,9 +124,9 @@ export default function SupplementHistory() {
                 <div className="space-y-6">
                   <div className="bg-white/5 rounded-lg p-4">
                     <h3 className="text-lg font-semibold mb-4">Supplement Intake</h3>
-                    {supplementLogs?.supplements?.length > 0 ? (
+                    {supplements.length > 0 ? (
                       <div className="space-y-3">
-                        {supplementLogs.supplements.map((log: any) => (
+                        {supplements.map((log: any) => (
                           <div key={`log-${log.id}`} className="p-3 rounded-md bg-white/10">
                             <div className="flex items-center space-x-2">
                               <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
@@ -154,9 +154,9 @@ export default function SupplementHistory() {
 
                   <div className="bg-white/5 rounded-lg p-4">
                     <h3 className="text-lg font-semibold mb-4">Daily Notes</h3>
-                    {supplementLogs?.qualitativeLogs?.length > 0 ? (
+                    {qualitativeLogs.length > 0 ? (
                       <div className="space-y-4">
-                        {supplementLogs.qualitativeLogs.map((log: any) => (
+                        {qualitativeLogs.map((log: any) => (
                           <div key={log.id} className="p-3 rounded-md bg-white/10">
                             <div className="flex justify-between items-start mb-2">
                               <span className="text-sm text-white/50">
@@ -188,7 +188,7 @@ export default function SupplementHistory() {
               )}
             </CardContent>
           </Card>
-          
+
           {/* Back to Dashboard Button */}
           <div className="mt-6">
             <Link href="/">
