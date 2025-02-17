@@ -1,12 +1,4 @@
-/**
- * @deprecated This schema has been consolidated into db/neon-schema.ts and db/rds-schema.ts
- * DO NOT USE - Kept for reference during consolidation validation
- * Last active: February 2025
- */
-
-/*
-// Core database schema definitions for the supplement tracking application
-import { pgTable, text, serial, integer, boolean, timestamp, json, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -35,12 +27,11 @@ export const healthStats = pgTable("health_stats", {
   dateOfBirth: date("date_of_birth"),
   averageSleep: integer("average_sleep"),
   profilePhotoUrl: text("profile_photo_url"),
-  allergies: json("allergies").$type<string[]>(),
+  allergies: jsonb("allergies").$type<string[]>(),
   lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Primary supplement tracking table - Stores user's active supplements
-// This table is in the main database and links to the external RDS for logs
+// Primary supplement tracking table
 export const supplements = pgTable("supplements", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
@@ -54,29 +45,28 @@ export const supplements = pgTable("supplements", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Supplement tracking logs - This schema is mirrored in the external RDS database
-// Used for storing detailed supplement intake history and effects
+// Supplement tracking logs
 export const supplementLogs = pgTable("supplement_logs", {
   id: serial("id").primaryKey(),
   supplementId: integer("supplement_id").references(() => supplements.id),
   userId: integer("user_id").references(() => users.id),
   takenAt: timestamp("taken_at").default(sql`CURRENT_TIMESTAMP`),
   notes: text("notes"),
-  effects: json("effects").$type<{
+  effects: jsonb("effects").$type<{
     mood?: number;
     energy?: number;
     sleep?: number;
     sideEffects?: string[];
   }>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Reference table for supplement names and categories
-// Used by the autocomplete feature when users search for supplements
-// This is in the main database and powers the Trie-based search functionality
 export const supplementReference = pgTable("supplement_reference", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
-  category: text("category").notNull(),
+  category: text("category").notNull().default('General'),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
@@ -95,16 +85,17 @@ export const blogPosts = pgTable("blog_posts", {
 });
 
 // Qualitative user logs for AI interactions and general notes
-// Stored in the external RDS database for better scalability
 export const qualitativeLogs = pgTable("qualitative_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
   loggedAt: timestamp("logged_at").default(sql`CURRENT_TIMESTAMP`),
-  type: text("type"),
-  tags: json("tags").$type<string[]>(),
+  type: text("type").notNull(),
+  tags: jsonb("tags").$type<string[]>(),
   sentimentScore: integer("sentiment_score"),
-  metadata: json("metadata").$type<Record<string, unknown>>(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Zod schemas for type-safe database operations
@@ -116,17 +107,13 @@ export const insertSupplementSchema = createInsertSchema(supplements);
 export const selectSupplementSchema = createSelectSchema(supplements);
 export const insertSupplementLogSchema = createInsertSchema(supplementLogs);
 export const selectSupplementLogSchema = createSelectSchema(supplementLogs);
-
 export const insertSupplementReferenceSchema = createInsertSchema(supplementReference);
 export const selectSupplementReferenceSchema = createSelectSchema(supplementReference);
-
 export const insertQualitativeLogSchema = createInsertSchema(qualitativeLogs);
 export const selectQualitativeLogSchema = createSelectSchema(qualitativeLogs);
 
 // TypeScript type definitions for database operations
 export type InsertUser = typeof users.$inferInsert;
-export type BlogPost = typeof blogPosts.$inferSelect;
-export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertHealthStats = typeof healthStats.$inferInsert;
 export type SelectHealthStats = typeof healthStats.$inferSelect;
@@ -136,7 +123,7 @@ export type InsertSupplementLog = typeof supplementLogs.$inferInsert;
 export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
 export type InsertSupplementReference = typeof supplementReference.$inferInsert;
 export type SelectSupplementReference = typeof supplementReference.$inferSelect;
-
 export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
-*/
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;

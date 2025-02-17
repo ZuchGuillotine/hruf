@@ -2,7 +2,7 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
-import { db } from "@db"; // Consolidated database connection
+import { db } from "@db";
 import {
   supplements,
   healthStats,
@@ -11,11 +11,12 @@ import {
   supplementLogs,
   supplementReference,
   qualitativeLogs
-} from "@db/neon-schema";
+} from "@db/schema";
 import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
+import { type SelectSupplement } from "@db/schema";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -409,10 +410,10 @@ export function registerRoutes(app: Express): Server {
           eq(supplements.userId, req.user!.id)
         );
 
-      const supplementMap: Record<number, any> = supplementDetails.reduce((acc, supp) => {
+      const supplementMap: Record<number, SelectSupplement> = supplementDetails.reduce((acc, supp) => {
         acc[supp.id] = supp;
         return acc;
-      }, {});
+      }, {} as Record<number, SelectSupplement>);
 
       const enrichedLogs = logs.map(log => {
         const supplement = supplementMap[log.supplementId] || {};
@@ -479,7 +480,7 @@ export function registerRoutes(app: Express): Server {
       const insertedLogs = await Promise.all(
         logs.map(async (log) => {
           try {
-            const existingLog = await db
+            const [existingLog] = await db
               .select()
               .from(supplementLogs)
               .where(
@@ -491,40 +492,40 @@ export function registerRoutes(app: Express): Server {
               )
               .limit(1);
 
-            if (existingLog.length > 0) {
-              // Only update if data has changed
-              const hasChanged = existingLog[0].dosage !== log.dosage ||
-                                existingLog[0].frequency !== log.frequency ||
-                                existingLog[0].name !== log.name;
+            // Get the current supplement details
+            const [supplement] = await db
+              .select()
+              .from(supplements)
+              .where(eq(supplements.id, log.supplementId))
+              .limit(1);
+
+            if (existingLog) {
+              // Only update if effects or notes have changed
+              const hasChanged = JSON.stringify(existingLog.effects) !== JSON.stringify(log.effects) ||
+                               existingLog.notes !== log.notes;
 
               if (hasChanged) {
                 const [updatedLog] = await db
                   .update(supplementLogs)
                   .set({
-                    dosage: log.dosage,
-                    frequency: log.frequency,
-                    name: log.name,
                     notes: log.notes || null,
                     effects: log.effects || null,
-                    takenAt: new Date() // Only update timestamp if data changed
+                    takenAt: new Date()
                   })
-                  .where(eq(supplementLogs.id, existingLog[0].id))
+                  .where(eq(supplementLogs.id, existingLog.id))
                   .returning();
                 return updatedLog;
               }
-              return existingLog[0];
+              return existingLog;
             } else {
               const [newLog] = await db
                 .insert(supplementLogs)
                 .values({
                   userId: req.user!.id,
                   supplementId: log.supplementId,
-                  dosage: log.dosage,
-                  frequency: log.frequency,
-                  name: log.name,
                   takenAt: new Date(log.takenAt),
                   notes: log.notes || null,
-                  effects: log.effects || null,
+                  effects: log.effects || null
                 })
                 .returning();
               return newLog;
