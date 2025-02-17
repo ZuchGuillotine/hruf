@@ -403,7 +403,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC' AT TIME ZONE current_setting('TIMEZONE')) = ${date}::date`
+            sql`DATE(${supplementLogs.takenAt} AT TIME ZONE 'UTC') = ${date}::date`
           )
         );
 
