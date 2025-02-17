@@ -152,9 +152,13 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get AI response
-      const response = await chatWithAI(messages);
+      const aiResponse = await chatWithAI(messages);
+      
+      if (!aiResponse || !aiResponse.response) {
+        throw new Error('Failed to get response from AI');
+      }
 
-      // Store the conversation in qualitative_logs with enhanced metadata
+      // Store the conversation in qualitative_logs
       const lastUserMessage = messages[messages.length - 1];
       const logResult = await db
         .insert(qualitativeLogs)
@@ -162,20 +166,25 @@ export function registerRoutes(app: Express): Server {
           userId: req.user!.id,
           content: JSON.stringify({
             userMessage: lastUserMessage,
-            aiResponse: response,
+            aiResponse: aiResponse,
             fullContext: messages
           }),
           type: 'chat',
           tags: ['ai_conversation'],
           metadata: {
-            messageCount: messages.length,
             timestamp: new Date().toISOString(),
-            conversationLength: messages.length,
-            userMessageCount: messages.filter(m => m.role === 'user').length,
-            assistantMessageCount: messages.filter(m => m.role === 'assistant').length
+            messageCount: messages.length
           }
         })
         .returning();
+
+      console.log('Chat log saved:', {
+        logId: logResult[0].id,
+        userId: req.user!.id,
+        timestamp: new Date().toISOString()
+      });
+
+      return res.json(aiResponse);
 
       console.log('Chat log saved:', {
         logId: logResult[0].id,

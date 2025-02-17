@@ -31,9 +31,15 @@ export default function LLMChat() {
     setInput('');
 
     try {
+      console.log('Sending message to API:', userMessage);
       const { response } = await chat({
         messages: [...messages, userMessage],
       });
+      console.log('Received API response:', response);
+
+      if (!response) {
+        throw new Error('No response received from AI');
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -42,10 +48,11 @@ export default function LLMChat() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
+      console.error('Chat Error:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Failed to get response from AI',
       });
     }
   };
