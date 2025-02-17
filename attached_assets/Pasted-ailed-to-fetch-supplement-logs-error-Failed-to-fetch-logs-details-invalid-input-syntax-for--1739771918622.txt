@@ -1,0 +1,25 @@
+ailed to fetch supplement logs: {"error":"Failed to fetch logs","details":"invalid input syntax for type integer: \"26,13,28,22,27\""}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"Cannot access 'qualitativeLogs2' before initialization"}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"invalid input syntax for type integer: \"26,13,28,22,27\""}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"Cannot access 'qualitativeLogs2' before initialization"}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Failed to fetch supplement logs: {"error":"Failed to fetch logs","details":"invalid input syntax for type integer: \"26,13,28,22,27\""}
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
