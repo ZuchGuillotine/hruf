@@ -49,10 +49,11 @@ export default function LLMChat() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error('Chat Error:', error);
+      const errorMessage = error.message ? JSON.parse(error.message).message : 'Failed to get response from AI';
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Failed to get response from AI',
+        description: errorMessage,
       });
     }
   };

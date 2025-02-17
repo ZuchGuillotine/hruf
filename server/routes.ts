@@ -184,15 +184,13 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
-      return res.json(aiResponse);
-
       console.log('Chat log saved:', {
         logId: logResult[0].id,
         userId: req.user!.id,
         timestamp: new Date().toISOString()
       });
 
-      res.json(response);
+      res.json(aiResponse);
     } catch (error: any) {
       console.error("Error in chat endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
