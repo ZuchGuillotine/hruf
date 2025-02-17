@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
+import { db } from '../db';
 
 const app = express();
 
