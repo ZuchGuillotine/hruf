@@ -508,17 +508,17 @@ export function registerRoutes(app: Express): Server {
       const today = new Date();
       const supplementIds = logs.map(log => log.supplementId);
 
-      await db
-        .delete(supplementLogs)
-        .where(
-          and(
-            eq(supplementLogs.userId, req.user!.id),
-            sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
-            supplementIds.length > 0 ? 
-              sql`${supplementLogs.supplementId} NOT IN (${supplementIds.join(',')})::int[]` : 
-              undefined
-          )
-        );
+      if (supplementIds.length > 0) {
+        await db
+          .delete(supplementLogs)
+          .where(
+            and(
+              eq(supplementLogs.userId, req.user!.id),
+              sql`DATE_TRUNC('day', ${supplementLogs.takenAt} AT TIME ZONE 'UTC') = DATE_TRUNC('day', ${today}::timestamp AT TIME ZONE 'UTC')`,
+              notInArray(supplementLogs.supplementId, supplementIds)
+            )
+          );
+      }
 
       // Then update or insert new logs
       const insertedLogs = await Promise.all(
