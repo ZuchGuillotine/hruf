@@ -187,8 +187,7 @@ export function registerRoutes(app: Express): Server {
           tags,
           metadata: {
             savedAt: new Date().toISOString()
-          },
-          sentimentScore: null // Explicitly set to null to avoid schema issues
+          }
         })
         .returning();
 

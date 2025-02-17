@@ -92,7 +92,6 @@ export const qualitativeLogs = pgTable("qualitative_logs", {
   loggedAt: timestamp("logged_at").default(sql`CURRENT_TIMESTAMP`),
   type: text("type").notNull(),
   tags: jsonb("tags").$type<string[]>(),
-  sentimentScore: integer("sentiment_score"),
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
