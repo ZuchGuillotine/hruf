@@ -11,21 +11,33 @@ export async function constructUserContext(userId: string, userQuery: string): P
     ]);
 
     const quantitativeContext = quantitativeLogs
-      .map(log => `${new Date(log.takenAt).toISOString().split('T')[0]}: Effects: ${log.effects || 'None'}, Notes: ${log.notes || 'None'}`)
+      .map(log => {
+        const date = new Date(log.takenAt).toISOString().split('T')[0];
+        const effects = log.effects ? 
+          `Effects: ${Object.entries(log.effects)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ')}` : 'No effects recorded';
+        
+        return `${date}: Supplement: ${log.supplementName}, Dosage: ${log.dosage}, Notes: ${log.notes || 'None'}, ${effects}`;
+      })
       .join('\n');
 
     const qualitativeContext = qualitativeLogs
-      .map(log => `${new Date(log.loggedAt).toISOString().split('T')[0]}: ${log.content}`)
+      .map(log => {
+        const date = new Date(log.loggedAt).toISOString().split('T')[0];
+        const metadata = log.metadata ? ` (${JSON.stringify(log.metadata)})` : '';
+        return `${date}: ${log.content}${metadata}`;
+      })
       .join('\n');
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: `
-User Context - Quantitative Logs (last 30 days):
-${quantitativeContext || 'No recent quantitative logs.'}
+User Context - Supplement Log History (last 30 days):
+${quantitativeContext || 'No recent supplement logs.'}
 
-User Context - Qualitative Logs (last 30 days):
-${qualitativeContext || 'No recent qualitative logs.'}
+User Context - Health Notes and Observations (last 30 days):
+${qualitativeContext || 'No recent health notes.'}
 
 User Query:
 ${userQuery}
