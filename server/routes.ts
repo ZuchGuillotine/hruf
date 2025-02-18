@@ -17,6 +17,7 @@ import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
 import { type SelectSupplement } from "@db/schema";
+import { constructUserContext } from './services/llmContextService';
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
