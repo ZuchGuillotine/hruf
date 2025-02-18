@@ -1,38 +1,41 @@
 
 import { db } from "@db";
-import { supplementLogs, qualitativeLogs } from "@db/schema";
-import { and, sql, desc } from "drizzle-orm";
+import { supplementLogs, qualitativeLogs, supplements } from "@db/schema";
+import { and, sql, desc, eq } from "drizzle-orm";
 
-export async function getQuantitativeLogs(userId: string) {
+export async function getQuantitativeLogs(userId: string, days: number = 30) {
   return await db
     .select({
-      supplementName: supplementLogs.supplementId,
+      supplementName: supplements.name,
+      dosage: supplements.dosage,
       takenAt: supplementLogs.takenAt,
       notes: supplementLogs.notes,
       effects: supplementLogs.effects
     })
     .from(supplementLogs)
+    .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
     .where(
       and(
-        sql`${supplementLogs.userId} = ${userId}`,
-        sql`${supplementLogs.takenAt} >= NOW() - INTERVAL '30 days'`
+        eq(supplementLogs.userId, parseInt(userId)),
+        sql`${supplementLogs.takenAt} >= NOW() - INTERVAL '${days} days'`
       )
     )
     .orderBy(desc(supplementLogs.takenAt));
 }
 
-export async function getQualitativeLogs(userId: string) {
+export async function getQualitativeLogs(userId: string, days: number = 30) {
   return await db
     .select({
       content: qualitativeLogs.content,
       loggedAt: qualitativeLogs.loggedAt,
-      type: qualitativeLogs.type
+      type: qualitativeLogs.type,
+      metadata: qualitativeLogs.metadata
     })
     .from(qualitativeLogs)
     .where(
       and(
-        sql`${qualitativeLogs.userId} = ${userId}`,
-        sql`${qualitativeLogs.loggedAt} >= NOW() - INTERVAL '30 days'`
+        eq(qualitativeLogs.userId, parseInt(userId)),
+        sql`${qualitativeLogs.loggedAt} >= NOW() - INTERVAL '${days} days'`
       )
     )
     .orderBy(desc(qualitativeLogs.loggedAt));
