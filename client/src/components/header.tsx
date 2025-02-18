@@ -56,7 +56,13 @@ export default function Header() {
               <Link href="/">
                 <DropdownMenuItem className="cursor-pointer">
                   <Home className="mr-2 h-4 w-4" />
-                  <span>Home</span>
+                  <span>Dashboard</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/supplement-history">
+                <DropdownMenuItem className="cursor-pointer">
+                  <History className="mr-2 h-4 w-4" />
+                  <span>History</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/learn">
@@ -69,12 +75,6 @@ export default function Header() {
                 <DropdownMenuItem className="cursor-pointer">
                   <Info className="mr-2 h-4 w-4" />
                   <span>About</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/learn">
-                <DropdownMenuItem className="cursor-pointer">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  <span>Learn</span>
                 </DropdownMenuItem>
               </Link>
             </DropdownMenuContent>
