@@ -32,24 +32,30 @@ export default function LLMChat() {
 
     try {
       console.log('Sending message to API:', userMessage);
-      const { response } = await chat({
+      const result = await chat({
         messages: [...messages, userMessage],
       });
-      console.log('Received API response:', response);
+      console.log('Received API response:', result);
 
-      if (!response) {
-        throw new Error('No response received from AI');
+      if (!result || !result.response) {
+        throw new Error('Invalid response format from server');
       }
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response,
+        content: result.response,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error('Chat Error:', error);
-      const errorMessage = error.message ? JSON.parse(error.message).message : 'Failed to get response from AI';
+      let errorMessage = 'Failed to get response from AI';
+      try {
+        const parsed = JSON.parse(error.message);
+        errorMessage = parsed.error || parsed.message || errorMessage;
+      } catch (e) {
+        errorMessage = error.message || errorMessage;
+      }
       toast({
         variant: 'destructive',
         title: 'Error',
