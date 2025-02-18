@@ -59,12 +59,6 @@ export default function Header() {
                   <span>Dashboard</span>
                 </DropdownMenuItem>
               </Link>
-              <Link href="/supplement-history">
-                <DropdownMenuItem className="cursor-pointer">
-                  <History className="mr-2 h-4 w-4" />
-                  <span>History</span>
-                </DropdownMenuItem>
-              </Link>
               <Link href="/learn">
                 <DropdownMenuItem className="cursor-pointer">
                   <BookOpen className="mr-2 h-4 w-4" />
