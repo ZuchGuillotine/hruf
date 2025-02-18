@@ -18,10 +18,9 @@ export async function constructUserContext(userId: string, userQuery: string): P
       .map(log => `${new Date(log.loggedAt).toISOString().split('T')[0]}: ${log.content}`)
       .join('\n');
 
-    return {
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: `
 User Context - Quantitative Logs (last 30 days):
 ${quantitativeContext || 'No recent quantitative logs.'}
 
@@ -31,8 +30,11 @@ ${qualitativeContext || 'No recent qualitative logs.'}
 User Query:
 ${userQuery}
 ` }
-      ]
-    };
+    ];
+
+    console.log('LLM Context being sent:', JSON.stringify(messages, null, 2));
+    
+    return { messages };
   } catch (error) {
     console.error("Error constructing user context:", error);
     return {
