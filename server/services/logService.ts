@@ -4,6 +4,11 @@ import { supplementLogs, qualitativeLogs, supplements } from "@db/schema";
 import { and, sql, desc, eq } from "drizzle-orm";
 
 export async function getQuantitativeLogs(userId: string, days: number = 30) {
+  const userIdNum = parseInt(userId);
+  if (isNaN(userIdNum)) {
+    throw new Error('Invalid user ID');
+  }
+
   return await db
     .select({
       supplementName: supplements.name,
@@ -16,14 +21,19 @@ export async function getQuantitativeLogs(userId: string, days: number = 30) {
     .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
     .where(
       and(
-        eq(supplementLogs.userId, parseInt(userId)),
-        sql`${supplementLogs.takenAt} >= NOW() - INTERVAL '${days} days'`
+        eq(supplementLogs.userId, userIdNum),
+        sql`${supplementLogs.takenAt} >= NOW() - INTERVAL '${days} days'::interval`
       )
     )
     .orderBy(desc(supplementLogs.takenAt));
 }
 
 export async function getQualitativeLogs(userId: string, days: number = 30) {
+  const userIdNum = parseInt(userId);
+  if (isNaN(userIdNum)) {
+    throw new Error('Invalid user ID');
+  }
+
   return await db
     .select({
       content: qualitativeLogs.content,
@@ -34,8 +44,8 @@ export async function getQualitativeLogs(userId: string, days: number = 30) {
     .from(qualitativeLogs)
     .where(
       and(
-        eq(qualitativeLogs.userId, parseInt(userId)),
-        sql`${qualitativeLogs.loggedAt} >= NOW() - INTERVAL '${days} days'`
+        eq(qualitativeLogs.userId, userIdNum),
+        sql`${qualitativeLogs.loggedAt} >= NOW() - INTERVAL '${days} days'::interval`
       )
     )
     .orderBy(desc(qualitativeLogs.loggedAt));
