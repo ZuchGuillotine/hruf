@@ -4,8 +4,13 @@ import { setupVite, serveStatic, log } from "./vite";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { db } from '../db';
+import cors from 'cors';
 
 const app = express();
+app.use(cors({
+  origin: process.env.ADMIN_APP_URL,
+  credentials: true
+}));
 
 // Trust first proxy
 app.set('trust proxy', 1);
