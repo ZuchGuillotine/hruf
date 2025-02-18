@@ -151,14 +151,18 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ error: "Messages must be an array" });
       }
 
-      // Get AI response
-      const aiResponse = await chatWithAI(messages);
+      // Get user context and merge with messages
+      const userContext = await constructUserContext(req.user!.id, messages[messages.length - 1].content);
+      const contextualizedMessages = [...userContext.messages, ...messages.slice(1)];
+
+      // Get AI response with context
+      const aiResponse = await chatWithAI(contextualizedMessages);
 
       if (!aiResponse || !aiResponse.response) {
         throw new Error('Failed to get response from AI');
       }
 
-      // Send AI response first
+      // Send AI response
       res.json(aiResponse);
     } catch (error: any) {
       console.error("Error in chat endpoint:", {
