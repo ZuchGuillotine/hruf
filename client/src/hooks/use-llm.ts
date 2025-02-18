@@ -20,11 +20,15 @@ export function useLLM() {
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(JSON.stringify(errorData));
       }
 
       return response.json();
     },
+    onError: (error) => {
+      console.error("Chat error details:", error);
+    }
   });
 
   return {

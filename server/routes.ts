@@ -152,14 +152,21 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get user context and merge with messages
-      const userContext = await constructUserContext(req.user!.id, messages[messages.length - 1].content);
+      if (!req.user?.id) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const userContext = await constructUserContext(req.user.id, messages[messages.length - 1].content);
       const contextualizedMessages = [...userContext.messages, ...messages.slice(1)];
 
       // Get AI response with context
       const aiResponse = await chatWithAI(contextualizedMessages);
 
-      if (!aiResponse || !aiResponse.response) {
-        throw new Error('Failed to get response from AI');
+      if (!aiResponse?.response) {
+        return res.status(500).json({ 
+          error: "Failed to get AI response",
+          message: "The AI service did not provide a valid response"
+        });
       }
 
       // Send AI response

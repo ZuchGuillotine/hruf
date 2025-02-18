@@ -3,10 +3,11 @@ import { getQuantitativeLogs, getQualitativeLogs } from "./logService";
 import { SYSTEM_PROMPT } from "../openai";
 
 export async function constructUserContext(userId: string, userQuery: string) {
-  const [quantitativeLogs, qualitativeLogs] = await Promise.all([
-    getQuantitativeLogs(userId),
-    getQualitativeLogs(userId)
-  ]);
+  try {
+    const [quantitativeLogs, qualitativeLogs] = await Promise.all([
+      getQuantitativeLogs(userId),
+      getQualitativeLogs(userId)
+    ]);
 
   const quantitativeContext = quantitativeLogs
     .map(log => `${new Date(log.takenAt).toISOString().split('T')[0]}: Effects: ${log.effects || 'None'}, Notes: ${log.notes || 'None'}`)
@@ -31,4 +32,14 @@ ${userQuery}
 ` }
     ]
   };
+  } catch (error) {
+    console.error("Error constructing user context:", error);
+    // Return minimal context on error
+    return {
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userQuery }
+      ]
+    };
+  }
 }
