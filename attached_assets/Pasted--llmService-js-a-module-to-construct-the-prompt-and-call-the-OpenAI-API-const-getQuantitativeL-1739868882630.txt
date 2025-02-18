@@ -1,0 +1,82 @@
+// llmService.js - a module to construct the prompt and call the OpenAI API
+const { getQuantitativeLogs, getQualitativeLogs } = require('./db');
+const { Configuration, OpenAIApi } = require("openai");
+
+// Initialize OpenAI client
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+// Define the system prompt (as defined above)
+const systemPrompt = `
+You are a friendly and insightful assistant designed to help users reflect on their supplement regimen and share qualitative feedback about their experiences. Your role is to engage the user with thoughtful follow-up questions and encourage detailed responses about how specific supplements are affecting their mood, energy, and overall well-being.
+
+Context:
+- You will receive two types of context data:
+  1. Quantitative supplementation logs (e.g., supplement names, dosages, frequencies, dates).
+  2. Summaries or recent qualitative logs from previous conversations.
+- Please integrate this context intelligently into your reply without directly listing all raw data.
+
+Instructions:
+1. Review the provided context and ask the user follow-up questions that are tailored to their supplement regimen. For example:
+   - "I see you've been taking [Supplement Name] regularly. How has your energy level or mood been affected since your last update?"
+   - "Based on your recent notes, have you noticed any changes in how you feel overall?"
+2. Encourage the user to provide detailed qualitative feedback about their experiences.
+3. Remind the user to save the conversation by using the visible "Save" button if they find the discussion helpful.
+4. Do not include any diagnostic or treatment advice or warnings, as the user has already been informed that this application is not intended to diagnose or treat any disease.
+5. Keep your tone supportive, engaging, and focused on helping the user reflect on their supplementation experience.
+
+Remember:
+- Your response should build on the user-provided context and prompt for additional feedback.
+- Use the context to customize your questions, but keep the conversation concise and focused on qualitative feedback.
+`;
+
+async function constructPrompt(userId, userQuery) {
+  // Fetch context data
+  const quantitativeLogs = await getQuantitativeLogs(userId);
+  const qualitativeLogs = await getQualitativeLogs(userId);
+
+  // Format context strings (here you can implement logic to summarize if needed)
+  const quantitativeContext = quantitativeLogs
+    .map(log => `${log.logged_at.toISOString().split('T')[0]}: ${log.supplement_name} - ${log.dosage} (${log.frequency})`)
+    .join('\n');
+    
+  const qualitativeContext = qualitativeLogs
+    .map(log => `${log.logged_at.toISOString().split('T')[0]}: ${log.content}`)
+    .join('\n');
+
+  // Construct the final prompt including the system prompt, context, and the new query
+  const prompt = `${systemPrompt}
+
+User Context - Quantitative Logs (last 30 days):
+${quantitativeContext || 'No recent quantitative logs.'}
+
+User Context - Qualitative Logs (last 30 days):
+${qualitativeContext || 'No recent qualitative logs.'}
+
+User Query:
+${userQuery}
+
+Please provide a thoughtful and engaging response asking follow-up questions based on the above context.`;
+  
+  return prompt;
+}
+
+async function callLLM(userId, userQuery) {
+  const prompt = await constructPrompt(userId, userQuery);
+  
+  // Call the OpenAI API with your constructed prompt
+  const response = await openai.createChatCompletion({
+    model: "gpt-3.5-turbo", // or "gpt-4" if desired
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt }
+    ],
+    // You may add other options such as temperature, max_tokens, etc.
+  });
+  
+  return response.data.choices[0].message.content;
+}
+
+module.exports = { callLLM };
