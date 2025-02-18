@@ -1,6 +1,9 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
+import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"; // Assuming this import is needed
+import { Home } from "lucide-react"; // Assuming this import is needed
+
 
 export default function LandingHeader() {
   const { user } = useUser();
@@ -29,6 +32,30 @@ export default function LandingHeader() {
               </a>
             </Button>
           )}
+          <DropdownMenu>
+            {user ? (
+              <Link href="/">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Home className="mr-2 h-4 w-4" />
+                  <span>Dashboard</span>
+                </DropdownMenuItem>
+              </Link>
+            ) : (
+              <Link href="/signup"> {/* Changed to /signup for signup page */}
+                <DropdownMenuItem className="cursor-pointer">
+                  <Home className="mr-2 h-4 w-4" />
+                  <span>Sign Up</span>
+                </DropdownMenuItem>
+              </Link>
+            )}
+             {/* Added other potential dropdown items */}
+            <DropdownMenuItem>
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              Settings
+            </DropdownMenuItem>
+          </DropdownMenu>
         </nav>
       </div>
     </header>
