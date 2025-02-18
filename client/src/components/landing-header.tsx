@@ -1,8 +1,13 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
-import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"; // Assuming this import is needed
-import { Home } from "lucide-react"; // Assuming this import is needed
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Home, BookOpen, Info } from "lucide-react";
 
 
 export default function LandingHeader() {
@@ -33,28 +38,40 @@ export default function LandingHeader() {
             </Button>
           )}
           <DropdownMenu>
-            {user ? (
-              <Link href="/">
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                Menu
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {user ? (
+                <Link href="/">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
+                </Link>
+              ) : (
+                <Link href="/signup">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Sign Up</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
+              <Link href="/learn">
                 <DropdownMenuItem className="cursor-pointer">
-                  <Home className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Learn</span>
                 </DropdownMenuItem>
               </Link>
-            ) : (
-              <Link href="/signup"> {/* Changed to /signup for signup page */}
+              <Link href="/about">
                 <DropdownMenuItem className="cursor-pointer">
-                  <Home className="mr-2 h-4 w-4" />
-                  <span>Sign Up</span>
+                  <Info className="mr-2 h-4 w-4" />
+                  <span>About</span>
                 </DropdownMenuItem>
               </Link>
-            )}
-             {/* Added other potential dropdown items */}
-            <DropdownMenuItem>
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              Settings
-            </DropdownMenuItem>
+            </DropdownMenuContent>
           </DropdownMenu>
         </nav>
       </div>
