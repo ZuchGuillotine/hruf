@@ -22,7 +22,7 @@ export async function getQuantitativeLogs(userId: string, days: number = 30) {
     .where(
       and(
         eq(supplementLogs.userId, userIdNum),
-        sql`${supplementLogs.takenAt} >= NOW() - INTERVAL '${days} days'::interval`
+        sql`${supplementLogs.takenAt} >= NOW() - INTERVAL '30 days'`
       )
     )
     .orderBy(desc(supplementLogs.takenAt));
@@ -45,7 +45,7 @@ export async function getQualitativeLogs(userId: string, days: number = 30) {
     .where(
       and(
         eq(qualitativeLogs.userId, userIdNum),
-        sql`${qualitativeLogs.loggedAt} >= NOW() - INTERVAL '${days} days'::interval`
+        sql`${qualitativeLogs.loggedAt} >= NOW() - INTERVAL '30 days'`
       )
     )
     .orderBy(desc(qualitativeLogs.loggedAt));
