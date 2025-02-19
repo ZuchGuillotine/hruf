@@ -75,7 +75,16 @@ export default function HealthStatsPage() {
   });
 
   const onSubmit = (data: HealthStatsFormData) => {
-    mutation.mutate(data);
+    const hours = data.sleepHours || 0;
+    const minutes = data.sleepMinutes || 0;
+    const averageSleep = Number(hours) + (Number(minutes) / 60);
+    
+    mutation.mutate({
+      ...data,
+      averageSleep: Number(averageSleep.toFixed(2)),
+      sleepHours: undefined,
+      sleepMinutes: undefined
+    });
   };
 
   if (userLoading || statsLoading) {
@@ -118,16 +127,35 @@ export default function HealthStatsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="averageSleep">Average Sleep (hours)</Label>
-                  <Input
-                    id="averageSleep"
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="0.5"
-                    {...form.register("averageSleep", { valueAsNumber: true })}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
+                  <Label htmlFor="averageSleep">Average Sleep (hours:minutes)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="sleepHours"
+                      type="number"
+                      min="0"
+                      max="23"
+                      placeholder="Hours"
+                      {...form.register("sleepHours", { 
+                        valueAsNumber: true,
+                        min: 0,
+                        max: 23
+                      })}
+                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                    />
+                    <Input
+                      id="sleepMinutes"
+                      type="number"
+                      min="0"
+                      max="59"
+                      placeholder="Minutes"
+                      {...form.register("sleepMinutes", {
+                        valueAsNumber: true,
+                        min: 0,
+                        max: 59
+                      })}
+                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
