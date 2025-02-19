@@ -3,6 +3,12 @@
 ## Latest Status (February 17, 2025)
 
 ### Recent Changes and Fixes (February 17, 2025)
+- Improved chat display in supplement history:
+  - Enhanced summary formatting to remove JSON syntax
+  - Implemented dual message display showing both user and assistant
+  - Added proper message truncation (50 chars for user, 100 for assistant)
+  - Improved readability of chat history summaries
+  - Added fallback handling for single message display
 - Enhanced chat functionality:
   - Removed sentiment analysis from chat storage
   - Simplified chat storage schema and endpoints

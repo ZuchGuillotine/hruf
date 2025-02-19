@@ -53,6 +53,11 @@ No database migration required. These changes are purely logical and affect only
 
 ## [Unreleased]
 ### Fixed
+- Enhanced chat summary display in supplement history:
+  - Improved formatting of chat summaries
+  - Added combined user and assistant message display
+  - Removed unnecessary JSON syntax from visible text
+  - Improved truncation handling to show both messages
 ### Changed
 - Simplified chat storage system:
   - Removed sentiment analysis requirements
