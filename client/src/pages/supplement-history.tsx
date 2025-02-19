@@ -17,6 +17,7 @@ import {
 
 export default function SupplementHistory() {
   const today = new Date();
+  const { user } = useUser();
   const [selectedChat, setSelectedChat] = useState<any[]>([]);
   const [showChatDialog, setShowChatDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
@@ -265,7 +266,7 @@ export default function SupplementHistory() {
                   }`}
                 >
                   <p className="text-sm font-semibold mb-1 capitalize">
-                    {message.role}
+                    {message.role === 'user' ? user?.username || 'user' : message.role}
                   </p>
                   <p className="text-sm">{message.content}</p>
                 </div>
