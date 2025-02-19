@@ -25,7 +25,7 @@ export const healthStats = pgTable("health_stats", {
   userId: integer("user_id").references(() => users.id),
   weight: integer("weight"),
   dateOfBirth: date("date_of_birth"),
-  averageSleep: numeric("average_sleep"),
+  averageSleep: integer("average_sleep"), // Stored in minutes
   profilePhotoUrl: text("profile_photo_url"),
   allergies: jsonb("allergies").$type<string[]>(),
   lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),

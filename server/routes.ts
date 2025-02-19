@@ -268,9 +268,15 @@ export function registerRoutes(app: Express): Server {
         .where(eq(healthStats.userId, req.user!.id));
 
       let result;
+      const hours = parseInt(req.body.sleepHours || '0', 10);
+      const minutes = parseInt(req.body.sleepMinutes || '0', 10);
+      const totalMinutes = (hours * 60) + minutes;
+
       const healthStatsData = {
         ...req.body,
-        averageSleep: req.body.averageSleep ? parseFloat(req.body.averageSleep) : null,
+        averageSleep: totalMinutes > 0 ? totalMinutes : null,
+        sleepHours: undefined,
+        sleepMinutes: undefined,
         lastUpdated: new Date()
       };
 

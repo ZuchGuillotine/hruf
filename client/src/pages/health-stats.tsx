@@ -75,15 +75,10 @@ export default function HealthStatsPage() {
   });
 
   const onSubmit = (data: HealthStatsFormData) => {
-    const hours = data.sleepHours || 0;
-    const minutes = data.sleepMinutes || 0;
-    const averageSleep = Number(hours) + (Number(minutes) / 60);
-    
     mutation.mutate({
       ...data,
-      averageSleep: Number(averageSleep.toFixed(2)),
-      sleepHours: undefined,
-      sleepMinutes: undefined
+      sleepHours: data.sleepHours || '0',
+      sleepMinutes: data.sleepMinutes || '0'
     });
   };
 
