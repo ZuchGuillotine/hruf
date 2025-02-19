@@ -3,6 +3,11 @@
 ## Latest Status (February 17, 2025)
 
 ### Recent Changes and Fixes (February 17, 2025)
+- Enhanced Health Stats UI functionality:
+  - Fixed sleep duration persistence issue in the UI
+  - Implemented proper conversion between database minutes and UI hours/minutes
+  - Improved form state management for better user experience
+  - Enhanced data retention when navigating away and returning
 - Enhanced chat display in qualitative logs:
   - Added username display in chat messages instead of generic "user" label
   - Improved message attribution clarity

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.1] - 2025-02-17
+### Fixed
+- Health Stats UI improvements:
+  - Fixed sleep value persistence in health stats form
+  - Implemented proper conversion between minutes and hours/minutes display
+  - Enhanced user experience with proper form value retention
 ### Enhanced
 - Improved chat message display in supplement history:
   - Added personalized username display instead of generic "user" label
