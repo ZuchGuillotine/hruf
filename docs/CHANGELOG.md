@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.1] - 2025-02-17
+### Enhanced
+- Improved chat message display in supplement history:
+  - Added personalized username display instead of generic "user" label
+  - Enhanced message attribution clarity
+  - Improved user identification in chat history
 ### Fixed
 - Resolved critical timezone and date display issues in supplement tracking:
   - Fixed supplement logs appearing one day ahead in history view

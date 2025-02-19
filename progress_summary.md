@@ -3,6 +3,12 @@
 ## Latest Status (February 17, 2025)
 
 ### Recent Changes and Fixes (February 17, 2025)
+- Enhanced chat display in qualitative logs:
+  - Added username display in chat messages instead of generic "user" label
+  - Improved message attribution clarity
+  - Enhanced user identification in chat history
+
+### Recent Changes and Fixes (February 17, 2025)
 - Improved chat display in supplement history:
   - Enhanced summary formatting to remove JSON syntax
   - Implemented dual message display showing both user and assistant
