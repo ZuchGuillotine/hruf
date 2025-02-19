@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
 import {
   Dialog,
   DialogContent,
