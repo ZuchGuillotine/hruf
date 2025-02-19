@@ -8,9 +8,17 @@ import { useQuery } from "@tanstack/react-query";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function SupplementHistory() {
   const today = new Date();
+  const [selectedChat, setSelectedChat] = useState<any[]>([]);
+  const [showChatDialog, setShowChatDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [currentMonth, setCurrentMonth] = useState<Date>(today);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -199,9 +207,22 @@ export default function SupplementHistory() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-white/70 text-sm">
-                              {log.summary}
-                            </p>
+                            <button 
+                              onClick={() => {
+                                try {
+                                  const messages = JSON.parse(log.content);
+                                  setSelectedChat(messages);
+                                  setShowChatDialog(true);
+                                } catch (e) {
+                                  console.error("Error parsing chat:", e);
+                                }
+                              }}
+                              className="text-left w-full"
+                            >
+                              <p className="text-white/70 text-sm hover:text-white/90 transition-colors">
+                                {log.summary}
+                              </p>
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -226,6 +247,32 @@ export default function SupplementHistory() {
             </Link>
           </div>
         </div>
+
+        {/* Chat Dialog */}
+        <Dialog open={showChatDialog} onOpenChange={setShowChatDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
+            <DialogHeader>
+              <DialogTitle>Conversation History</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 p-4">
+              {selectedChat.map((message, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg ${
+                    message.role === "assistant"
+                      ? "bg-green-50 ml-4"
+                      : "bg-blue-50 mr-4"
+                  }`}
+                >
+                  <p className="text-sm font-semibold mb-1 capitalize">
+                    {message.role}
+                  </p>
+                  <p className="text-sm">{message.content}</p>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
       <Footer />
     </div>
