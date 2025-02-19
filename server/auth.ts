@@ -116,8 +116,8 @@ export function setupAuth(app: Express) {
     : process.env.GOOGLE_CLIENT_SECRET_TEST;
 
   const CALLBACK_URL = app.get("env") === "production"
-    ? `${process.env.APP_URL}/auth/google/callback`
-    : `${process.env.APP_URL_TEST}/auth/google/callback`;
+    ? `https://stacktracker.io/auth/google/callback`
+    : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
 
   console.log('Initializing Google OAuth with:', {
     callbackUrl: CALLBACK_URL,
