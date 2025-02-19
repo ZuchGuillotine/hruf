@@ -268,16 +268,22 @@ export function registerRoutes(app: Express): Server {
         .where(eq(healthStats.userId, req.user!.id));
 
       let result;
+      const healthStatsData = {
+        ...req.body,
+        averageSleep: req.body.averageSleep ? Number(req.body.averageSleep) : null,
+        lastUpdated: new Date()
+      };
+
       if (existing) {
         [result] = await db
           .update(healthStats)
-          .set({ ...req.body, lastUpdated: new Date() })
+          .set(healthStatsData)
           .where(eq(healthStats.userId, req.user!.id))
           .returning();
       } else {
         [result] = await db
           .insert(healthStats)
-          .values({ ...req.body, userId: req.user!.id })
+          .values({ ...healthStatsData, userId: req.user!.id })
           .returning();
       }
 
