@@ -270,7 +270,7 @@ export function registerRoutes(app: Express): Server {
       let result;
       const healthStatsData = {
         ...req.body,
-        averageSleep: req.body.averageSleep ? Number(req.body.averageSleep) : null,
+        averageSleep: req.body.averageSleep ? parseFloat(req.body.averageSleep) : null,
         lastUpdated: new Date()
       };
 
