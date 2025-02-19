@@ -225,8 +225,14 @@ export default function SupplementHistory() {
                                 {(() => {
                                   try {
                                     const messages = JSON.parse(log.content);
-                                    const firstMessage = messages[0];
-                                    return `${firstMessage.role === 'user' ? user?.username || 'user' : 'assistant'}: ${firstMessage.content}`;
+                                    if (messages.length >= 2) {
+                                      const userMsg = messages[0];
+                                      const assistantMsg = messages[1];
+                                      return `${user?.username || 'user'}: ${userMsg.content.slice(0, 50)}... | assistant: ${assistantMsg.content.slice(0, 100)}...`;
+                                    } else {
+                                      const firstMessage = messages[0];
+                                      return `${firstMessage.role === 'user' ? user?.username || 'user' : 'assistant'}: ${firstMessage.content.slice(0, 150)}...`;
+                                    }
                                   } catch (e) {
                                     return log.summary;
                                   }
