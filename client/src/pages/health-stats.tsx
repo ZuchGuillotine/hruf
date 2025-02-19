@@ -50,7 +50,8 @@ export default function HealthStatsPage() {
   const form = useForm<HealthStatsFormData>({
     defaultValues: {
       weight: healthStats?.weight,
-      averageSleep: healthStats?.averageSleep,
+      sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+      sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
       profilePhotoUrl: healthStats?.profilePhotoUrl,
       allergies: healthStats?.allergies ? (healthStats.allergies as string[]).join('\n') : '',
     },
