@@ -1,3 +1,4 @@
+
 import { supplementReference } from "@db/schema";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -8,83 +9,76 @@ class SupplementService {
   private initialized: boolean;
   private retryCount: number;
   private maxRetries: number;
+  private cacheTimeout: NodeJS.Timeout | null;
+  private readonly CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+  private readonly PAGE_SIZE = 1000;
 
   constructor() {
     this.trie = new Trie();
     this.initialized = false;
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.cacheTimeout = null;
   }
 
   async initialize() {
     try {
       console.log("Initializing supplement service...");
+      
+      // Load most frequently accessed supplements first
+      const commonSupplements = await db
+        .select({
+          id: supplementReference.id,
+          name: supplementReference.name,
+          category: supplementReference.category
+        })
+        .from(supplementReference)
+        .limit(this.PAGE_SIZE);
 
-      while (this.retryCount < this.maxRetries) {
-        try {
-          // Database connection is handled through NeonDB only
-          const supplements = await db
-            .select({
-              id: supplementReference.id,
-              name: supplementReference.name,
-              category: supplementReference.category
-            })
-            .from(supplementReference);
-
-          console.log(`Retrieved ${supplements.length} supplements from database`);
-
-          this.trie = new Trie();
-
-          if (supplements.length === 0) {
-            console.log("No supplements found in database. Running seed...");
-            const { initialSupplements } = await import("../../db/migrations/supplements");
-
-            // Insert initial supplements
-            for (const supplement of initialSupplements) {
-              await db.insert(supplementReference).values(supplement);
-            }
-
-            const seededSupplements = await db
-              .select({
-                id: supplementReference.id,
-                name: supplementReference.name,
-                category: supplementReference.category
-              })
-              .from(supplementReference);
-
-            console.log(`After seeding: ${seededSupplements.length} supplements loaded`);
-            this.loadSupplements(seededSupplements);
-          } else {
-            this.loadSupplements(supplements);
-          }
-
-          this.initialized = true;
-          console.log("Supplement service initialized successfully");
-          return;
-        } catch (error) {
-          this.retryCount++;
-          console.error('Error in supplement service initialization attempt:', {
-            attempt: this.retryCount,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
-            timestamp: new Date().toISOString()
-          });
-
-          if (this.retryCount < this.maxRetries) {
-            console.log(`Retry attempt ${this.retryCount} of ${this.maxRetries}`);
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, this.retryCount) * 1000));
-          } else {
-            throw error;
-          }
-        }
-      }
+      this.trie = new Trie();
+      this.loadSupplements(commonSupplements);
+      
+      this.initialized = true;
+      this.scheduleCacheRefresh();
+      
+      // Load remaining supplements in background
+      this.loadRemainingSupplements();
+      
+      console.log("Supplement service initialized with common supplements");
     } catch (error) {
-      console.error("Error initializing supplement service:", {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        retryCount: this.retryCount
-      });
-      throw new Error(`Failed to initialize supplement service: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Error initializing supplement service:", error);
+      throw error;
+    }
+  }
+
+  private scheduleCacheRefresh() {
+    if (this.cacheTimeout) {
+      clearTimeout(this.cacheTimeout);
+    }
+    this.cacheTimeout = setTimeout(() => this.initialize(), this.CACHE_DURATION);
+  }
+
+  private async loadRemainingSupplements() {
+    let offset = this.PAGE_SIZE;
+    
+    while (true) {
+      const supplements = await db
+        .select({
+          id: supplementReference.id,
+          name: supplementReference.name,
+          category: supplementReference.category
+        })
+        .from(supplementReference)
+        .offset(offset)
+        .limit(this.PAGE_SIZE);
+
+      if (supplements.length === 0) break;
+      
+      this.loadSupplements(supplements);
+      offset += this.PAGE_SIZE;
+      
+      // Small delay to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 
@@ -102,6 +96,14 @@ class SupplementService {
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
+      // Try trie search first
+      const trieResults = this.trie.search(query, limit);
+      
+      if (trieResults.length >= limit) {
+        return trieResults;
+      }
+
+      // Fall back to database search for incomplete results
       const dbResults = await db
         .select({
           id: supplementReference.id,
@@ -110,23 +112,11 @@ class SupplementService {
         })
         .from(supplementReference)
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
-        .limit(limit);
+        .limit(limit - trieResults.length);
 
-      console.log('Database search results:', dbResults);
-
-      if (dbResults.length === 0) {
-        const trieResults = this.trie.search(query, limit);
-        console.log('Trie search results:', trieResults);
-        return trieResults || [];
-      }
-
-      return dbResults;
+      return [...trieResults, ...dbResults];
     } catch (error) {
-      console.error("Error in supplement search:", {
-        error: error instanceof Error ? error.message : error,
-        query,
-        timestamp: new Date().toISOString()
-      });
+      console.error("Error in supplement search:", error);
       return [];
     }
   }
