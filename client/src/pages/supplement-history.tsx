@@ -222,7 +222,15 @@ export default function SupplementHistory() {
                               className="text-left w-full"
                             >
                               <p className="text-white/70 text-sm hover:text-white/90 transition-colors">
-                                {log.summary}
+                                {(() => {
+                                  try {
+                                    const messages = JSON.parse(log.content);
+                                    const firstMessage = messages[0];
+                                    return `${firstMessage.role === 'user' ? user?.username || 'user' : 'assistant'}: ${firstMessage.content}`;
+                                  } catch (e) {
+                                    return log.summary;
+                                  }
+                                })()}
                               </p>
                             </button>
                           </div>
