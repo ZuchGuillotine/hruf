@@ -47,12 +47,20 @@ export default function HealthStatsPage() {
     enabled: !!user,
   });
 
+  // Initialize form with React Hook Form
+  // Convert stored minutes into hours and minutes for display
+  // Handle allergies array by joining with newlines for textarea display
   const form = useForm<HealthStatsFormData>({
     defaultValues: {
+      // Preserve existing weight value if present
       weight: healthStats?.weight,
+      // Convert total minutes to hours (rounded down)
       sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+      // Get remaining minutes after converting to hours
       sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
+      // Preserve profile photo URL
       profilePhotoUrl: healthStats?.profilePhotoUrl,
+      // Convert allergies array to newline-separated string for textarea
       allergies: healthStats?.allergies ? (healthStats.allergies as string[]).join('\n') : '',
     },
   });
