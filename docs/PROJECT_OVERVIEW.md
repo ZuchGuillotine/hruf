@@ -7,6 +7,23 @@ A cutting-edge health tracking and content management application that combines 
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components
 - **Backend**: Express.js with TypeScript
 - **Database Architecture**:
+
+## Qualitative Feedback Chat System
+The application includes a specialized chat interface for gathering user feedback about supplement experiences:
+
+### Data Flow
+1. User initiates feedback through the chat interface
+2. System constructs context from:
+   - Recent supplement logs (quantitative data)
+   - Previous qualitative observations
+3. AI assistant engages user with relevant follow-up questions
+4. Responses are stored in qualitative_logs table with type='chat'
+5. Users can save meaningful conversations for future reference
+
+### Technical Components
+- Frontend: LLMChat component in llm-chat.tsx
+- Backend: llmContextService.ts for context construction
+- Database: qualitative_logs table with chat-specific metadata
   - **Consolidated Database (NeonDB)**:
     - User authentication and profiles
     - Health statistics

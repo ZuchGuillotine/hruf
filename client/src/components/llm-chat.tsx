@@ -12,9 +12,13 @@ type Message = {
   content: string;
 };
 
+// LLMChat Component - Handles qualitative feedback collection about user's supplement experiences
+// This interface specifically focuses on gathering detailed user observations and reflections
 export default function LLMChat() {
+  // Track conversation history between user and AI for qualitative feedback
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  // Custom hook for managing qualitative feedback chat interactions
   const { chat, isLoading } = useLLM();
   const { toast } = useToast();
 

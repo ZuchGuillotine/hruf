@@ -15,7 +15,18 @@
   - supplementReference: Autocomplete and search functionality
 
 ### Data Flow
-1. Supplement Management:
+1. Chat Systems:
+   - Qualitative Feedback Chat:
+     - Purpose: Gather user observations about supplement experiences
+     - Storage: qualitative_logs table with type='chat'
+     - Context: Combines supplement logs and previous observations
+     - Components: LLMChat, llmContextService, logService
+   - (Planned) General Query Chat:
+     - Separate interface for supplement information queries
+     - Will use shared context but different prompt structure
+     - Implementation pending
+
+2. Supplement Management:
    - User selections stored in supplements table
    - Daily tracking stored in supplement_logs table
    - Card operations (add/edit/delete) update supplements table

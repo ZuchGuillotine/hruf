@@ -14,7 +14,20 @@
   - Enhanced user identification in chat history
 
 ### Recent Changes and Fixes (February 17, 2025)
-- Improved chat display in supplement history:
+
+### Qualitative Feedback Chat Implementation
+- **Naming Conventions**:
+  - Component: LLMChat (qualitative feedback specific)
+  - Database: type='chat' in qualitative_logs for feedback conversations
+  - Context: constructUserContext specifically for supplement feedback
+  - Hook: useLLM for managing feedback chat state
+  
+- **Storage Conventions**:
+  - Chat content stored with metadata.type = 'chat'
+  - Feedback conversations tagged with ['ai_conversation']
+  - Saved chats include timestamp in metadata.savedAt
+
+### Chat Display Improvements
   - Enhanced summary formatting to remove JSON syntax
   - Implemented dual message display showing both user and assistant
   - Added proper message truncation (50 chars for user, 100 for assistant)

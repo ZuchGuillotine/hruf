@@ -3,8 +3,11 @@ import { getQuantitativeLogs, getQualitativeLogs } from "./logService";
 import { SYSTEM_PROMPT } from "../openai";
 import { Message } from "@/lib/types";
 
+// Constructs context for qualitative feedback chat interactions
+// This service specifically handles context for supplement experience discussions
 export async function constructUserContext(userId: string, userQuery: string): Promise<{ messages: Message[] }> {
   try {
+    // Fetch both quantitative and qualitative data to provide complete context for feedback discussions
     const [quantitativeLogs, qualitativeLogs] = await Promise.all([
       getQuantitativeLogs(userId),
       getQualitativeLogs(userId)
