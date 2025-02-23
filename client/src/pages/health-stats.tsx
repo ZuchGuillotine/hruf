@@ -125,7 +125,7 @@ export default function HealthStatsPage() {
                     type="number"
                     step="0.1"
                     {...form.register('weight', { valueAsNumber: true })}
-                    className="bg-white w-full"
+                    className="bg-white w-full text-black"
                   />
                 </div>
                 <div>
@@ -134,7 +134,7 @@ export default function HealthStatsPage() {
                     id="height"
                     type="number"
                     {...form.register('height', { valueAsNumber: true })}
-                    className="bg-white w-full"
+                    className="bg-white w-full text-black"
                   />
                 </div>
                 <div>
@@ -146,7 +146,7 @@ export default function HealthStatsPage() {
                       min="0"
                       max="24"
                       {...form.register("sleepHours", { valueAsNumber: true })}
-                      className="bg-white w-full"
+                      className="bg-white w-full text-black"
                     />
                     <Input
                       type="number"
@@ -154,13 +154,13 @@ export default function HealthStatsPage() {
                       min="0"
                       max="59"
                       {...form.register("sleepMinutes", { valueAsNumber: true })}
-                      className="bg-white w-full"
+                      className="bg-white w-full text-black"
                     />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="gender" className="text-white block mb-2">Gender</Label>
-                  <select id="gender" {...form.register('gender')} className="w-full p-2 rounded-md border border-gray-300 bg-white">
+                  <select id="gender" {...form.register('gender')} className="w-full p-2 rounded-md border border-gray-300 bg-white text-black">
                     <option value="">Select gender...</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -182,7 +182,7 @@ export default function HealthStatsPage() {
                   <Textarea
                     id="allergies"
                     {...form.register('allergies')}
-                    className="bg-white w-full h-[38px] min-h-[38px] resize-none"
+                    className="bg-white w-full h-[38px] min-h-[38px] resize-none text-black"
                     placeholder="List any allergies (one per line)"
                   />
                 </div>
