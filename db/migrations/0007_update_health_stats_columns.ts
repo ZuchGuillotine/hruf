@@ -4,23 +4,25 @@ import { sql } from "drizzle-orm";
 
 export async function up(db: PostgresJsDatabase) {
   try {
-    await db.execute(sql`
-      DO $$ 
-      BEGIN 
-        -- Add height column if it doesn't exist
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'health_stats' AND column_name = 'height'
-        ) THEN
-          ALTER TABLE health_stats ADD COLUMN height numeric;
-        END IF;
-
-        -- Make user_id unique and primary key, drop id column
-        ALTER TABLE health_stats DROP CONSTRAINT IF EXISTS health_stats_pkey;
-        ALTER TABLE health_stats ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id);
-        ALTER TABLE health_stats DROP COLUMN IF EXISTS id;
-      END $$;
-    `);
+    console.log('Starting migration: Update health stats columns...');
+    
+    // Execute each operation separately for better error tracking
+    await db.execute(sql`ALTER TABLE health_stats DROP CONSTRAINT IF EXISTS health_stats_pkey`);
+    console.log('Dropped primary key constraint');
+    
+    await db.execute(sql`ALTER TABLE health_stats ALTER COLUMN height TYPE numeric USING height::numeric`);
+    console.log('Modified height column type');
+    
+    await db.execute(sql`ALTER TABLE health_stats ALTER COLUMN weight TYPE numeric USING weight::numeric`);
+    console.log('Modified weight column type');
+    
+    await db.execute(sql`ALTER TABLE health_stats ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id)`);
+    console.log('Added new primary key constraint');
+    
+    await db.execute(sql`ALTER TABLE health_stats DROP COLUMN IF EXISTS id`);
+    console.log('Dropped id column');
+    
+    console.log('Migration completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;
