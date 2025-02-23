@@ -14,6 +14,9 @@ import type { SelectHealthStats } from "@db/neon-schema";
 
 type HealthStatsFormData = {
   weight?: number;
+  height?: number;
+  gender?: string;
+  dateOfBirth?: string;
   averageSleep?: number;
   profilePhotoUrl?: string;
   allergies?: string;
@@ -144,6 +147,53 @@ export default function HealthStatsPage() {
                         min: 0,
                         max: 23
                       })}
+
+          <Card className="bg-white">
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    {...form.register("weight", { valueAsNumber: true })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="height">Height (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    {...form.register("height", { valueAsNumber: true })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <select
+                  id="gender"
+                  className="w-full p-2 border rounded"
+                  {...form.register("gender")}
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  {...form.register("dateOfBirth")}
+                />
+              </div>
+
                       className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                     />
                     <Input

@@ -24,6 +24,8 @@ export const healthStats = pgTable("health_stats", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   weight: integer("weight"),
+  height: integer("height"), // stored in centimeters
+  gender: text("gender"),
   dateOfBirth: date("date_of_birth"),
   averageSleep: integer("average_sleep"), // Stored in minutes
   profilePhotoUrl: text("profile_photo_url"),
