@@ -102,7 +102,7 @@ export default function HealthStatsPage() {
   return (
     <div className="min-h-screen bg-[#e8f3e8]">
       <Header />
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-6 max-w-3xl"> {/* Added max-width for container */}
         <Link href="/" className="flex items-center gap-2 text-white mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Link>
@@ -112,34 +112,33 @@ export default function HealthStatsPage() {
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid gap-6">
-          <Card className="bg-[#1b4332] text-white">
-            <CardHeader>
-              <CardTitle>Basic Health Information</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-4 max-w-sm">
+          <div className="grid gap-6">
+            <Card className="bg-[#1b4332] text-white">
+              <CardHeader>
+                <CardTitle>Basic Health Information</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Responsive grid */}
                 <div>
-                  <Label htmlFor="weight">Weight (lbs)</Label>
+                  <Label htmlFor="weight" className="text-white block mb-2">Weight (lbs)</Label>
                   <Input
                     id="weight"
                     type="number"
                     step="0.1"
                     {...form.register('weight', { valueAsNumber: true })}
-                    className="bg-white text-black"
+                    className="bg-white w-full"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="height">Height (inches)</Label>
+                  <Label htmlFor="height" className="text-white block mb-2">Height (inches)</Label>
                   <Input
                     id="height"
                     type="number"
                     {...form.register('height', { valueAsNumber: true })}
-                    className="bg-white text-black"
+                    className="bg-white w-full"
                   />
                 </div>
                 <div>
-                  <Label>Average Sleep Duration</Label>
+                  <Label className="text-white block mb-2">Average Sleep Duration</Label>
                   <div className="flex gap-2">
                     <Input
                       type="number"
@@ -147,7 +146,7 @@ export default function HealthStatsPage() {
                       min="0"
                       max="24"
                       {...form.register("sleepHours", { valueAsNumber: true })}
-                      className="bg-white text-black"
+                      className="bg-white w-full"
                     />
                     <Input
                       type="number"
@@ -155,65 +154,66 @@ export default function HealthStatsPage() {
                       min="0"
                       max="59"
                       {...form.register("sleepMinutes", { valueAsNumber: true })}
-                      className="bg-white text-black"
+                      className="bg-white w-full"
                     />
                   </div>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="gender">Gender</Label>
-                <select id="gender" {...form.register('gender')} className="w-full p-2 rounded-md border border-gray-300 bg-white">
-                  <option value="">Select gender...</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="prefer not to answer">Prefer not to answer</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  {...form.register('dateOfBirth')}
-                  className="bg-white text-black"
-                />
-              </div>
-              <div>
-                <Label htmlFor="allergies">Allergies</Label>
-                <Textarea
-                  id="allergies"
-                  {...form.register('allergies')}
-                  className="bg-white text-black"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-white text-[#1b4332] hover:bg-white/90 mt-4"
-                disabled={mutation.isPending}
-              >
-                {mutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </CardContent>
-          </Card>
+                <div>
+                  <Label htmlFor="gender" className="text-white block mb-2">Gender</Label>
+                  <select id="gender" {...form.register('gender')} className="w-full p-2 rounded-md border border-gray-300 bg-white">
+                    <option value="">Select gender...</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="prefer not to answer">Prefer not to answer</option>
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="dateOfBirth" className="text-white block mb-2">Date of Birth</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    {...form.register('dateOfBirth')}
+                    className="bg-white w-full"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="allergies" className="text-white block mb-2">Allergies</Label>
+                  <Textarea
+                    id="allergies"
+                    {...form.register('allergies')}
+                    className="bg-white w-full"
+                  />
+                </div>
+                <div className="flex justify-center mt-4"> {/* Center the button */}
+                  <Button
+                    type="submit"
+                    className="bg-white text-[#1b4332] hover:bg-white/90 px-6" {/* Reduced width */}
+                    disabled={mutation.isPending}
+                  >
+                    {mutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-[#1b4332] text-white">
-            <CardHeader>
-              <CardTitle>Sleep Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/70">Sleep tracking coming soon</p>
-            </CardContent>
-          </Card>
+            <Card className="bg-[#1b4332] text-white">
+              <CardHeader>
+                <CardTitle>Sleep Stats</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-white/70">Sleep tracking coming soon</p>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-[#1b4332] text-white">
-            <CardHeader>
-              <CardTitle>Heart Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/70">Heart rate monitoring coming soon</p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="bg-[#1b4332] text-white">
+              <CardHeader>
+                <CardTitle>Heart Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-white/70">Heart rate monitoring coming soon</p>
+              </CardContent>
+            </Card>
+          </div>
         </form>
       </div>
     </div>
