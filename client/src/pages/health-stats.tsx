@@ -98,12 +98,18 @@ export default function HealthStatsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6 mb-6"> {/* Added max-width and centered the container */}
-        <h1 className="text-3xl font-bold text-center text-white">Health Statistics</h1> {/* Centered the title */}
-      </div>
+    <div>
+      <Header />
+      <div className="container mx-auto py-6">
+        <Link href="/" className="flex items-center gap-2 text-white mb-4">
+          <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+        </Link>
+        
+        <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6 mb-6">
+          <h1 className="text-3xl font-bold text-center text-white">Health Statistics</h1>
+        </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid gap-6">
           <Card className="bg-[#1b4332] text-white">
             <CardHeader>
@@ -185,7 +191,8 @@ export default function HealthStatsPage() {
             </CardContent>
           </Card>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
