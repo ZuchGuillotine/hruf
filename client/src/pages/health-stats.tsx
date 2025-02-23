@@ -103,12 +103,12 @@ export default function HealthStatsPage() {
     <div className="min-h-screen bg-[#e8f3e8]">
       <Header />
       <div className="container mx-auto py-6 max-w-3xl"> {/* Added max-width for container */}
-        <Link href="/" className="flex items-center gap-2 text-white mb-4">
+        <Link href="/" className="flex items-center gap-2 text-black mb-4"> {/* Changed text color to black */}
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Link>
 
-        <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-center text-white">Health Statistics</h1>
+        <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6 mb-2"> {/* Reduced bottom margin */}
+          <h1 className="text-3xl font-bold text-center text-white">Your Stats</h1> {/* Changed title */}
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
