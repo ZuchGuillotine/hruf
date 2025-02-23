@@ -187,7 +187,7 @@ export default function HealthStatsPage() {
                 <div className="flex justify-center mt-4"> {/* Center the button */}
                   <Button
                     type="submit"
-                    className="bg-white text-[#1b4332] hover:bg-white/90 px-6" {/* Reduced width */}
+                    className="bg-white text-[#1b4332] hover:bg-white/90 px-6" /* Reduced width */
                     disabled={mutation.isPending}
                   >
                     {mutation.isPending ? 'Saving...' : 'Save Changes'}
