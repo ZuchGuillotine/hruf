@@ -20,6 +20,8 @@ type HealthStatsFormData = {
   averageSleep?: number;
   profilePhotoUrl?: string;
   allergies?: string;
+  sleepHours?: number;
+  sleepMinutes?: number;
 };
 
 async function updateHealthStats(data: HealthStatsFormData) {
@@ -136,6 +138,31 @@ export default function HealthStatsPage() {
                     className="bg-white text-black"
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label>Average Sleep Duration</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        type="number"
+                        placeholder="Hours"
+                        min="0"
+                        max="24"
+                        {...form.register("sleepHours", { valueAsNumber: true })}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        type="number"
+                        placeholder="Minutes"
+                        min="0"
+                        max="59"
+                        {...form.register("sleepMinutes", { valueAsNumber: true })}
+                        className="bg-white text-black"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div>
                 <Label htmlFor="gender">Gender</Label>
@@ -157,7 +184,7 @@ export default function HealthStatsPage() {
               </div>
               <div>
                 <Label htmlFor="allergies">Allergies</Label>
-                <Input
+                <Textarea
                   id="allergies"
                   {...form.register('allergies')}
                   className="bg-white text-black"
