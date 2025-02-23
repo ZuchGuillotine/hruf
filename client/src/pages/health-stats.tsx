@@ -112,7 +112,7 @@ export default function HealthStatsPage() {
             <CardContent className="grid gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Label htmlFor="weight">Weight (lbs)</Label>
                   <Input
                     id="weight"
                     type="number"
@@ -122,7 +122,7 @@ export default function HealthStatsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="height">Height (cm)</Label>
+                  <Label htmlFor="height">Height (inches)</Label>
                   <Input
                     id="height"
                     type="number"
@@ -133,11 +133,12 @@ export default function HealthStatsPage() {
               </div>
               <div>
                 <Label htmlFor="gender">Gender</Label>
-                <Input
-                  id="gender"
-                  {...form.register('gender')}
-                  className="bg-white text-black"
-                />
+                <select id="gender" {...form.register('gender')} className="w-full p-2 rounded-md border border-gray-300 bg-white">
+                  <option value="">Select gender...</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="prefer not to answer">Prefer not to answer</option>
+                </select>
               </div>
               <div>
                 <Label htmlFor="dateOfBirth">Date of Birth</Label>
@@ -149,14 +150,20 @@ export default function HealthStatsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="allergies">Allergies (one per line)</Label>
-                <Textarea
+                <Label htmlFor="allergies">Allergies</Label>
+                <Input
                   id="allergies"
                   {...form.register('allergies')}
                   className="bg-white text-black"
-                  rows={3}
                 />
               </div>
+              <Button
+                type="submit"
+                className="w-full bg-white text-[#1b4332] hover:bg-white/90 mt-4"
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
             </CardContent>
           </Card>
 
@@ -177,14 +184,6 @@ export default function HealthStatsPage() {
               <p className="text-white/70">Heart rate monitoring coming soon</p>
             </CardContent>
           </Card>
-
-          <Button
-            type="submit"
-            className="w-full bg-white text-[#1b4332] hover:bg-white/90"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
         </div>
       </form>
     </div>
