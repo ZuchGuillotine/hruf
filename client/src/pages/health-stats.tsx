@@ -104,7 +104,7 @@ export default function HealthStatsPage() {
       <Header />
       <div className="container mx-auto max-w-3xl">
         <div className="px-4">
-          <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6">
+          <div className="max-w-xl mx-auto bg-[#1b4332] rounded-2xl p-5">
             <h1 className="text-3xl font-bold text-center text-white">Your Health Overview</h1>
           </div>
         </div>
