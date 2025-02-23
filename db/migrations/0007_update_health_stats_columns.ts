@@ -5,44 +5,41 @@ import { sql } from "drizzle-orm";
 async function main() {
   console.log('Starting migration...');
   try {
-    await db.execute(sql`ALTER TABLE health_stats ADD COLUMN IF NOT EXISTS height numeric`);
-    console.log('Added height column');
-
-    await db.execute(sql`ALTER TABLE health_stats DROP CONSTRAINT IF EXISTS health_stats_pkey`);
-    console.log('Dropped primary key constraint');
-
-    // Create a temporary table to store the latest records
+    // First ensure user_id is not null and references valid users
     await db.execute(sql`
-      CREATE TEMP TABLE temp_health_stats AS
-      SELECT DISTINCT ON (user_id) *
-      FROM health_stats
-      ORDER BY user_id, last_updated DESC
+      DELETE FROM health_stats 
+      WHERE user_id IS NULL 
+      OR user_id NOT IN (SELECT id FROM users)
     `);
-    console.log('Created temporary table with latest records');
+    console.log('Cleaned invalid user references');
 
-    // Clear the original table
-    await db.execute(sql`TRUNCATE TABLE health_stats`);
-    console.log('Cleared original table');
-
-    // Insert back only the latest records
+    // Keep only the most recent record per user
     await db.execute(sql`
-      INSERT INTO health_stats
-      SELECT * FROM temp_health_stats
+      DELETE FROM health_stats h1 
+      WHERE EXISTS (
+        SELECT 1 FROM health_stats h2 
+        WHERE h2.user_id = h1.user_id 
+        AND h2.last_updated > h1.last_updated
+      )
     `);
-    console.log('Restored latest records');
+    console.log('Removed older duplicate records');
 
-    // Drop the temporary table
-    await db.execute(sql`DROP TABLE temp_health_stats`);
-    console.log('Cleaned up temporary table');
+    // Add height and modify weight columns
+    await db.execute(sql`
+      ALTER TABLE health_stats 
+      ADD COLUMN IF NOT EXISTS height numeric,
+      ALTER COLUMN weight TYPE numeric USING weight::numeric
+    `);
+    console.log('Modified columns');
 
-    // Now safe to add the primary key
-    await db.execute(sql`ALTER TABLE health_stats ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id)`);
-    console.log('Added new primary key constraint');
+    // Add primary key constraint
+    await db.execute(sql`
+      ALTER TABLE health_stats 
+      DROP CONSTRAINT IF EXISTS health_stats_pkey,
+      ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id)
+    `);
+    console.log('Added primary key constraint');
 
-    await db.execute(sql`ALTER TABLE health_stats ALTER COLUMN weight TYPE numeric USING weight::numeric`);
-    console.log('Modified weight column type');
-
-    console.log('Migration completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;
@@ -55,29 +52,28 @@ main()
 
 export async function up(db: any) {
   try {
-    await db.execute(sql`ALTER TABLE health_stats ADD COLUMN IF NOT EXISTS height numeric`);
-    
-    await db.execute(sql`ALTER TABLE health_stats DROP CONSTRAINT IF EXISTS health_stats_pkey`);
-    
     await db.execute(sql`
-      CREATE TEMP TABLE temp_health_stats AS
-      SELECT DISTINCT ON (user_id) *
-      FROM health_stats
-      ORDER BY user_id, last_updated DESC
+      DELETE FROM health_stats 
+      WHERE user_id IS NULL 
+      OR user_id NOT IN (SELECT id FROM users)
     `);
     
-    await db.execute(sql`TRUNCATE TABLE health_stats`);
-    
     await db.execute(sql`
-      INSERT INTO health_stats
-      SELECT * FROM temp_health_stats
+      DELETE FROM health_stats h1 
+      WHERE EXISTS (
+        SELECT 1 FROM health_stats h2 
+        WHERE h2.user_id = h1.user_id 
+        AND h2.last_updated > h1.last_updated
+      )
     `);
-    
-    await db.execute(sql`DROP TABLE temp_health_stats`);
-    
-    await db.execute(sql`ALTER TABLE health_stats ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id)`);
-    
-    await db.execute(sql`ALTER TABLE health_stats ALTER COLUMN weight TYPE numeric USING weight::numeric`);
+
+    await db.execute(sql`
+      ALTER TABLE health_stats 
+      ADD COLUMN IF NOT EXISTS height numeric,
+      ALTER COLUMN weight TYPE numeric USING weight::numeric,
+      DROP CONSTRAINT IF EXISTS health_stats_pkey,
+      ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id)
+    `);
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;
@@ -86,9 +82,12 @@ export async function up(db: any) {
 
 export async function down(db: any) {
   try {
-    await db.execute(sql`ALTER TABLE health_stats DROP COLUMN IF EXISTS height`);
-    await db.execute(sql`ALTER TABLE health_stats DROP CONSTRAINT IF EXISTS health_stats_pkey`);
-    await db.execute(sql`ALTER TABLE health_stats ADD COLUMN id SERIAL PRIMARY KEY`);
+    await db.execute(sql`
+      ALTER TABLE health_stats 
+      DROP CONSTRAINT IF EXISTS health_stats_pkey,
+      DROP COLUMN IF EXISTS height,
+      ALTER COLUMN weight TYPE integer USING weight::integer
+    `);
   } catch (error) {
     console.error('Migration rollback failed:', error);
     throw error;
