@@ -173,7 +173,8 @@ export default function HealthStatsPage() {
                     id="dateOfBirth"
                     type="date"
                     {...form.register('dateOfBirth')}
-                    className="bg-white w-full"
+                    className="bg-white w-full text-gray-900"
+                    placeholder="mm/dd/yyyy"
                   />
                 </div>
                 <div>
@@ -181,19 +182,20 @@ export default function HealthStatsPage() {
                   <Textarea
                     id="allergies"
                     {...form.register('allergies')}
-                    className="bg-white w-full"
+                    className="bg-white w-full h-[38px] min-h-[38px] resize-none"
+                    placeholder="List any allergies (one per line)"
                   />
                 </div>
-                <div className="flex justify-center mt-4"> {/* Center the button */}
-                  <Button
-                    type="submit"
-                    className="bg-white text-[#1b4332] hover:bg-white/90 px-6" /* Reduced width */
-                    disabled={mutation.isPending}
-                  >
-                    {mutation.isPending ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </div>
               </CardContent>
+              <div className="flex justify-center pb-6">
+                <Button
+                  type="submit"
+                  className="bg-white text-[#1b4332] hover:bg-white/90 px-6"
+                  disabled={mutation.isPending}
+                >
+                  {mutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
             </Card>
 
             <Card className="bg-[#1b4332] text-white">
