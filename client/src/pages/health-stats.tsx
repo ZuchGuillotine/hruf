@@ -98,7 +98,7 @@ export default function HealthStatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2d6a4f]">
+    <div className="min-h-screen bg-[#e8f3e8]">
       <Header />
       <div className="container mx-auto py-6">
         <Link href="/" className="flex items-center gap-2 text-white mb-4">
