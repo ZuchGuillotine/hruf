@@ -3,6 +3,17 @@
 ## Latest Status (February 17, 2025)
 
 ### Recent Changes and Fixes (February 17, 2025)
+- Database Migration Improvements:
+  - Identified and resolved migration execution issues:
+    - Switched from `drizzle-kit push:pg` to `tsx` for direct migration execution
+    - Added proper database connection initialization in migration files
+    - Successfully cleaned up health_stats table structure:
+      - Removed redundant id column
+      - Changed allergies column from jsonb to text type
+  - Key Learnings:
+    - Migration files must include database connection initialization
+    - Direct execution with `tsx` provides better control over migration process
+    - Simpler migrations (without temporary tables) can be more reliable
 - Enhanced Health Stats UI functionality:
   - Fixed sleep duration persistence issue in the UI
   - Implemented proper conversion between database minutes and UI hours/minutes
@@ -21,7 +32,7 @@
   - Database: type='chat' in qualitative_logs for feedback conversations
   - Context: constructUserContext specifically for supplement feedback
   - Hook: useLLM for managing feedback chat state
-  
+
 - **Storage Conventions**:
   - Chat content stored with metadata.type = 'chat'
   - Feedback conversations tagged with ['ai_conversation']
