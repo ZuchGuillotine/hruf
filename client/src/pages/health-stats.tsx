@@ -118,7 +118,7 @@ export default function HealthStatsPage() {
               <CardTitle>Basic Health Information</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 max-w-sm">
                 <div>
                   <Label htmlFor="weight">Weight (lbs)</Label>
                   <Input
@@ -138,29 +138,25 @@ export default function HealthStatsPage() {
                     className="bg-white text-black"
                   />
                 </div>
-                <div className="grid gap-2">
+                <div>
                   <Label>Average Sleep Duration</Label>
                   <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Input
-                        type="number"
-                        placeholder="Hours"
-                        min="0"
-                        max="24"
-                        {...form.register("sleepHours", { valueAsNumber: true })}
-                        className="bg-white text-black"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        type="number"
-                        placeholder="Minutes"
-                        min="0"
-                        max="59"
-                        {...form.register("sleepMinutes", { valueAsNumber: true })}
-                        className="bg-white text-black"
-                      />
-                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Hours"
+                      min="0"
+                      max="24"
+                      {...form.register("sleepHours", { valueAsNumber: true })}
+                      className="bg-white text-black"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Minutes"
+                      min="0"
+                      max="59"
+                      {...form.register("sleepMinutes", { valueAsNumber: true })}
+                      className="bg-white text-black"
+                    />
                   </div>
                 </div>
               </div>
