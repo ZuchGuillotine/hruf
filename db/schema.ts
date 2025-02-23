@@ -21,15 +21,14 @@ export const users = pgTable("users", {
 
 // User health profile and statistics
 export const healthStats = pgTable("health_stats", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  weight: integer("weight"),
-  height: integer("height"), // stored in centimeters
+  userId: integer("user_id").references(() => users.id).primaryKey(),
+  weight: numeric("weight"),
+  height: numeric("height"), // stored in centimeters
   gender: text("gender"),
   dateOfBirth: date("date_of_birth"),
   averageSleep: integer("average_sleep"), // Stored in minutes
   profilePhotoUrl: text("profile_photo_url"),
-  allergies: jsonb("allergies").$type<string[]>(),
+  allergies: text("allergies"),
   lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),
 });
 
