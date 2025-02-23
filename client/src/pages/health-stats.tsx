@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/header";
 import { Link } from "wouter";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -50,20 +50,15 @@ export default function HealthStatsPage() {
     enabled: !!user,
   });
 
-  // Initialize form with React Hook Form
-  // Convert stored minutes into hours and minutes for display
-  // Handle allergies array by joining with newlines for textarea display
   const form = useForm<HealthStatsFormData>({
     defaultValues: {
-      // Preserve existing weight value if present
       weight: healthStats?.weight,
-      // Convert total minutes to hours (rounded down)
+      height: healthStats?.height,
+      gender: healthStats?.gender,
+      dateOfBirth: healthStats?.dateOfBirth,
       sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
-      // Get remaining minutes after converting to hours
       sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
-      // Preserve profile photo URL
       profilePhotoUrl: healthStats?.profilePhotoUrl,
-      // Convert allergies array to newline-separated string for textarea
       allergies: healthStats?.allergies ? (healthStats.allergies as string[]).join('\n') : '',
     },
   });
@@ -89,10 +84,10 @@ export default function HealthStatsPage() {
   const onSubmit = (data: HealthStatsFormData) => {
     mutation.mutate({
       ...data,
-      sleepHours: data.sleepHours || '0',
-      sleepMinutes: data.sleepMinutes || '0'
+      averageSleep: (data.sleepHours || 0) * 60 + (data.sleepMinutes || 0)
     });
   };
+
 
   if (userLoading || statsLoading) {
     return (
@@ -103,150 +98,95 @@ export default function HealthStatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#e8f3e8]">
-      <Header />
-      <main className="container mx-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <Link href="/profile">
-            <Button
-              variant="ghost"
-              className="mb-4 text-[#1b4332]"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Profile
-            </Button>
-          </Link>
+    <div className="container mx-auto py-6">
+      <div className="bg-[#1b4332] rounded-lg p-6 mb-6">
+        <h1 className="text-3xl font-bold text-white">Health Statistics</h1>
+      </div>
 
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="grid gap-6">
           <Card className="bg-[#1b4332] text-white">
             <CardHeader>
-              <CardTitle className="text-2xl">Health Statistics</CardTitle>
+              <CardTitle>Basic Health Information</CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (in lbs)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    {...form.register("weight", { valueAsNumber: true })}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="averageSleep">Average Sleep (hours:minutes)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="sleepHours"
-                      type="number"
-                      min="0"
-                      max="23"
-                      placeholder="Hours"
-                      {...form.register("sleepHours", { 
-                        valueAsNumber: true,
-                        min: 0,
-                        max: 23
-                      })}
-                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                    />
-                    <Input
-                      id="sleepMinutes"
-                      type="number"
-                      min="0"
-                      max="59"
-                      placeholder="Minutes"
-                      {...form.register("sleepMinutes", {
-                        valueAsNumber: true,
-                        min: 0,
-                        max: 59
-                      })}
-                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="profilePhotoUrl">Profile Photo URL</Label>
-                  <Input
-                    id="profilePhotoUrl"
-                    type="url"
-                    {...form.register("profilePhotoUrl")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="allergies">Allergies (one per line)</Label>
-                  <Textarea
-                    id="allergies"
-                    {...form.register("allergies")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                    placeholder="Enter your allergies here..."
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-white text-[#1b4332] hover:bg-white/90"
-                  disabled={mutation.isPending}
-                >
-                  {mutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Save Changes
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="grid gap-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="weight">Weight (kg)</Label>
                   <Input
                     id="weight"
                     type="number"
-                    {...form.register("weight", { valueAsNumber: true })}
+                    step="0.1"
+                    {...form.register('weight', { valueAsNumber: true })}
+                    className="bg-white text-black"
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="height">Height (cm)</Label>
                   <Input
                     id="height"
                     type="number"
-                    {...form.register("height", { valueAsNumber: true })}
+                    {...form.register('height', { valueAsNumber: true })}
+                    className="bg-white text-black"
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="gender">Gender</Label>
-                <select
+                <Input
                   id="gender"
-                  className="w-full p-2 border rounded"
-                  {...form.register("gender")}
-                >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+                  {...form.register('gender')}
+                  className="bg-white text-black"
+                />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="dateOfBirth">Date of Birth</Label>
                 <Input
                   id="dateOfBirth"
                   type="date"
-                  {...form.register("dateOfBirth")}
+                  {...form.register('dateOfBirth')}
+                  className="bg-white text-black"
+                />
+              </div>
+              <div>
+                <Label htmlFor="allergies">Allergies (one per line)</Label>
+                <Textarea
+                  id="allergies"
+                  {...form.register('allergies')}
+                  className="bg-white text-black"
+                  rows={3}
                 />
               </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-[#1b4332] text-white">
+            <CardHeader>
+              <CardTitle>Sleep Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white/70">Sleep tracking coming soon</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#1b4332] text-white">
+            <CardHeader>
+              <CardTitle>Heart Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white/70">Heart rate monitoring coming soon</p>
+            </CardContent>
+          </Card>
+
+          <Button
+            type="submit"
+            className="w-full bg-white text-[#1b4332] hover:bg-white/90"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
         </div>
-      </main>
+      </form>
     </div>
   );
 }
