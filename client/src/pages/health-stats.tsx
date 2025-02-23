@@ -99,8 +99,8 @@ export default function HealthStatsPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="bg-[#1b4332] rounded-lg p-6 mb-6">
-        <h1 className="text-3xl font-bold text-white">Health Statistics</h1>
+      <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6 mb-6"> {/* Added max-width and centered the container */}
+        <h1 className="text-3xl font-bold text-center text-white">Health Statistics</h1> {/* Centered the title */}
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
