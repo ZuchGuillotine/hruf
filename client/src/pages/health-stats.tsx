@@ -102,17 +102,19 @@ export default function HealthStatsPage() {
   return (
     <div className="min-h-screen bg-[#e8f3e8]">
       <Header />
-      <div className="container mx-auto pt-6 max-w-3xl">
-        <div className="flex items-center justify-between mb-2">
+      <div className="container mx-auto max-w-3xl">
+        <div className="flex items-center gap-4 px-4 mt-2">
           <Link href="/" className="flex items-center gap-2 text-black">
             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
           </Link>
-        </div>
-        <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6">
-          <h1 className="text-3xl font-bold text-center text-white">Your Health Overview</h1>
+          <div className="flex-1">
+            <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6">
+              <h1 className="text-3xl font-bold text-center text-white">Your Health Overview</h1>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form className="px-4 mt-6" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid gap-6">
             <Card className="bg-[#1b4332] text-white">
               <CardHeader>
