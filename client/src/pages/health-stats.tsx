@@ -104,7 +104,7 @@ export default function HealthStatsPage() {
         <Link href="/" className="flex items-center gap-2 text-white mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Link>
-        
+
         <div className="max-w-xl mx-auto bg-[#1b4332] rounded-lg p-6 mb-6">
           <h1 className="text-3xl font-bold text-center text-white">Health Statistics</h1>
         </div>
