@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useUser } from "@/hooks/use-user";
 import { useForm } from "react-hook-form";
@@ -198,8 +197,8 @@ export default function HealthStatsPage() {
                     </div>
                   </form>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-white/70">Weight</Label>
                         <p className="text-white">{healthStats?.weight ? `${healthStats.weight} lbs` : 'Not set'}</p>
@@ -229,7 +228,7 @@ export default function HealthStatsPage() {
                         <p className="text-white whitespace-pre-wrap">{healthStats?.allergies || 'None listed'}</p>
                       </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-center">
                       <Button
                         onClick={() => setIsEditing(true)}
                         className="bg-white text-[#1b4332] hover:bg-white/90"
