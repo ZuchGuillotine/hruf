@@ -78,7 +78,8 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize cron jobs
-  import { runChatSummarization } from './cron/summarizeChats.js';
+  const summarizeChatsModule = await import('./cron/summarizeChats.js');
+  const { runChatSummarization } = summarizeChatsModule;
   
   // Run chat summarization every 24 hours
   setInterval(async () => {
