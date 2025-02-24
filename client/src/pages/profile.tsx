@@ -41,25 +41,7 @@ async function updateProfile(data: ProfileFormData) {
   return response.json();
 }
 
-function AccountInfo() {
-  const { user } = useUser();
-
-  if (!user) return null; // Handle case where user data is not available
-
-  return (
-    <Card className="bg-[#1b4332] text-white">
-      <CardHeader>
-        <CardTitle className="text-2xl">Account Information</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Status: {user.isPro ? 'Pro' : 'Free'}</p>
-        {user.isPro && <p>Renewal Date: {format(new Date(user.renewalDate), 'MM/dd/yyyy')}</p>}
-        {!user.isPro && user.trialExpiry && <p>Trial Expires: {format(new Date(user.trialExpiry), 'MM/dd/yyyy')}</p>}
-        {!user.isPro && <Button className="w-full bg-white text-[#1b4332] hover:bg-white/90">Upgrade to Pro</Button>}
-      </CardContent>
-    </Card>
-  );
-}
+import { AccountInfo } from "@/components/AccountInfo";
 
 export default function ProfilePage() {
   const { user, isLoading } = useUser();
