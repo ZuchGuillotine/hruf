@@ -124,6 +124,19 @@ export type SelectSupplementLog = typeof supplementLogs.$inferSelect;
 export type InsertSupplementReference = typeof supplementReference.$inferInsert;
 export type SelectSupplementReference = typeof supplementReference.$inferSelect;
 export type InsertQualitativeLog = typeof qualitativeLogs.$inferInsert;
+// Chat summary storage
+export const chatSummaries = pgTable("chat_summaries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  summary: text("summary").notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
+export type InsertChatSummary = typeof chatSummaries.$inferInsert;
+export type SelectChatSummary = typeof chatSummaries.$inferSelect;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
