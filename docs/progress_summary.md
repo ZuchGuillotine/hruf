@@ -3,6 +3,12 @@
 ## Latest Status (February 17, 2025)
 
 ### Recent Changes and Fixes (February 17, 2025)
+- Added Supplement Streak Tracking Feature:
+  - Implemented 90-day supplement logging streak tracker
+  - Added visual progress bar for streak tracking
+  - Enhanced user motivation through streak-based feedback
+  - Integrated with existing supplement logging system
+  - Added new endpoint for streak calculation
 - Enhanced Health Stats UI with improved layout:
   - Implemented dual-column layout for basic information display
   - Added centered edit button for better accessibility

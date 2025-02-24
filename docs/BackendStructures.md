@@ -94,6 +94,11 @@
 - Two-factor authentication support
 
 API Routes (from routes.ts)
+#### Streak Tracking Routes
+GET /api/supplement-streak
+- Calculates user's current supplement logging streak
+- Requires authentication
+- Returns current streak count
 Authentication Routes
 POST /api/register
 Registers a new user.

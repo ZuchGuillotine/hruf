@@ -107,6 +107,11 @@ The application includes a specialized chat interface for gathering user feedbac
   - User-friendly verification UI
 
 ### Core Supplement Management
+- Supplement Streak Tracking:
+  - 90-day streak tracking system
+  - Visual progress indicator
+  - Daily streak calculations
+  - Motivational feedback
 - Add, view, and delete supplements
 - Advanced fuzzy search functionality:
   - Levenshtein distance algorithm for typo tolerance
