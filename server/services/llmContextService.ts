@@ -1,8 +1,8 @@
 import { getQuantitativeLogs, getQualitativeLogs } from "./logService";
 import { SYSTEM_PROMPT } from "../openai";
 import { Message } from "@/lib/types";
-import { db } from '../../db';
-import { chatSummaries } from "@/db/schema";
+import { db } from "../../db";
+import { chatSummaries } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
 
 // Constructs context for qualitative feedback chat interactions
