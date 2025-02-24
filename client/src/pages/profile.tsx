@@ -41,6 +41,26 @@ async function updateProfile(data: ProfileFormData) {
   return response.json();
 }
 
+function AccountInfo() {
+  const { user } = useUser();
+
+  if (!user) return null; // Handle case where user data is not available
+
+  return (
+    <Card className="bg-[#1b4332] text-white">
+      <CardHeader>
+        <CardTitle className="text-2xl">Account Information</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>Status: {user.isPro ? 'Pro' : 'Free'}</p>
+        {user.isPro && <p>Renewal Date: {format(new Date(user.renewalDate), 'MM/dd/yyyy')}</p>}
+        {!user.isPro && user.trialExpiry && <p>Trial Expires: {format(new Date(user.trialExpiry), 'MM/dd/yyyy')}</p>}
+        {!user.isPro && <Button className="w-full bg-white text-[#1b4332] hover:bg-white/90">Upgrade to Pro</Button>}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ProfilePage() {
   const { user, isLoading } = useUser();
   const { toast } = useToast();
@@ -97,65 +117,68 @@ export default function ProfilePage() {
               <CardTitle className="text-2xl">Profile Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...form.register("email")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
+              <div className="space-y-8">
+                <AccountInfo />
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...form.register("email")}
+                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    type="tel"
-                    {...form.register("phoneNumber")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      {...form.register("phoneNumber")}
+                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    {...form.register("name")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      {...form.register("name")}
+                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    {...form.register("username")}
-                    className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      {...form.register("username")}
+                      className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
+                    />
+                  </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="pro"
-                    checked={form.watch("isPro")}
-                    onCheckedChange={(checked) => form.setValue("isPro", checked)}
-                  />
-                  <Label htmlFor="pro">Pro Account</Label>
-                </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="pro"
+                      checked={form.watch("isPro")}
+                      onCheckedChange={(checked) => form.setValue("isPro", checked)}
+                    />
+                    <Label htmlFor="pro">Pro Account</Label>
+                  </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-white text-[#1b4332] hover:bg-white/90"
-                  disabled={mutation.isPending}
-                >
-                  {mutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Save Changes
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    className="w-full bg-white text-[#1b4332] hover:bg-white/90"
+                    disabled={mutation.isPending}
+                  >
+                    {mutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Save Changes
+                  </Button>
+                </form>
+              </div>
             </CardContent>
           </Card>
 
