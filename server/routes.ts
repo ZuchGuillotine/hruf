@@ -817,65 +817,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  const httpServer = createServer(app);
+  // Add supplement streak endpoint
+  app.get("/api/supplement-streak", requireAuth, async (req, res) => {
+    const httpServer = createServer(app);
   return httpServer;
 }
-  // Add this endpoint with your other routes
-  app.get("/api/supplement-streak", requireAuth, async (req, res) => {
-    try {
-      const result = await db
-        .select({
-          takenAt: supplementLogs.takenAt,
-        })
-        .from(supplementLogs)
-        .where(eq(supplementLogs.userId, req.user!.id))
-        .orderBy(desc(supplementLogs.takenAt));
-
-      let currentStreak = 0;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      // Check if logged today
-      const hasLoggedToday = result.some(log => {
-        const logDate = new Date(log.takenAt);
-        logDate.setHours(0, 0, 0, 0);
-        return logDate.getTime() === today.getTime();
-      });
-
-      if (!hasLoggedToday) {
-        // Check if streak is broken
-        const hasLoggedYesterday = result.some(log => {
-          const logDate = new Date(log.takenAt);
-          logDate.setHours(0, 0, 0, 0);
-          return logDate.getTime() === yesterday.getTime();
-        });
-
-        if (!hasLoggedYesterday) {
-          res.json({ currentStreak: 0 });
-          return;
-        }
-      }
-
-      // Calculate streak
-      let checkDate = new Date(today);
-      for (let i = 0; i < result.length; i++) {
-        const logDate = new Date(result[i].takenAt);
-        logDate.setHours(0, 0, 0, 0);
-        
-        if (logDate.getTime() === checkDate.getTime()) {
-          currentStreak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-
-      res.json({ currentStreak });
-    } catch (error) {
-      console.error("Error calculating streak:", error);
-      res.status(500).json({ error: "Failed to calculate streak" });
-    }
-  });
