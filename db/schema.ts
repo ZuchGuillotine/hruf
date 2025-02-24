@@ -4,6 +4,11 @@ import { sql } from "drizzle-orm";
 
 // User account management and authentication
 export const users = pgTable("users", {
+  subscriptionId: text("subscription_id"),
+  subscriptionStatus: text("subscription_status"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  chatCount: integer("chat_count").default(0),
+  lastRewardedAt: timestamp("last_rewarded_at"),
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
