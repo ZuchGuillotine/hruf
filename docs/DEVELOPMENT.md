@@ -33,6 +33,14 @@
 3. Update types in `/client/src/lib/types.ts`
 4. Add tests where applicable
 
+### Chat Summary System
+- Location: `/server/services/llmSummaryService.ts`
+- Purpose: Maintains condensed chat history
+- Integration Points:
+  - Cron job: `/server/cron/summarizeChats.ts`
+  - Context building: `/server/services/llmContextService.ts`
+
+
 ### Best Practices
 - Use TypeScript types for all props
 - Follow existing component patterns

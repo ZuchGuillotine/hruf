@@ -39,6 +39,16 @@
 
 3. Chat System:
    - Interactions stored in qualitative_logs
+
+#### Chat Summary System
+- Table: chatSummaries
+  - Fields: userId, summary, periodStart, periodEnd, metadata
+  - Purpose: Stores condensed historical chat interactions
+- Integration: 
+  - Automated summarization via cron job
+  - Included in LLM context building
+  - Reduces token usage while maintaining context quality
+
    - Includes sentiment analysis and metadata
 
 ### Tables Schema Overview

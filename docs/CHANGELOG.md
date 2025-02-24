@@ -1,5 +1,15 @@
 
 # Changelog
+
+## [February 2025]
+### Added
+- Implemented chat summarization system
+  - Periodic summarization of old chat interactions
+  - Integration with LLM context building
+  - Improved context management for user interactions
+
+
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
