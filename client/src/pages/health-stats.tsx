@@ -12,6 +12,7 @@ import Header from "@/components/header";
 import { Link } from "wouter";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import type { SelectHealthStats } from "@db/neon-schema";
+import SupplementStreakCard from "@/components/SupplementStreakCard"; // Added import
 
 type HealthStatsFormData = {
   weight?: number;
@@ -109,6 +110,7 @@ export default function HealthStatsPage() {
         </div>
 
         <div className="px-4 mt-6">
+          <SupplementStreakCard /> {/* Added SupplementStreakCard */}
           <div className="grid gap-6">
             <Card className="bg-[#1b4332] text-white">
               <CardHeader>
