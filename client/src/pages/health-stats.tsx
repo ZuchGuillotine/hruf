@@ -63,7 +63,7 @@ export default function HealthStatsPage() {
       sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
       sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
       profilePhotoUrl: healthStats?.profilePhotoUrl,
-      allergies: healthStats?.allergies?.join('\n') || '',
+      allergies: healthStats?.allergies || '',
     },
   });
 
@@ -188,9 +188,9 @@ export default function HealthStatsPage() {
                   <div>
                     <Label>Allergies</Label>
                     <div>
-                      {healthStats?.allergies?.length
-                        ? healthStats.allergies.map((allergy, index) => (
-                            <p key={index}>{allergy}</p>
+                      {healthStats?.allergies
+                        ? healthStats.allergies.split('\n').map((allergy, index) => (
+                            <p key={index}>{allergy.trim()}</p>
                           ))
                         : 'None listed'}
                     </div>

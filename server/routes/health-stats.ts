@@ -8,7 +8,7 @@ const healthStatsData = {
         dateOfBirth: req.body.dateOfBirth || null,
         averageSleep: totalMinutes > 0 ? totalMinutes : null,
         profilePhotoUrl: req.body.profilePhotoUrl || null,
-        allergies: req.body.allergies || null,
+        allergies: req.body.allergies?.trim() || null,
         lastUpdated: new Date()
       };
 
