@@ -77,6 +77,19 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize cron jobs
+  const { runChatSummarization } = require('./cron/summarizeChats');
+  
+  // Run chat summarization every 24 hours
+  setInterval(async () => {
+    console.log('Starting scheduled chat summarization...');
+    try {
+      await runChatSummarization();
+    } catch (error) {
+      console.error('Failed to run chat summarization:', error);
+    }
+  }, 24 * 60 * 60 * 1000);
+
   // Direct RDS connection - no IP monitor needed
 
   // Create the HTTP server and register API routes first

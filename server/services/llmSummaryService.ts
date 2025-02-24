@@ -7,8 +7,10 @@ import { chatWithAI } from '../openai';
 const SUMMARY_PROMPT = `Summarize the following chat interactions, focusing on key insights about the user's supplement experience, notable effects, and any consistent patterns or concerns. Keep the summary concise but informative.`;
 
 export async function summarizeOldChats(userId: number) {
+  console.log(`Starting chat summarization for user ${userId}`);
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  console.log(`Looking for chats older than ${twoWeeksAgo.toISOString()}`);
 
   // Get old chats
   const oldChats = await db.query.qualitativeLogs.findMany({
@@ -20,7 +22,11 @@ export async function summarizeOldChats(userId: number) {
     orderBy: asc(qualitativeLogs.createdAt)
   });
 
-  if (oldChats.length === 0) return;
+  if (oldChats.length === 0) {
+    console.log(`No old chats found for user ${userId}`);
+    return;
+  }
+  console.log(`Found ${oldChats.length} chats to summarize for user ${userId}`);
 
   // Prepare chats for summarization
   const chatContent = oldChats.map(chat => {
