@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.2] - 2025-02-17
 ### Enhanced
+- Redesigned Health Stats page layout:
+  - Implemented dual-column layout for basic information
+  - Added centered edit button placement
+  - Improved data presentation with clear labeling
+  - Enhanced form validation and error handling
+  - Optimized mobile responsiveness
 - Improved Health Stats page UI:
   - Enhanced title card styling with optimized spacing
   - Increased border radius for better visual appeal
