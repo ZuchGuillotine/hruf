@@ -1,11 +1,50 @@
-
 import { db } from '../../db';
 import { qualitativeLogs, chatSummaries } from '../../db/schema';
-import { and, lt, gte } from 'drizzle-orm';
+import { and, lt, gte, eq, asc, inArray } from 'drizzle-orm';
 import { chatWithAI } from '../openai';
+
+/**
+ * LLM Summary Service
+ * This service handles the periodic summarization of user chat logs using OpenAI's GPT model.
+ * It processes qualitative feedback and generates concise summaries for better context in future interactions.
+ */
+
+/**
+ * Generates a summary of chat logs for a specific time period
+ * @param userId - The ID of the user whose chats need summarization
+ * @param startDate - Beginning of the period to summarize
+ * @param endDate - End of the period to summarize
+ * @returns Promise containing the generated summary
+ */
+export async function generateChatSummary(userId: number, startDate: Date, endDate: Date) {
+  // Fetch relevant chat logs for the period
+  const logs = await db.select()
+    .from(qualitativeLogs)
+    .where(
+      and(
+        gte(qualitativeLogs.createdAt, startDate),
+        lt(qualitativeLogs.createdAt, endDate)
+      )
+    );
+
+  // Create summary entry in database
+  const summary = await db.insert(chatSummaries).values({
+    userId,
+    summary: "Summary will be generated",
+    periodStart: startDate,
+    periodEnd: endDate,
+    metadata: {} // Reserved for future use
+  });
+
+  return summary;
+}
 
 const SUMMARY_PROMPT = `Summarize the following chat interactions, focusing on key insights about the user's supplement experience, notable effects, and any consistent patterns or concerns. Keep the summary concise but informative.`;
 
+/**
+ * Summarizes old chats for a given user.
+ * @param userId The ID of the user.
+ */
 export async function summarizeOldChats(userId: number) {
   console.log(`Starting chat summarization for user ${userId}`);
   const twoWeeksAgo = new Date();
