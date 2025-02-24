@@ -12,20 +12,33 @@ export function AccountInfo() {
     return new Date(date).toLocaleDateString();
   };
 
+  const getRemainingDays = (trialEndDate: string | null) => {
+    if (!trialEndDate) return 0;
+    const end = new Date(trialEndDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between">
         <h3 className="text-lg font-semibold">Account Status</h3>
         <div className={`px-2 py-1 rounded-full text-sm ${user?.isPro ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
-          {user?.isPro ? 'Pro' : 'Free'}
+          {user?.isPro ? 'Pro' : 'Free Trial'}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <CalendarIcon className="w-4 h-4" />
-            <span>Trial ends: {formatDate(user?.trialEndsAt)}</span>
-          </div>
+          {!user?.isPro && user?.trialEndsAt && (
+            <div className="flex items-center gap-2 text-sm">
+              <CalendarIcon className="w-4 h-4 text-orange-500" />
+              <span className="font-medium">
+                {getRemainingDays(user.trialEndsAt)} days remaining in trial
+              </span>
+            </div>
+          )}
           {user?.isPro && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <CreditCardIcon className="w-4 h-4" />
@@ -35,9 +48,28 @@ export function AccountInfo() {
         </div>
         
         {!user?.isPro && (
-          <Button className="w-full" onClick={() => window.location.href = '/upgrade'}>
-            Upgrade to Pro
-          </Button>
+          <div className="space-y-3">
+            <a 
+              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE" 
+              className="block w-full"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="w-full bg-green-700 hover:bg-green-800">
+                Monthly - $21.99
+              </Button>
+            </a>
+            <a 
+              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
+              className="block w-full" 
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="w-full" variant="outline">
+                Yearly - $184.72 (Save 30%)
+              </Button>
+            </a>
+          </div>
         )}
       </CardContent>
     </Card>
