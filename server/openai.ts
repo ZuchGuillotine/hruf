@@ -25,7 +25,7 @@ Instructions:
 export async function chatWithAI(messages: Array<{ role: string; content: string }>) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...messages
