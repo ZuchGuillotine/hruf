@@ -59,12 +59,36 @@ export default function Header() {
                   <span>Dashboard</span>
                 </DropdownMenuItem>
               </Link>
-              <Link href="/learn">
-                <DropdownMenuItem className="cursor-pointer">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  <span>Learn</span>
-                </DropdownMenuItem>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    <span>Learn</span>
+                  </DropdownMenuItem>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <Link href="/ask">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <span>Ask</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/learn">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <span>Blog</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/research">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <span>Research</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/search">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <span>Search</span>
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link href="/about">
                 <DropdownMenuItem className="cursor-pointer">
                   <Info className="mr-2 h-4 w-4" />
