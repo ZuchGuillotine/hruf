@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Home, BookOpen, Info } from "lucide-react";
+import { Home, BookOpen, Info, HelpCircle, Search, FileText } from "lucide-react";
 
 export default function LandingHeader() {
   const { user } = useUser();
