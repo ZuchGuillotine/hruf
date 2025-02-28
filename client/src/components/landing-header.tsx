@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Home, BookOpen, Info, HelpCircle, Search, FileText } from "lucide-react";
+import { Home, BookOpen, Info, HelpCircle, FileText, Search } from "lucide-react";
 
 export default function LandingHeader() {
   const { user } = useUser();
@@ -41,7 +41,19 @@ export default function LandingHeader() {
               <Link href="/learn">
                 <DropdownMenuItem className="cursor-pointer">
                   <BookOpen className="mr-2 h-4 w-4" />
-                  <span>Learn</span>
+                  <span>Blog</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/ask">
+                <DropdownMenuItem className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Ask</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/research">
+                <DropdownMenuItem className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Research</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/about">
@@ -58,7 +70,7 @@ export default function LandingHeader() {
             About
           </a>
           <a href="/learn" className="text-foreground/60 hover:text-foreground transition-colors">
-            Learn
+            Blog
           </a>
           {!user && (
             <Button variant="ghost" asChild>
