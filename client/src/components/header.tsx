@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History } from 'lucide-react';
+import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History, HelpCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -59,21 +59,30 @@ export default function Header() {
                   <span>Dashboard</span>
                 </DropdownMenuItem>
               </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    <span>Learn</span>
-                  </DropdownMenuItem>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <Link href="/ask">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <span>Ask</span>
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/learn">
-                    <DropdownMenuItem className="cursor-pointer">
+              <Link href="/learn">
+                <DropdownMenuItem className="cursor-pointer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Blog</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/ask">
+                <DropdownMenuItem className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Ask</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/research">
+                <DropdownMenuItem className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Research</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/about">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Info className="mr-2 h-4 w-4" />
+                  <span>About</span>
+                </DropdownMenuItem>
+              </Link>
                       <span>Blog</span>
                     </DropdownMenuItem>
                   </Link>
