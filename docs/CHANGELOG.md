@@ -11,6 +11,26 @@
   - Periodic summarization of old chat interactions
   - Integration with LLM context building
   - Improved context management for user interactions
+  - Functionality working but needs thorough testing
+
+### Changed
+- Consolidated all database operations to NeonDB
+  - Migrated all tables from RDS to NeonDB PostgreSQL
+  - Removed AWS RDS dependencies and connections
+  - Updated all database queries to use NeonDB schemas
+  - Simplified database connection management
+
+### Enhanced
+- OpenAI Integration
+  - Functional integration with OpenAI API
+  - Plans for streaming responses implementation
+  - System prompt refinements in development
+  - Additional context support in progress
+- LLM Services
+  - Created functional llmContextService.ts
+  - Supporting supplement context
+  - Planning additional table data integration
+  - Preparing for second LLM user interface on 'ask' page
 
 
 # Changelog

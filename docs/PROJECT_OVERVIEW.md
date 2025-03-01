@@ -7,6 +7,10 @@ A cutting-edge health tracking and content management application that combines 
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components
 - **Backend**: Express.js with TypeScript
 - **Database Architecture**:
+  - **Consolidated Database (NeonDB)**:
+    - All database tables are now stored in NeonDB Postgres
+    - Previous RDS dependency has been removed
+    - Complete database architecture including user data, supplements, logs, and chat interactions
 
 ## Qualitative Feedback Chat System
 The application includes a specialized chat interface for gathering user feedback about supplement experiences:
@@ -35,7 +39,11 @@ The application includes a specialized chat interface for gathering user feedbac
 - **Authentication**: 
   - Passport.js with session-based auth
   - Google OAuth integration (currently in troubleshooting)
-- **AI Integration**: OpenAI GPT-4 for intelligent health insights
+- **AI Integration**: 
+  - OpenAI GPT-4o-mini for intelligent health insights
+  - Functional with planned enhancements for streaming responses
+  - System prompt refinements in progress
+  - Additional context integration being developed
 - **Email Service**: SendGrid for verification emails (functional with basic features)
 - **Development Tools**: Drizzle ORM, TanStack Query, Wouter routing
 
@@ -84,7 +92,7 @@ The application includes a specialized chat interface for gathering user feedbac
 6. **qualitativeLogs**:
    - Stores chat interactions and AI responses
    - Fields: id, userId, content, type, tags (JSON)
-   - Includes sentiment analysis scores
+   - Contains chat interaction history
    - Metadata for enhanced tracking
 
 7. **supplementReference**:
