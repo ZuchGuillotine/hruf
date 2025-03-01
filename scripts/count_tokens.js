@@ -1,12 +1,11 @@
 
 // Token counting script
-const fs = require('fs');
-const path = require('path');
-const { promisify } = require('util');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
-const readFile = promisify(fs.readFile);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Skip these directories and files
 const skipDirs = [
@@ -34,11 +33,11 @@ async function countTokens(dir) {
 
   async function processDir(currentDir) {
     try {
-      const files = await readdir(currentDir);
+      const files = await fs.promises.readdir(currentDir);
       
       for (const file of files) {
         const filePath = path.join(currentDir, file);
-        const stats = await stat(filePath);
+        const stats = await fs.promises.stat(filePath);
         
         // Skip directories in the skipDirs list
         if (stats.isDirectory()) {
@@ -56,7 +55,7 @@ async function countTokens(dir) {
         
         // Read file content and count tokens (simplified as words)
         try {
-          const content = await readFile(filePath, 'utf8');
+          const content = await fs.promises.readFile(filePath, 'utf8');
           // Split by whitespace and count
           const tokens = content.split(/\s+/).filter(Boolean).length;
           
