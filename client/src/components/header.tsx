@@ -83,9 +83,6 @@ export default function Header() {
                   <span>About</span>
                 </DropdownMenuItem>
               </Link>
-                      <span>Blog</span>
-                    </DropdownMenuItem>
-                  </Link>
                   <Link href="/research">
                     <DropdownMenuItem className="cursor-pointer">
                       <span>Research</span>
