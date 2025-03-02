@@ -41,7 +41,8 @@ export function useResearch() {
         throw err;
       }
     },
-    retry: 1
+    retry: 1,
+    refetchOnWindowFocus: false
   });
 
   // Create a function to get a specific document by slug
@@ -65,7 +66,9 @@ export function useResearch() {
         }
       },
       enabled: !!slug,
-      retry: 1
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000 // 5 minutes
     });
   };
 

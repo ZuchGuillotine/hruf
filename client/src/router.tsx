@@ -1,7 +1,7 @@
-
 import React, { Suspense } from "react";
 import { Router, Route, Switch } from "wouter";
 import { Spinner } from "@/components/ui/spinner";
+import ErrorBoundary from "./components/ErrorBoundary"; // Added import
 
 // Regular imports for main pages
 import Home from "@/pages/home";
@@ -68,12 +68,12 @@ export function AppRouter() {
           <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route path="/verify-email" component={VerifyEmail} />
           <Route path="/ask" component={Ask} />
-          
+
           {/* Protected routes */}
           <ProtectedRoute path="/dashboard" component={Dashboard} />
           <ProtectedRoute path="/health-stats" component={HealthStats} />
           <ProtectedRoute path="/supplement-history/:date?" component={SupplementHistory} />
-          
+
           {/* Research routes - with proper Suspense handling */}
           <Route path="/research">
             {(props) => (
@@ -82,15 +82,15 @@ export function AppRouter() {
               </Suspense>
             )}
           </Route>
-          
+
           <Route path="/research/:slug">
             {(props) => (
               <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                <ResearchDocumentPage {...props} />
+                <ResearchDocument {...props} />
               </Suspense>
             )}
           </Route>
-          
+
           {/* Admin routes */}
           <Route path="/admin">
             {(props) => (
@@ -104,7 +104,7 @@ export function AppRouter() {
               />
             )}
           </Route>
-          
+
           <Route path="/admin/blog/create">
             {(props) => (
               <AdminRoute
@@ -117,7 +117,7 @@ export function AppRouter() {
               />
             )}
           </Route>
-          
+
           <Route path="/admin/blog/edit/:id">
             {(props) => (
               <AdminRoute
@@ -130,9 +130,9 @@ export function AppRouter() {
               />
             )}
           </Route>
-          
+
           <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
-          
+
           {/* 404 - Catch all route */}
           <Route>
             <div className="flex h-screen flex-col items-center justify-center">
