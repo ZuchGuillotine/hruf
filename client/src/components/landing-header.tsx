@@ -78,12 +78,21 @@ export default function LandingHeader() {
           </DropdownMenu>
         </div>
         <nav className="flex items-center space-x-6">
-          <a href="/about" className="text-foreground/60 hover:text-foreground transition-colors">
-            About
-          </a>
-          <a href="/blog" className="text-foreground/60 hover:text-foreground transition-colors">
-            Blog
-          </a>
+          <Link href="/about">
+            <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
+              About
+            </span>
+          </Link>
+          <Link href="/blog">
+            <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
+              Blog
+            </span>
+          </Link>
+          <Link href="/ask">
+            <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
+              Ask
+            </span>
+          </Link>
           {!user && (
             <Button variant="ghost" asChild>
               <a href="/?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
