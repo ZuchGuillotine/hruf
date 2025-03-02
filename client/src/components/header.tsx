@@ -62,7 +62,7 @@ export default function Header() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/blog">
+                <Link href="/learn">
                   <div className="flex items-center">
                     <BookOpen className="mr-2 h-4 w-4" />
                     <span>Blog</span>

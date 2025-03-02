@@ -83,7 +83,7 @@ export default function LandingHeader() {
               About
             </span>
           </Link>
-          <Link href="/blog">
+          <Link href="/learn">
             <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
               Blog
             </span>

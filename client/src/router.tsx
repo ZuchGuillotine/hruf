@@ -30,8 +30,8 @@ export function AppRouter() {
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
-          <Route path="/blog" component={Blog} />
-          <Route path="/blog/:slug" component={BlogPost} />
+          <Route path="/learn" component={Blog} />
+          <Route path="/learn/:slug" component={BlogPost} />
           <Route path="/terms-of-service" component={TermsOfService} />
           <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route path="/verify-email" component={VerifyEmail} />

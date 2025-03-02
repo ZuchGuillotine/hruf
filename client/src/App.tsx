@@ -70,6 +70,7 @@ function AppRouter() {
     "/privacy-policy",
     "/about",
     "/learn",
+    "/ask",
     // Allow access to individual blog posts without authentication
     location.startsWith("/learn/") ? location : null
   ].filter(Boolean).includes(location);
@@ -84,6 +85,7 @@ function AppRouter() {
         <Route path="/about" component={AboutPage} />
         <Route path="/learn" component={LearnPage} />
         <Route path="/learn/:slug" component={BlogPostPage} />
+        <Route path="/ask" component={Ask} />
       </Switch>
     );
   }
