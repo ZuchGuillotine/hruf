@@ -18,6 +18,7 @@ import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
+import Ask from "@/pages/ask"; // Added import for Ask component
 
 /**
  * AdminRoute Component

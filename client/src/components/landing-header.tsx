@@ -95,9 +95,11 @@ export default function LandingHeader() {
           </Link>
           {!user && (
             <Button variant="ghost" asChild>
-              <a href="/?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
-                Log in
-              </a>
+              <Link href="/?login=true">
+                <span className="text-foreground hover:text-foreground/80 transition-colors">
+                  Log in
+                </span>
+              </Link>
             </Button>
           )}
         </nav>

@@ -69,9 +69,9 @@ export default function Header() {
                   </div>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem>
                 <Link href="/ask">
-                  <div className="flex items-center">
+                  <div className="flex items-center cursor-pointer">
                     <HelpCircle className="mr-2 h-4 w-4" />
                     <span>Ask</span>
                   </div>
