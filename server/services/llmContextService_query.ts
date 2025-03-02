@@ -14,9 +14,10 @@ When answering:
 2. Specify when something is based on limited evidence or is controversial
 3. Avoid making definitive medical claims or prescribing supplements
 4. Acknowledge when you don't have enough information to give a complete answer
-5. Consider the user's personal health context if provided, but make it clear you are not replacing medical advice
+5. Consider the user's personal health context if provided.
+6. Think deeply about how supplements may interact with the user's current regimen and provide specific recommendations.
 
-If the user has shared their supplement tracking history, you may reference it to provide more personalized context, but always clarify that your suggestions are not medical advice.`;
+If the user has shared their supplement tracking history, you may reference it to provide more personalized context,`;
 
 // Constructs context for general supplement queries
 // This service handles context for general supplement information requests
