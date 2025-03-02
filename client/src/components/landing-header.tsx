@@ -24,46 +24,56 @@ export default function LandingHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {user ? (
-                <Link href="/">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Home className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </DropdownMenuItem>
-                </Link>
-              ) : (
-                <Link href="/signup">
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Home className="mr-2 h-4 w-4" />
-                    <span>Sign Up</span>
-                  </DropdownMenuItem>
-                </Link>
-              )}
-              <Link href="/blog">
-                <DropdownMenuItem className="cursor-pointer">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  <span>Blog</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/">
+                    <div className="flex items-center">
+                      <Home className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </div>
+                  </Link>
                 </DropdownMenuItem>
-              </Link>
-              <Link href="/ask">
-                <a onClick={(e) => e.preventDefault()}>
-                  <DropdownMenuItem className="cursor-pointer">
+              ) : (
+                <DropdownMenuItem asChild>
+                  <Link href="/signup">
+                    <div className="flex items-center">
+                      <Home className="mr-2 h-4 w-4" />
+                      <span>Sign Up</span>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href="/blog">
+                  <div className="flex items-center">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    <span>Blog</span>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/ask">
+                  <div className="flex items-center">
                     <HelpCircle className="mr-2 h-4 w-4" />
                     <span>Ask</span>
-                  </DropdownMenuItem>
-                </a>
-              </Link>
-              <Link href="/research">
-                <DropdownMenuItem className="cursor-pointer">
-                  <FileText className="mr-2 h-4 w-4" />
-                  <span>Research</span>
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/about">
-                <DropdownMenuItem className="cursor-pointer">
-                  <Info className="mr-2 h-4 w-4" />
-                  <span>About</span>
-                </DropdownMenuItem>
-              </Link>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/research">
+                  <div className="flex items-center">
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Research</span>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/about">
+                  <div className="flex items-center">
+                    <Info className="mr-2 h-4 w-4" />
+                    <span>About</span>
+                  </div>
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
