@@ -59,17 +59,19 @@ export default function Header() {
                   <span>Dashboard</span>
                 </DropdownMenuItem>
               </Link>
-              <Link href="/learn">
+              <Link href="/blog">
                 <DropdownMenuItem className="cursor-pointer">
                   <BookOpen className="mr-2 h-4 w-4" />
                   <span>Blog</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/ask">
-                <DropdownMenuItem className="cursor-pointer">
-                  <HelpCircle className="mr-2 h-4 w-4" />
-                  <span>Ask</span>
-                </DropdownMenuItem>
+                <a onClick={(e) => e.preventDefault()}>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>Ask</span>
+                  </DropdownMenuItem>
+                </a>
               </Link>
               <Link href="/research">
                 <DropdownMenuItem className="cursor-pointer">
