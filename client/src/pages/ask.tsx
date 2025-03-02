@@ -1,9 +1,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@/hooks/use-query";
+import { useUser } from "@/hooks/use-user";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import Header from "@/components/header";
+import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -28,9 +30,11 @@ export default function AskPage() {
     setInputValue("");
   };
   
+  const { user } = useUser();
+  
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {user ? <Header /> : <LandingHeader />}
       
       <main className="flex-grow bg-white dark:bg-gray-950 p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
