@@ -2,6 +2,7 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
+import { queryWithAI } from "./services/openaiQueryService";
 import { db } from "@db";
 import {
   supplements,
@@ -18,6 +19,7 @@ import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
 import { type SelectSupplement } from "@db/schema";
 import { constructUserContext } from './services/llmContextService';
+import { constructQueryContext } from './services/llmContextService_query';
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -180,6 +182,47 @@ export function registerRoutes(app: Express): Server {
       });
       res.status(500).json({
         error: "Chat error",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  // Supplement query endpoint - works for both authenticated and non-authenticated users
+  app.post("/api/query", async (req, res) => {
+    try {
+      const { messages } = req.body;
+
+      if (!Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages must be an array" });
+      }
+
+      const userQuery = messages[messages.length - 1].content;
+      const userId = req.isAuthenticated() ? req.user?.id : null;
+      
+      // Get user context if available, or use minimal context for non-authenticated users
+      const queryContext = await constructQueryContext(userId, userQuery);
+      const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
+
+      // Get AI response with appropriate context
+      const aiResponse = await queryWithAI(contextualizedMessages, userId);
+
+      if (!aiResponse?.response) {
+        return res.status(500).json({ 
+          error: "Failed to get AI response",
+          message: "The AI service did not provide a valid response"
+        });
+      }
+
+      // Send AI response
+      res.json(aiResponse);
+    } catch (error: any) {
+      console.error("Error in query endpoint:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({
+        error: "Query error",
         message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
