@@ -5,6 +5,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AboutPage from "@/pages/about";
+import AskPage from "@pages/ask";  
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ProfilePage from "@/pages/profile";
@@ -70,6 +71,7 @@ function AppRouter() {
     "/privacy-policy",
     "/about",
     "/learn",
+    "/ask",
     // Allow access to individual blog posts without authentication
     location.startsWith("/learn/") ? location : null
   ].filter(Boolean).includes(location);
@@ -84,6 +86,7 @@ function AppRouter() {
         <Route path="/about" component={AboutPage} />
         <Route path="/learn" component={LearnPage} />
         <Route path="/learn/:slug" component={BlogPostPage} />
+        <Route path="/ask" component={AskPage} />
       </Switch>
     );
   }
