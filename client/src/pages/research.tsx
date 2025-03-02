@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "wouter";
 import { useUser } from "@/hooks/use-user";
@@ -7,7 +8,6 @@ import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDate } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function ResearchPage() {
   const { user } = useUser();
@@ -40,7 +40,7 @@ export default function ResearchPage() {
                 {researchDocuments.map((doc) => (
                   <div key={doc.id} className="border rounded-lg p-5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors">
                     <Link href={`/research/${doc.slug}`}>
-                      <a className="block">
+                      <div className="block">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{doc.title}</h2>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                           {formatDate(doc.publishedAt || doc.createdAt)}
@@ -51,7 +51,7 @@ export default function ResearchPage() {
                         <span className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline">
                           Read more
                         </span>
-                      </a>
+                      </div>
                     </Link>
                   </div>
                 ))}
@@ -62,7 +62,7 @@ export default function ResearchPage() {
                 {user?.isAdmin && (
                   <p className="mt-2 text-green-600 dark:text-green-400">
                     <Link href="/admin/research">
-                      <a>Add your first research document</a>
+                      <span>Add your first research document</span>
                     </Link>
                   </p>
                 )}
@@ -71,7 +71,6 @@ export default function ResearchPage() {
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

@@ -37,10 +37,10 @@ export default function ResearchDocumentPage() {
           <div className="max-w-4xl mx-auto">
             <div className="mb-4">
               <Link href="/research">
-                <a className="inline-flex items-center text-green-600 dark:text-green-400 hover:underline">
+                <div className="inline-flex items-center text-green-600 dark:text-green-400 hover:underline">
                   <ArrowLeft className="h-4 w-4 mr-1" />
                   Back to Research
-                </a>
+                </div>
               </Link>
             </div>
             <div className="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded">
@@ -63,31 +63,36 @@ export default function ResearchDocumentPage() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-4">
             <Link href="/research">
-              <a className="inline-flex items-center text-green-600 dark:text-green-400 hover:underline">
+              <div className="inline-flex items-center text-green-600 dark:text-green-400 hover:underline">
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Back to Research
-              </a>
+              </div>
             </Link>
           </div>
           
-          <article className="prose prose-green dark:prose-invert max-w-none">
-            <div className="mb-4">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {document.title}
-              </h1>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <span>Published {formatDate(document.publishedAt || document.createdAt)}</span>
-                {document.updatedAt && document.updatedAt !== document.createdAt && (
-                  <span className="ml-4">Updated {formatDate(document.updatedAt)}</span>
-                )}
-              </div>
-            </div>
+          <article className="prose dark:prose-invert prose-lg max-w-none">
+            <h1 className="text-3xl font-bold mb-2">{document.title}</h1>
             
-            {/* Summary highlighted block */}
-            <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded-r mb-8">
-              <p className="text-gray-800 dark:text-gray-200 font-medium italic m-0">
-                {document.summary}
-              </p>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6">
+              <span>
+                Published: {formatDate(document.publishedAt || document.createdAt)}
+              </span>
+              
+              {document.authors && (
+                <span>
+                  By: {document.authors}
+                </span>
+              )}
+              
+              {document.tags && document.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {document.tags.map((tag, index) => (
+                    <span key={index} className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Images if available */}
