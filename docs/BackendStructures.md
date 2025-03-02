@@ -19,12 +19,14 @@
    - Qualitative Feedback Chat:
      - Purpose: Gather user observations about supplement experiences
      - Storage: qualitative_logs table with type='chat'
-     - Context: Combines supplement logs and previous observations
+     - Context: Combines health stats, supplement logs and previous observations
      - Components: LLMChat, llmContextService, logService
-   - (Planned) General Query Chat:
-     - Separate interface for supplement information queries
-     - Will use shared context but different prompt structure
-     - Implementation pending
+   - General Query Chat (Implemented):
+     - Purpose: Provide factual information about supplements
+     - Storage: Uses same database tables but different context structure
+     - Context: Specialized context with health stats and different system prompt
+     - Components: AskPage, llmContextService_query, openaiQueryService
+     - Authentication-aware: Provides personalized context for auth users
 
 2. Supplement Management:
    - User selections stored in supplements table
@@ -104,6 +106,13 @@
 - Two-factor authentication support
 
 API Routes (from routes.ts)
+#### AI Query Routes
+POST /api/query
+- Handles general supplement information queries
+- Works for both authenticated and non-authenticated users
+- Uses separate context building service (llmContextService_query)
+- Authenticated users get personalized responses based on their health profile
+
 #### Streak Tracking Routes
 GET /api/supplement-streak
 - Calculates user's current supplement logging streak

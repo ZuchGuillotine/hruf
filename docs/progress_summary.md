@@ -11,8 +11,13 @@
 - AI Integration Enhancements:
   - Verified functional OpenAI integration with GPT-4o-mini
   - Confirmed proper operation of llmContextService
-  - Identified areas for context expansion to include more data
-  - Preparing for implementation of second LLM interface for 'ask' page
+  - Added health statistics data to all LLM context services
+  - Implemented dual LLM interfaces:
+    - Qualitative feedback chat system for supplement experiences
+    - General query system for supplement information requests
+  - Created specialized context building for each LLM use case
+    - llmContextService.ts for feedback/conversations
+    - llmContextService_query.ts for supplement information queries
 
 ### Recent Changes and Fixes (February 17, 2025)
 - Implemented Initial Payment Integration:

@@ -12,22 +12,44 @@ A cutting-edge health tracking and content management application that combines 
     - Previous RDS dependency has been removed
     - Complete database architecture including user data, supplements, logs, and chat interactions
 
-## Qualitative Feedback Chat System
-The application includes a specialized chat interface for gathering user feedback about supplement experiences:
+## Dual AI Chat Systems
+The application includes two specialized chat interfaces for different user needs:
 
-### Data Flow
+### 1. Qualitative Feedback Chat System
+For gathering detailed user feedback about supplement experiences:
+
+#### Data Flow
 1. User initiates feedback through the chat interface
 2. System constructs context from:
+   - User health statistics (weight, height, allergies, etc.)
    - Recent supplement logs (quantitative data)
    - Previous qualitative observations
 3. AI assistant engages user with relevant follow-up questions
 4. Responses are stored in qualitative_logs table with type='chat'
 5. Users can save meaningful conversations for future reference
 
-### Technical Components
+#### Technical Components
 - Frontend: LLMChat component in llm-chat.tsx
 - Backend: llmContextService.ts for context construction
 - Database: qualitative_logs table with chat-specific metadata
+
+### 2. General Supplement Query System
+For answering factual questions about supplements:
+
+#### Data Flow
+1. User submits question via the Ask page
+2. System constructs specialized context from:
+   - User health statistics (if authenticated)
+   - User's supplement history (if authenticated)
+   - Different system prompt focused on factual information
+3. AI assistant provides evidence-based information
+4. Authenticated users receive personalized responses considering their health context
+5. Non-authenticated users receive general information
+
+#### Technical Components
+- Frontend: AskPage component in ask.tsx
+- Backend: llmContextService_query.ts for context construction
+- Database: Same database tables but with query-specific context building
   - **Consolidated Database (NeonDB)**:
     - User authentication and profiles
     - Health statistics

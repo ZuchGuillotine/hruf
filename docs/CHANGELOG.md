@@ -3,6 +3,17 @@
 
 ## [February 2025]
 ### Added
+- Implemented dual LLM service architecture
+  - Created separate LLM services for different user needs:
+    - Qualitative feedback chat for supplement experiences
+    - General query system for supplement information
+  - Enhanced context building with health statistics data
+  - Authentication-aware responses for personalized information
+  - Different system prompts optimized for each use case
+  - AskPage UI for general supplement queries
+  - Comprehensive error handling for both services
+  - Full integration with existing database schema
+
 - Implemented Research page routing
   - Added route for the Research page in AppRouter
   - Created placeholder component for future implementation
