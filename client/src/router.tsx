@@ -1,27 +1,58 @@
 
-import { Route, Router, Switch } from 'wouter';
-import { Suspense, lazy } from 'react';
-import { ProtectedRoute } from './components/protected-route';
-import { AdminRoute } from './components/admin-route';
-import { Spinner } from '@/components/ui/spinner';
+import React, { Suspense } from "react";
+import { Router, Route, Switch } from "wouter";
+import { Spinner } from "@/components/ui/spinner";
 
-// Lazy load pages for better performance
-const Home = lazy(() => import('./pages/home'));
-const Login = lazy(() => import('./pages/login'));
-const Register = lazy(() => import('./pages/register'));
-const Dashboard = lazy(() => import('./pages/dashboard'));
-const Blog = lazy(() => import('./pages/blog'));
-const BlogPost = lazy(() => import('./pages/blog-post'));
-const BlogEditor = lazy(() => import('./pages/admin/blog-editor'));
-const AdminDashboard = lazy(() => import('./pages/admin/admin-dashboard'));
-const AdminSupplements = lazy(() => import('./pages/admin/supplements'));
-const HealthStats = lazy(() => import('./pages/health-stats'));
-const SupplementHistory = lazy(() => import('./pages/supplement-history'));
-const Research = lazy(() => import('./pages/research'));
-const Ask = lazy(() => import('./pages/ask'));
-const TermsOfService = lazy(() => import('./pages/terms-of-service'));
-const PrivacyPolicy = lazy(() => import('./pages/privacy-policy'));
-const VerifyEmail = lazy(() => import('./pages/verify-email'));
+// Regular imports for main pages
+import Home from "@/pages/home";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
+import Dashboard from "@/pages/dashboard";
+import Blog from "@/pages/blog";
+import BlogPost from "@/pages/blog/[slug]";
+import HealthStats from "@/pages/health-stats";
+import SupplementHistory from "@/pages/supplement-history";
+import AdminSupplements from "@/pages/admin/supplements";
+import TermsOfService from "@/pages/terms-of-service";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import VerifyEmail from "@/pages/verify-email";
+import Ask from "@/pages/ask";
+
+// Lazy loaded components with suspense
+const Research = React.lazy(() => import("@/pages/research"));
+const ResearchDocument = React.lazy(() => import("@/pages/research/[slug]"));
+const AdminDashboard = React.lazy(() => import("@/pages/admin"));
+const BlogEditor = React.lazy(() => import("@/pages/admin/blog/editor"));
+
+// Protected route wrapper
+const ProtectedRoute = ({ component: Component, ...rest }) => {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  return <Component {...rest} />;
+};
+
+// Admin route wrapper
+const AdminRoute = ({ component: Component, ...rest }) => {
+  const { isLoading, isAuthenticated, user } = useAuth();
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>;
+  }
+
+  if (!isAuthenticated || !user?.isAdmin) {
+    return <Redirect to="/dashboard" />;
+  }
+
+  return <Component {...rest} />;
+};
 
 export function AppRouter() {
   return (
@@ -42,13 +73,65 @@ export function AppRouter() {
           <ProtectedRoute path="/dashboard" component={Dashboard} />
           <ProtectedRoute path="/health-stats" component={HealthStats} />
           <ProtectedRoute path="/supplement-history/:date?" component={SupplementHistory} />
-          <ProtectedRoute path="/research" component={Research} />
+          
+          {/* Research routes - with proper Suspense handling */}
+          <Route path="/research">
+            {(props) => (
+              <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
+                <Research {...props} />
+              </Suspense>
+            )}
+          </Route>
+          
+          <Route path="/research/:slug">
+            {(props) => (
+              <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
+                <ResearchDocument {...props} />
+              </Suspense>
+            )}
+          </Route>
           
           {/* Admin routes */}
-          <AdminRoute path="/admin" component={AdminDashboard} />
-          <AdminRoute path="/admin/blog/create" component={BlogEditor} />
-          <AdminRoute path="/admin/blog/edit/:id" component={BlogEditor} />
-          <AdminRoute path="/admin/supplements" component={AdminSupplements} />
+          <Route path="/admin">
+            {(props) => (
+              <AdminRoute
+                component={(routeProps) => (
+                  <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
+                    <AdminDashboard {...routeProps} />
+                  </Suspense>
+                )}
+                {...props}
+              />
+            )}
+          </Route>
+          
+          <Route path="/admin/blog/create">
+            {(props) => (
+              <AdminRoute
+                component={(routeProps) => (
+                  <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
+                    <BlogEditor {...routeProps} />
+                  </Suspense>
+                )}
+                {...props}
+              />
+            )}
+          </Route>
+          
+          <Route path="/admin/blog/edit/:id">
+            {(props) => (
+              <AdminRoute
+                component={(routeProps) => (
+                  <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
+                    <BlogEditor {...routeProps} />
+                  </Suspense>
+                )}
+                {...props}
+              />
+            )}
+          </Route>
+          
+          <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
           
           {/* 404 - Catch all route */}
           <Route>
@@ -63,4 +146,3 @@ export function AppRouter() {
     </Router>
   );
 }
-

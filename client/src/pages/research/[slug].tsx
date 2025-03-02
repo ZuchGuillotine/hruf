@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useParams, Link } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { useResearch } from "@/hooks/use-research";
@@ -69,26 +69,20 @@ export default function ResearchDocumentPage() {
               </a>
             </Link>
           </div>
-
-          <article className="prose prose-green dark:prose-invert lg:prose-lg max-w-none">
-            <h1>{document.title}</h1>
-            
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-3 -mt-4 mb-8">
-              <span>{formatDate(new Date(document.publishedAt))}</span>
-              <span>•</span>
-              <span>By {document.authors}</span>
+          
+          <article className="prose prose-green dark:prose-invert max-w-none">
+            <div className="mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                {document.title}
+              </h1>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>Published {formatDate(document.publishedAt || document.createdAt)}</span>
+                {document.updatedAt && document.updatedAt !== document.createdAt && (
+                  <span className="ml-4">Updated {formatDate(document.updatedAt)}</span>
+                )}
+              </div>
             </div>
             
-            {document.tags && document.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-6 -mt-4">
-                {document.tags.map((tag, index) => (
-                  <span key={index} className="inline-block px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded text-xs">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
             {/* Summary highlighted block */}
             <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded-r mb-8">
               <p className="text-gray-800 dark:text-gray-200 font-medium italic m-0">

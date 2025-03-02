@@ -87,3 +87,57 @@ export const useResearch = () => {
     isCreating: createResearchMutation.isPending,
   };
 };
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+interface ResearchDocument {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+  summary: string;
+  publishedAt?: Date;
+  createdAt: Date;
+  updatedAt?: Date;
+  imageUrls?: string[];
+}
+
+export function useResearch() {
+  // Fetch all research documents
+  const {
+    data: researchDocuments,
+    isLoading: isLoadingDocuments,
+    error: docsError
+  } = useQuery<ResearchDocument[]>({
+    queryKey: ['researchDocuments'],
+    queryFn: async () => {
+      const res = await fetch('/api/research');
+      if (!res.ok) {
+        throw new Error('Failed to fetch research documents');
+      }
+      return res.json();
+    }
+  });
+
+  // Create a function to get a specific document by slug
+  const getResearchBySlug = (slug: string) => {
+    return useQuery<ResearchDocument>({
+      queryKey: ['researchDocument', slug],
+      queryFn: async () => {
+        const res = await fetch(`/api/research/${slug}`);
+        if (!res.ok) {
+          throw new Error('Research document not found');
+        }
+        return res.json();
+      },
+      enabled: !!slug
+    });
+  };
+
+  return {
+    researchDocuments,
+    isLoadingDocuments,
+    error: docsError ? (docsError as Error).message : null,
+    getResearchBySlug
+  };
+}
