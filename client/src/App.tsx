@@ -72,8 +72,11 @@ function AppRouter() {
     "/about",
     "/learn",
     "/ask",
+    "/research",
     // Allow access to individual blog posts without authentication
-    location.startsWith("/learn/") ? location : null
+    location.startsWith("/learn/") ? location : null,
+    // Allow access to individual research articles without authentication
+    location.startsWith("/research/") ? location : null
   ].filter(Boolean).includes(location);
 
   // Always render public routes regardless of authentication status
@@ -87,6 +90,8 @@ function AppRouter() {
         <Route path="/learn" component={LearnPage} />
         <Route path="/learn/:slug" component={BlogPostPage} />
         <Route path="/ask" component={AskPage} />
+        <Route path="/research" component={React.lazy(() => import("@/pages/research"))} />
+        <Route path="/research/:slug" component={React.lazy(() => import("@/pages/research/[slug]"))} />
       </Switch>
     );
   }
