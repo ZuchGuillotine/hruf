@@ -102,7 +102,8 @@ function AppRouter() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
-      <Route path="/research" component={() => <div>Research Page Placeholder</div>} />
+      <Route path="/research" component={React.lazy(() => import("@/pages/research"))} />
+      <Route path="/research/:slug" component={React.lazy(() => import("@/pages/research/[slug]"))} />
       <Route path="/" component={Dashboard} />
       {/* Admin routes with lazy loading for better performance */}
       <Route path="/admin" component={(props) => {

@@ -20,6 +20,15 @@ import { sendWelcomeEmail } from './services/emailService';
 import { type SelectSupplement } from "@db/schema";
 import { constructUserContext } from './services/llmContextService';
 import { constructQueryContext } from './services/llmContextService_query';
+import { registerUser, loginUser, logoutUser, verifyEmail } from "./controllers/authController";
+import { getHealthStats, updateHealthStats } from "./controllers/healthStatsController";
+import { getSupplements, createSupplement, updateSupplement, deleteSupplement, searchSupplements } from "./controllers/supplementController";
+import { getSupplementLogs, createSupplementLog, getSupplementLogsByDate } from "./controllers/supplementLogController";
+import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitativeLogController";
+import { getBlogPosts, getBlogPostBySlug, createBlogPost, updateBlogPost, deleteBlogPost } from "./controllers/blogController";
+import { getAllResearchDocuments, getResearchDocumentBySlug, createResearchDocument, updateResearchDocument, deleteResearchDocument } from "./controllers/researchController";
+import { chat } from "./controllers/chatController";
+import { query } from "./controllers/queryController";
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -186,7 +195,7 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-  
+
   // Supplement query endpoint - works for both authenticated and non-authenticated users
   app.post("/api/query", async (req, res) => {
     try {
@@ -198,7 +207,7 @@ export function registerRoutes(app: Express): Server {
 
       const userQuery = messages[messages.length - 1].content;
       const userId = req.isAuthenticated() ? req.user?.id : null;
-      
+
       // Get user context if available, or use minimal context for non-authenticated users
       const queryContext = await constructQueryContext(userId, userQuery);
       const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
@@ -729,6 +738,20 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Blog routes
+  app.get("/api/blog", getBlogPosts);
+  app.get("/api/blog/:slug", getBlogPostBySlug);
+  app.post("/api/blog", requireAuth, requireAdmin, createBlogPost);
+  app.put("/api/blog/:id", requireAuth, requireAdmin, updateBlogPost);
+  app.delete("/api/blog/:id", requireAuth, requireAdmin, deleteBlogPost);
+
+  // Research documents routes
+  app.get("/api/research", getAllResearchDocuments);
+  app.get("/api/research/:slug", getResearchDocumentBySlug);
+  app.post("/api/research", requireAuth, requireAdmin, createResearchDocument);
+  app.put("/api/research/:id", requireAuth, requireAdmin, updateResearchDocument);
+  app.delete("/api/research/:id", requireAuth, requireAdmin, deleteResearchDocument);
+
   // Blog management endpoints
   app.get("/api/blog", async (req, res) => {
     try {
@@ -904,7 +927,7 @@ export function registerRoutes(app: Express): Server {
       for (let i = 0; i < result.length; i++) {
         const logDate = new Date(result[i].takenAt);
         logDate.setHours(0, 0, 0, 0);
-        
+
         if (logDate.getTime() === checkDate.getTime()) {
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);

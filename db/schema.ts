@@ -141,7 +141,24 @@ export const chatSummaries = pgTable("chat_summaries", {
 });
 
 export type SelectQualitativeLog = typeof qualitativeLogs.$inferSelect;
+// Research document storage
+export const researchDocuments = pgTable("research_documents", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").unique().notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  imageUrls: jsonb("image_urls").$type<string[]>().default(sql`'[]'::jsonb`),
+  publishedAt: timestamp("published_at").default(sql`CURRENT_TIMESTAMP`),
+  authors: text("authors").notNull(),
+  tags: jsonb("tags").$type<string[]>().default(sql`'[]'::jsonb`),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 export type InsertChatSummary = typeof chatSummaries.$inferInsert;
 export type SelectChatSummary = typeof chatSummaries.$inferSelect;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
+export type ResearchDocument = typeof researchDocuments.$inferSelect;
+export type InsertResearchDocument = typeof researchDocuments.$inferInsert;
