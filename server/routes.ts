@@ -772,8 +772,30 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Research documents routes
-  app.get("/api/research", getAllResearchDocuments);
-  app.get("/api/research/:slug", getResearchDocumentBySlug);
+  app.get("/api/research", async (req, res) => {
+    try {
+      return await getAllResearchDocuments(req, res);
+    } catch (error) {
+      console.error("Error handling research request:", error);
+      res.status(500).json({ 
+        error: "Failed to retrieve research documents",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
+  app.get("/api/research/:slug", async (req, res) => {
+    try {
+      return await getResearchDocumentBySlug(req, res);
+    } catch (error) {
+      console.error("Error handling research document request:", error);
+      res.status(404).json({ 
+        error: "Research document not found",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
   app.post("/api/research", requireAuth, requireAdmin, createResearchDocument);
   app.put("/api/research/:id", requireAuth, requireAdmin, updateResearchDocument);
   app.delete("/api/research/:id", requireAuth, requireAdmin, deleteResearchDocument);

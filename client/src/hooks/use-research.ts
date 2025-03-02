@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -30,7 +31,8 @@ export function useResearch() {
       try {
         const res = await fetch('/api/research');
         if (!res.ok) {
-          throw new Error('Failed to fetch research documents');
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to fetch research documents');
         }
         return res.json();
       } catch (err) {
@@ -38,7 +40,8 @@ export function useResearch() {
         setError(errorMessage);
         throw err;
       }
-    }
+    },
+    retry: 1
   });
 
   // Create a function to get a specific document by slug
@@ -47,13 +50,22 @@ export function useResearch() {
       queryKey: ['researchDocument', slug],
       queryFn: async () => {
         if (!slug) throw new Error('Slug is required');
-        const res = await fetch(`/api/research/${slug}`);
-        if (!res.ok) {
-          throw new Error('Research document not found');
+        
+        try {
+          const res = await fetch(`/api/research/${slug}`);
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Research document not found');
+          }
+          return res.json();
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to fetch research document';
+          console.error('Error fetching research document:', errorMessage);
+          throw err;
         }
-        return res.json();
       },
-      enabled: !!slug
+      enabled: !!slug,
+      retry: 1
     });
   };
 

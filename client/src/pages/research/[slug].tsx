@@ -1,5 +1,5 @@
 
-import React, { Suspense } from "react";
+import React from "react";
 import { useParams, Link } from "wouter";
 import { useUser } from "@/hooks/use-user";
 import { useResearch } from "@/hooks/use-research";
@@ -70,29 +70,25 @@ export default function ResearchDocumentPage() {
             </Link>
           </div>
           
-          <article className="prose dark:prose-invert prose-lg max-w-none">
-            <h1 className="text-3xl font-bold mb-2">{document.title}</h1>
+          <article className="prose dark:prose-invert lg:prose-lg max-w-none">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{document.title}</h1>
             
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6">
-              <span>
-                Published: {formatDate(document.publishedAt || document.createdAt)}
-              </span>
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {formatDate(document.publishedAt || document.createdAt)}
+              </p>
               
               {document.authors && (
-                <span>
-                  By: {document.authors}
-                </span>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-0">
+                  By {document.authors}
+                </p>
               )}
-              
-              {document.tags && document.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {document.tags.map((tag, index) => (
-                    <span key={index} className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
+            </div>
+            
+            {/* Summary */}
+            <div className="mb-6 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+              <h2 className="text-xl font-semibold mb-2">Summary</h2>
+              <p>{document.summary}</p>
             </div>
             
             {/* Images if available */}

@@ -86,7 +86,7 @@ export function AppRouter() {
           <Route path="/research/:slug">
             {(props) => (
               <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                <ResearchDocument {...props} />
+                <ResearchDocumentPage {...props} />
               </Suspense>
             )}
           </Route>
