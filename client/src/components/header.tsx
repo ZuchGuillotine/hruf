@@ -66,12 +66,10 @@ export default function Header() {
                 </DropdownMenuItem>
               </Link>
               <Link href="/ask">
-                <a>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Ask</span>
-                  </DropdownMenuItem>
-                </a>
+                <DropdownMenuItem className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Ask</span>
+                </DropdownMenuItem>
               </Link>
               <Link href="/research">
                 <DropdownMenuItem className="cursor-pointer">
