@@ -2,7 +2,7 @@
 import { getQuantitativeLogs, getQualitativeLogs } from "./logService";
 import { Message } from "@/lib/types";
 import { db } from "../../db";
-import { chatSummaries } from "../../db/schema";
+import { chatSummaries, healthStats } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
 
 // Separate system prompt for general supplement queries
@@ -36,13 +36,16 @@ export async function constructQueryContext(userId: string | null, userQuery: st
     const twoWeeksAgo = new Date();
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-    // Fetch both quantitative and qualitative data
-    const [quantitativeLogs, recentLogs, historicalSummaries] = await Promise.all([
+    // Fetch both quantitative and qualitative data, plus health stats
+    const [quantitativeLogs, recentLogs, historicalSummaries, userHealthStats] = await Promise.all([
       getQuantitativeLogs(userId),
       getQualitativeLogs(userId, twoWeeksAgo),
       db.query.chatSummaries.findMany({
         where: eq(chatSummaries.userId, userId),
         orderBy: desc(chatSummaries.periodEnd)
+      }),
+      db.query.healthStats.findFirst({
+        where: eq(healthStats.userId, userId)
       })
     ]);
 
@@ -68,9 +71,22 @@ export async function constructQueryContext(userId: string | null, userQuery: st
     const historicalContext = historicalSummaries.length > 0 ? 
       historicalSummaries.map(s => s.summary).join('\n\n') : 'No historical summaries found.';
 
+    // Format health stats data if available
+    const healthStatsContext = userHealthStats ? `
+Weight: ${userHealthStats.weight || 'Not provided'} lbs
+Height: ${userHealthStats.height || 'Not provided'} inches
+Gender: ${userHealthStats.gender || 'Not provided'}
+Date of Birth: ${userHealthStats.dateOfBirth || 'Not provided'}
+Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.averageSleep / 60)}h ${userHealthStats.averageSleep % 60}m` : 'Not provided'}
+Allergies: ${userHealthStats.allergies || 'None listed'}
+` : 'No health stats data available.';
+
     const messages = [
       { role: "system", content: QUERY_SYSTEM_PROMPT },
       { role: "user", content: `
+User Health Profile:
+${healthStatsContext}
+
 User Supplement History (last 30 days):
 ${quantitativeContext || 'No recent supplement logs.'}
 
