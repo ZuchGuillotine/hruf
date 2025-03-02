@@ -45,7 +45,7 @@ export function MobileNav() {
       <div className="mx-auto flex h-16 max-w-md items-center justify-around">
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
-            <div className="flex flex-col items-center justify-center">
+            <a className="flex flex-col items-center justify-center">
               <item.icon
                 className={cn(
                   "h-6 w-6",
@@ -64,7 +64,7 @@ export function MobileNav() {
               >
                 {item.label}
               </span>
-            </div>
+            </a>
           </Link>
         ))}
       </div>

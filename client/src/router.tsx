@@ -1,3 +1,4 @@
+
 import { Route, Router, Switch } from 'wouter';
 import { Suspense, lazy } from 'react';
 import { ProtectedRoute } from './components/protected-route';
@@ -30,25 +31,25 @@ export function AppRouter() {
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
-          <Route path="/learn" component={Blog} />
-          <Route path="/learn/:slug" component={BlogPost} />
+          <Route path="/blog" component={Blog} />
+          <Route path="/blog/:slug" component={BlogPost} />
           <Route path="/terms-of-service" component={TermsOfService} />
           <Route path="/privacy-policy" component={PrivacyPolicy} />
           <Route path="/verify-email" component={VerifyEmail} />
           <Route path="/ask" component={Ask} />
-
+          
           {/* Protected routes */}
           <ProtectedRoute path="/dashboard" component={Dashboard} />
           <ProtectedRoute path="/health-stats" component={HealthStats} />
           <ProtectedRoute path="/supplement-history/:date?" component={SupplementHistory} />
           <ProtectedRoute path="/research" component={Research} />
-
+          
           {/* Admin routes */}
           <AdminRoute path="/admin" component={AdminDashboard} />
           <AdminRoute path="/admin/blog/create" component={BlogEditor} />
           <AdminRoute path="/admin/blog/edit/:id" component={BlogEditor} />
           <AdminRoute path="/admin/supplements" component={AdminSupplements} />
-
+          
           {/* 404 - Catch all route */}
           <Route>
             <div className="flex h-screen flex-col items-center justify-center">
@@ -62,3 +63,4 @@ export function AppRouter() {
     </Router>
   );
 }
+

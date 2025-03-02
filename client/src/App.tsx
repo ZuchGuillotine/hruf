@@ -18,7 +18,6 @@ import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
-import Ask from "@/pages/ask"; // Added import for Ask component
 
 /**
  * AdminRoute Component
@@ -71,7 +70,6 @@ function AppRouter() {
     "/privacy-policy",
     "/about",
     "/learn",
-    "/ask",
     // Allow access to individual blog posts without authentication
     location.startsWith("/learn/") ? location : null
   ].filter(Boolean).includes(location);
@@ -86,7 +84,6 @@ function AppRouter() {
         <Route path="/about" component={AboutPage} />
         <Route path="/learn" component={LearnPage} />
         <Route path="/learn/:slug" component={BlogPostPage} />
-        <Route path="/ask" component={Ask} />
       </Switch>
     );
   }

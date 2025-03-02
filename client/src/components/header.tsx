@@ -53,46 +53,36 @@ export default function Header() {
               </h1>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem asChild>
-                <Link href="/">
-                  <div className="flex items-center">
-                    <Home className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/learn">
-                  <div className="flex items-center">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    <span>Blog</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/ask">
-                  <div className="flex items-center cursor-pointer">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Ask</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/research">
-                  <div className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>Research</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/about">
-                  <div className="flex items-center">
-                    <Info className="mr-2 h-4 w-4" />
-                    <span>About</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
+              <Link href="/">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Home className="mr-2 h-4 w-4" />
+                  <span>Dashboard</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/learn">
+                <DropdownMenuItem className="cursor-pointer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Blog</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/ask">
+                <DropdownMenuItem className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Ask</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/research">
+                <DropdownMenuItem className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Research</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/about">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Info className="mr-2 h-4 w-4" />
+                  <span>About</span>
+                </DropdownMenuItem>
+              </Link>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -115,41 +105,33 @@ export default function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile">
-                <div className="flex items-center">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </div>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/health-stats">
-                <div className="flex items-center">
-                  <LineChart className="mr-2 h-4 w-4" />
-                  <span>Health Stats</span>
-                </div>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/supplement-history">
-                <div className="flex items-center">
-                  <History className="mr-2 h-4 w-4" />
-                  <span>Supplement History</span>
-                </div>
-              </Link>
-            </DropdownMenuItem>
+            <Link href="/profile">
+              <DropdownMenuItem className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/health-stats">
+              <DropdownMenuItem className="cursor-pointer">
+                <LineChart className="mr-2 h-4 w-4" />
+                <span>Health Stats</span>
+              </DropdownMenuItem>
+            </Link>
+            <Link href="/supplement-history">
+              <DropdownMenuItem className="cursor-pointer">
+                <History className="mr-2 h-4 w-4" />
+                <span>Supplement History</span>
+              </DropdownMenuItem>
+            </Link>
             {user?.isAdmin && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/admin">
-                    <div className="flex items-center">
-                      <Database className="mr-2 h-4 w-4" />
-                      <span>Admin Dashboard</span>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
+                <Link href="/admin">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Database className="mr-2 h-4 w-4" />
+                    <span>Admin Dashboard</span>
+                  </DropdownMenuItem>
+                </Link>
               </>
             )}
             <DropdownMenuSeparator />

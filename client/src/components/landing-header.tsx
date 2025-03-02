@@ -24,82 +24,59 @@ export default function LandingHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {user ? (
-                <DropdownMenuItem asChild>
-                  <Link href="/">
-                    <div className="flex items-center">
-                      <Home className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
+                <Link href="/">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Dashboard</span>
+                  </DropdownMenuItem>
+                </Link>
               ) : (
-                <DropdownMenuItem asChild>
-                  <Link href="/signup">
-                    <div className="flex items-center">
-                      <Home className="mr-2 h-4 w-4" />
-                      <span>Sign Up</span>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
+                <Link href="/signup">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>Sign Up</span>
+                  </DropdownMenuItem>
+                </Link>
               )}
-              <DropdownMenuItem asChild>
-                <Link href="/blog">
-                  <div className="flex items-center">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    <span>Blog</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/ask">
-                  <div className="flex items-center">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Ask</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/research">
-                  <div className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>Research</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/about">
-                  <div className="flex items-center">
-                    <Info className="mr-2 h-4 w-4" />
-                    <span>About</span>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
+              <Link href="/learn">
+                <DropdownMenuItem className="cursor-pointer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Blog</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/ask">
+                <DropdownMenuItem className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Ask</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/research">
+                <DropdownMenuItem className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Research</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/about">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Info className="mr-2 h-4 w-4" />
+                  <span>About</span>
+                </DropdownMenuItem>
+              </Link>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <nav className="flex items-center space-x-6">
-          <Link href="/about">
-            <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
-              About
-            </span>
-          </Link>
-          <Link href="/learn">
-            <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
-              Blog
-            </span>
-          </Link>
-          <Link href="/ask">
-            <span className="text-foreground/60 hover:text-foreground transition-colors cursor-pointer">
-              Ask
-            </span>
-          </Link>
+          <a href="/about" className="text-foreground/60 hover:text-foreground transition-colors">
+            About
+          </a>
+          <a href="/learn" className="text-foreground/60 hover:text-foreground transition-colors">
+            Blog
+          </a>
           {!user && (
             <Button variant="ghost" asChild>
-              <Link href="/?login=true">
-                <span className="text-foreground hover:text-foreground/80 transition-colors">
-                  Log in
-                </span>
-              </Link>
+              <a href="/?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
+                Log in
+              </a>
             </Button>
           )}
         </nav>
