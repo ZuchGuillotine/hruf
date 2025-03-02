@@ -1,148 +1,159 @@
-import React, { Suspense } from "react";
-import { Router, Route, Switch } from "wouter";
-import { Spinner } from "@/components/ui/spinner";
-import ErrorBoundary from "./components/ErrorBoundary"; // Added import
 
-// Regular imports for main pages
-import Home from "@/pages/home";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import Dashboard from "@/pages/dashboard";
-import Blog from "@/pages/blog";
-import BlogPost from "@/pages/blog/[slug]";
-import HealthStats from "@/pages/health-stats";
-import SupplementHistory from "@/pages/supplement-history";
-import AdminSupplements from "@/pages/admin/supplements";
-import TermsOfService from "@/pages/terms-of-service";
-import PrivacyPolicy from "@/pages/privacy-policy";
-import VerifyEmail from "@/pages/verify-email";
-import Ask from "@/pages/ask";
+import React, { Suspense, lazy } from 'react';
+import { Switch, Route } from 'wouter';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Spinner } from '@/components/ui/spinner';
 
-// Lazy loaded components with suspense
-const Research = React.lazy(() => import("@/pages/research"));
-const ResearchDocument = React.lazy(() => import("@/pages/research/[slug]"));
-const AdminDashboard = React.lazy(() => import("@/pages/admin"));
-const BlogEditor = React.lazy(() => import("@/pages/admin/blog/editor"));
+// Import components that need to be immediately available
+import LandingPage from '@/pages/landing';
+import LoginPage from '@/pages/login';
+import RegisterPage from '@/pages/register';
+import VerifyEmailPage from '@/pages/verify-email';
+import PrivacyPolicyPage from '@/pages/privacy-policy';
+import TermsOfServicePage from '@/pages/terms-of-service';
+import NotFoundPage from '@/pages/404';
 
-// Protected route wrapper
-const ProtectedRoute = ({ component: Component, ...rest }) => {
-  const { isLoading, isAuthenticated } = useAuth();
+// Lazily load components that aren't needed immediately
+const DashboardPage = lazy(() => import('@/pages/dashboard'));
+const SupplementsPage = lazy(() => import('@/pages/supplements'));
+const SupplementsDetailPage = lazy(() => import('@/pages/supplements/[id]'));
+const SupplementListPage = lazy(() => import('@/pages/supplements/list'));
+const DailyTrackerPage = lazy(() => import('@/pages/daily-tracker'));
+const ChatPage = lazy(() => import('@/pages/chat'));
+const ProfilePage = lazy(() => import('@/pages/profile'));
+const HealthStatsPage = lazy(() => import('@/pages/health-stats'));
+const BlogPage = lazy(() => import('@/pages/blog'));
+const BlogPostPage = lazy(() => import('@/pages/blog/[slug]'));
+const ResearchPage = lazy(() => import('@/pages/research'));
+const ResearchDocumentPage = lazy(() => import('@/pages/research/[slug]'));
+const QueryPage = lazy(() => import('@/pages/query'));
 
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Redirect to="/login" />;
-  }
-
-  return <Component {...rest} />;
-};
-
-// Admin route wrapper
-const AdminRoute = ({ component: Component, ...rest }) => {
-  const { isLoading, isAuthenticated, user } = useAuth();
-
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>;
-  }
-
-  if (!isAuthenticated || !user?.isAdmin) {
-    return <Redirect to="/dashboard" />;
-  }
-
-  return <Component {...rest} />;
-};
+const LoadingFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center">
+    <Spinner size="lg" />
+  </div>
+);
 
 export function AppRouter() {
   return (
-    <Router>
-      <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/login" component={Login} />
-          <Route path="/register" component={Register} />
-          <Route path="/blog" component={Blog} />
-          <Route path="/blog/:slug" component={BlogPost} />
-          <Route path="/terms-of-service" component={TermsOfService} />
-          <Route path="/privacy-policy" component={PrivacyPolicy} />
-          <Route path="/verify-email" component={VerifyEmail} />
-          <Route path="/ask" component={Ask} />
-
-          {/* Protected routes */}
-          <ProtectedRoute path="/dashboard" component={Dashboard} />
-          <ProtectedRoute path="/health-stats" component={HealthStats} />
-          <ProtectedRoute path="/supplement-history/:date?" component={SupplementHistory} />
-
-          {/* Research routes - with proper Suspense handling */}
-          <Route path="/research">
-            {(props) => (
-              <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                <Research {...props} />
-              </Suspense>
-            )}
-          </Route>
-
-          <Route path="/research/:slug">
-            {(props) => (
-              <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                <ResearchDocument {...props} />
-              </Suspense>
-            )}
-          </Route>
-
-          {/* Admin routes */}
-          <Route path="/admin">
-            {(props) => (
-              <AdminRoute
-                component={(routeProps) => (
-                  <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                    <AdminDashboard {...routeProps} />
-                  </Suspense>
-                )}
-                {...props}
-              />
-            )}
-          </Route>
-
-          <Route path="/admin/blog/create">
-            {(props) => (
-              <AdminRoute
-                component={(routeProps) => (
-                  <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                    <BlogEditor {...routeProps} />
-                  </Suspense>
-                )}
-                {...props}
-              />
-            )}
-          </Route>
-
-          <Route path="/admin/blog/edit/:id">
-            {(props) => (
-              <AdminRoute
-                component={(routeProps) => (
-                  <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner className="h-8 w-8" /></div>}>
-                    <BlogEditor {...routeProps} />
-                  </Suspense>
-                )}
-                {...props}
-              />
-            )}
-          </Route>
-
-          <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
-
-          {/* 404 - Catch all route */}
-          <Route>
-            <div className="flex h-screen flex-col items-center justify-center">
-              <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
-              <p className="mt-4">The page you're looking for doesn't exist.</p>
-              <a href="/" className="mt-4 text-blue-500 hover:underline">Go back home</a>
-            </div>
-          </Route>
-        </Switch>
-      </Suspense>
-    </Router>
+    <ErrorBoundary>
+      <Switch>
+        {/* Public routes that don't need lazy loading */}
+        <Route path="/" component={LandingPage} />
+        <Route path="/login" component={LoginPage} />
+        <Route path="/register" component={RegisterPage} />
+        <Route path="/verify-email" component={VerifyEmailPage} />
+        <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+        <Route path="/terms-of-service" component={TermsOfServicePage} />
+        
+        {/* Protected routes with lazy loading and error boundaries */}
+        <Route path="/dashboard">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <DashboardPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/supplements">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <SupplementsPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/supplements/:id">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <SupplementsDetailPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/supplements/list">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <SupplementListPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/daily-tracker">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <DailyTrackerPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/chat">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <ChatPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/profile">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <ProfilePage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/health-stats">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <HealthStatsPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/blog">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <BlogPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/blog/:slug">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <BlogPostPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/research">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <ResearchPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/research/:slug">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <ResearchDocumentPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        <Route path="/query">
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <QueryPage />
+            </Suspense>
+          </ErrorBoundary>
+        </Route>
+        
+        {/* 404 route */}
+        <Route component={NotFoundPage} />
+      </Switch>
+    </ErrorBoundary>
   );
 }

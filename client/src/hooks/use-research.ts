@@ -1,81 +1,56 @@
-
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 interface ResearchDocument {
   id: number;
   title: string;
-  slug: string;
   content: string;
-  summary: string;
-  publishedAt?: string;
-  createdAt: string;
-  updatedAt?: string;
-  imageUrls?: string[];
-  authors?: string;
-  tags?: string[];
+  slug: string;
+  author: string;
+  publishedAt: string;
+  // Add other fields as needed
 }
 
-export function useResearch() {
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch all research documents
-  const {
-    data: researchDocuments,
-    isLoading: isLoadingDocuments,
-    error: docsError
-  } = useQuery<ResearchDocument[]>({
-    queryKey: ['researchDocuments'],
+export function useResearchDocuments() {
+  return useQuery<ResearchDocument[]>({
+    queryKey: ['research'],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/research');
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to fetch research documents');
+        const response = await fetch('/api/research');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch research documents: ${response.statusText}`);
         }
-        return res.json();
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch research documents';
-        setError(errorMessage);
-        throw err;
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching research documents:', error);
+        throw error;
       }
     },
     retry: 1,
-    refetchOnWindowFocus: false
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+}
 
-  // Create a function to get a specific document by slug
-  const getResearchBySlug = (slug?: string) => {
-    return useQuery<ResearchDocument>({
-      queryKey: ['researchDocument', slug],
-      queryFn: async () => {
-        if (!slug) throw new Error('Slug is required');
-        
-        try {
-          const res = await fetch(`/api/research/${slug}`);
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Research document not found');
-          }
-          return res.json();
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to fetch research document';
-          console.error('Error fetching research document:', errorMessage);
-          throw err;
+export function useResearchDocument(slug: string | undefined) {
+  return useQuery<ResearchDocument>({
+    queryKey: ['research', slug],
+    queryFn: async () => {
+      if (!slug) {
+        throw new Error('Slug is required');
+      }
+
+      try {
+        const response = await fetch(`/api/research/${slug}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch research document: ${response.statusText}`);
         }
-      },
-      enabled: !!slug,
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000 // 5 minutes
-    });
-  };
-
-  return {
-    researchDocuments,
-    isLoadingDocuments,
-    error: docsError ? (docsError as Error).message : error,
-    getResearchBySlug
-  };
+        return response.json();
+      } catch (error) {
+        console.error(`Error fetching research document with slug ${slug}:`, error);
+        throw error;
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!slug, // Only run the query if slug is provided
+  });
 }

@@ -1,77 +1,100 @@
 
-import React from "react";
-import { Link } from "wouter";
-import { useUser } from "@/hooks/use-user";
-import { useResearch } from "@/hooks/use-research";
-import Header from "@/components/header";
-import LandingHeader from "@/components/landing-header";
-import Footer from "@/components/footer";
-import { Spinner } from "@/components/ui/spinner";
-import { formatDate } from "@/lib/utils";
+import React from 'react';
+import { Link } from 'wouter';
+import { useResearchDocuments } from '@/hooks/use-research';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ResearchPage() {
-  const { user } = useUser();
-  const { researchDocuments, isLoadingDocuments, error } = useResearch();
+  const { data: researchDocuments, isLoading, error } = useResearchDocuments();
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-10">
+        <h1 className="text-3xl font-bold mb-8">Research & Evidence</h1>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((idx) => (
+            <Card key={idx} className="h-full flex flex-col">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-10 w-full" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-10">
+        <h1 className="text-3xl font-bold mb-8">Research & Evidence</h1>
+        <Card className="p-6 bg-red-50 border-red-200">
+          <CardTitle className="text-red-700 mb-4">Error Loading Research</CardTitle>
+          <CardContent>
+            <p className="text-red-600">
+              We encountered a problem loading the research documents. Please try again later.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {user ? <Header /> : <LandingHeader />}
-
-      <main className="flex-grow bg-white dark:bg-gray-950 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Supplement Research
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Access the latest research and studies on supplements, their effects, and potential benefits.
-            </p>
-
-            {isLoadingDocuments ? (
-              <div className="flex justify-center items-center p-12">
-                <Spinner className="h-8 w-8 text-green-600" />
-              </div>
-            ) : error ? (
-              <div className="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded">
-                <p className="text-red-700 dark:text-red-300">{error}</p>
-              </div>
-            ) : researchDocuments && researchDocuments.length > 0 ? (
-              <div className="space-y-6">
-                {researchDocuments.map((doc) => (
-                  <div key={doc.id} className="border rounded-lg p-5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 transition-colors">
-                    <Link href={`/research/${doc.slug}`}>
-                      <div className="block">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{doc.title}</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                          {formatDate(doc.publishedAt || doc.createdAt)}
-                        </p>
-                        <p className="text-gray-700 dark:text-gray-300 line-clamp-3 mb-2">
-                          {doc.summary}
-                        </p>
-                        <span className="text-green-600 dark:text-green-400 text-sm font-medium hover:underline">
-                          Read more
-                        </span>
-                      </div>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 border rounded-lg bg-gray-50 dark:bg-gray-900">
-                <p className="text-gray-500 dark:text-gray-400">No research documents available yet.</p>
-                {user?.isAdmin && (
-                  <p className="mt-2 text-green-600 dark:text-green-400">
-                    <Link href="/admin/research">
-                      <span>Add your first research document</span>
-                    </Link>
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+    <div className="container mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-8">Research & Evidence</h1>
+      {researchDocuments && researchDocuments.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {researchDocuments.map((doc) => (
+            <Card key={doc.id} className="h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="text-xl">{doc.title}</CardTitle>
+                <CardDescription>
+                  {doc.author} • {formatDate(doc.publishedAt)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <p className="line-clamp-3">
+                  {doc.content.substring(0, 150)}...
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Link href={`/research/${doc.slug}`}>
+                  <Button className="w-full">Read More</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
-      </main>
-      <Footer />
+      ) : (
+        <Card className="p-6">
+          <CardContent>
+            <p className="text-center text-gray-500">No research documents available.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
