@@ -25,8 +25,8 @@ import { getHealthStats, updateHealthStats } from "./controllers/healthStatsCont
 import { getSupplements, createSupplement, updateSupplement, deleteSupplement, searchSupplements } from "./controllers/supplementController";
 import { getSupplementLogs, createSupplementLog, getSupplementLogsByDate } from "./controllers/supplementLogController";
 import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitativeLogController";
-import { getBlogPosts, getBlogPostBySlug, createBlogPost, updateBlogPost, deleteBlogPost } from "./controllers/blogController";
 import { getAllResearchDocuments, getResearchDocumentBySlug, createResearchDocument, updateResearchDocument, deleteResearchDocument } from "./controllers/researchController";
+// Blog controller imports removed as blog management is now handled in a separate application
 import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 
@@ -738,12 +738,38 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Blog routes
-  app.get("/api/blog", getBlogPosts);
-  app.get("/api/blog/:slug", getBlogPostBySlug);
-  app.post("/api/blog", requireAuth, requireAdmin, createBlogPost);
-  app.put("/api/blog/:id", requireAuth, requireAdmin, updateBlogPost);
-  app.delete("/api/blog/:id", requireAuth, requireAdmin, deleteBlogPost);
+  // Blog routes - Removed as blog management is now in a separate application
+  // Only maintaining direct implementation for backward compatibility
+  app.get("/api/blog", async (req, res) => {
+    try {
+      const posts = await db
+        .select()
+        .from(blogPosts)
+        .orderBy(sql`${blogPosts.publishedAt} DESC`);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      res.status(500).send("Failed to fetch blog posts");
+    }
+  });
+  
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, req.params.slug))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).send("Blog post not found");
+      }
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching blog post:", error);
+      res.status(500).send("Failed to fetch blog post");
+    }
+  });
 
   // Research documents routes
   app.get("/api/research", getAllResearchDocuments);
