@@ -5,7 +5,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import AboutPage from "@/pages/about";
-import AskPage from "@pages/ask";  
+import AskPage from "@/pages/ask";  
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ProfilePage from "@/pages/profile";
