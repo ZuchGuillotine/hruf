@@ -11,7 +11,8 @@ import {
   blogPosts,
   supplementLogs,
   supplementReference,
-  qualitativeLogs
+  qualitativeLogs,
+  researchDocuments
 } from "@db/schema";
 import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
@@ -752,7 +753,7 @@ export function registerRoutes(app: Express): Server {
       res.status(500).send("Failed to fetch blog posts");
     }
   });
-  
+
   app.get("/api/blog/:slug", async (req, res) => {
     try {
       const [post] = await db
@@ -778,7 +779,7 @@ export function registerRoutes(app: Express): Server {
         .select()
         .from(researchDocuments)
         .orderBy(sql`${researchDocuments.publishedAt} DESC`);
-      
+
       res.status(200).json(documents);
     } catch (error) {
       console.error("Error fetching research documents:", error);
@@ -788,21 +789,21 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-  
+
   app.get("/api/research/:slug", async (req, res) => {
     try {
       const { slug } = req.params;
-      
+
       const [document] = await db
         .select()
         .from(researchDocuments)
         .where(eq(researchDocuments.slug, slug))
         .limit(1);
-      
+
       if (!document) {
         return res.status(404).json({ error: "Research document not found" });
       }
-      
+
       res.status(200).json(document);
     } catch (error) {
       console.error("Error fetching research document:", error);
@@ -812,18 +813,18 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-  
+
   // Admin endpoints for research documents CRUD
   app.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { title, summary, content, authors, imageUrls, tags } = req.body;
-      
+
       // Generate slug from title
       const slug = title
         .toLowerCase()
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
-      
+
       const [newDocument] = await db
         .insert(researchDocuments)
         .values({
@@ -836,19 +837,19 @@ export function registerRoutes(app: Express): Server {
           tags: tags || []
         })
         .returning();
-      
+
       return res.status(201).json(newDocument);
     } catch (error) {
       console.error("Error creating research document:", error);
       return res.status(500).json({ error: "Failed to create research document" });
     }
   });
-  
+
   app.put("/api/admin/research/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const { title, summary, content, authors, imageUrls, tags } = req.body;
-      
+
       const updatedDocument = await db
         .update(researchDocuments)
         .set({
@@ -862,31 +863,31 @@ export function registerRoutes(app: Express): Server {
         })
         .where(eq(researchDocuments.id, parseInt(id)))
         .returning();
-      
+
       if (updatedDocument.length === 0) {
         return res.status(404).json({ error: "Research document not found" });
       }
-      
+
       return res.status(200).json(updatedDocument[0]);
     } catch (error) {
       console.error("Error updating research document:", error);
       return res.status(500).json({ error: "Failed to update research document" });
     }
   });
-  
+
   app.delete("/api/admin/research/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       const deletedDocument = await db
         .delete(researchDocuments)
         .where(eq(researchDocuments.id, parseInt(id)))
         .returning();
-      
+
       if (deletedDocument.length === 0) {
         return res.status(404).json({ error: "Research document not found" });
       }
-      
+
       return res.status(200).json({ message: "Research document deleted successfully" });
     } catch (error) {
       console.error("Error deleting research document:", error);
