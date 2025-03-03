@@ -1,18 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
 
-interface ResearchDocument {
-  id: number;
-  title: string;
-  content: string;
-  slug: string;
-  author: string;
-  publishedAt: string;
-  // Add other fields as needed
-}
+import { useQuery } from '@tanstack/react-query';
+import type { ResearchDocument } from '@/lib/types';
 
 export function useResearchDocuments() {
   return useQuery<ResearchDocument[]>({
-    queryKey: ['research'],
+    queryKey: ['/api/research'],
     queryFn: async () => {
       try {
         const response = await fetch('/api/research');
@@ -32,7 +24,7 @@ export function useResearchDocuments() {
 
 export function useResearchDocument(slug: string | undefined) {
   return useQuery<ResearchDocument>({
-    queryKey: ['research', slug],
+    queryKey: ['/api/research', slug],
     queryFn: async () => {
       if (!slug) {
         throw new Error('Slug is required');

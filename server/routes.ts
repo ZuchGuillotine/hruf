@@ -25,7 +25,7 @@ import { getHealthStats, updateHealthStats } from "./controllers/healthStatsCont
 import { getSupplements, createSupplement, updateSupplement, deleteSupplement, searchSupplements } from "./controllers/supplementController";
 import { getSupplementLogs, createSupplementLog, getSupplementLogsByDate } from "./controllers/supplementLogController";
 import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitativeLogController";
-import { getAllResearchDocuments, getResearchDocumentBySlug, createResearchDocument, updateResearchDocument, deleteResearchDocument } from "./controllers/researchController";
+// Research controller removed, now handled directly in routes similar to blog
 // Blog controller imports removed as blog management is now handled in a separate application
 import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
@@ -771,12 +771,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Research documents routes
+  // Research documents routes - direct implementation like blog posts
   app.get("/api/research", async (req, res) => {
     try {
-      return await getAllResearchDocuments(req, res);
+      const documents = await db
+        .select()
+        .from(researchDocuments)
+        .orderBy(sql`${researchDocuments.publishedAt} DESC`);
+      
+      res.status(200).json(documents);
     } catch (error) {
-      console.error("Error handling research request:", error);
+      console.error("Error fetching research documents:", error);
       res.status(500).json({ 
         error: "Failed to retrieve research documents",
         message: error instanceof Error ? error.message : "Unknown error"
@@ -786,9 +791,21 @@ export function registerRoutes(app: Express): Server {
   
   app.get("/api/research/:slug", async (req, res) => {
     try {
-      return await getResearchDocumentBySlug(req, res);
+      const { slug } = req.params;
+      
+      const [document] = await db
+        .select()
+        .from(researchDocuments)
+        .where(eq(researchDocuments.slug, slug))
+        .limit(1);
+      
+      if (!document) {
+        return res.status(404).json({ error: "Research document not found" });
+      }
+      
+      res.status(200).json(document);
     } catch (error) {
-      console.error("Error handling research document request:", error);
+      console.error("Error fetching research document:", error);
       res.status(404).json({ 
         error: "Research document not found",
         message: error instanceof Error ? error.message : "Unknown error"
@@ -796,9 +813,86 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  app.post("/api/research", requireAuth, requireAdmin, createResearchDocument);
-  app.put("/api/research/:id", requireAuth, requireAdmin, updateResearchDocument);
-  app.delete("/api/research/:id", requireAuth, requireAdmin, deleteResearchDocument);
+  // Admin endpoints for research documents CRUD
+  app.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { title, summary, content, authors, imageUrls, tags } = req.body;
+      
+      // Generate slug from title
+      const slug = title
+        .toLowerCase()
+        .replace(/[^\w\s]/gi, '')
+        .replace(/\s+/g, '-');
+      
+      const [newDocument] = await db
+        .insert(researchDocuments)
+        .values({
+          title,
+          slug,
+          summary,
+          content,
+          authors,
+          imageUrls: imageUrls || [],
+          tags: tags || []
+        })
+        .returning();
+      
+      return res.status(201).json(newDocument);
+    } catch (error) {
+      console.error("Error creating research document:", error);
+      return res.status(500).json({ error: "Failed to create research document" });
+    }
+  });
+  
+  app.put("/api/admin/research/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, summary, content, authors, imageUrls, tags } = req.body;
+      
+      const updatedDocument = await db
+        .update(researchDocuments)
+        .set({
+          title,
+          summary,
+          content,
+          authors,
+          imageUrls,
+          tags,
+          updatedAt: new Date()
+        })
+        .where(eq(researchDocuments.id, parseInt(id)))
+        .returning();
+      
+      if (updatedDocument.length === 0) {
+        return res.status(404).json({ error: "Research document not found" });
+      }
+      
+      return res.status(200).json(updatedDocument[0]);
+    } catch (error) {
+      console.error("Error updating research document:", error);
+      return res.status(500).json({ error: "Failed to update research document" });
+    }
+  });
+  
+  app.delete("/api/admin/research/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const deletedDocument = await db
+        .delete(researchDocuments)
+        .where(eq(researchDocuments.id, parseInt(id)))
+        .returning();
+      
+      if (deletedDocument.length === 0) {
+        return res.status(404).json({ error: "Research document not found" });
+      }
+      
+      return res.status(200).json({ message: "Research document deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting research document:", error);
+      return res.status(500).json({ error: "Failed to delete research document" });
+    }
+  });
 
   // Blog management endpoints
   app.get("/api/blog", async (req, res) => {
