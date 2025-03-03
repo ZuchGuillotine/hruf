@@ -1,48 +1,43 @@
 
 import { useQuery } from '@tanstack/react-query';
-import type { ResearchDocument } from '@/lib/types';
+
+export interface ResearchDocument {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  content: string;
+  authors: string[];
+  imageUrls?: string[];
+  tags?: string[];
+  publishedAt: string;
+  updatedAt?: string;
+}
 
 export function useResearchDocuments() {
   return useQuery<ResearchDocument[]>({
     queryKey: ['/api/research'],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/research');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch research documents: ${response.statusText}`);
-        }
-        return response.json();
-      } catch (error) {
-        console.error('Error fetching research documents:', error);
-        throw error;
-      }
+      const res = await fetch('/api/research');
+      if (!res.ok) throw new Error('Failed to fetch research documents');
+      return res.json();
     },
-    retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    suspense: false, // Important: Disable suspense to prevent synchronous rendering errors
+    refetchOnWindowFocus: false,
   });
 }
 
-export function useResearchDocument(slug: string | undefined) {
+export function useResearchDocument(slug: string | null) {
   return useQuery<ResearchDocument>({
     queryKey: ['/api/research', slug],
     queryFn: async () => {
-      if (!slug) {
-        throw new Error('Slug is required');
-      }
-
-      try {
-        const response = await fetch(`/api/research/${slug}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch research document: ${response.statusText}`);
-        }
-        return response.json();
-      } catch (error) {
-        console.error(`Error fetching research document with slug ${slug}:`, error);
-        throw error;
-      }
+      if (!slug) throw new Error('No slug provided');
+      const res = await fetch(`/api/research/${slug}`);
+      if (!res.ok) throw new Error('Failed to fetch research document');
+      return res.json();
     },
-    retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!slug, // Only run the query if slug is provided
+    enabled: !!slug, // Only run query when slug is available
+    suspense: false, // Important: Disable suspense to prevent synchronous rendering errors
+    refetchOnWindowFocus: false,
   });
 }
