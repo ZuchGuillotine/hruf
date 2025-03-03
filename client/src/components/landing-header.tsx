@@ -47,7 +47,7 @@ export default function LandingHeader() {
               <Link href="/ask">
                 <DropdownMenuItem className="cursor-pointer">
                   <HelpCircle className="mr-2 h-4 w-4" />
-                  <span>Ask</span>
+                  <span>Ask ST AI</span>
                 </DropdownMenuItem>
               </Link>
               <Link href="/research">
