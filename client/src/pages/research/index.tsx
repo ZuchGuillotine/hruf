@@ -61,7 +61,7 @@ export default function ResearchPage() {
                     {document.title}
                   </Link>
                 </h2>
-                <p className="text-gray-600 mb-4">{document.excerpt}</p>
+                <p className="text-gray-600 mb-4">{document.excerpt || document.summary}</p>
                 <time className="text-sm text-gray-500">
                   {new Date(document.publishedAt).toLocaleDateString()}
                 </time>
@@ -70,7 +70,7 @@ export default function ResearchPage() {
           ))}
         </div>
 
-        {documents.length > DOCS_PER_PAGE && (
+        {totalPages > 1 && (
           <Pagination className="mt-8">
             <PaginationContent>
               <PaginationItem>
