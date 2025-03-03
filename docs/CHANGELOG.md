@@ -2,6 +2,14 @@
 # Changelog
 
 ## [February 2025]
+### Fixed
+- Fixed Research Documents functionality
+  - Resolved undefined `researchDocuments` variable in routes.ts
+  - Error boundary now properly catching and displaying errors in research pages
+  - Successfully implemented research documents backend/frontend connection
+  - Improved error handling for research document retrieval
+
+## [February 2025]
 ### Added
 - Implemented dual LLM service architecture
   - Created separate LLM services for different user needs:

@@ -98,6 +98,13 @@
   - SEO metadata
   - Publishing workflow
 
+- researchDocuments:
+  - Scientific research articles
+  - Detailed content with images
+  - Author attribution
+  - Tags for categorization
+  - Slug-based URL routing
+
 ### Data Validation & Security
 - Schema validation using Drizzle-zod
 - Input sanitization
@@ -118,6 +125,31 @@ GET /api/supplement-streak
 - Calculates user's current supplement logging streak
 - Requires authentication
 - Returns current streak count
+#### Research Document Routes
+GET /api/research
+- Retrieves list of all research documents
+- Publicly accessible
+- Returns array of research document objects
+
+GET /api/research/:slug
+- Retrieves a specific research document by slug
+- Publicly accessible
+- Returns single research document object or 404
+
+#### Admin Research Document Routes
+POST /api/admin/research
+- Creates a new research document
+- Requires admin authentication
+- Auto-generates slug from title
+
+PUT /api/admin/research/:id
+- Updates an existing research document
+- Requires admin authentication
+
+DELETE /api/admin/research/:id
+- Deletes a research document
+- Requires admin authentication
+
 Authentication Routes
 POST /api/register
 Registers a new user.
