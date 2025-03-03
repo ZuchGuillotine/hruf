@@ -73,7 +73,7 @@ export default function AskPage() {
                     } p-3 rounded`}
                   >
                     <p className="font-semibold mb-1">
-                      {message.role === "user" ? "You" : "Assistant"}:
+                      {message.role === "user" ? (user?.username || "You") : "Your ST AI"}:
                     </p>
                     <div className="whitespace-pre-wrap">
                       {message.content}
