@@ -156,6 +156,10 @@ export const researchDocuments = pgTable("research_documents", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Create Zod schemas for research documents
+export const insertResearchDocumentSchema = createInsertSchema(researchDocuments);
+export const selectResearchDocumentSchema = createSelectSchema(researchDocuments);
+
 export type InsertChatSummary = typeof chatSummaries.$inferInsert;
 export type SelectChatSummary = typeof chatSummaries.$inferSelect;
 export type BlogPost = typeof blogPosts.$inferSelect;
