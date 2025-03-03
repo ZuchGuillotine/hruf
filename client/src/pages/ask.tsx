@@ -103,7 +103,7 @@ export default function AskPage() {
             <Textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="What would you like to know about supplements?"
+              placeholder="Ask about supplements, interactions, or health advice..."
               className="flex-grow resize-none dark:bg-gray-900"
               rows={2}
             />
