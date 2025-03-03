@@ -17,6 +17,7 @@ export default function ResearchDocumentPage() {
   const { data: document, isLoading, error } = useQuery<ResearchDocument>({
     queryKey: ['/api/research', slug],
     queryFn: async () => {
+      if (!slug) throw new Error('No slug provided');
       const res = await fetch(`/api/research/${slug}`);
       if (!res.ok) throw new Error('Failed to fetch research document');
       return res.json();
@@ -96,13 +97,15 @@ export default function ResearchDocumentPage() {
             />
           )}
           <h1 className="text-4xl font-bold mb-4 text-primary">{document.title}</h1>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {document.authors && document.authors.map((author, index) => (
-              <span key={index} className="text-sm bg-primary-100 text-primary-800 px-2 py-1 rounded">
-                {author}
-              </span>
-            ))}
-          </div>
+          {document.authors && document.authors.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {document.authors.map((author, index) => (
+                <span key={index} className="text-sm bg-primary-100 text-primary-800 px-2 py-1 rounded">
+                  {author}
+                </span>
+              ))}
+            </div>
+          )}
           <time className="text-gray-500 block mb-8">
             {new Date(document.publishedAt).toLocaleDateString()}
           </time>
