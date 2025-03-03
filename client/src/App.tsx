@@ -19,6 +19,7 @@ import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 /**
  * AdminRoute Component
@@ -90,8 +91,20 @@ function AppRouter() {
         <Route path="/learn" component={LearnPage} />
         <Route path="/learn/:slug" component={BlogPostPage} />
         <Route path="/ask" component={AskPage} />
-        <Route path="/research" component={React.lazy(() => import("@/pages/research"))} />
-        <Route path="/research/:slug" component={React.lazy(() => import("@/pages/research/[slug]"))} />
+        <Route path="/research">
+          <ErrorBoundary>
+            <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              {React.createElement(React.lazy(() => import("@/pages/research")))}
+            </React.Suspense>
+          </ErrorBoundary>
+        </Route>
+        <Route path="/research/:slug">
+          <ErrorBoundary>
+            <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              {React.createElement(React.lazy(() => import("@/pages/research/[slug]")))}
+            </React.Suspense>
+          </ErrorBoundary>
+        </Route>
       </Switch>
     );
   }
@@ -116,9 +129,11 @@ function AppRouter() {
         return (
           <AdminRoute 
             component={() => (
-              <React.Suspense fallback={<div>Loading...</div>}>
-                <AdminDashboard />
-              </React.Suspense>
+              <ErrorBoundary>
+                <React.Suspense fallback={<div>Loading...</div>}>
+                  <AdminDashboard />
+                </React.Suspense>
+              </ErrorBoundary>
             )} 
             {...props} 
           />
@@ -130,9 +145,11 @@ function AppRouter() {
         return (
           <AdminRoute 
             component={() => (
-              <React.Suspense fallback={<div>Loading...</div>}>
-                <AdminBlog />
-              </React.Suspense>
+              <ErrorBoundary>
+                <React.Suspense fallback={<div>Loading...</div>}>
+                  <AdminBlog />
+                </React.Suspense>
+              </ErrorBoundary>
             )} 
             {...props} 
           />
@@ -152,7 +169,9 @@ function AppRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppRouter />
+      <ErrorBoundary>
+        <AppRouter />
+      </ErrorBoundary>
       <CookieConsent />
       <Toaster />
     </QueryClientProvider>
