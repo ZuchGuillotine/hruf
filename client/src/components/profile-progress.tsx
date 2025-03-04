@@ -1,17 +1,29 @@
+import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, X } from "lucide-react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
+import { Button } from "@/components/ui/button";
 
 export function ProfileProgress() {
   const { steps, completionPercentage, isLoading } = useProfileCompletion();
+  const [dismissed, setDismissed] = useState(false);
 
-  if (isLoading) return null;
+  if (isLoading || dismissed) return null;
 
   return (
-    <Card className="bg-[#1b4332] text-white">
+    <Card className="bg-[#1b4332] text-white relative">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 text-white/70 hover:text-white hover:bg-[#1b4332]/80"
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss profile completion card"
+      >
+        <X className="h-4 w-4" />
+      </Button>
       <CardContent className="pt-6">
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">Profile Completion</h3>
