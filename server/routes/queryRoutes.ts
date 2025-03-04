@@ -9,7 +9,7 @@ import { eq, desc } from "drizzle-orm";
 function setupQueryRoutes(app: Express) {
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated()) {
+    if (!req.user) {
       return res.status(401).json({
         error: "Authentication required",
         redirect: "/login"
@@ -28,7 +28,17 @@ function setupQueryRoutes(app: Express) {
       }
 
       const userQuery = messages[messages.length - 1].content;
-      const userId = req.user?.id || null;
+      
+      // Check if user is authenticated
+      const isAuthenticated = req.user !== undefined;
+      const userId = isAuthenticated ? req.user.id : null;
+      
+      console.log('Query request:', {
+        isAuthenticated,
+        userId,
+        messageCount: messages.length,
+        timestamp: new Date().toISOString()
+      });
 
       // Get user context if available, or use minimal context for non-authenticated users
       const queryContext = await constructQueryContext(userId, userQuery);

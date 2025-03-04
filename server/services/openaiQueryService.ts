@@ -6,10 +6,13 @@ import { qualitativeLogs } from "../../db/schema";
 import { Message } from "@/lib/types";
 
 // Initialize OpenAI with the separate API key for queries
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_QUERY_KEY,
+});
 
-// Add detailed logging for query requests
-async function queryWithAI(messages: Message[], userId: string | null) {
+export async function queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
   try {
+    // Log processing details for debugging
     console.log('Processing query with OpenAI:', {
       userId,
       messageCount: messages.length,
@@ -17,27 +20,6 @@ async function queryWithAI(messages: Message[], userId: string | null) {
       timestamp: new Date().toISOString()
     });
     
-    // Implement the actual OpenAI query logic here
-    
-    // Return response or throw appropriate error
-  } catch (error) {
-    console.error('OpenAI query error:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      userId,
-      timestamp: new Date().toISOString()
-    });
-    throw error;
-  }
-}
-
-export { queryWithAI };
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_QUERY_KEY,
-});
-
-export async function queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
-  try {
     // Call OpenAI API with chat completion
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -53,13 +35,25 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
       await saveInteraction(userId, messages[messages.length - 1].content, response);
     }
 
+    // Log successful completion
+    console.log('OpenAI query completed successfully:', {
+      userId,
+      responseLength: response?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+
     return {
       response,
       usage: completion.usage,
       model: completion.model,
     };
   } catch (error) {
-    console.error("Error in OpenAI Query API:", error);
+    console.error("OpenAI query error:", {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      timestamp: new Date().toISOString()
+    });
     throw error;
   }
 }
