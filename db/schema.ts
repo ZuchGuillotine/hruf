@@ -103,6 +103,16 @@ export const qualitativeLogs = pgTable("qualitative_logs", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Query chat logs
+export const queryChatLogs = pgTable("query_chat_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  content: text("content").notNull(),
+  loggedAt: timestamp("logged_at").default(sql`CURRENT_TIMESTAMP`),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default(sql`'{}'::jsonb`),
+});
+
+
 // Zod schemas for type-safe database operations
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);

@@ -1,67 +1,101 @@
 
-import { Request, Response } from 'express';
-import { db } from '../../db';
-import { queryChats } from '../../db/schema';
-import { and, eq, desc } from 'drizzle-orm';
-import { requireAuth } from '../auth';
+import express, { type Request, Response, Express } from "express";
+import { queryWithAI } from "../services/openaiQueryService";
+import { constructQueryContext } from "../services/llmContextService_query";
+import { db } from "@db";
+import { queryChatLogs } from "@db/schema";
 
-export default function setupQueryRoutes(app: any) {
-  // Save query chat history
-  app.post('/api/query/save', requireAuth, async (req: Request, res: Response) => {
+function setupQueryRoutes(app: Express) {
+  // Middleware to check authentication
+  const requireAuth = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        error: "Authentication required",
+        redirect: "/login"
+      });
+    }
+    next();
+  };
+
+  // Query endpoint - works for both authenticated and non-authenticated users
+  app.post("/api/query", async (req, res) => {
     try {
       const { messages } = req.body;
-      const userId = req.user?.id;
-      
-      if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: 'Invalid messages format' });
+
+      if (!Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages must be an array" });
       }
-      
-      const insertResult = await db.insert(queryChats).values({
-        userId,
-        messages,
-        updatedAt: new Date(),
-        metadata: { savedAt: new Date().toISOString() }
-      }).returning();
-      
-      res.json(insertResult[0]);
-    } catch (error) {
-      console.error("Error saving query chat:", {
+
+      const userQuery = messages[messages.length - 1].content;
+      const userId = req.isAuthenticated() ? req.user?.id : null;
+
+      // Get user context if available, or use minimal context for non-authenticated users
+      const queryContext = await constructQueryContext(userId, userQuery);
+      const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
+
+      // Get AI response with appropriate context
+      const aiResponse = await queryWithAI(contextualizedMessages, userId);
+
+      if (!aiResponse?.response) {
+        return res.status(500).json({ 
+          error: "Failed to get AI response",
+          message: "The AI service did not provide a valid response"
+        });
+      }
+
+      // Store chat history if user is authenticated
+      if (userId) {
+        try {
+          await db.insert(queryChatLogs).values({
+            userId,
+            content: JSON.stringify({
+              query: userQuery,
+              response: aiResponse.response
+            }),
+            metadata: {
+              savedAt: new Date().toISOString()
+            }
+          });
+        } catch (error) {
+          console.error("Error saving query chat:", error);
+          // Don't block the response if saving fails
+        }
+      }
+
+      // Send AI response
+      res.json(aiResponse);
+    } catch (error: any) {
+      console.error("Error in query endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString()
       });
-      
       res.status(500).json({
-        error: "Failed to save query chat",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: "Query error",
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
-  
-  // Get query chat history
-  app.get('/api/query/history', requireAuth, async (req: Request, res: Response) => {
+
+  // Get query history (only for authenticated users)
+  app.get("/api/query/history", requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.id;
-      
       const history = await db
         .select()
-        .from(queryChats)
-        .where(eq(queryChats.userId, userId))
-        .orderBy(desc(queryChats.createdAt))
+        .from(queryChatLogs)
+        .where({ userId: req.user!.id })
+        .orderBy({ loggedAt: "desc" })
         .limit(50);
-      
+
       res.json(history);
     } catch (error) {
-      console.error("Error fetching query chat history:", {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
-      
+      console.error("Error fetching query history:", error);
       res.status(500).json({
-        error: "Failed to fetch query chat history",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: "Failed to fetch query history",
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
 }
+
+export default setupQueryRoutes;
