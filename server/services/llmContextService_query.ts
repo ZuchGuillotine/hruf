@@ -1,4 +1,3 @@
-
 import { getQuantitativeLogs, getQualitativeLogs } from "./logService";
 import { Message } from "@/lib/types";
 import { db } from "../../db";
@@ -21,7 +20,6 @@ When answering:
 If the user has shared their supplement tracking history, you may reference it to provide more personalized context,`;
 
 // Constructs context for general supplement queries
-// This service handles context for general supplement information requests
 export async function constructQueryContext(userId: number | null, userQuery: string): Promise<{ messages: Message[] }> {
   try {
     // If user is not authenticated, return basic context
@@ -32,7 +30,7 @@ export async function constructQueryContext(userId: number | null, userQuery: st
         hasSystemPrompt: true,
         timestamp: new Date().toISOString()
       });
-      
+
       return {
         messages: [
           { role: "system", content: QUERY_SYSTEM_PROMPT },
@@ -40,9 +38,8 @@ export async function constructQueryContext(userId: number | null, userQuery: st
         ]
       };
     }
-    
-    console.log('User authenticated, building full context:', {
-      isAuthenticated: true,
+
+    console.log('Building context for authenticated user:', {
       userId,
       timestamp: new Date().toISOString()
     });
@@ -64,6 +61,17 @@ export async function constructQueryContext(userId: number | null, userQuery: st
       })
     ]);
 
+    // Format health stats data if available
+    const healthStatsContext = userHealthStats ? `
+Weight: ${userHealthStats.weight || 'Not provided'} lbs
+Height: ${userHealthStats.height || 'Not provided'} inches
+Gender: ${userHealthStats.gender || 'Not provided'}
+Date of Birth: ${userHealthStats.dateOfBirth || 'Not provided'}
+Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.averageSleep / 60)}h ${userHealthStats.averageSleep % 60}m` : 'Not provided'}
+Allergies: ${userHealthStats.allergies || 'None listed'}
+` : 'No health stats data available.';
+
+    // Format supplement logs
     const quantitativeContext = quantitativeLogs
       .map(log => {
         const date = new Date(log.takenAt).toISOString().split('T')[0];
@@ -76,6 +84,7 @@ export async function constructQueryContext(userId: number | null, userQuery: st
       })
       .join('\n');
 
+    // Format qualitative logs
     const recentQualitativeContext = recentLogs
       .map(log => {
         const date = new Date(log.loggedAt).toISOString().split('T')[0];
@@ -83,18 +92,9 @@ export async function constructQueryContext(userId: number | null, userQuery: st
       })
       .join('\n');
 
+    // Format historical summaries
     const historicalContext = historicalSummaries.length > 0 ? 
       historicalSummaries.map(s => s.summary).join('\n\n') : 'No historical summaries found.';
-
-    // Format health stats data if available
-    const healthStatsContext = userHealthStats ? `
-Weight: ${userHealthStats.weight || 'Not provided'} lbs
-Height: ${userHealthStats.height || 'Not provided'} inches
-Gender: ${userHealthStats.gender || 'Not provided'}
-Date of Birth: ${userHealthStats.dateOfBirth || 'Not provided'}
-Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.averageSleep / 60)}h ${userHealthStats.averageSleep % 60}m` : 'Not provided'}
-Allergies: ${userHealthStats.allergies || 'None listed'}
-` : 'No health stats data available.';
 
     const messages = [
       { role: "system", content: QUERY_SYSTEM_PROMPT },
@@ -116,10 +116,8 @@ ${userQuery}
 ` }
     ];
 
-    console.log('Query LLM Context being sent:', JSON.stringify(messages, null, 2));
-    console.log('Context stats:', {
+    console.log('Context built successfully:', {
       userId,
-      isAuthenticated: !!userId,
       hasHealthStats: !!userHealthStats,
       hasSupplementLogs: quantitativeLogs.length > 0,
       hasQualitativeLogs: recentLogs.length > 0,
@@ -129,13 +127,14 @@ ${userQuery}
 
     return { messages };
   } catch (error) {
-    console.error("Error constructing query context:", error);
-    console.error("Context error details:", {
+    console.error("Error constructing query context:", {
       userId,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
+
+    // Fallback to basic context on error
     return {
       messages: [
         { role: "system", content: QUERY_SYSTEM_PROMPT },

@@ -4,11 +4,12 @@ import { constructQueryContext } from "../services/llmContextService_query";
 import { db } from "@db";
 import { queryChats } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
+import { setAuthInfo } from "../middleware/authMiddleware";
 
 function setupQueryRoutes(app: Express) {
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.user) {
+    if (!req.authInfo?.isAuthenticated) {
       return res.status(401).json({
         error: "Authentication required",
         redirect: "/login"
@@ -18,7 +19,7 @@ function setupQueryRoutes(app: Express) {
   };
 
   // Query endpoint - works for both authenticated and non-authenticated users
-  app.post("/api/query", async (req, res) => {
+  app.post("/api/query", setAuthInfo, async (req, res) => {
     try {
       const { messages } = req.body;
 
@@ -28,9 +29,8 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
 
-      // Direct authentication check using Passport's built-in method
-      const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
-      const userId = isAuthenticated && req.user ? req.user.id : null;
+      // Use authInfo from middleware
+      const { isAuthenticated, userId } = req.authInfo || { isAuthenticated: false, userId: null };
 
       console.log('Query request:', {
         isAuthenticated,
@@ -57,7 +57,7 @@ function setupQueryRoutes(app: Express) {
       }
 
       // Store chat history if user is authenticated
-      if (userId) {
+      if (isAuthenticated && userId) {
         try {
           console.log('Saving query chat history for authenticated user:', {
             userId,
@@ -83,8 +83,8 @@ function setupQueryRoutes(app: Express) {
         }
       } else {
         console.log('Not saving query chat - user not authenticated:', {
-          isAuthenticated: false,
-          userId: null,
+          isAuthenticated,
+          userId,
           timestamp: new Date().toISOString()
         });
       }
@@ -97,7 +97,8 @@ function setupQueryRoutes(app: Express) {
         stack: error instanceof Error ? error.stack : undefined,
         authStatus: {
           hasUser: req.user ? true : false,
-          hasSession: req.session ? true : false
+          hasSession: req.session ? true : false,
+          authInfo: req.authInfo
         },
         timestamp: new Date().toISOString()
       });
@@ -109,7 +110,7 @@ function setupQueryRoutes(app: Express) {
   });
 
   // Get query history (only for authenticated users)
-  app.get("/api/query/history", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/query/history", setAuthInfo, requireAuth, async (req: Request, res: Response) => {
     try {
       const history = await db
         .select()

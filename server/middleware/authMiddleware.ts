@@ -1,29 +1,28 @@
-
-// Authentication middleware to ensure consistent user authentication checks
 import { Request, Response, NextFunction } from 'express';
 
 // Check if user is authenticated and set authentication information consistently
 export const setAuthInfo = (req: Request, res: Response, next: NextFunction) => {
-  // Directly use Passport's isAuthenticated method - this is the standard way
-  const isAuthenticated = req.isAuthenticated?.();
-  
+  // Properly handle isAuthenticated check without optional chaining
+  const isAuthenticated = typeof req.isAuthenticated === 'function' ? req.isAuthenticated() : false;
+
   // Attach auth info to request object for consistent access
   req.authInfo = {
-    isAuthenticated: !!isAuthenticated,
+    isAuthenticated,
     userId: isAuthenticated && req.user ? req.user.id : null,
   };
-  
+
   // Only log auth failures in non-public routes if needed
   if (!isAuthenticated && !req.path.startsWith('/api/query') && req.path.startsWith('/api/')) {
     console.log(`Auth failed for restricted path: ${req.path}`);
   }
-  
+
   next();
 };
 
 // Middleware to require authentication (for protected routes)
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.isAuthenticated || !req.isAuthenticated()) {
+  // Properly handle isAuthenticated check
+  if (typeof req.isAuthenticated !== 'function' || !req.isAuthenticated()) {
     return res.status(401).json({
       error: "Authentication required",
       redirect: "/login"
@@ -31,3 +30,15 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   }
   next();
 };
+
+// Add type definition to express Request interface
+declare global {
+  namespace Express {
+    interface Request {
+      authInfo?: {
+        isAuthenticated: boolean;
+        userId: number | null;
+      };
+    }
+  }
+}
