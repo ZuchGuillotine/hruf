@@ -7,40 +7,62 @@ import { eq, desc } from "drizzle-orm";
 import { setAuthInfo } from "../middleware/authMiddleware";
 
 function setupQueryRoutes(app: Express) {
-  // Middleware to check authentication
-  const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.authInfo?.isAuthenticated) {
-      return res.status(401).json({
-        error: "Authentication required",
-        redirect: "/login"
-      });
-    }
-    next();
-  };
+  // Debug endpoint to verify authentication state
+  app.get("/api/query/debug", async (req, res) => {
+    console.log('Query Debug Info:', {
+      session: {
+        id: req.sessionID,
+        exists: !!req.session,
+        cookie: req.session?.cookie
+      },
+      auth: {
+        isAuthenticated: req.isAuthenticated(),
+        hasUser: !!req.user,
+        user: req.user ? {
+          id: req.user.id,
+          email: req.user.email
+        } : null
+      },
+      headers: {
+        cookie: req.headers.cookie,
+        authorization: req.headers.authorization
+      },
+      timestamp: new Date().toISOString()
+    });
 
-  // Query endpoint - works for both authenticated and non-authenticated users
-  app.post("/api/query", setAuthInfo, async (req, res) => {
+    res.json({
+      authenticated: req.isAuthenticated(),
+      sessionActive: !!req.session,
+      hasUser: !!req.user,
+      userId: req.user?.id
+    });
+  });
+
+  // Regular query endpoint with enhanced auth logging
+  app.post("/api/query", async (req, res) => {
     try {
-      const { messages } = req.body;
+      console.log('Query Authentication State:', {
+        session: {
+          id: req.sessionID,
+          exists: !!req.session,
+          cookie: req.session?.cookie
+        },
+        auth: {
+          isAuthenticated: req.isAuthenticated(),
+          hasUser: !!req.user,
+          userId: req.user?.id
+        },
+        timestamp: new Date().toISOString()
+      });
 
+      const { messages } = req.body;
       if (!Array.isArray(messages)) {
         return res.status(400).json({ error: "Messages must be an array" });
       }
 
       const userQuery = messages[messages.length - 1].content;
-
-      // Use authInfo from middleware
-      const { isAuthenticated, userId } = req.authInfo || { isAuthenticated: false, userId: null };
-
-      console.log('Query request:', {
-        isAuthenticated,
-        userId,
-        messageCount: messages.length,
-        hasUserObject: req.user ? true : false,
-        userKeys: req.user ? Object.keys(req.user) : [],
-        sessionActive: req.session ? true : false,
-        timestamp: new Date().toISOString()
-      });
+      const isAuthenticated = req.isAuthenticated();
+      const userId = isAuthenticated && req.user ? req.user.id : null;
 
       // Get user context if available, or use minimal context for non-authenticated users
       const queryContext = await constructQueryContext(userId, userQuery);
@@ -59,12 +81,6 @@ function setupQueryRoutes(app: Express) {
       // Store chat history if user is authenticated
       if (isAuthenticated && userId) {
         try {
-          console.log('Saving query chat history for authenticated user:', {
-            userId,
-            messageCount: messages.length,
-            timestamp: new Date().toISOString()
-          });
-
           await db.insert(queryChats).values({
             userId,
             messages: [...messages],
@@ -73,32 +89,24 @@ function setupQueryRoutes(app: Express) {
             }
           });
         } catch (error) {
-          console.error("Error saving query chat:", error, {
+          console.error("Error saving query chat:", {
             userId,
             error: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : undefined,
             timestamp: new Date().toISOString()
           });
-          // Don't block the response if saving fails
         }
-      } else {
-        console.log('Not saving query chat - user not authenticated:', {
-          isAuthenticated,
-          userId,
-          timestamp: new Date().toISOString()
-        });
       }
 
-      // Send AI response
       res.json(aiResponse);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in query endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         authStatus: {
-          hasUser: req.user ? true : false,
-          hasSession: req.session ? true : false,
-          authInfo: req.authInfo
+          hasUser: !!req.user,
+          hasSession: !!req.session,
+          isAuthenticated: req.isAuthenticated()
         },
         timestamp: new Date().toISOString()
       });
@@ -110,8 +118,15 @@ function setupQueryRoutes(app: Express) {
   });
 
   // Get query history (only for authenticated users)
-  app.get("/api/query/history", setAuthInfo, requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/query/history", async (req: Request, res: Response) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({
+          error: "Authentication required",
+          redirect: "/login"
+        });
+      }
+
       const history = await db
         .select()
         .from(queryChats)

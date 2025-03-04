@@ -2,8 +2,6 @@ import passport from "passport";
 import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { type Express } from "express";
-import session from "express-session";
-import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { users } from "@db/schema";
@@ -45,31 +43,61 @@ declare global {
 }
 
 export function setupAuth(app: Express) {
-  const MemoryStore = createMemoryStore(session);
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.REPL_ID || "hipaa-compliant-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: app.get("env") === "production",
-      httpOnly: true,
-      sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
-    store: new MemoryStore({
-      checkPeriod: 86400000,
-    }),
-  };
-
-  if (app.get("env") === "production") {
-    app.set("trust proxy", 1);
-  }
-
-  app.use(session(sessionSettings));
+  // Initialize Passport authentication
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Local Strategy
+  // User serialization for session storage
+  passport.serializeUser((user: Express.User, done) => {
+    console.log('Serializing user:', {
+      userId: user.id,
+      email: user.email,
+      timestamp: new Date().toISOString()
+    });
+    done(null, user.id);
+  });
+
+  // User deserialization from session
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      console.log('Deserializing user:', {
+        userId: id,
+        timestamp: new Date().toISOString()
+      });
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+
+      if (!user) {
+        console.error('User not found during deserialization:', {
+          userId: id,
+          timestamp: new Date().toISOString()
+        });
+        return done(null, false);
+      }
+
+      console.log('User deserialized successfully:', {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date().toISOString()
+      });
+
+      done(null, user);
+    } catch (err) {
+      console.error('Error deserializing user:', {
+        userId: id,
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      done(err);
+    }
+  });
+
+  // Local authentication strategy
   passport.use(
     new LocalStrategy(
       {
@@ -198,24 +226,6 @@ export function setupAuth(app: Express) {
     )
   );
 
-  // Passport session setup
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
-
   // Google OAuth routes
   app.get('/auth/google',
     (req, res, next) => {
@@ -284,6 +294,7 @@ export function setupAuth(app: Express) {
           return res.redirect('/login?error=auth_failed');
         }
         
+
         if (!user) {
           console.error('Google OAuth authentication failed:', {
             info,
@@ -302,12 +313,14 @@ export function setupAuth(app: Express) {
             return res.redirect('/login?error=login_failed');
           }
           
+
           console.log('Google OAuth authentication successful:', {
             userId: user.id,
             email: user.email,
             timestamp: new Date().toISOString()
           });
           
+
           res.redirect('/dashboard');
         });
       })(req, res, next);
@@ -395,11 +408,35 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error, user: Express.User, info: IVerifyOptions) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ error: info.message });
+      if (err) {
+        console.error('Login error:', {
+          error: err.message,
+          stack: err.stack,
+          timestamp: new Date().toISOString()
+        });
+        return next(err);
+      }
 
-      req.login(user, (err) => {
-        if (err) return next(err);
+      if (!user) {
+        return res.status(401).json({ error: info.message });
+      }
+
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Session login error:', {
+            error: loginErr.message,
+            stack: loginErr.stack,
+            timestamp: new Date().toISOString()
+          });
+          return next(loginErr);
+        }
+
+        console.log('User logged in successfully:', {
+          userId: user.id,
+          email: user.email,
+          timestamp: new Date().toISOString()
+        });
+
         return res.json({
           message: "Login successful",
           user: {
@@ -416,16 +453,50 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
+    console.log('Logging out user:', {
+      userId: req.user?.id,
+      email: req.user?.email,
+      timestamp: new Date().toISOString()
+    });
+
     req.logout((err) => {
-      if (err) return res.status(500).json({ error: "Logout failed" });
+      if (err) {
+        console.error('Logout error:', {
+          error: err.message,
+          stack: err.stack,
+          timestamp: new Date().toISOString()
+        });
+        return res.status(500).json({ error: "Logout failed" });
+      }
       res.json({ message: "Logged out successfully" });
     });
   });
 
+  // User info endpoint
   app.get("/api/user", (req, res) => {
+    console.log('User info request:', {
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      userId: req.user?.id,
+      timestamp: new Date().toISOString()
+    });
+
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     res.json(req.user);
+  });
+
+  // Debug endpoint to check session
+  app.get("/api/debug/session", (req, res) => {
+    res.json({
+      isAuthenticated: req.isAuthenticated(),
+      hasSession: !!req.session,
+      sessionID: req.sessionID,
+      user: req.user ? {
+        id: req.user.id,
+        email: req.user.email,
+      } : null,
+    });
   });
 }

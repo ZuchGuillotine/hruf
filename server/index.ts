@@ -5,52 +5,66 @@ import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { db } from '../db';
 import cors from 'cors';
+import { setupAuth } from './auth';
 import setupQueryRoutes from './routes/queryRoutes';
 import { setAuthInfo } from './middleware/authMiddleware';
+import session from 'express-session';
+import createMemoryStore from "memorystore";
 
 const app = express();
-app.use(cors({
-  origin: process.env.ADMIN_APP_URL,
-  credentials: true
-}));
 
-// Trust first proxy
+// Essential middleware
 app.set('trust proxy', 1);
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later",
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-});
-
-// DDoS protection
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  delayAfter: 50, // allow 50 requests per 15 minutes, then...
-  delayMs: (hits) => hits * 100, // begin adding 100ms of delay per hit
-});
-
-// Body parsing middleware must be before route registration
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Auth system is already set up in auth.ts
+// Session configuration
+const MemoryStore = createMemoryStore(session);
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  store: new MemoryStore({
+    checkPeriod: 86400000
+  }),
+  cookie: {
+    secure: app.get('env') === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
+  }
+};
 
-// Apply authentication middleware to all routes
+// Core middleware setup
+app.use(session(sessionConfig));
+setupAuth(app);
 app.use(setAuthInfo);
 
-// API routes should be handled before static files
+// Rate limiting
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+}));
+
+app.use('/api', slowDown({
+  windowMs: 15 * 60 * 1000,
+  delayAfter: 50,
+  delayMs: (hits) => hits * 100,
+}));
+
+// API middleware
 app.use('/api', (req, res, next) => {
   res.setHeader('Content-Type', 'application/json');
   next();
 });
 
-// Apply rate limiting to API routes
-app.use('/api', limiter);
-app.use('/api', speedLimiter);
 
 // API request logging middleware
 app.use((req, res, next) => {
@@ -83,87 +97,53 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // Initialize cron jobs
-  const summarizeChatsModule = await import('./cron/summarizeChats.js');
-  const { runChatSummarization } = summarizeChatsModule;
+// Setup routes after middleware
+setupQueryRoutes(app);
+const server = registerRoutes(app);
 
-  // Run chat summarization every 24 hours
-  setInterval(async () => {
-    console.log('Starting scheduled chat summarization...');
-    try {
-      await runChatSummarization();
-    } catch (error) {
-      console.error('Failed to run chat summarization:', error);
-    }
-  }, 24 * 60 * 60 * 1000);
+// Global error handling middleware
+app.use('/api', (err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
 
-  // Direct RDS connection - no IP monitor needed
-
-  // Create the HTTP server and register API routes first
-  setupQueryRoutes(app); // Added this line
-  const server = registerRoutes(app);
-
-  // Global error handling middleware for API routes
-  app.use('/api', (err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    console.error('Server Error:', {
-      status,
-      message,
-      stack: err.stack,
-      timestamp: new Date().toISOString()
-    });
-
-    res.status(status).json({
-      status: 'error',
-      message,
-      timestamp: new Date().toISOString()
-    });
+  console.error('Server Error:', {
+    status,
+    message,
+    stack: err.stack,
+    timestamp: new Date().toISOString()
   });
 
-  // Setup Vite last, after all API routes are registered
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  res.status(status).json({
+    status: 'error',
+    message,
+    timestamp: new Date().toISOString()
+  });
+});
 
-  const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-  const MAX_PORT_ATTEMPTS = 10;
+// Setup Vite last
+if (app.get("env") === "development") {
+  await setupVite(app, server);
+} else {
+  serveStatic(app);
+}
 
-  const tryPort = async (port: number): Promise<number> => {
-    try {
-      await new Promise((resolve, reject) => {
-        server.listen(port, "0.0.0.0")
-          .once('listening', () => {
-            server.removeListener('error', reject);
-            resolve(port);
-          })
-          .once('error', (err: NodeJS.ErrnoException) => {
-            server.removeListener('listening', resolve);
-            if (err.code === 'EADDRINUSE') {
-              reject(err);
-            } else {
-              reject(err);
-            }
-          });
-      });
-      return port;
-    } catch (err) {
-      if (port - BASE_PORT >= MAX_PORT_ATTEMPTS) {
-        throw new Error('No available ports found');
-      }
-      return tryPort(port + 1);
-    }
-  };
+// Start server
+const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 
+function startServer(retries = 3) {
   try {
-    const port = await tryPort(BASE_PORT);
-    log(`serving on port ${port}`);
+    server.listen(BASE_PORT, "0.0.0.0", () => {
+      log(`Server started on port ${BASE_PORT}`);
+    });
   } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
+    if (retries > 0) {
+      console.log(`Retrying server start... (${retries} attempts remaining)`);
+      setTimeout(() => startServer(retries - 1), 1000);
+    } else {
+      console.error('Failed to start server:', err);
+      process.exit(1);
+    }
   }
-})();
+}
+
+startServer();
