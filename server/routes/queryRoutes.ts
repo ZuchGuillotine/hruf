@@ -4,6 +4,7 @@ import { queryWithAI } from "../services/openaiQueryService";
 import { constructQueryContext } from "../services/llmContextService_query";
 import { db } from "@db";
 import { queryChats } from "@db/schema";
+import { eq, desc } from "drizzle-orm";
 
 function setupQueryRoutes(app: Express) {
   // Middleware to check authentication
@@ -27,7 +28,7 @@ function setupQueryRoutes(app: Express) {
       }
 
       const userQuery = messages[messages.length - 1].content;
-      const userId = req.isAuthenticated() ? req.user?.id : null;
+      const userId = req.user?.id || null;
 
       // Get user context if available, or use minimal context for non-authenticated users
       const queryContext = await constructQueryContext(userId, userQuery);
@@ -80,8 +81,8 @@ function setupQueryRoutes(app: Express) {
       const history = await db
         .select()
         .from(queryChats)
-        .where({ userId: req.user!.id })
-        .orderBy({ createdAt: "desc" })
+        .where(eq(queryChats.userId, req.user!.id))
+        .orderBy(desc(queryChats.createdAt))
         .limit(50);
 
       res.json(history);
