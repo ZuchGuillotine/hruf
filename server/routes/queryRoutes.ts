@@ -29,8 +29,8 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
       
-      // Check if user is authenticated using the isAuthenticated method
-      const isAuthenticated = req.isAuthenticated();
+      // Check if user is authenticated by checking if req.user exists
+      const isAuthenticated = req.user !== undefined;
       const userId = isAuthenticated ? req.user.id : null;
       
       console.log('Query request:', {
@@ -55,7 +55,7 @@ function setupQueryRoutes(app: Express) {
       }
 
       // Store chat history if user is authenticated
-      if (isAuthenticated && userId) {
+      if (userId) {
         try {
           console.log('Saving query chat history for authenticated user:', {
             userId,
@@ -81,8 +81,8 @@ function setupQueryRoutes(app: Express) {
         }
       } else {
         console.log('Not saving query chat - user not authenticated:', {
-          isAuthenticated,
-          userId,
+          isAuthenticated: false,
+          userId: null,
           timestamp: new Date().toISOString()
         });
       }
