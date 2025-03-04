@@ -29,7 +29,7 @@ const MemoryStore = createMemoryStore(session);
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Changed to true to ensure session creation
   store: new MemoryStore({
     checkPeriod: 86400000
   }),
@@ -37,9 +37,18 @@ const sessionConfig = {
     secure: app.get('env') === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
-  }
+    sameSite: 'lax',
+    path: '/'
+  },
+  name: 'stacktracker.sid'
 };
+
+console.log('Session configuration:', {
+  secure: app.get('env') === 'production',
+  environment: app.get('env'),
+  sessionSecretLength: (process.env.SESSION_SECRET || 'your-secret-key').length,
+  timestamp: new Date().toISOString()
+});
 
 // Core middleware setup - order is important
 app.use(session(sessionConfig));

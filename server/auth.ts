@@ -151,7 +151,10 @@ export function setupAuth(app: Express) {
         try {
           console.log('Google OAuth callback received:', {
             profileId: profile.id,
+            displayName: profile.displayName,
             email: profile.emails?.[0]?.value,
+            emailVerified: profile.emails?.[0]?.verified,
+            provider: profile.provider,
             timestamp: new Date().toISOString()
           });
 
@@ -257,13 +260,16 @@ export function setupAuth(app: Express) {
         error: req.query.error,
         errorDescription: req.query.error_description,
         state: req.query.state,
-        code: req.query.code,
+        code: req.query.code ? 'exists' : 'missing',
         scope: req.query.scope,
         authuser: req.query.authuser,
         prompt: req.query.prompt,
         timestamp: new Date().toISOString(),
         requestHost: req.headers.host,
-        requestOrigin: req.headers.origin
+        requestOrigin: req.headers.origin,
+        cookies: Object.keys(req.cookies || {}),
+        session: req.session ? 'exists' : 'missing',
+        sessionId: req.sessionID
       });
 
       if (req.query.error) {
