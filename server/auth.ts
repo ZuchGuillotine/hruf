@@ -68,18 +68,6 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
-  
-  // Debug middleware to log session initialization
-  app.use((req, res, next) => {
-    console.log('Passport session check:', {
-      path: req.path,
-      method: req.method,
-      isInitialized: !!req.user,
-      sessionID: req.sessionID || null,
-      timestamp: new Date().toISOString()
-    });
-    next();
-  });
 
   // Local Strategy
   passport.use(

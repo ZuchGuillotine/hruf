@@ -13,13 +13,10 @@ export const setAuthInfo = (req: Request, res: Response, next: NextFunction) => 
     userId: isAuthenticated && req.user ? req.user.id : null,
   };
   
-  console.log('Auth middleware check:', {
-    isAuthenticated: !!isAuthenticated,
-    hasUser: !!req.user,
-    userId: req.user?.id || null,
-    sessionId: req.sessionID || null,
-    timestamp: new Date().toISOString()
-  });
+  // Only log auth failures in non-public routes if needed
+  if (!isAuthenticated && !req.path.startsWith('/api/query') && req.path.startsWith('/api/')) {
+    console.log(`Auth failed for restricted path: ${req.path}`);
+  }
   
   next();
 };
