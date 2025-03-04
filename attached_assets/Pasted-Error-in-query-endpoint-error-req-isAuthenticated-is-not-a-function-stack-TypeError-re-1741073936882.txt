@@ -1,0 +1,24 @@
+Error in query endpoint: {
+  error: 'req.isAuthenticated is not a function',
+  stack: 'TypeError: req.isAuthenticated is not a function\n' +
+    '    at <anonymous> (/home/runner/workspace/server/routes/queryRoutes.ts:33:35)\n' +
+    '    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)\n' +
+    '    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)\n' +
+    '    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)\n' +
+    '    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15\n' +
+    '    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)\n' +
+    '    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)\n' +
+    '    at <anonymous> (/home/runner/workspace/server/index.ts:77:3)\n' +
+    '    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)\n' +
+    '    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)\n' +
+    '    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9\n' +
+    '    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)\n' +
+    '    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)\n' +
+    '    at Object.handler (file:///home/runner/workspace/node_modules/express-slow-down/dist/index.mjs:752:16)\n' +
+    '    at file:///home/runner/workspace/node_modules/express-slow-down/dist/index.mjs:648:16\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async file:///home/runner/workspace/node_modules/express-slow-down/dist/index.mjs:567:5',
+  timestamp: '2025-03-04T07:35:34.445Z'
+}
+7:35:34 AM [express] POST /api/query 500 in 2ms :: {"error":"Query error","message":"req.isAuthentic…
