@@ -117,9 +117,12 @@ export function setupAuth(app: Express) {
     ? process.env.GOOGLE_CLIENT_SECRET_PROD
     : process.env.GOOGLE_CLIENT_SECRET_TEST;
 
+  // Get the most appropriate callback URL based on environment
   const CALLBACK_URL = app.get("env") === "production"
     ? `https://stacktracker.io/auth/google/callback`
-    : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`;
+    : process.env.REPL_SLUG && process.env.REPL_OWNER
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
+      : `https://${process.env.REPLIT_HOSTNAME || '0.0.0.0:5000'}/auth/google/callback`;
 
   console.log('Initializing Google OAuth with:', {
     callbackUrl: CALLBACK_URL,
@@ -203,6 +206,16 @@ export function setupAuth(app: Express) {
   // Google OAuth routes
   app.get('/auth/google',
     (req, res, next) => {
+      // Check if Google credentials are properly configured
+      if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+        console.error('Google OAuth credentials missing:', {
+          hasClientId: !!GOOGLE_CLIENT_ID,
+          hasClientSecret: !!GOOGLE_CLIENT_SECRET,
+          timestamp: new Date().toISOString()
+        });
+        return res.status(500).send('OAuth configuration error. Please check server logs.');
+      }
+
       console.log('Starting Google OAuth flow:', {
         callbackUrl: CALLBACK_URL,
         environment: app.get("env"),
@@ -221,7 +234,10 @@ export function setupAuth(app: Express) {
       try {
         passport.authenticate('google', { 
           scope: ['profile', 'email'],
-          prompt: 'select_account'
+          prompt: 'select_account',
+          accessType: 'offline',
+          // Add state parameter for CSRF protection
+          state: Math.random().toString(36).substring(2, 15)
         })(req, res, next);
       } catch (error) {
         console.error('Google OAuth authentication error:', {
@@ -229,7 +245,7 @@ export function setupAuth(app: Express) {
           stack: error instanceof Error ? error.stack : undefined,
           timestamp: new Date().toISOString()
         });
-        next(error);
+        return res.redirect('/login?error=google_auth_error');
       }
     }
   );
@@ -245,7 +261,9 @@ export function setupAuth(app: Express) {
         scope: req.query.scope,
         authuser: req.query.authuser,
         prompt: req.query.prompt,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        requestHost: req.headers.host,
+        requestOrigin: req.headers.origin
       });
 
       if (req.query.error) {
@@ -254,20 +272,26 @@ export function setupAuth(app: Express) {
           description: req.query.error_description,
           timestamp: new Date().toISOString()
         });
+        return res.redirect('/login?error=' + encodeURIComponent(String(req.query.error)));
       }
+      
+      if (!req.query.code) {
+        console.error('Google OAuth callback missing code parameter');
+        return res.redirect('/login?error=missing_auth_code');
+      }
+      
       next();
     },
     (req, res, next) => {
-      passport.authenticate('google', (err, user, info) => {
+      passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed' }, (err, user, info) => {
         if (err) {
           console.error('Google OAuth error:', {
             error: err.message,
             stack: err.stack,
             timestamp: new Date().toISOString()
           });
-          return res.redirect('/login?error=auth_failed');
+          return res.redirect('/login?error=' + encodeURIComponent('auth_failed: ' + err.message));
         }
-
 
         if (!user) {
           console.error('Google OAuth authentication failed:', {
@@ -284,7 +308,7 @@ export function setupAuth(app: Express) {
               stack: loginErr.stack,
               timestamp: new Date().toISOString()
             });
-            return res.redirect('/login?error=login_failed');
+            return res.redirect('/login?error=' + encodeURIComponent('login_failed: ' + loginErr.message));
           }
 
           console.log('Google OAuth authentication successful:', {
@@ -293,7 +317,8 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          res.redirect('/dashboard');
+          // Redirect to dashboard with success message
+          res.redirect('/dashboard?login=success');
         });
       })(req, res, next);
     }

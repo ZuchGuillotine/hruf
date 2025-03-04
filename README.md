@@ -65,3 +65,27 @@ The application will be available at `http://localhost:3000`
 │   ├── services/        # Business logic
 │   └── routes.ts        # API routes
 └── db/                  # Database schema and migrations
+
+
+## Google OAuth Authentication Troubleshooting
+
+If you're having issues with Google OAuth authentication, check the following:
+
+1. **Verify credentials:** Ensure `GOOGLE_CLIENT_ID_TEST` and `GOOGLE_CLIENT_SECRET_TEST` are correctly set in your environment.
+
+2. **Check callback URL:** Verify that the callback URL in Google Cloud Console exactly matches what your application is using:
+   - Production: `https://stacktracker.io/auth/google/callback`
+   - Development: `https://<repl-slug>.<repl-owner>.repl.co/auth/google/callback`
+
+3. **OAuth consent screen:** Make sure your consent screen is properly configured with the required scopes (`email` and `profile`).
+
+4. **Test users:** If your app is in testing mode, ensure your test users are added in the OAuth consent screen.
+
+5. **Run diagnostic script:** Use the provided script to check your configuration:
+   ```
+   node scripts/test_google_auth.js
+   ```
+
+6. **Check logs:** Look for specific error messages in the server logs when initiating authentication and during the callback.
+
+7. **Authorized domains:** Ensure your domains are authorized in the Google Cloud Console.
