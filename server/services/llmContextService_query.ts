@@ -29,6 +29,7 @@ export async function constructQueryContext(userId: string | null, userQuery: st
       console.log('User not authenticated, returning basic context:', {
         isAuthenticated: false,
         userId: null,
+        userIdType: typeof userId,
         hasSystemPrompt: true,
         timestamp: new Date().toISOString()
       });

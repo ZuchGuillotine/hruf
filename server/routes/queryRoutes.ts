@@ -1,4 +1,3 @@
-
 import express, { type Request, Response, Express } from "express";
 import { queryWithAI } from "../services/openaiQueryService";
 import { constructQueryContext } from "../services/llmContextService_query";
@@ -28,11 +27,11 @@ function setupQueryRoutes(app: Express) {
       }
 
       const userQuery = messages[messages.length - 1].content;
-      
-      // Check if user is authenticated properly by examining session
-      const isAuthenticated = req.user ? true : false;
-      const userId = isAuthenticated && req.user ? req.user.id : null;
-      
+
+      // Get auth info from middleware or determine it directly
+      const isAuthenticated = req.authInfo ? req.authInfo.isAuthenticated : (req.isAuthenticated ? req.isAuthenticated() : !!req.user);
+      const userId = req.authInfo ? req.authInfo.userId : (req.user ? req.user.id : null);
+
       console.log('Query request:', {
         isAuthenticated,
         userId,
@@ -65,7 +64,7 @@ function setupQueryRoutes(app: Express) {
             messageCount: messages.length,
             timestamp: new Date().toISOString()
           });
-          
+
           await db.insert(queryChats).values({
             userId,
             messages: [...messages],

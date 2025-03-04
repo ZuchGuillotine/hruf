@@ -1,4 +1,3 @@
-
 import OpenAI from "openai";
 import { constructQueryContext } from "./llmContextService_query";
 import { db } from "../../db";
@@ -17,9 +16,10 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
       userId,
       messageCount: messages.length,
       isAuthenticated: !!userId,
+      userIdType: userId ? typeof userId : 'null',
       timestamp: new Date().toISOString()
     });
-    
+
     // Call OpenAI API with chat completion
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

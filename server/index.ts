@@ -6,6 +6,7 @@ import slowDown from "express-slow-down";
 import { db } from '../db';
 import cors from 'cors';
 import setupQueryRoutes from './routes/queryRoutes';
+import { setAuthInfo } from './middleware/authMiddleware';
 
 const app = express();
 app.use(cors({
@@ -35,6 +36,9 @@ const speedLimiter = slowDown({
 // Body parsing middleware must be before route registration
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply authentication middleware to all routes
+app.use(setAuthInfo);
 
 // API routes should be handled before static files
 app.use('/api', (req, res, next) => {
