@@ -49,22 +49,12 @@ export function setupAuth(app: Express) {
 
   // User serialization for session storage
   passport.serializeUser((user: Express.User, done) => {
-    console.log('Serializing user:', {
-      userId: user.id,
-      email: user.email,
-      timestamp: new Date().toISOString()
-    });
     done(null, user.id);
   });
 
   // User deserialization from session
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log('Deserializing user:', {
-        userId: id,
-        timestamp: new Date().toISOString()
-      });
-
       const [user] = await db
         .select()
         .from(users)
@@ -72,27 +62,11 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (!user) {
-        console.error('User not found during deserialization:', {
-          userId: id,
-          timestamp: new Date().toISOString()
-        });
         return done(null, false);
       }
 
-      console.log('User deserialized successfully:', {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date().toISOString()
-      });
-
       done(null, user);
     } catch (err) {
-      console.error('Error deserializing user:', {
-        userId: id,
-        error: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
       done(err);
     }
   });
@@ -293,7 +267,7 @@ export function setupAuth(app: Express) {
           });
           return res.redirect('/login?error=auth_failed');
         }
-        
+
 
         if (!user) {
           console.error('Google OAuth authentication failed:', {
@@ -312,14 +286,12 @@ export function setupAuth(app: Express) {
             });
             return res.redirect('/login?error=login_failed');
           }
-          
 
           console.log('Google OAuth authentication successful:', {
             userId: user.id,
             email: user.email,
             timestamp: new Date().toISOString()
           });
-          
 
           res.redirect('/dashboard');
         });

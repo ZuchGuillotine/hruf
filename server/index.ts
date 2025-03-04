@@ -21,7 +21,7 @@ app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
 // Session configuration
@@ -36,14 +36,21 @@ const sessionConfig = {
   cookie: {
     secure: app.get('env') === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   }
 };
 
-// Core middleware setup
+// Core middleware setup - order is important
 app.use(session(sessionConfig));
-setupAuth(app);
-app.use(setAuthInfo);
+setupAuth(app); // This sets up passport.initialize() and passport.session()
+app.use(setAuthInfo); // Restore the auth info middleware
+
+// API middleware
+app.use('/api', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
 
 // Rate limiting
 app.use('/api', rateLimit({
@@ -59,45 +66,7 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// API middleware
-app.use('/api', (req, res, next) => {
-  res.setHeader('Content-Type', 'application/json');
-  next();
-});
-
-
-// API request logging middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
-// Setup routes after middleware
+// Setup routes and error handling
 setupQueryRoutes(app);
 const server = registerRoutes(app);
 
@@ -127,7 +96,7 @@ if (app.get("env") === "development") {
   serveStatic(app);
 }
 
-// Start server
+// Start server with retries
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 
 function startServer(retries = 3) {
