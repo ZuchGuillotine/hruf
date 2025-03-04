@@ -2,6 +2,14 @@
 # Changelog
 
 ## [February 2025]
+### Added
+- Implemented Query Chats Table
+  - Created database table for storing query conversations
+  - Added schema with user references and JSONB message storage
+  - Implemented timestamp tracking for conversations
+  - Added metadata support for future feature extensions
+  - Established foundation for dual LLM conversation tracking
+
 ### Fixed
 - Fixed Research Documents functionality
   - Resolved undefined `researchDocuments` variable in routes.ts

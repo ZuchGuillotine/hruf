@@ -3,6 +3,14 @@
 ## Latest Status (February 19, 2025)
 
 ### Recent Changes and Fixes (February 19, 2025)
+- Added Query Chats Storage Implementation:
+  - Created `query_chats` table for storing query-related conversations
+  - Successfully implemented migration with proper database connection
+  - Schema includes user_id reference, messages as JSONB, and metadata
+  - Followed established migration conventions using `tsx`
+  - Verified successful table creation in database
+  - Added foundation for storing query interactions separately from feedback conversations
+
 - Fixed Research Documents Functionality:
   - Resolved undefined `researchDocuments` variable in server/routes.ts
   - Successfully enabled research document retrieval from the database

@@ -62,6 +62,20 @@
 - Migrations in `/db/migrations`
 - Drizzle ORM for type-safe queries
 
+### Database Migrations
+- Create migration files in `/db/migrations` with TypeScript (.ts extension)
+- Run migrations using `npx tsx db/migrations/your_migration_file.ts`
+- Import database connection from `/db/index.ts` rather than creating new connections
+- Use SQL template literals with drizzle for creating tables and modifying schema
+- Verify migrations with direct database queries using appropriate tools
+
+#### Migration Best Practices
+- Keep migrations simple and focused on a single responsibility
+- Use proper error handling in migration scripts
+- Log clear success/failure messages
+- Follow existing project conventions for database access
+- Reuse the established database connection rather than creating new ones
+
 ### Best Practices
 - Use TypeScript types for all props
 - Follow existing component patterns
