@@ -104,10 +104,25 @@ ${userQuery}
     ];
 
     console.log('Query LLM Context being sent:', JSON.stringify(messages, null, 2));
+    console.log('Context stats:', {
+      userId,
+      isAuthenticated: !!userId,
+      hasHealthStats: !!userHealthStats,
+      hasSupplementLogs: quantitativeLogs.length > 0,
+      hasQualitativeLogs: recentLogs.length > 0,
+      hasSummaries: historicalSummaries.length > 0,
+      timestamp: new Date().toISOString()
+    });
 
     return { messages };
   } catch (error) {
     console.error("Error constructing query context:", error);
+    console.error("Context error details:", {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     return {
       messages: [
         { role: "system", content: QUERY_SYSTEM_PROMPT },

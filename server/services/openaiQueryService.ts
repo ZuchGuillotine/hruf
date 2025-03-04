@@ -3,8 +3,35 @@ import OpenAI from "openai";
 import { constructQueryContext } from "./llmContextService_query";
 import { db } from "../../db";
 import { qualitativeLogs } from "../../db/schema";
+import { Message } from "@/lib/types";
 
 // Initialize OpenAI with the separate API key for queries
+
+// Add detailed logging for query requests
+async function queryWithAI(messages: Message[], userId: string | null) {
+  try {
+    console.log('Processing query with OpenAI:', {
+      userId,
+      messageCount: messages.length,
+      isAuthenticated: !!userId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Implement the actual OpenAI query logic here
+    
+    // Return response or throw appropriate error
+  } catch (error) {
+    console.error('OpenAI query error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
+  }
+}
+
+export { queryWithAI };
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_QUERY_KEY,
 });
