@@ -46,8 +46,23 @@ export function useQuery() {
       
       // Add assistant response to the chat
       const assistantMessage: Message = { role: "assistant", content: data.response };
-      setMessages([...updatedMessages, assistantMessage]);
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
       setResult(data);
+      
+      // Save the chat to our dedicated query chat storage
+      try {
+        await fetch("/api/query/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages: finalMessages }),
+        });
+      } catch (saveErr) {
+        console.error("Failed to save query chat:", saveErr);
+        // Non-blocking error - we don't need to alert the user
+      }
       
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -63,9 +78,25 @@ export function useQuery() {
     setError(null);
   };
   
+  const loadHistory = async () => {
+    try {
+      const response = await fetch("/api/query/history");
+      if (!response.ok) {
+        throw new Error("Failed to fetch query history");
+      }
+      
+      const history = await response.json();
+      return history;
+    } catch (err) {
+      console.error("Error loading query history:", err);
+      return [];
+    }
+  };
+
   return {
     sendQuery,
     resetChat,
+    loadHistory,
     messages,
     result,
     isLoading,

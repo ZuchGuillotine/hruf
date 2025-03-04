@@ -156,9 +156,21 @@ export const researchDocuments = pgTable("research_documents", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Create Zod schemas for research documents
+// General query chat storage
+export const queryChats = pgTable("query_chats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  messages: jsonb("messages").$type<Array<{role: string, content: string}>>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default(sql`'{}'::jsonb`),
+});
+
+// Create Zod schemas for research documents and query chats
 export const insertResearchDocumentSchema = createInsertSchema(researchDocuments);
 export const selectResearchDocumentSchema = createSelectSchema(researchDocuments);
+export const insertQueryChatSchema = createInsertSchema(queryChats);
+export const selectQueryChatSchema = createSelectSchema(queryChats);
 
 export type InsertChatSummary = typeof chatSummaries.$inferInsert;
 export type SelectChatSummary = typeof chatSummaries.$inferSelect;
@@ -166,3 +178,5 @@ export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type ResearchDocument = typeof researchDocuments.$inferSelect;
 export type InsertResearchDocument = typeof researchDocuments.$inferInsert;
+export type InsertQueryChat = typeof queryChats.$inferInsert;
+export type SelectQueryChat = typeof queryChats.$inferSelect;

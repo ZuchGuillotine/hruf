@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { db } from '../db';
 import cors from 'cors';
+import setupQueryRoutes from './routes/queryRoutes';
 
 const app = express();
 app.use(cors({
@@ -80,7 +81,7 @@ app.use((req, res, next) => {
   // Initialize cron jobs
   const summarizeChatsModule = await import('./cron/summarizeChats.js');
   const { runChatSummarization } = summarizeChatsModule;
-  
+
   // Run chat summarization every 24 hours
   setInterval(async () => {
     console.log('Starting scheduled chat summarization...');
@@ -94,6 +95,7 @@ app.use((req, res, next) => {
   // Direct RDS connection - no IP monitor needed
 
   // Create the HTTP server and register API routes first
+  setupQueryRoutes(app); // Added this line
   const server = registerRoutes(app);
 
   // Global error handling middleware for API routes
