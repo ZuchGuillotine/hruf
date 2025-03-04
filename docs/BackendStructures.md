@@ -50,8 +50,7 @@
   - Automated summarization via cron job
   - Included in LLM context building
   - Reduces token usage while maintaining context quality
-
-   - Includes sentiment analysis and metadata
+  - Includes sentiment analysis and metadata
 
 ### Tables Schema Overview
 
@@ -111,6 +110,126 @@
 - Rate limiting
 - Email verification
 - Two-factor authentication support
+
+## Authentication System
+
+### Session Management
+- MemoryStore-based session storage:
+  - 24-hour session duration with automatic cleanup
+  - Efficient memory usage with pruning of expired entries
+  - Production-ready session security with secure cookies
+- Cookie Configuration:
+  - Secure flag enabled in production
+  - HTTP-only flags for XSS protection
+  - SameSite: 'lax' for CSRF protection
+  - 24-hour expiration with automatic renewal
+
+### Authentication Flow
+1. Session Initialization:
+   - Express session middleware with MemoryStore
+   - Secure cookie configuration with proper flags
+   - Proper middleware ordering for reliable auth state
+
+2. Passport Integration:
+   - Local strategy for username/password
+   - Google OAuth integration
+   - Efficient session serialization/deserialization
+   - Proper user data persistence
+
+3. Request Processing:
+   - Session validation and user deserialization
+   - Consistent authentication state propagation
+   - Context-aware response handling
+   - Proper error recovery
+
+### Security Measures
+1. CORS Configuration:
+   - Credentials properly handled
+   - Essential headers allowed: Content-Type, Authorization, Cookie
+   - Secure methods: GET, POST, PUT, DELETE, OPTIONS
+   - Origin validation for cross-domain requests
+
+2. Rate Limiting:
+   - 100 requests per 15-minute window
+   - Progressive delay after 50 requests
+   - Standards-compliant headers (draft-7)
+
+3. Middleware Chain:
+   - Optimized ordering for security and performance
+   - Session middleware before authentication
+   - Authentication before route handlers
+   - Rate limiting as final protection layer
+
+### Debug Infrastructure
+1. Authentication Verification:
+   - Dedicated debug endpoints
+   - Session state inspection
+   - User authentication validation
+   - Comprehensive error logging
+
+2. Security Monitoring:
+   - Authentication state tracking
+   - Session lifecycle monitoring
+   - Error recovery mechanisms
+   - Performance optimization hooks
+
+## Data Flow Architecture
+
+### Authentication Data Flow
+1. Client Request:
+   - Session cookie included
+   - Credentials properly transmitted
+   - CORS headers respected
+
+2. Server Processing:
+   - Session validation
+   - User deserialization
+   - Authentication state checking
+   - Request authorization
+
+3. Response Handling:
+   - Authentication-aware responses
+   - Proper error states
+   - Security headers included
+
+### Data Flow
+1. Chat Systems:
+   - Qualitative Feedback Chat:
+     - Purpose: Gather user observations about supplement experiences
+     - Storage: qualitative_logs table with type='chat'
+     - Context: Combines health stats, supplement logs and previous observations
+     - Components: LLMChat, llmContextService, logService
+   - General Query Chat (Implemented):
+     - Purpose: Provide factual information about supplements
+     - Storage: Uses same database tables but different context structure
+     - Context: Specialized context with health stats and different system prompt
+     - Components: AskPage, llmContextService_query, openaiQueryService
+     - Authentication-aware: Provides personalized context for auth users
+
+2. Supplement Management:
+   - User selections stored in supplements table
+   - Daily tracking stored in supplement_logs table
+   - Card operations (add/edit/delete) update supplements table
+   - "Save Changes" button triggers supplement_logs entry
+
+2. Database Integration Flow:
+   - Supplement card data managed in supplements table
+   - Save operation triggers data storage in supplement_logs
+   - History view combines data from supplement_logs and qualitative_logs
+
+3. Chat System:
+   - Interactions stored in qualitative_logs
+
+#### Chat Summary System
+- Table: chatSummaries
+  - Fields: userId, summary, periodStart, periodEnd, metadata
+  - Purpose: Stores condensed historical chat interactions
+- Integration: 
+  - Automated summarization via cron job
+  - Included in LLM context building
+  - Reduces token usage while maintaining context quality
+  - Includes sentiment analysis and metadata
+
 
 API Routes (from routes.ts)
 #### AI Query Routes

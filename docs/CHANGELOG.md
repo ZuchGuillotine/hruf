@@ -1,4 +1,3 @@
-
 # Changelog
 
 ## [February 2025]
@@ -59,12 +58,6 @@
   - Planning additional table data integration
   - Preparing for second LLM user interface on 'ask' page
 
-
-# Changelog
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.3] - 2025-02-17
 ### Added
@@ -245,17 +238,26 @@ No database migration required. These changes are purely logical and affect only
 - Project initialization
 - Basic project structure
 - Initial database setup
-## [1.x.x] - March 2025
 
+## [March 2025]
 ### Fixed
 - Resolved authentication recognition issue in query interface
-- Fixed user context not being properly retrieved for authenticated users 
-- Corrected parameter type mismatch in query context service
-- Streamlined authentication middleware to improve performance
-- Ensured consistent authentication verification across services
+  - Fixed user authentication state propagation in query routes
+  - Corrected middleware order for proper session handling
+  - Enhanced CORS configuration to properly handle credentials
+  - Streamlined authentication middleware to improve performance
+  - Ensured consistent authentication verification across services
 
 ### Changed
-- Updated `llmContextService_query.ts` to properly handle numeric user IDs
-- Modified query routes to use consistent authentication check pattern
-- Removed excessive debug logging from auth middleware
-- Aligned authentication check methodology with rest of application
+- Updated authentication system architecture:
+  - Simplified session configuration with MemoryStore
+  - Improved cookie handling with proper security settings
+  - Optimized authentication middleware chain
+  - Reduced unnecessary debug logging for better performance
+
+### Enhanced
+- Authentication state management:
+  - Added comprehensive debug endpoints for auth verification
+  - Improved error handling in authentication flow
+  - Enhanced session security with proper cookie settings
+  - Optimized auth info middleware for consistent access
