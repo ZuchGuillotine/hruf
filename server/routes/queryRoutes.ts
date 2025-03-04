@@ -3,7 +3,7 @@ import express, { type Request, Response, Express } from "express";
 import { queryWithAI } from "../services/openaiQueryService";
 import { constructQueryContext } from "../services/llmContextService_query";
 import { db } from "@db";
-import { queryChatLogs } from "@db/schema";
+import { queryChats } from "@db/schema";
 
 function setupQueryRoutes(app: Express) {
   // Middleware to check authentication
@@ -46,12 +46,9 @@ function setupQueryRoutes(app: Express) {
       // Store chat history if user is authenticated
       if (userId) {
         try {
-          await db.insert(queryChatLogs).values({
+          await db.insert(queryChats).values({
             userId,
-            content: JSON.stringify({
-              query: userQuery,
-              response: aiResponse.response
-            }),
+            messages: [...messages],
             metadata: {
               savedAt: new Date().toISOString()
             }
@@ -82,9 +79,9 @@ function setupQueryRoutes(app: Express) {
     try {
       const history = await db
         .select()
-        .from(queryChatLogs)
+        .from(queryChats)
         .where({ userId: req.user!.id })
-        .orderBy({ loggedAt: "desc" })
+        .orderBy({ createdAt: "desc" })
         .limit(50);
 
       res.json(history);
