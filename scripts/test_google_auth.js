@@ -5,7 +5,8 @@
  */
 
 // Load environment variables
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
 console.log('=== Google OAuth Configuration Test ===');
 
@@ -13,8 +14,11 @@ console.log('=== Google OAuth Configuration Test ===');
 const googleClientId = process.env.GOOGLE_CLIENT_ID_TEST || process.env.GOOGLE_CLIENT_ID_PROD;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET_TEST || process.env.GOOGLE_CLIENT_SECRET_PROD;
 
-console.log('Google Client ID exists:', !!googleClientId);
-console.log('Google Client Secret exists:', !!googleClientSecret);
+console.log('Checking Google OAuth environment variables...');
+console.log('GOOGLE_CLIENT_ID_TEST exists:', !!process.env.GOOGLE_CLIENT_ID_TEST);
+console.log('GOOGLE_CLIENT_SECRET_TEST exists:', !!process.env.GOOGLE_CLIENT_SECRET_TEST);
+console.log('GOOGLE_CLIENT_ID_PROD exists:', !!process.env.GOOGLE_CLIENT_ID_PROD);
+console.log('GOOGLE_CLIENT_SECRET_PROD exists:', !!process.env.GOOGLE_CLIENT_SECRET_PROD);
 
 // Determine callback URL based on environment
 const replSlug = process.env.REPL_SLUG;
@@ -32,7 +36,7 @@ if (process.env.NODE_ENV === 'production') {
   callbackUrl = 'http://0.0.0.0:5000/auth/google/callback';
 }
 
-console.log('Callback URL:', callbackUrl);
+console.log('\nCallback URL:', callbackUrl);
 console.log('\nConfiguration variables:');
 console.log('- REPL_SLUG:', replSlug);
 console.log('- REPL_OWNER:', replOwner);
@@ -45,5 +49,4 @@ console.log('2. Make sure the redirect URI matches your callback URL');
 console.log('3. Ensure your OAuth consent screen is configured correctly');
 console.log('4. If using test mode, add your email as a test user');
 
-console.log('\nTest login URL:');
-console.log('/auth/google');
+console.log('\nTo test the Google OAuth configuration, run: node scripts/test_google_auth.js');
