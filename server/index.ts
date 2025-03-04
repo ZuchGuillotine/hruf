@@ -37,6 +37,20 @@ const speedLimiter = slowDown({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Make sure this is applied AFTER passport initialization in auth.ts
+// but before any routes that need authentication
+app.use((req, res, next) => {
+  // Debug session and auth state
+  console.log('Request auth state:', {
+    path: req.path,
+    hasSession: !!req.session,
+    isAuthenticated: req.isAuthenticated?.() || false,
+    hasUser: !!req.user,
+    timestamp: new Date().toISOString()
+  });
+  next();
+});
+
 // Apply authentication middleware to all routes
 app.use(setAuthInfo);
 

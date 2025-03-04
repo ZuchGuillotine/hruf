@@ -14,9 +14,10 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
     // Log processing details for debugging
     console.log('Processing query with OpenAI:', {
       userId,
+      userIdType: typeof userId,
+      userIdValue: userId,
       messageCount: messages.length,
       isAuthenticated: !!userId,
-      userIdType: userId ? typeof userId : 'null',
       timestamp: new Date().toISOString()
     });
 

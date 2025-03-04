@@ -4,14 +4,22 @@ import { Request, Response, NextFunction } from 'express';
 
 // Check if user is authenticated and set authentication information consistently
 export const setAuthInfo = (req: Request, res: Response, next: NextFunction) => {
-  // Use Passport's isAuthenticated if available, fallback to checking req.user
-  const isAuthenticated = req.isAuthenticated ? req.isAuthenticated() : (req.user ? true : false);
+  // Directly use Passport's isAuthenticated method - this is the standard way
+  const isAuthenticated = req.isAuthenticated?.();
   
   // Attach auth info to request object for consistent access
   req.authInfo = {
-    isAuthenticated,
+    isAuthenticated: !!isAuthenticated,
     userId: isAuthenticated && req.user ? req.user.id : null,
   };
+  
+  console.log('Auth middleware check:', {
+    isAuthenticated: !!isAuthenticated,
+    hasUser: !!req.user,
+    userId: req.user?.id || null,
+    sessionId: req.sessionID || null,
+    timestamp: new Date().toISOString()
+  });
   
   next();
 };

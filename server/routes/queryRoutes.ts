@@ -28,9 +28,9 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
 
-      // Get auth info from middleware or determine it directly
-      const isAuthenticated = req.authInfo ? req.authInfo.isAuthenticated : (req.isAuthenticated ? req.isAuthenticated() : !!req.user);
-      const userId = req.authInfo ? req.authInfo.userId : (req.user ? req.user.id : null);
+      // Direct authentication check - this is how it's done in the rest of the app
+      const isAuthenticated = req.isAuthenticated?.() || false;
+      const userId = isAuthenticated && req.user ? req.user.id : null;
 
       console.log('Query request:', {
         isAuthenticated,
