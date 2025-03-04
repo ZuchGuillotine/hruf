@@ -245,3 +245,17 @@ No database migration required. These changes are purely logical and affect only
 - Project initialization
 - Basic project structure
 - Initial database setup
+## [1.x.x] - March 2025
+
+### Fixed
+- Resolved authentication recognition issue in query interface
+- Fixed user context not being properly retrieved for authenticated users 
+- Corrected parameter type mismatch in query context service
+- Streamlined authentication middleware to improve performance
+- Ensured consistent authentication verification across services
+
+### Changed
+- Updated `llmContextService_query.ts` to properly handle numeric user IDs
+- Modified query routes to use consistent authentication check pattern
+- Removed excessive debug logging from auth middleware
+- Aligned authentication check methodology with rest of application

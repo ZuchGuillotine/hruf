@@ -444,3 +444,43 @@
    - Add connection pooling optimizations
    - Enhance error recovery mechanisms
    - Consider implementing read replicas for better scalability
+## Query Interface Authentication Troubleshooting (March 2025)
+
+### Authentication Issue Overview
+A persistent issue was encountered with the query interface not properly recognizing authenticated users, preventing personalized context retrieval and chat history saving.
+
+### Troubleshooting Timeline and Approaches
+
+1. **Initial Middleware Investigation**
+   - Added extensive debug logging throughout auth middleware
+   - Traced auth flow from initial request through middleware chain
+   - Identified potential timing issues with passport initialization
+   - Discovered multiple requests being processed before auth was fully established
+
+2. **Authentication Check Approaches**
+   - Tested various ways to check user authentication status:
+     - Optional chaining with `req.isAuthenticated?.()`
+     - Direct access via `req.isAuthenticated()`
+     - Session inspection with `req.user` validation
+   - Identified inconsistent auth state between different routes
+
+3. **Context Service Parameter Type Issues**
+   - Found parameter type mismatch in `llmContextService_query.ts`
+   - Changed `userId` type from `string | null` to `number | null`
+   - Aligned authentication check in query routes with rest of application
+
+4. **Code Cleanup**
+   - Removed excessive auth logging that was causing performance issues
+   - Streamlined middleware to follow best practices
+   - Simplified auth check in `queryRoutes.ts`
+
+### Root Causes Identified
+1. Type inconsistency: The query context service expected a string ID but the system uses numeric IDs
+2. Authentication method: Inconsistent usage of `req.isAuthenticated()`  
+3. Optional chaining causing unexpected behavior when checking auth status
+
+### Lessons Learned
+- Authentication checks should be consistent across the entire application
+- Type safety is critical for proper user identification
+- Excessive middleware and logging can obscure actual issues
+- Authentication should be verified at the service level, not just route level
