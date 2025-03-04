@@ -518,6 +518,7 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Apply the same UTC day boundary logic to qualitative logs
+      // Filter out entries with type='query' as those should only be in query_chats table
       const qualitativeLogsResult = await db
         .select({
           id: qualitativeLogs.id,
@@ -531,7 +532,9 @@ export function registerRoutes(app: Express): Server {
           and(
             eq(qualitativeLogs.userId, req.user!.id),
             // Maintain consistent timestamp comparison approach
-            sql`${qualitativeLogs.loggedAt} >= ${startOfDay} AND ${qualitativeLogs.loggedAt} <= ${endOfDay}`
+            sql`${qualitativeLogs.loggedAt} >= ${startOfDay} AND ${qualitativeLogs.loggedAt} <= ${endOfDay}`,
+            // Exclude query chats from qualitative logs
+            notInArray(qualitativeLogs.type, ['query'])
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
