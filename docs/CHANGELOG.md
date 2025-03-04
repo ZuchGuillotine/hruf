@@ -1,5 +1,14 @@
 # Changelog
 
+## [March 2025]
+### Enhanced
+- Improved Chat Systems Separation
+  - Updated Daily Notes section to exclude query chats
+  - Ensured query chats are properly stored in query_chats table
+  - Modified LLM context service to maintain clear separation
+  - Enhanced server routes to properly filter log types
+  - Fixed authentication recognition in query system
+
 ## [February 2025]
 ### Added
 - Implemented Query Chats Table
@@ -8,6 +17,7 @@
   - Implemented timestamp tracking for conversations
   - Added metadata support for future feature extensions
   - Established foundation for dual LLM conversation tracking
+  - Separates general queries from qualitative feedback in storage and display
 
 ### Fixed
 - Fixed Research Documents functionality

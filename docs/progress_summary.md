@@ -131,17 +131,48 @@
   - Improved context relevance for LLM responses
   - System is functional but requires more thorough testing
 
-### Qualitative Feedback Chat Implementation
+### Chat Systems Architecture
+
+#### Qualitative Feedback Chat
+- **Purpose**: Gather user observations about supplement experiences and provide personalized feedback
 - **Naming Conventions**:
   - Component: LLMChat (qualitative feedback specific)
   - Database: type='chat' in qualitative_logs for feedback conversations
   - Context: constructUserContext specifically for supplement feedback
   - Hook: useLLM for managing feedback chat state
-
 - **Storage Conventions**:
   - Chat content stored with metadata.type = 'chat'
   - Feedback conversations tagged with ['ai_conversation']
   - Saved chats include timestamp in metadata.savedAt
+- **Data Flow**:
+  - User input → llmContextService.ts → OpenAI → qualitative_logs table
+  - Displayed in Daily Notes section of supplement history page
+  - Included in context for future conversations
+  - Summarized periodically by llmSummaryService
+
+#### General Query Chat
+- **Purpose**: Provide factual information about supplements without affecting daily logs
+- **Naming Conventions**:
+  - Component: AskPage (general query specific)
+  - Database: separate query_chats table (not qualitative_logs)
+  - Context: constructQueryContext specifically for supplement information
+  - Controller: queryController for handling query requests
+- **Storage Conventions**:
+  - Messages stored as JSONB in query_chats.messages
+  - Query text stored in metadata.query
+  - Timestamps tracked in createdAt/updatedAt fields
+- **Data Flow**:
+  - User query → llmContextService_query.ts → OpenAI → query_chats table
+  - Not displayed in Daily Notes section
+  - Not included in feedback chat context
+  - Provides authentication-aware responses (personalized for logged-in users)
+
+#### Separation Logic
+- Feedback chats (qualitative_logs) displayed in history view, query chats are not
+- Daily Notes section filters out type='query' entries
+- Query chats use separate database table query_chats
+- Different context building services for different purposes
+- Different UI components for different chat types
 
 ### Database Consolidation
 - Completed migration to NeonDB:

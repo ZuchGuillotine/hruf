@@ -13,6 +13,8 @@
   - supplementLogs: Daily supplement intake records
   - qualitativeLogs: Chat interactions and AI responses
   - supplementReference: Autocomplete and search functionality
+  - query_chats: General query chat interactions
+
 
 ### Data Flow
 1. Chat Systems:
@@ -21,12 +23,14 @@
      - Storage: qualitative_logs table with type='chat'
      - Context: Combines health stats, supplement logs and previous observations
      - Components: LLMChat, llmContextService, logService
-   - General Query Chat (Implemented):
+     - Display: Shown in the Daily Notes section of supplement history
+   - General Query Chat:
      - Purpose: Provide factual information about supplements
-     - Storage: Uses same database tables but different context structure
+     - Storage: query_chats table (separate from qualitative_logs)
      - Context: Specialized context with health stats and different system prompt
      - Components: AskPage, llmContextService_query, openaiQueryService
      - Authentication-aware: Provides personalized context for auth users
+     - Display: Not shown in Daily Notes section of supplement history
 
 2. Supplement Management:
    - User selections stored in supplements table
@@ -84,6 +88,12 @@
   - Sentiment analysis
   - Metadata for analytics
   - Categorization and tagging
+
+- query_chats:
+    - General query chat interactions
+    - Timestamps
+    - User ID (if authenticated)
+
 
 #### Reference Tables
 - supplementReference:
