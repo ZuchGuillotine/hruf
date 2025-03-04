@@ -29,8 +29,8 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
       
-      // Check if user is authenticated
-      const isAuthenticated = req.user !== undefined;
+      // Check if user is authenticated using the isAuthenticated method
+      const isAuthenticated = req.isAuthenticated();
       const userId = isAuthenticated ? req.user.id : null;
       
       console.log('Query request:', {
@@ -55,8 +55,14 @@ function setupQueryRoutes(app: Express) {
       }
 
       // Store chat history if user is authenticated
-      if (userId) {
+      if (isAuthenticated && userId) {
         try {
+          console.log('Saving query chat history for authenticated user:', {
+            userId,
+            messageCount: messages.length,
+            timestamp: new Date().toISOString()
+          });
+          
           await db.insert(queryChats).values({
             userId,
             messages: [...messages],
@@ -65,9 +71,20 @@ function setupQueryRoutes(app: Express) {
             }
           });
         } catch (error) {
-          console.error("Error saving query chat:", error);
+          console.error("Error saving query chat:", error, {
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString()
+          });
           // Don't block the response if saving fails
         }
+      } else {
+        console.log('Not saving query chat - user not authenticated:', {
+          isAuthenticated,
+          userId,
+          timestamp: new Date().toISOString()
+        });
       }
 
       // Send AI response

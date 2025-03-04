@@ -26,6 +26,13 @@ export async function constructQueryContext(userId: string | null, userQuery: st
   try {
     // If user is not authenticated, return basic context
     if (!userId) {
+      console.log('User not authenticated, returning basic context:', {
+        isAuthenticated: false,
+        userId: null,
+        hasSystemPrompt: true,
+        timestamp: new Date().toISOString()
+      });
+      
       return {
         messages: [
           { role: "system", content: QUERY_SYSTEM_PROMPT },
@@ -33,6 +40,12 @@ export async function constructQueryContext(userId: string | null, userQuery: st
         ]
       };
     }
+    
+    console.log('User authenticated, building full context:', {
+      isAuthenticated: true,
+      userId,
+      timestamp: new Date().toISOString()
+    });
 
     // For authenticated users, include their supplement history and preferences
     const twoWeeksAgo = new Date();
