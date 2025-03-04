@@ -29,14 +29,17 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
       
-      // Check if user is authenticated by checking if req.user exists
-      const isAuthenticated = req.user !== undefined;
-      const userId = isAuthenticated ? req.user.id : null;
+      // Check if user is authenticated properly by examining session
+      const isAuthenticated = req.user ? true : false;
+      const userId = isAuthenticated && req.user ? req.user.id : null;
       
       console.log('Query request:', {
         isAuthenticated,
         userId,
         messageCount: messages.length,
+        hasUserObject: req.user ? true : false,
+        userKeys: req.user ? Object.keys(req.user) : [],
+        sessionActive: req.session ? true : false,
         timestamp: new Date().toISOString()
       });
 
@@ -93,6 +96,10 @@ function setupQueryRoutes(app: Express) {
       console.error("Error in query endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
+        authStatus: {
+          hasUser: req.user ? true : false,
+          hasSession: req.session ? true : false
+        },
         timestamp: new Date().toISOString()
       });
       res.status(500).json({
