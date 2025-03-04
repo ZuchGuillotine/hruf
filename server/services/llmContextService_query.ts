@@ -22,14 +22,13 @@ If the user has shared their supplement tracking history, you may reference it t
 
 // Constructs context for general supplement queries
 // This service handles context for general supplement information requests
-export async function constructQueryContext(userId: string | null, userQuery: string): Promise<{ messages: Message[] }> {
+export async function constructQueryContext(userId: number | null, userQuery: string): Promise<{ messages: Message[] }> {
   try {
     // If user is not authenticated, return basic context
-    if (!userId) {
+    if (userId === null || userId === undefined) {
       console.log('User not authenticated, returning basic context:', {
         isAuthenticated: false,
         userId: null,
-        userIdType: typeof userId,
         hasSystemPrompt: true,
         timestamp: new Date().toISOString()
       });

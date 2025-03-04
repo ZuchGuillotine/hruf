@@ -28,8 +28,8 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
 
-      // Direct authentication check - this is how it's done in the rest of the app
-      const isAuthenticated = req.isAuthenticated?.() || false;
+      // Direct authentication check using Passport's built-in method
+      const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
       const userId = isAuthenticated && req.user ? req.user.id : null;
 
       console.log('Query request:', {
