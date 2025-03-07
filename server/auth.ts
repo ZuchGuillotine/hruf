@@ -286,6 +286,108 @@ export function setupAuth(app: Express) {
         return res.redirect('/login?error=missing_auth_code');
       }
       
+
+  // Modified registration endpoint to properly handle login after signup
+  app.post("/api/register", async (req, res, next) => {
+    try {
+      console.log('Starting registration process:', {
+        email: req.body.email,
+        bodyKeys: Object.keys(req.body),
+        timestamp: new Date().toISOString()
+      });
+
+      const result = insertUserSchema.safeParse(req.body);
+      if (!result.success) {
+        return res
+          .status(400)
+          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+      }
+
+      const { email, username, password } = result.data;
+
+      // Check if user already exists with either email or username
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(
+          or(
+            eq(users.email, email),
+            eq(users.username, username)
+          )
+        )
+        .limit(1);
+
+      if (existingUser) {
+        if (existingUser.email === email) {
+          return res.status(400).json({ message: "Email already registered" });
+        }
+        return res.status(400).json({ message: "Username already taken" });
+      }
+
+      // Hash password
+      const hashedPassword = await crypto.hash(password);
+
+      // Create user
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          ...result.data,
+          password: hashedPassword,
+          emailVerified: true, // Auto-verify for now
+        })
+        .returning();
+
+      console.log('User created successfully:', {
+        userId: newUser.id,
+        email: newUser.email,
+        timestamp: new Date().toISOString()
+      });
+
+      // Log the user in automatically
+      req.login(newUser, (err) => {
+        if (err) {
+          console.error('Auto-login error after registration:', {
+            error: err.message,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+          });
+          // Continue despite login error - return user data
+          return res.status(201).json({
+            message: "Registration successful, but auto-login failed",
+            user: {
+              id: newUser.id,
+              username: newUser.username,
+              email: newUser.email
+            },
+          });
+        }
+        
+        console.log('User logged in automatically after registration:', {
+          userId: newUser.id,
+          email: newUser.email,
+          isAuthenticated: req.isAuthenticated(),
+          timestamp: new Date().toISOString()
+        });
+
+        return res.status(201).json({
+          message: "Registration and authentication successful",
+          user: {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email
+          },
+        });
+      });
+    } catch (error) {
+      console.error('Error in registration process:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      next(error);
+    }
+  });
+
       next();
     },
     (req, res, next) => {

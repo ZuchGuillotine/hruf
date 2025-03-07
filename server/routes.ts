@@ -1012,6 +1012,29 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
+
+  // Authentication debug endpoint
+  app.get("/api/debug/auth-status", (req, res) => {
+    res.json({
+      isAuthenticated: req.isAuthenticated(),
+      hasSession: !!req.session,
+      sessionID: req.sessionID,
+      user: req.user ? {
+        id: req.user.id,
+        email: req.user.email,
+        username: req.user.username
+      } : null,
+      sessionDetails: req.session ? {
+        cookie: req.session.cookie,
+        passport: req.session.passport
+      } : null,
+      headers: {
+        cookie: req.headers.cookie,
+        authorization: req.headers.authorization
+      }
+    });
+  });
+
       res.json({
         message: `Successfully deleted ${result.length} non-admin users`,
         deletedCount: result.length

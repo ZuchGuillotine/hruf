@@ -11,12 +11,12 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ onSignup }: SignupFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, formState: { errors }, setError } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmit = async (formData: any) => {
+  const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
       // Call your signup API endpoint
@@ -25,33 +25,51 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
-        credentials: 'include', // Important for session cookies
+        body: JSON.stringify(data),
+        credentials: 'include' // Important: this ensures cookies are sent with the request
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'Signup failed');
       }
 
-      console.log('Signup successful, showing payment options', data);
+      const userData = await response.json();
+      console.log('Signup successful:', userData);
 
-      // Ensure the user is properly stored in the state/context
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
+      // After successful signup, explicitly log the user in
+      try {
+        const loginResponse = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password
+          }),
+          credentials: 'include' // Important: this ensures cookies are sent with the request
+        });
+
+        if (!loginResponse.ok) {
+          console.warn('Auto-login after signup failed, continuing to payment options');
+        } else {
+          console.log('Auto-login after signup successful');
+        }
+      } catch (loginError) {
+        console.warn('Auto-login error:', loginError);
+        // Continue even if auto-login fails
       }
 
       // Show payment options after successful signup
       setShowPaymentOptions(true);
 
-      // Call the onSignup callback if provided
-      if (onSignup) {
-        onSignup(data);
-      }
     } catch (error) {
       console.error('Signup error:', error);
-      // Handle error (show notification, etc.)
+      setError('form', {
+        type: 'manual',
+        message: error instanceof Error ? error.message : 'An error occurred during signup'
+      });
     } finally {
       setIsLoading(false);
     }

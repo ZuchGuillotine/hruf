@@ -18,6 +18,23 @@ interface PaymentOptionsModalProps {
 const PaymentOptionsModal: React.FC<PaymentOptionsModalProps> = ({ isOpen, onClose, monthlyLink, freeTrialLink }) => {
   if (!isOpen) return null;
 
+  // Check authentication status when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      // Debug auth status
+      fetch('/api/debug/auth-status', { 
+        credentials: 'include' 
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('Auth status during payment modal:', data);
+      })
+      .catch(err => {
+        console.error('Error checking auth status:', err);
+      });
+    }
+  }, [isOpen]);
+
   const handlePaymentSelection = (url: string) => {
     // Open the payment URL in a new tab
     window.open(url, '_blank');
