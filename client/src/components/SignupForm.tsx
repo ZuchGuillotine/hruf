@@ -16,7 +16,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (formData: any) => {
     setIsLoading(true);
     try {
       // Call your signup API endpoint
@@ -25,16 +25,23 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formData),
+        credentials: 'include', // Important for session cookies
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Signup failed');
+        throw new Error(data.error || 'Signup failed');
       }
-      
-      console.log('Signup successful, showing payment options');
-      
+
+      console.log('Signup successful, showing payment options', data);
+
+      // Ensure the user is properly stored in the state/context
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
       // Show payment options after successful signup
       setShowPaymentOptions(true);
 

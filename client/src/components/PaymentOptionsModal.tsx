@@ -15,7 +15,16 @@ interface PaymentOptionsModalProps {
  * Provides monthly, yearly, and free trial payment options
  * Links directly to Stripe checkout sessions
  */
-export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProps) {
+const PaymentOptionsModal: React.FC<PaymentOptionsModalProps> = ({ isOpen, onClose, monthlyLink, freeTrialLink }) => {
+  if (!isOpen) return null;
+
+  const handlePaymentSelection = (url: string) => {
+    // Open the payment URL in a new tab
+    window.open(url, '_blank');
+    // Then redirect to dashboard - user is already authenticated
+    window.location.href = '/dashboard';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -30,10 +39,8 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
           <div className="space-y-3">
             {/* Monthly subscription option - direct payment */}
             <a
-              href="https://buy.stripe.com/6oEg2154g7KH7604gi" 
-              className="block w-full"
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => handlePaymentSelection(monthlyLink)}
+              className="block w-full cursor-pointer"
             >
               <Button className="w-full bg-green-700 hover:bg-green-800">
                 Monthly - $21.99
@@ -42,10 +49,8 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
 
             {/* Yearly subscription option with savings highlight */}
             <a 
-              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
-              className="block w-full" 
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => handlePaymentSelection("https://buy.stripe.com/eVa6rr9kw6GD9e8aEE")}
+              className="block w-full cursor-pointer" 
             >
               <Button className="w-full" variant="outline">
                 Yearly - $184.72 (Save 30%)
@@ -54,10 +59,8 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
 
             {/* Free trial option using the monthly link that includes 21-day trial */}
             <a 
-              href={freeTrialLink}
-              className="block w-full"
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => handlePaymentSelection(freeTrialLink)}
+              className="block w-full cursor-pointer"
             >
               <Button className="w-full" variant="link">
                 Start 14-Day Free Trial
@@ -68,4 +71,6 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export {PaymentOptionsModal};
