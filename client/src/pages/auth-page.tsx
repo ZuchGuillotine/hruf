@@ -56,7 +56,7 @@ export default function AuthPage() {
     } catch (error: any) {
       console.error('Authentication error:', error);
 
-      let errorMessage = isLogin 
+      let errorMessage = isLogin
         ? "Login failed. Please check your credentials."
         : "Registration failed. Please try again.";
 
@@ -116,10 +116,10 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8] relative">
       <LandingHeader />
-      <BackgroundWords />
+      <BackgroundWords className="absolute inset-0 z-0" />
 
       {/* Main content area with responsive layout */}
-      <div className="flex-grow container mx-auto px-4 py-8">
+      <div className="flex-grow container mx-auto px-4 py-8 relative z-50">
         <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-start">
           {/* Left column - Value Proposition */}
           <div className="mb-8 lg:mb-0">
@@ -128,7 +128,7 @@ export default function AuthPage() {
 
           {/* Right column - Auth Card */}
           <div className="flex justify-center">
-            <Card className="auth-card w-full max-w-[380px]">
+            <Card className="auth-card w-full max-w-[380px] shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
               <CardHeader className="text-center">
                 <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
                 <CardDescription>
@@ -223,7 +223,7 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
-      <Footer />
+      <Footer className="relative z-50" />
     </div>
   );
 }

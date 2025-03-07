@@ -23,18 +23,20 @@ export function ValueProposition() {
 
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto">
-      <div className="text-center mb-12 max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
-          Optimize Your Supplement Stack
-        </h1>
-        <p className="text-xl text-gray-600">
-          Track, analyze, and optimize your supplement regimen with AI-powered insights
-        </p>
-      </div>
+      <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
+        <CardContent className="p-8 text-center">
+          <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
+            Optimize Your Supplement Stack
+          </h1>
+          <p className="text-xl text-gray-600">
+            Track, analyze, and optimize your supplement regimen with AI-powered insights
+          </p>
+        </CardContent>
+      </Card>
 
       <div className="grid md:grid-cols-2 gap-6">
         {features.map((feature, index) => (
-          <Card key={index} className="border-2 border-[#1b4332]/10 hover:border-[#1b4332]/20 transition-colors">
+          <Card key={index} className="border-2 border-[#1b4332]/10 hover:border-[#1b4332]/20 transition-colors shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <div className="mt-1">
