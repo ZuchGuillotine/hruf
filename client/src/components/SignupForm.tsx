@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from './ui/button';
@@ -28,14 +27,14 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) {
         throw new Error('Signup failed');
       }
-      
+
       // Show payment options after successful signup
       setShowPaymentOptions(true);
-      
+
       // Call the onSignup callback if provided
       if (onSignup) {
         onSignup(data);
@@ -50,7 +49,6 @@ export function SignupForm({ onSignup }: SignupFormProps) {
 
   const handleClosePaymentModal = () => {
     setShowPaymentOptions(false);
-    // Navigate to dashboard if user closes modal without selecting a plan
     navigate('/dashboard');
   };
 
@@ -67,7 +65,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>}
             </div>
-            
+
             <div>
               <Input
                 type="password"
@@ -77,7 +75,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message?.toString()}</p>}
             </div>
-            
+
             <div>
               <Input
                 placeholder="Full Name"
@@ -86,17 +84,19 @@ export function SignupForm({ onSignup }: SignupFormProps) {
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message?.toString()}</p>}
             </div>
-            
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Creating Account...' : 'Sign Up'}
             </Button>
           </form>
         </CardContent>
       </Card>
-      
+
       <PaymentOptionsModal 
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 
+        monthlyLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
+        freeTrialLink="Your Stripe 21-day free trial link here"
       />
     </>
   );
