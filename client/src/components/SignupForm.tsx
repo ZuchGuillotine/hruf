@@ -49,6 +49,11 @@ export default function SignupForm() {
         credentials: 'include',
         body: JSON.stringify(values),
       });
+      
+      if (response.ok) {
+        setSuccess("Account created successfully!");
+        setShowPaymentOptions(true); // Show payment options after successful signup
+      }
 
       if (!response.ok) {
         const data = await response.json();
