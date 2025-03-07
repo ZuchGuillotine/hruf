@@ -50,74 +50,30 @@ export default function SignupForm() {
         body: JSON.stringify(values),
       });
 
-      if (response.ok) {
-        // Get the response data
+      console.log("Registration response status:", response.status);
+
+      if (!response.ok) {
         const data = await response.json();
-        console.log("Registration response:", data);
-        
-        const data = await response.json();
-        setSuccess("Account created successfully!");
+        console.error("Registration error:", data);
+        setError(data.message || "Registration failed. Please try again.");
         setIsLoading(false);
-        
-        // Explicitly show payment options and prevent redirection
-        setShowPaymentOptions(true);
-        console.log("Setting showPaymentOptions to true - should show modal now");
-        return; // Exit early since we've handled success
+        return;
       }
 
-      // Only reach here if response was not ok
       const data = await response.json();
-      setError(data.message || data.error || 'Signup failed');
+      console.log("Registration response:", data);
+
+      // Update state for successful registration
+      setSuccess("Account created successfully!");
       setIsLoading(false);
-      return;
-      
-      // Verify authentication status before proceeding
-      try {
-        // Make an immediate auth check request to ensure session is established
-        const authCheckResponse = await fetch('/api/debug/auth-status', {
-          credentials: 'include'
-        });
 
-        const authStatus = await authCheckResponse.json();
-        console.log('Auth status after registration:', authStatus);
+      // Show payment options modal
+      setTimeout(() => {
+        setShowPaymentOptions(true);
+        console.log("Payment modal should now be visible:", showPaymentOptions);
+      }, 100); // Small delay to ensure state updates properly
 
-        if (!authStatus.isAuthenticated) {
-          console.log('Session not established yet, attempting to fetch user data');
-          // Try to fetch user data to confirm registration
-          const userResponse = await fetch('/api/user', {
-            credentials: 'include'
-          });
-
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            console.log("User verification successful:", userData);
-            // User is authenticated, continue normally
-          } else {
-            // If we can't get user data, redirect to login with success message
-            console.log("User verification failed, redirecting to login");
-            setSuccess("Account created. Please log in.");
-            setIsLoading(false);
-            window.location.href = '/login?registered=true';
-            return;
-          }
-        } else {
-          // Session is established, no need to do anything special
-          console.log("Session already established");
-        }
-      } catch (authError) {
-        console.error('Auth verification error:', authError);
-        // Still try to use the data from registration
-        if (data.user) {
-          // We already have user data, continue
-          console.log("Using registration data despite auth error");
-        } else {
-          // Fallback to redirect
-          console.log("Auth error with no user data, redirecting to login");
-          setSuccess("Account created. Please log in.");
-          setIsLoading(false);
-          window.location.href = '/login?registered=true';
-        }
-      }
+      return; // Exit early since we've handled success
     } catch (err) {
       console.error("Signup error:", err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -129,7 +85,7 @@ export default function SignupForm() {
   const handleClosePaymentModal = () => {
     console.log("Closing payment modal");
     setShowPaymentOptions(false);
-    
+
     // Redirect to dashboard after closing the modal
     window.location.href = '/dashboard';
   };

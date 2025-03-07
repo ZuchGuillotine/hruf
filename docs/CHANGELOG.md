@@ -309,4 +309,47 @@ No database migration required. These changes are purely logical and affect only
   - Enhanced login flow with proper redirection
 
 
+
+# Changelog
+
+## [Unreleased]
+
+### Fixed
+- Payment Modal Integration:
+  - Fixed issue with payment modal not showing after signup
+  - Improved state management for modal visibility
+  - Added timeout to ensure proper state updates before displaying modal
+  - Enhanced debugging visibility for payment flow troubleshooting
+  - Fixed redirect flow after closing payment modal
+
+## Previous Changes
+
+### Fixed
+- Authentication Flow Issues:
+  - Fixed user authentication state after registration
+  - Resolved session persistence problems
+  - Enhanced authentication middleware recognition
+  - Improved error handling in authentication process
+  - Fixed payment modal integration in signup flow
+
+- Email Integration:
+  - Resolved SendGrid welcome email functionality
+  - Fixed dynamic module imports in auth.ts
+  - Implemented proper error handling for email sending
+  - Enhanced email template delivery
+
+### Enhanced
+- Payment Integration:
+  - Added PaymentOptionsModal to signup flow
+  - Integrated Stripe payment links
+  - Improved user onboarding with subscription options
+  - Enhanced post-registration experience
+
+- Authentication System:
+  - Optimized session handling during registration
+  - Enhanced authentication verification across services
+  - Improved middleware configuration for consistent auth state
+  - Enhanced login flow with proper redirection
+  - Optimized auth info middleware for consistent access
+
   - Optimized auth info middleware for consistent access
