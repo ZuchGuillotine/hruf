@@ -16,7 +16,7 @@ interface SubscriptionCheckProps {
   onClose?: () => void;
 }
 
-export function SubscriptionCheck({ showAsModal = false, reason, onClose }: SubscriptionCheckProps) {
+export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionCheckProps) {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
 
@@ -122,7 +122,11 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
 
   return showAsModal ? (
     <Dialog open={true} onOpenChange={undefined}>
-      <DialogContent className="sm:max-w-[425px]" onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent 
+        className="sm:max-w-[425px]" 
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription>{getDescription()}</DialogDescription>
