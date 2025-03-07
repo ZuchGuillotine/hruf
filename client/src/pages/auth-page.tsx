@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import LandingHeader from "@/components/landing-header";
 import BackgroundWords from "@/components/background-words";
+import { ValueProposition } from "@/components/ValueProposition";
 
 type FormData = {
   email: string;
@@ -48,7 +49,7 @@ export default function AuthPage() {
         await login(data);
       } else {
         const response = await register(data);
-        if (response.status === 'verification_required') {
+        if (response.requiresVerification) {
           setVerificationSent(true);
         }
       }
@@ -72,11 +73,6 @@ export default function AuthPage() {
         duration: 5000,
       });
     }
-  };
-
-  const handleGoogleLogin = () => {
-    // Redirect to the backend's Google authentication route
-    window.location.href = '/auth/google';
   };
 
   if (verificationSent) {
@@ -121,6 +117,9 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col bg-[#e8f3e8] relative">
       <LandingHeader />
       <BackgroundWords />
+      <div className="relative z-10">
+        <ValueProposition />
+      </div>
       <div className="flex-grow flex items-center justify-center px-4 relative z-10">
         <Card className="auth-card w-full max-w-[380px]">
           <CardHeader className="text-center">

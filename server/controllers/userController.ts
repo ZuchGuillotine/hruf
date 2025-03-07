@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { sendEmail } from '../services/emailService';
 import { db } from '@db/index';
-import { users } from '@db/neon-schema';
+import { users } from '../db/neon-schema';
 import { eq } from 'drizzle-orm';
 
 export async function signup(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -68,17 +68,23 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       </div>
     `.trim();
 
-    const emailResponse = await sendEmail({ to: email, subject, text, html });
+    await sendEmail({
+      to: email,
+      from: 'accounts@stacktracker.io', // Add the from field
+      subject,
+      text,
+      html
+    });
 
     console.log('Signup verification email sent:', {
       to: email,
-      statusCode: emailResponse.statusCode,
       timestamp: new Date().toISOString()
     });
 
     res.status(201).json({ 
       message: 'Signup successful. Please check your email to verify your account.',
-      userId: user.id
+      userId: user.id,
+      requiresVerification: true
     });
   } catch (error) {
     console.error('Signup error:', {

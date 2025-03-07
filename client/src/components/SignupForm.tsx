@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
 import { PaymentOptionsModal } from './PaymentOptionsModal';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 
 interface SignupFormProps {
   onSignup?: (data: any) => void;
@@ -15,7 +14,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
@@ -28,14 +27,14 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) {
         throw new Error('Signup failed');
       }
-      
+
       // Show payment options after successful signup
       setShowPaymentOptions(true);
-      
+
       // Call the onSignup callback if provided
       if (onSignup) {
         onSignup(data);
@@ -50,8 +49,8 @@ export function SignupForm({ onSignup }: SignupFormProps) {
 
   const handleClosePaymentModal = () => {
     setShowPaymentOptions(false);
-    // Navigate to dashboard if user closes modal without selecting a plan
-    navigate('/dashboard');
+    // Navigate to dashboard using wouter
+    setLocation('/dashboard');
   };
 
   return (
@@ -62,22 +61,34 @@ export function SignupForm({ onSignup }: SignupFormProps) {
             <div>
               <Input
                 placeholder="Email"
-                {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })}
+                {...register('email', { 
+                  required: 'Email is required', 
+                  pattern: { 
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
+                    message: 'Invalid email address' 
+                  } 
+                })}
                 className="w-full"
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>}
             </div>
-            
+
             <div>
               <Input
                 type="password"
                 placeholder="Password"
-                {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Password must be at least 8 characters' } })}
+                {...register('password', { 
+                  required: 'Password is required', 
+                  minLength: { 
+                    value: 8, 
+                    message: 'Password must be at least 8 characters' 
+                  } 
+                })}
                 className="w-full"
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message?.toString()}</p>}
             </div>
-            
+
             <div>
               <Input
                 placeholder="Full Name"
@@ -86,14 +97,14 @@ export function SignupForm({ onSignup }: SignupFormProps) {
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message?.toString()}</p>}
             </div>
-            
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Creating Account...' : 'Sign Up'}
             </Button>
           </form>
         </CardContent>
       </Card>
-      
+
       <PaymentOptionsModal 
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 

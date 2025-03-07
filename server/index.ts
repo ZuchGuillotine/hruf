@@ -29,7 +29,7 @@ const MemoryStore = createMemoryStore(session);
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
-  saveUninitialized: true, // Changed to true to ensure session creation
+  saveUninitialized: true,
   store: new MemoryStore({
     checkPeriod: 86400000
   }),
@@ -52,8 +52,8 @@ console.log('Session configuration:', {
 
 // Core middleware setup - order is important
 app.use(session(sessionConfig));
-setupAuth(app); // This sets up passport.initialize() and passport.session()
-app.use(setAuthInfo); // Restore the auth info middleware
+setupAuth(app);
+app.use(setAuthInfo);
 
 // API middleware
 app.use('/api', (req, res, next) => {
@@ -105,23 +105,46 @@ if (app.get("env") === "development") {
   serveStatic(app);
 }
 
-// Start server with retries
+// Start server with improved error handling and retries
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
-function startServer(retries = 3) {
+async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
+  for (let port = startPort; port < startPort + maxRetries; port++) {
+    try {
+      await new Promise((resolve, reject) => {
+        const testServer = server.listen(port, "0.0.0.0", () => {
+          testServer.close();
+          resolve(port);
+        });
+        testServer.on('error', reject);
+      });
+      return port;
+    } catch (err) {
+      if (err.code !== 'EADDRINUSE' || port === startPort + maxRetries - 1) {
+        throw err;
+      }
+      console.log(`Port ${port} is in use, trying next port...`);
+    }
+  }
+  throw new Error(`Could not find an available port after ${maxRetries} attempts`);
+}
+
+async function startServer() {
   try {
-    server.listen(BASE_PORT, "0.0.0.0", () => {
-      log(`Server started on port ${BASE_PORT}`);
+    const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
+    server.listen(port, "0.0.0.0", () => {
+      log(`Server started successfully on port ${port}`);
     });
   } catch (err) {
-    if (retries > 0) {
-      console.log(`Retrying server start... (${retries} attempts remaining)`);
-      setTimeout(() => startServer(retries - 1), 1000);
-    } else {
-      console.error('Failed to start server:', err);
-      process.exit(1);
-    }
+    console.error('Failed to start server:', {
+      error: err.message,
+      code: err.code,
+      timestamp: new Date().toISOString()
+    });
+    process.exit(1);
   }
 }
 
-startServer();
+startServer().catch(console.error);
