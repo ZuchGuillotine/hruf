@@ -19,6 +19,8 @@ import { Separator } from "@/components/ui/separator";
 import LandingHeader from "@/components/landing-header";
 import BackgroundWords from "@/components/background-words";
 import { ValueProposition } from "@/components/ValueProposition";
+import { useLocation } from 'wouter';
+import { SubscriptionCheck } from "@/components/SubscriptionCheck";
 
 type FormData = {
   email: string;
@@ -32,8 +34,10 @@ export default function AuthPage() {
     return params.has('login');
   });
   const [verificationSent, setVerificationSent] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { login, register } = useUser();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -47,10 +51,17 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         await login(data);
+        setLocation('/dashboard');
       } else {
+        console.log('Starting registration process');
         const response = await register(data);
+
         if (response.requiresVerification) {
           setVerificationSent(true);
+        } else {
+          // Show subscription modal for new signups
+          console.log('Registration successful, showing subscription modal');
+          setShowSubscriptionModal(true);
         }
       }
     } catch (error: any) {
@@ -73,6 +84,12 @@ export default function AuthPage() {
         duration: 5000,
       });
     }
+  };
+
+  const handleCloseSubscriptionModal = () => {
+    console.log('Subscription modal closed, redirecting to dashboard');
+    setShowSubscriptionModal(false);
+    setLocation('/dashboard');
   };
 
   if (verificationSent) {
@@ -118,9 +135,7 @@ export default function AuthPage() {
       <LandingHeader />
       <BackgroundWords className="absolute inset-0 z-0" />
 
-      {/* Main content area with responsive layout */}
       <div className="flex-grow container mx-auto px-4 py-8 relative z-50">
-        {/* Header Card - Centered above columns */}
         <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl mx-auto">
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
@@ -132,14 +147,11 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        {/* Two-column layout */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-start">
-          {/* Left column - Value Proposition */}
           <div className="mb-8 lg:mb-0">
             <ValueProposition />
           </div>
 
-          {/* Right column - Auth Card */}
           <div className="flex justify-center">
             <Card className="auth-card w-full max-w-[380px] shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
               <CardHeader className="text-center">
@@ -237,6 +249,13 @@ export default function AuthPage() {
         </div>
       </div>
       <Footer className="relative z-50" />
+      {showSubscriptionModal && (
+        <SubscriptionCheck
+          showAsModal={true}
+          reason="signup"
+          onClose={handleCloseSubscriptionModal}
+        />
+      )}
     </div>
   );
 }

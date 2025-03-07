@@ -26,13 +26,15 @@ import { getHealthStats, updateHealthStats } from "./controllers/healthStatsCont
 import { getSupplements, createSupplement, updateSupplement, deleteSupplement, searchSupplements } from "./controllers/supplementController";
 import { getSupplementLogs, createSupplementLog, getSupplementLogsByDate } from "./controllers/supplementLogController";
 import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitativeLogController";
-// Research controller removed, now handled directly in routes similar to blog
-// Blog controller imports removed as blog management is now handled in a separate application
 import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
+import supplementsRouter from './routes/supplements';
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+
+  // Mount supplements router
+  app.use('/api/supplements', supplementsRouter);
 
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {

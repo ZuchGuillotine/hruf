@@ -21,8 +21,10 @@ export function SignupForm({ onSignup }: SignupFormProps) {
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
+      console.log('Starting signup process');
+
       // Call signup API endpoint
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,6 +39,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
       }
 
       const result = await response.json();
+      console.log('Signup successful, showing subscription modal');
 
       // Show success toast
       toast({
@@ -49,7 +52,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         onSignup(result);
       }
 
-      // Show subscription modal
+      // Show subscription modal instead of redirecting
       setShowSubscriptionModal(true);
 
     } catch (error: any) {
@@ -65,8 +68,9 @@ export function SignupForm({ onSignup }: SignupFormProps) {
   };
 
   const handleCloseSubscriptionModal = () => {
+    console.log('Subscription modal closed, redirecting to dashboard');
     setShowSubscriptionModal(false);
-    // Redirect to dashboard
+    // Only redirect to dashboard when modal is closed
     setLocation('/dashboard');
   };
 

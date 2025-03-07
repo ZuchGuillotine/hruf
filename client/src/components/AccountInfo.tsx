@@ -3,25 +3,41 @@ import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { CalendarIcon, CreditCardIcon, Award } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Progress } from './ui/progress';
+import { useToast } from '@/hooks/use-toast';
 
 export function AccountInfo() {
   const { user } = useUser();
   const [streakDays, setStreakDays] = useState(0);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Fetch streak information on component mount
     const fetchStreak = async () => {
       try {
-        const response = await fetch('/api/supplements/streak');
+        const response = await fetch('/api/supplements/streak', {
+          credentials: 'include' // Important for auth
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to fetch streak data');
+        }
+
         const data = await response.json();
         setStreakDays(data.streakDays);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch streak:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load streak data"
+        });
       }
     };
     fetchStreak();
-  }, []);
+  }, [toast]);
 
   const formatDate = (date: string | null) => {
     if (!date) return 'N/A';
@@ -41,13 +57,29 @@ export function AccountInfo() {
     if (loading || streakDays < 14) return;
     setLoading(true);
     try {
-      await fetch('/api/stripe/extend-trial', {
+      const response = await fetch('/api/stripe/extend-trial', {
         method: 'POST',
+        credentials: 'include'
       });
-      // Refresh user data to update trial end date
+
+      if (!response.ok) {
+        throw new Error('Failed to extend trial');
+      }
+
+      toast({
+        title: "Success!",
+        description: "Your trial has been extended by 7 days!",
+      });
+
+      // Refresh page to update trial end date
       window.location.reload();
     } catch (error) {
       console.error('Failed to extend trial:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to extend trial period"
+      });
     } finally {
       setLoading(false);
     }
@@ -83,13 +115,16 @@ export function AccountInfo() {
                       Logging Streak: {streakDays} days
                     </span>
                   </div>
+                  <div className="mt-2">
+                    <Progress value={(streakDays / 14) * 100} className="h-2" />
+                  </div>
                   {streakDays >= 14 ? (
                     <Button
                       onClick={handleExtendTrial}
                       disabled={loading}
                       className="mt-2 w-full bg-blue-500 hover:bg-blue-600"
                     >
-                      Claim 7 Extra Trial Days!
+                      {loading ? "Processing..." : "Claim 7 Extra Trial Days!"}
                     </Button>
                   ) : (
                     <p className="text-xs text-gray-600 mt-2">
@@ -111,29 +146,45 @@ export function AccountInfo() {
 
         {!user?.isPro && (
           <div className="space-y-3">
-            <a 
-              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE" 
-              className="block w-full"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button 
+              className="w-full bg-green-700 hover:bg-green-800"
+              onClick={() => handleSubscribe(false)}
+              disabled={loading}
             >
-              <Button className="w-full bg-green-700 hover:bg-green-800">
-                Monthly - $21.99
-              </Button>
-            </a>
-            <a 
-              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
-              className="block w-full" 
-              target="_blank"
-              rel="noopener noreferrer"
+              Monthly - $21.99
+            </Button>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => handleSubscribe(true)}
+              disabled={loading}
             >
-              <Button className="w-full" variant="outline">
-                Yearly - $184.72 (Save 30%)
-              </Button>
-            </a>
+              Yearly - $184.72 (Save 30%)
+            </Button>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
+const handleSubscribe = async (isYearly: boolean) => {
+  const priceId = isYearly 
+    ? 'price_yearly_id'  // Replace with your actual yearly price ID
+    : 'price_monthly_id'; // Replace with your actual monthly price ID
+
+  try {
+    const response = await fetch('/api/stripe/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ priceId }),
+    });
+
+    const { url } = await response.json();
+    window.location.href = url;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+  }
+};
