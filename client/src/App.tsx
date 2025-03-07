@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import SubscriptionPage from "@/pages/subscription-page";
 
 /**
  * AdminRoute Component
@@ -74,9 +75,7 @@ function AppRouter() {
     "/learn",
     "/ask",
     "/research",
-    // Allow access to individual blog posts without authentication
     location.startsWith("/learn/") ? location : null,
-    // Allow access to individual research articles without authentication
     location.startsWith("/research/") ? location : null
   ].filter(Boolean).includes(location);
 
@@ -111,12 +110,18 @@ function AppRouter() {
 
   // Show auth page for non-authenticated users attempting to access protected routes
   if (!user) {
-    return <AuthPage />;
+    return (
+      <Switch>
+        <Route path="/subscription" component={SubscriptionPage} />
+        <Route component={AuthPage} />
+      </Switch>
+    );
   }
 
   // Protected routes for authenticated users
   return (
     <Switch>
+      <Route path="/subscription" component={SubscriptionPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
