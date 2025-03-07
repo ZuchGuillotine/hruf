@@ -21,15 +21,17 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
 
-  const handleSubscribe = async (isYearly: boolean, withTrial: boolean = false) => {
+  const handleSubscribe = async (isYearly: boolean) => {
     setLoading(true);
     try {
-      const priceId = isYearly ? process.env.STRIPE_YEARLY_PRICE_ID : process.env.STRIPE_MONTHLY_PRICE_ID;
+      const priceId = isYearly 
+        ? process.env.STRIPE_YEARLY_PRICE_ID 
+        : process.env.STRIPE_MONTHLY_PRICE_ID;
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, withTrial }),
+        body: JSON.stringify({ priceId }),
       });
 
       if (!response.ok) {
@@ -37,7 +39,6 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
       }
 
       const { url } = await response.json();
-      // Only redirect to Stripe after successful response
       window.location.href = url;
     } catch (error) {
       console.error('Failed to start subscription:', error);
@@ -46,9 +47,25 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
     }
   };
 
-  const handleStartTrial = () => {
-    console.log('Starting trial and redirecting to dashboard');
-    setLocation('/dashboard');
+  const handleStartTrial = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/user/start-trial', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start trial');
+      }
+
+      console.log('Trial started successfully, redirecting to dashboard');
+      setLocation('/dashboard');
+    } catch (error) {
+      console.error('Failed to start trial:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getTitle = () => {
@@ -88,7 +105,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
             className="w-full bg-green-600 hover:bg-green-700 mb-4"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            Start 14-Day Free Trial
+            {loading ? "Starting Trial..." : "Start 14-Day Free Trial"}
           </Button>
         )}
 
@@ -98,7 +115,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
           disabled={loading}
           className="w-full"
         >
-          Monthly - $21.99/month
+          {loading ? "Processing..." : "Monthly - $21.99/month"}
         </Button>
 
         {/* Yearly Option */}
@@ -108,7 +125,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
           variant="outline"
           className="w-full mt-2"
         >
-          Yearly - $184.71/year (Save 30%)
+          {loading ? "Processing..." : "Yearly - $184.71/year (Save 30%)"}
         </Button>
       </div>
 
@@ -137,6 +154,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
         className="sm:max-w-[425px]" 
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>

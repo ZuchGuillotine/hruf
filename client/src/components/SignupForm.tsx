@@ -15,7 +15,6 @@ export function SignupForm({ onSignup }: SignupFormProps) {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const onSubmit = async (data: any) => {
@@ -52,7 +51,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         onSignup(result);
       }
 
-      // Immediately show the subscription modal
+      // Show subscription modal
       setShowSubscriptionModal(true);
 
     } catch (error: any) {
@@ -65,13 +64,6 @@ export function SignupForm({ onSignup }: SignupFormProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCloseSubscriptionModal = () => {
-    console.log('Subscription modal closed, redirecting to dashboard');
-    setShowSubscriptionModal(false);
-    // Only redirect to dashboard when modal is closed
-    setLocation('/dashboard');
   };
 
   return (
@@ -130,7 +122,6 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         <SubscriptionCheck 
           showAsModal={true}
           reason="signup"
-          onClose={handleCloseSubscriptionModal}
         />
       )}
     </>
