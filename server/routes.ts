@@ -29,9 +29,17 @@ import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitat
 import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
+import stripeRouter from './routes/stripe';  // Import Stripe routes
 
 export function registerRoutes(app: Express): Server {
+  // Setup authentication first
   setupAuth(app);
+
+  // Ensure JSON parsing middleware is applied globally
+  app.use(express.json());
+
+  // Mount Stripe routes with explicit path
+  app.use('/api/stripe', stripeRouter);
 
   // Mount supplements router
   app.use('/api/supplements', supplementsRouter);
@@ -921,12 +929,12 @@ export function registerRoutes(app: Express): Server {
         .orderBy(sql`${blogPosts.publishedAt} DESC`);
       res.json(posts);
     } catch (error) {
-      console.error("Error fetching blog posts:", error);
+      console.error("Errorfetching blog posts:", error);
       res.status(500).send("Failed to fetch blog posts");
     }
   });
 
-  app.get("/api/blog/:slug", async (req, res) => {
+  app.get("/api/api/blog/:slug", async (req, res) => {
     try {
       const [post] = await db
         .select()
