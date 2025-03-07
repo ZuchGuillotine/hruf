@@ -28,6 +28,18 @@ router.post('/create-checkout-session', async (req, res) => {
       return res.status(400).json({ error: 'Price ID is required' });
     }
 
+    // Map product IDs to their respective Stripe price IDs
+    const priceIdMap: Record<string, string> = {
+      'prod_Rpderg7Xqdw1zZ': 'price_1QvyMvAIJBVVerrJQDznxCdB', // Monthly with trial
+      'prod_RtcuCvjOY9gHvm': 'price_1QzpeMAIJBVVerrJ12ZYExkV', // Monthly no trial
+      'prod_RpdfGxB4L6Rut7': 'price_1QvyNlAIJBVVerrJPOw4EIMa', // Yearly
+    };
+
+    const stripePriceId = priceIdMap[priceId];
+    if (!stripePriceId) {
+      return res.status(400).json({ error: 'Invalid product ID' });
+    }
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2023-10-16',
     });
@@ -37,7 +49,7 @@ router.post('/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId,
+          price: stripePriceId,
           quantity: 1,
         },
       ],

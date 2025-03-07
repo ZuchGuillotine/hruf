@@ -23,13 +23,13 @@ export default function SubscriptionPage() {
       let priceId;
       switch (planType) {
         case 'yearly':
-          priceId = import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID;
+          priceId = 'prod_RpdfGxB4L6Rut7';
           break;
         case 'monthly':
-          priceId = import.meta.env.VITE_STRIPE_MONTHLYNOTRIAL_PRICE_ID;
+          priceId = 'prod_RtcuCvjOY9gHvm';
           break;
         case 'monthlyWithTrial':
-          priceId = import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID;
+          priceId = 'prod_Rpderg7Xqdw1zZ';
           break;
       }
 
