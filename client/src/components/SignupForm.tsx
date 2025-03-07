@@ -67,13 +67,23 @@ export default function SignupForm() {
       setSuccess("Account created successfully!");
       setIsLoading(false);
       
-      // Show payment options modal with proper state handling
+      // Show payment options modal immediately and force it with higher priority
       console.log("Setting payment modal to visible");
-      // Use a slightly longer timeout to ensure DOM updates complete
-      setTimeout(() => {
+      setShowPaymentOptions(false); // Reset state first to ensure clean state
+      
+      // Force a state update in the next tick to ensure DOM updates
+      requestAnimationFrame(() => {
         setShowPaymentOptions(true);
-        console.log("Payment modal visibility state updated to:", true);
-      }, 300);
+        console.log("Payment modal visibility state FORCED to:", true);
+      });
+      
+      // Backup timeout approach in case the first attempt fails
+      setTimeout(() => {
+        if (!showPaymentOptions) {
+          console.log("Backup trigger: Setting modal state again");
+          setShowPaymentOptions(true);
+        }
+      }, 500);
 
       return; // Exit early since we've handled success
     } catch (err) {
@@ -86,14 +96,27 @@ export default function SignupForm() {
   // Handle closing the payment modal
   const handleClosePaymentModal = () => {
     console.log("Closing payment modal");
+    
+    // Use a flag in sessionStorage to remember we showed the modal
+    sessionStorage.setItem('paymentModalShown', 'true');
+    
+    // First update state
     setShowPaymentOptions(false);
     
-    // Use timeout to ensure state updates before redirect
+    // Then redirect after a slightly longer delay
     setTimeout(() => {
       console.log("Redirecting to dashboard after modal close");
       window.location.href = '/dashboard';
-    }, 100);
+    }, 300);
   };
+  
+  // Check on mount if we need to show the modal (e.g. after a page refresh)
+  React.useEffect(() => {
+    // If we have a success message but no flag that we showed the modal, show it
+    if (success && !sessionStorage.getItem('paymentModalShown')) {
+      setShowPaymentOptions(true);
+    }
+  }, [success]);
 
   return (
     <>

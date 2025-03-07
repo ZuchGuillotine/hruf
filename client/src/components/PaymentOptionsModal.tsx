@@ -32,7 +32,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md z-[9999]">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold">Choose Your Plan</DialogTitle>
           <DialogDescription className="text-center">
