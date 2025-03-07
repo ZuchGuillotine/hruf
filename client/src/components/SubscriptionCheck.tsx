@@ -121,8 +121,8 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
   if (user?.isPro) return null;
 
   return showAsModal ? (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={true} onOpenChange={undefined}>
+      <DialogContent className="sm:max-w-[425px]" onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription>{getDescription()}</DialogDescription>
