@@ -49,14 +49,20 @@ export default function SignupForm() {
         credentials: 'include',
         body: JSON.stringify(values),
       });
-      
+
       if (response.ok) {
+        // Get the response data
+        const data = await response.json();
+        console.log("Registration response:", data);
+        
         setSuccess("Account created successfully!");
         setShowPaymentOptions(true); // Show payment options after successful signup
+        setIsLoading(false);
+        return; // Exit early since we've handled success
       }
 
-      if (!response.ok) {
-        const data = await response.json();
+      // Only reach here if response was not ok
+      const data = await response.json();
         setError(data.message || data.error || 'Signup failed');
         setIsLoading(false);
         return;
@@ -93,29 +99,29 @@ export default function SignupForm() {
 
           if (userResponse.ok) {
             const userData = await userResponse.json();
-            // Update the authentication state (simulated here)
-            setSuccess("Account created successfully!");
-            setShowPaymentOptions(true);
+            console.log("User verification successful:", userData);
+            // User is authenticated, continue normally
           } else {
             // If we can't get user data, redirect to login with success message
+            console.log("User verification failed, redirecting to login");
             setSuccess("Account created. Please log in.");
             setIsLoading(false);
             window.location.href = '/login?registered=true';
             return;
           }
         } else {
-          // Session is established, proceed normally
-          setSuccess("Account created successfully!");
-          setShowPaymentOptions(true);
+          // Session is established, no need to do anything special
+          console.log("Session already established");
         }
       } catch (authError) {
         console.error('Auth verification error:', authError);
         // Still try to use the data from registration
         if (data.user) {
-          setSuccess("Account created successfully!");
-          setShowPaymentOptions(true);
+          // We already have user data, continue
+          console.log("Using registration data despite auth error");
         } else {
           // Fallback to redirect
+          console.log("Auth error with no user data, redirecting to login");
           setSuccess("Account created. Please log in.");
           setIsLoading(false);
           window.location.href = '/login?registered=true';
