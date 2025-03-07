@@ -1,157 +1,152 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import PaymentOptionsModal from './PaymentOptionsModal';
 
-type FormValues = {
-  username: string;
-  email: string;
-  password: string;
-};
+// Form schema with validation
+const formSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+});
 
-const SignupForm: React.FC = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
+export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
-  const [registeredUser, setRegisteredUser] = useState<any>(null);
 
-  const handleClosePaymentModal = () => {
-    setShowPaymentOptions(false);
-    // Redirect to dashboard if they've already registered
-    if (registeredUser) {
-      window.location.href = '/dashboard';
-    }
-  };
+  // Form definition using react-hook-form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+    },
+  });
 
-  const onSubmit = async (data: FormValues) => {
+  // Handle form submission
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError(null);
+    setSuccess(null);
     setIsLoading(true);
     
     try {
-      console.log('Submitting registration data:', {
-        email: data.email,
-        username: data.username
-      });
-
+      console.log("Submitting signup form:", { email: values.email, username: values.username });
+      
       // Call your signup API endpoint
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
-        credentials: 'include' // Important for cookies/session
+        body: JSON.stringify(values),
+        credentials: 'include' // Important for cookies to be set
       });
 
-      const responseData = await response.json();
+      const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(responseData.message || responseData.error || 'Signup failed');
+        throw new Error(data.message || data.error || 'Signup failed');
       }
 
-      console.log('Registration successful:', responseData);
-      setRegisteredUser(responseData.user);
+      console.log('Signup successful:', data);
+      setSuccess("Account created successfully!");
       
       // Show payment options after successful signup
-      // Important: This must execute before any redirects
       setShowPaymentOptions(true);
-      
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      setError(err.message || 'An error occurred during signup');
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle closing the payment modal
+  const handleClosePaymentModal = () => {
+    setShowPaymentOptions(false);
+    // Redirect to dashboard or another page after closing
+    window.location.href = '/dashboard';
+  };
+
   return (
     <>
-      <div className="p-6 bg-white rounded-lg shadow-md max-w-md w-full mx-auto">
-        <h2 className="text-2xl font-bold mb-6 text-center">Create an Account</h2>
-        
-        {error && (
-          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-4">
-            <label htmlFor="username" className="block mb-1 font-medium">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              className="w-full p-2 border rounded"
-              {...register('username', { required: 'Username is required' })}
-            />
-            {errors.username && (
-              <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
-            )}
-          </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           
-          <div className="mb-4">
-            <label htmlFor="email" className="block mb-1 font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              className="w-full p-2 border rounded"
-              {...register('email', { 
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address'
-                }
-              })}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-            )}
-          </div>
+          {success && (
+            <Alert className="bg-green-50 text-green-800 border-green-200">
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
           
-          <div className="mb-6">
-            <label htmlFor="password" className="block mb-1 font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="w-full p-2 border rounded"
-              {...register('password', { 
-                required: 'Password is required',
-                minLength: {
-                  value: 8,
-                  message: 'Password must be at least 8 characters'
-                }
-              })}
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="your@email.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
+          />
           
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition duration-200"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing up...' : 'Sign Up'}
-          </button>
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Username</FormLabel>
+                <FormControl>
+                  <Input placeholder="username" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="********" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Creating account..." : "Sign Up"}
+          </Button>
         </form>
-      </div>
+      </Form>
 
       <PaymentOptionsModal 
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 
         monthlyLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
-        freeTrialLink="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
+        freeTrialLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
       />
     </>
   );
-};
-
-export default SignupForm;
+}
