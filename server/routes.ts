@@ -130,6 +130,7 @@ export function registerRoutes(app: Express): Server {
         .values({
           ...req.body,
           emailVerified: true, // Auto-verify for now since we don't have email service
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
         })
         .returning();
 
@@ -139,9 +140,20 @@ export function registerRoutes(app: Express): Server {
         timestamp: new Date().toISOString()
       });
 
-      res.json({
-        message: "Registration successful",
-        user: user
+      // Log the user in after registration
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Error logging in after registration:', err);
+          return res.status(500).json({
+            message: "Error logging in after registration",
+            error: err.message
+          });
+        }
+
+        res.json({
+          message: "Registration successful",
+          user: user
+        });
       });
     } catch (error: any) {
       console.error('Error in registration process:', {

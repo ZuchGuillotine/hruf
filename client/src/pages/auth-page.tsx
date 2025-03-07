@@ -67,10 +67,11 @@ export default function AuthPage() {
       } else {
         console.log('Starting registration process');
         const response = await register(data);
+
         if (response.requiresVerification) {
           setVerificationSent(true);
         } else {
-          // Show subscription modal for new signups
+          // Show subscription modal for new signups instead of redirecting
           console.log('Registration successful, showing subscription modal');
           setShowSubscriptionModal(true);
         }
