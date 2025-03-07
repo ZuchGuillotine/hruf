@@ -55,11 +55,13 @@ export default function SignupForm() {
         const data = await response.json();
         console.log("Registration response:", data);
         
+        const data = await response.json();
         setSuccess("Account created successfully!");
-        setShowPaymentOptions(true); // Show payment options after successful signup
         setIsLoading(false);
         
-        console.log("Setting showPaymentOptions to true:", showPaymentOptions);
+        // Explicitly show payment options and prevent redirection
+        setShowPaymentOptions(true);
+        console.log("Setting showPaymentOptions to true - should show modal now");
         return; // Exit early since we've handled success
       }
 
@@ -127,10 +129,9 @@ export default function SignupForm() {
   const handleClosePaymentModal = () => {
     console.log("Closing payment modal");
     setShowPaymentOptions(false);
-    // Only redirect if the user has completed the payment flow or chosen to skip
-    setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 300); // Small delay to ensure state is updated
+    
+    // Redirect to dashboard after closing the modal
+    window.location.href = '/dashboard';
   };
 
   return (
@@ -205,6 +206,12 @@ export default function SignupForm() {
         monthlyLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
         freeTrialLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
       />
+      {/* Debug indicator - visible only during development */}
+      {showPaymentOptions && process.env.NODE_ENV === 'development' && (
+        <div style={{position: 'fixed', bottom: 0, right: 0, background: 'red', padding: '5px', color: 'white'}}>
+          Modal should be visible
+        </div>
+      )}
     </>
   );
 }
