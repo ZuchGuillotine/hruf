@@ -33,6 +33,12 @@ export default function SubscriptionPage() {
           break;
       }
 
+      if (!priceId) {
+        throw new Error('Invalid plan type selected');
+      }
+
+      console.log('Creating checkout session with priceId:', priceId);
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
