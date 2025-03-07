@@ -1,39 +1,36 @@
-
 import { useUser } from '../hooks/use-user';
 import { Button } from './ui/button';
 import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { CalendarIcon, CheckCircleIcon } from 'lucide-react';
 
-/**
- * SubscriptionCheck Component
- * Displays a call-to-action for non-pro users to upgrade their subscription
- * Handles redirection to Stripe checkout for payment processing
- * Only appears for users without a pro subscription
- */
-export function SubscriptionCheck() {
-  // Get current user data from context
+interface SubscriptionCheckProps {
+  showAsModal?: boolean;
+  reason?: 'signup' | 'usage_limit' | 'trial_expiring';
+  onClose?: () => void;
+}
+
+export function SubscriptionCheck({ showAsModal = false, reason, onClose }: SubscriptionCheckProps) {
   const { user } = useUser();
-  // Loading state for payment processing
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Initiates the subscription process
-   * Creates a Stripe checkout session and redirects user to payment page
-   * @param isYearly - Boolean flag for yearly vs monthly subscription
-   */
-  const handleSubscribe = async (isYearly: boolean) => {
+  const handleSubscribe = async (isYearly: boolean, withTrial: boolean = false) => {
     setLoading(true);
     try {
-      // Select price ID based on subscription period
       const priceId = isYearly ? process.env.STRIPE_YEARLY_PRICE_ID : process.env.STRIPE_MONTHLY_PRICE_ID;
-      
-      // Create checkout session
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, withTrial }),
       });
-      
-      // Redirect to Stripe checkout
+
       const { url } = await response.json();
       window.location.href = url;
     } catch (error) {
@@ -43,23 +40,101 @@ export function SubscriptionCheck() {
     }
   };
 
-  // Don't render anything for pro users
-  if (user?.isPro) return null;
+  const getTitle = () => {
+    switch (reason) {
+      case 'signup':
+        return 'Choose Your Plan';
+      case 'usage_limit':
+        return 'Daily Limit Reached';
+      case 'trial_expiring':
+        return 'Trial Period Ending Soon';
+      default:
+        return 'Upgrade to Pro';
+    }
+  };
 
-  return (
-    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-      <h3 className="text-lg font-semibold mb-2">Upgrade to Pro</h3>
-      <p className="mb-4">Unlock unlimited chat and more features!</p>
-      <div className="space-x-4">
-        {/* Monthly subscription button */}
-        <Button onClick={() => handleSubscribe(false)} disabled={loading}>
-          Monthly - $21.99
+  const getDescription = () => {
+    switch (reason) {
+      case 'signup':
+        return 'Start your journey with StackTracker Pro and unlock all features!';
+      case 'usage_limit':
+        return 'You\'ve reached your daily limit of 5 AI interactions. Upgrade to Pro for unlimited access!';
+      case 'trial_expiring':
+        return 'Your trial period is ending soon. Upgrade now to keep accessing all features!';
+      default:
+        return 'Unlock unlimited chat and more features!';
+    }
+  };
+
+  const content = (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        {/* Free Trial Option */}
+        {reason === 'signup' && (
+          <Button 
+            onClick={() => handleSubscribe(false, true)} 
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700 mb-4"
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            Start 14-Day Free Trial
+          </Button>
+        )}
+
+        {/* Monthly Option */}
+        <Button 
+          onClick={() => handleSubscribe(false)} 
+          disabled={loading}
+          className="w-full"
+        >
+          Monthly - $21.99/month
         </Button>
-        {/* Yearly subscription button with savings highlight */}
-        <Button onClick={() => handleSubscribe(true)} disabled={loading} variant="outline">
-          Yearly - $184.71 (Save 30%)
+
+        {/* Yearly Option */}
+        <Button 
+          onClick={() => handleSubscribe(true)} 
+          disabled={loading}
+          variant="outline"
+          className="w-full mt-2"
+        >
+          Yearly - $184.71/year (Save 30%)
         </Button>
       </div>
+
+      <div className="space-y-2 text-sm text-gray-500">
+        <div className="flex items-center">
+          <CheckCircleIcon className="h-4 w-4 mr-2 text-green-500" />
+          Unlimited AI Interactions
+        </div>
+        <div className="flex items-center">
+          <CheckCircleIcon className="h-4 w-4 mr-2 text-green-500" />
+          Advanced Analytics
+        </div>
+        <div className="flex items-center">
+          <CheckCircleIcon className="h-4 w-4 mr-2 text-green-500" />
+          Priority Support
+        </div>
+      </div>
+    </div>
+  );
+
+  if (user?.isPro) return null;
+
+  return showAsModal ? (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{getTitle()}</DialogTitle>
+          <DialogDescription>{getDescription()}</DialogDescription>
+        </DialogHeader>
+        {content}
+      </DialogContent>
+    </Dialog>
+  ) : (
+    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+      <h3 className="text-lg font-semibold mb-2">{getTitle()}</h3>
+      <p className="mb-4">{getDescription()}</p>
+      {content}
     </div>
   );
 }
