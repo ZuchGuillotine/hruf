@@ -21,6 +21,49 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
   React.useEffect(() => {
     if (isOpen) {
       console.log("Modal is open, ensuring visibility");
+      
+      // Force the modal to remain in the DOM
+      const modalElement = document.querySelector('[role="dialog"]');
+      if (modalElement) {
+        console.log("Modal element found in DOM, enhancing visibility");
+        modalElement.setAttribute('style', 'display: flex !important; z-index: 9999 !important;');
+      } else {
+        console.warn("Modal element NOT found in DOM despite isOpen=true");
+      }
+      
+      // Add a class to the body to prevent scrolling and ensure focus on modal
+      document.body.classList.add('modal-open');
+      
+      // Cleanup function
+      return () => {
+        document.body.classList.remove('modal-open');
+      };
+    }
+  }, [isOpen]);
+  
+  // Add global styling for modal visibility
+  React.useEffect(() => {
+    if (isOpen) {
+      // Create a style element to ensure the modal is properly displayed
+      const styleEl = document.createElement('style');
+      styleEl.id = 'payment-modal-styles';
+      styleEl.innerHTML = `
+        .modal-open [role="dialog"] {
+          display: flex !important;
+          z-index: 9999 !important;
+        }
+        .modal-open {
+          overflow: hidden;
+        }
+      `;
+      document.head.appendChild(styleEl);
+      
+      return () => {
+        const existingStyle = document.getElementById('payment-modal-styles');
+        if (existingStyle) {
+          document.head.removeChild(existingStyle);
+        }
+      };
     }
   }, [isOpen]);
   
@@ -31,6 +74,11 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
         console.log("Dialog open state changing to:", open);
         if (!open) onClose();
       }}
+      // Force the modal to stay open and be higher in z-index
+      // This overrides any competing z-index issues
+      style={{ zIndex: 9999, position: 'fixed' }}
+      // Add a class for easier selection
+      className="payment-options-modal"
     >
       <DialogContent className="sm:max-w-md z-[9999]">
         <DialogHeader>

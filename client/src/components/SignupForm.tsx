@@ -71,6 +71,9 @@ export default function SignupForm() {
       console.log("Setting payment modal to visible");
       setShowPaymentOptions(false); // Reset state first to ensure clean state
       
+      // Set a global flag for the PaymentFlowWrapper to detect
+      sessionStorage.setItem('showPaymentModal', 'true');
+      
       // Force a state update in the next tick to ensure DOM updates
       requestAnimationFrame(() => {
         setShowPaymentOptions(true);
@@ -83,7 +86,16 @@ export default function SignupForm() {
           console.log("Backup trigger: Setting modal state again");
           setShowPaymentOptions(true);
         }
-      }, 500);
+      }, 100);
+      
+      // Extreme backup measure - if modal is still not showing after 1 second,
+      // redirect to a special URL that will trigger the PaymentFlowWrapper
+      setTimeout(() => {
+        if (!document.querySelector('[role="dialog"]')) {
+          console.log("Emergency backup: Redirecting to /welcome with payment flag");
+          window.location.href = '/welcome?showPayment=true';
+        }
+      }, 1000);
 
       return; // Exit early since we've handled success
     } catch (err) {
@@ -114,7 +126,17 @@ export default function SignupForm() {
   React.useEffect(() => {
     // If we have a success message but no flag that we showed the modal, show it
     if (success && !sessionStorage.getItem('paymentModalShown')) {
-      setShowPaymentOptions(true);
+      console.log("Showing payment modal based on success state");
+      // Force state reset and then set to true to ensure proper rendering
+      setShowPaymentOptions(false);
+      
+      // Use multiple methods to ensure modal appears
+      setTimeout(() => {
+        setShowPaymentOptions(true);
+        // Also set a backup flag in sessionStorage for the wrapper component to check
+        sessionStorage.setItem('showPaymentModal', 'true');
+        console.log("Payment modal state forced to TRUE, session storage flag set");
+      }, 100);
     }
   }, [success]);
 

@@ -479,8 +479,8 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          // Redirect to dashboard with success message
-          res.redirect('/dashboard?login=success');
+          // Redirect to a special route that will show payment options first
+          res.redirect('/welcome?signup=success&showPayment=true');
         });
       })(req, res, next);
     }

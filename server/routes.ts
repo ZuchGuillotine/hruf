@@ -1,6 +1,7 @@
 import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
+import { ensurePaymentFlow } from "./middleware/paymentFlow";
 import { chatWithAI } from "./openai";
 import { queryWithAI } from "./services/openaiQueryService";
 import { db } from "@db";
@@ -960,6 +961,31 @@ export function registerRoutes(app: Express): Server {
       });
 
 
+  // Welcome route for new users to ensure they see payment options
+  app.get("/welcome", ensurePaymentFlow, (req, res) => {
+    // Redirect to dashboard after setting payment flag
+    res.redirect('/dashboard');
+  });
+  
+  // API endpoint to check if payment modal should be shown
+  app.get("/api/payment-flow/check", (req, res) => {
+    const showPaymentModal = req.session?.showPaymentModal === true;
+    
+    if (showPaymentModal && req.session) {
+      // Clear the flag after checking it to avoid showing modal multiple times
+      req.session.showPaymentModal = false;
+      
+      console.log('Payment modal flag checked and cleared:', {
+        sessionId: req.sessionID,
+        originalValue: true,
+        newValue: false,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    res.json({ showPaymentModal });
+  });
+  
   // Authentication debug endpoint
   app.get("/api/debug/auth-status", (req, res) => {
     console.log('Debug auth status request:', {
