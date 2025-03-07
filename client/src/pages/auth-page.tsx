@@ -20,7 +20,6 @@ import LandingHeader from "@/components/landing-header";
 import BackgroundWords from "@/components/background-words";
 import { ValueProposition } from "@/components/ValueProposition";
 import { useLocation } from 'wouter';
-import { SubscriptionCheck } from "@/components/SubscriptionCheck";
 
 type FormData = {
   email: string;
@@ -34,7 +33,6 @@ export default function AuthPage() {
     return params.has('login');
   });
   const [verificationSent, setVerificationSent] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { login, register } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -44,10 +42,9 @@ export default function AuthPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('oauth') === 'google' && params.get('success') === 'true') {
-      // Show subscription modal for new Google OAuth signups
-      setShowSubscriptionModal(true);
+      setLocation('/subscription');
     }
-  }, []);
+  }, [setLocation]);
 
   const handleGoogleSignup = () => {
     window.location.href = '/auth/google?signup=true';
@@ -65,9 +62,8 @@ export default function AuthPage() {
         if (response.requiresVerification) {
           setVerificationSent(true);
         } else {
-          // Show subscription modal for new signups instead of redirecting
-          console.log('Registration successful, showing subscription modal');
-          setShowSubscriptionModal(true);
+          console.log('Registration successful, redirecting to subscription page');
+          setLocation('/subscription');
         }
       }
     } catch (error: any) {
@@ -249,12 +245,6 @@ export default function AuthPage() {
         </div>
       </div>
       <Footer className="relative z-50" />
-      {showSubscriptionModal && (
-        <SubscriptionCheck
-          showAsModal={true}
-          reason="signup"
-        />
-      )}
     </div>
   );
 }
