@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 interface PaymentOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  monthlyLink: string;
+  freeTrialLink: string;
 }
 
 /**
@@ -52,7 +54,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
 
             {/* Free trial option using the monthly link that includes 21-day trial */}
             <a 
-              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
+              href={freeTrialLink}
               className="block w-full"
               target="_blank"
               rel="noopener noreferrer"

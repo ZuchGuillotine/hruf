@@ -20,7 +20,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
     setIsLoading(true);
     try {
       // Call your signup API endpoint
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,9 +29,12 @@ export function SignupForm({ onSignup }: SignupFormProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Signup failed');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Signup failed');
       }
-
+      
+      console.log('Signup successful, showing payment options');
+      
       // Show payment options after successful signup
       setShowPaymentOptions(true);
 
@@ -96,7 +99,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 
         monthlyLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
-        freeTrialLink="Your Stripe 21-day free trial link here"
+        freeTrialLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
       />
     </>
   );
