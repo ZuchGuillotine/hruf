@@ -117,102 +117,111 @@ export default function AuthPage() {
     <div className="min-h-screen flex flex-col bg-[#e8f3e8] relative">
       <LandingHeader />
       <BackgroundWords />
-      <div className="relative z-10">
-        <ValueProposition />
-      </div>
-      <div className="flex-grow flex items-center justify-center px-4 relative z-10">
-        <Card className="auth-card w-full max-w-[380px]">
-          <CardHeader className="text-center">
-            <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
-            <CardDescription>
-              {isLogin
-                ? "Sign in to your account using your email or username"
-                : "Join StackTracker to improve your supplementation protocol"}
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-3">
-              {!isLogin && (
-                <div className="space-y-2">
-                  <label htmlFor="username" className="text-sm font-medium">
-                    Username
-                  </label>
-                  <Input
-                    id="username"
-                    type="text"
-                    {...form.register("username")}
-                    required={!isLogin}
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  {isLogin ? "Email or Username" : "Email"}
-                </label>
-                <Input
-                  id="email"
-                  type={isLogin ? "text" : "email"}
-                  {...form.register("email")}
-                  placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...form.register("password")}
-                />
-              </div>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
+      {/* Main content area with responsive layout */}
+      <div className="flex-grow container mx-auto px-4 py-8">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-start">
+          {/* Left column - Value Proposition */}
+          <div className="mb-8 lg:mb-0">
+            <ValueProposition />
+          </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => window.location.href = '/auth/google'}
-              >
-                <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                  <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                </svg>
-                Continue with Google
-              </Button>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {isLogin ? "Sign In" : "Sign Up"}
-              </Button>
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+          {/* Right column - Auth Card */}
+          <div className="flex justify-center">
+            <Card className="auth-card w-full max-w-[380px]">
+              <CardHeader className="text-center">
+                <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
+                <CardDescription>
+                  {isLogin
+                    ? "Sign in to your account using your email or username"
+                    : "Join StackTracker to improve your supplementation protocol"}
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent className="space-y-3">
+                  {!isLogin && (
+                    <div className="space-y-2">
+                      <label htmlFor="username" className="text-sm font-medium">
+                        Username
+                      </label>
+                      <Input
+                        id="username"
+                        type="text"
+                        {...form.register("username")}
+                        required={!isLogin}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      {isLogin ? "Email or Username" : "Email"}
+                    </label>
+                    <Input
+                      id="email"
+                      type={isLogin ? "text" : "email"}
+                      {...form.register("email")}
+                      placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </label>
+                    <Input
+                      id="password"
+                      type="password"
+                      {...form.register("password")}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.location.href = '/auth/google'}
+                  >
+                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                      <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                    </svg>
+                    Continue with Google
+                  </Button>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isLogin ? "Sign In" : "Sign Up"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setIsLogin(!isLogin)}
+                  >
+                    {isLogin
+                      ? "Don't have an account? Sign up"
+                      : "Already have an account? Sign in"}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
+        </div>
       </div>
       <Footer />
     </div>
