@@ -58,28 +58,17 @@ export default function SignupForm() {
         setSuccess("Account created successfully!");
         setShowPaymentOptions(true); // Show payment options after successful signup
         setIsLoading(false);
+        
+        console.log("Setting showPaymentOptions to true:", showPaymentOptions);
         return; // Exit early since we've handled success
       }
 
       // Only reach here if response was not ok
       const data = await response.json();
-        setError(data.message || data.error || 'Signup failed');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Registration was successful
-      const data = await response.json();
-      setSuccess(data.message || 'Account created successfully!');
+      setError(data.message || data.error || 'Signup failed');
       setIsLoading(false);
+      return;
       
-      // Show payment options modal
-      setShowPaymentOptions(true);
-
-      // Registration successful
-      const data = await response.json();
-      console.log('Registration response:', data);
-
       // Verify authentication status before proceeding
       try {
         // Make an immediate auth check request to ensure session is established
@@ -136,9 +125,12 @@ export default function SignupForm() {
 
   // Handle closing the payment modal
   const handleClosePaymentModal = () => {
+    console.log("Closing payment modal");
     setShowPaymentOptions(false);
-    // Redirect to dashboard or another page after closing
-    window.location.href = '/dashboard';
+    // Only redirect if the user has completed the payment flow or chosen to skip
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 300); // Small delay to ensure state is updated
   };
 
   return (
@@ -205,6 +197,8 @@ export default function SignupForm() {
         </form>
       </Form>
 
+      {/* Payment modal */}
+      {console.log("Rendering PaymentOptionsModal, isOpen:", showPaymentOptions)}
       <PaymentOptionsModal 
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 
