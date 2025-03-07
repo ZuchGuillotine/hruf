@@ -49,12 +49,6 @@ export default function AuthPage() {
     }
   }, []);
 
-  const handleCloseSubscriptionModal = () => {
-    console.log('Subscription modal closed, redirecting to dashboard');
-    setShowSubscriptionModal(false);
-    setLocation('/dashboard');
-  };
-
   const handleGoogleSignup = () => {
     window.location.href = '/auth/google?signup=true';
   };
@@ -259,7 +253,6 @@ export default function AuthPage() {
         <SubscriptionCheck
           showAsModal={true}
           reason="signup"
-          onClose={handleCloseSubscriptionModal}
         />
       )}
     </div>

@@ -9,16 +9,17 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { CalendarIcon, CheckCircleIcon } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface SubscriptionCheckProps {
   showAsModal?: boolean;
   reason?: 'signup' | 'usage_limit' | 'trial_expiring';
-  onClose?: () => void;
 }
 
 export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionCheckProps) {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const [, setLocation] = useLocation();
 
   const handleSubscribe = async (isYearly: boolean, withTrial: boolean = false) => {
     setLoading(true);
@@ -31,13 +32,23 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
         body: JSON.stringify({ priceId, withTrial }),
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to start subscription');
+      }
+
       const { url } = await response.json();
+      // Only redirect to Stripe after successful response
       window.location.href = url;
     } catch (error) {
       console.error('Failed to start subscription:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStartTrial = () => {
+    console.log('Starting trial and redirecting to dashboard');
+    setLocation('/dashboard');
   };
 
   const getTitle = () => {
@@ -72,7 +83,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
         {/* Free Trial Option */}
         {reason === 'signup' && (
           <Button 
-            onClick={() => handleSubscribe(false, true)} 
+            onClick={handleStartTrial}
             disabled={loading}
             className="w-full bg-green-600 hover:bg-green-700 mb-4"
           >
