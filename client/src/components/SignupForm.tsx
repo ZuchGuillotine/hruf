@@ -40,53 +40,77 @@ export default function SignupForm() {
     try {
       console.log("Submitting signup form:", { email: values.email, username: values.username });
 
-      // Call your signup API endpoint
+      // Register the user
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(values),
-        credentials: 'include' // Important for cookies to be set
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Signup failed');
+        const data = await response.json();
+        setError(data.message || data.error || 'Signup failed');
+        setIsLoading(false);
+        return;
       }
 
-      console.log('Signup successful:', data);
-      setSuccess("Account created successfully!");
+      // Registration successful
+      const data = await response.json();
+      console.log('Registration response:', data);
 
-      // After successful registration, force authentication check
-      const authCheckResponse = await fetch('/api/debug/auth-status', { credentials: 'include' });
-      const authStatus = await authCheckResponse.json();
-      console.log("Authentication status after signup:", authStatus);
-
-      if (!authStatus.isAuthenticated) {
-        // If not authenticated after registration, try to log in manually
-        console.log("Manual login attempt after signup");
-        const loginResponse = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: values.email, password: values.password }),
+      // Verify authentication status before proceeding
+      try {
+        // Make an immediate auth check request to ensure session is established
+        const authCheckResponse = await fetch('/api/debug/auth-status', {
           credentials: 'include'
         });
 
-        if (!loginResponse.ok) {
-          throw new Error(await loginResponse.text() || 'Login failed');
+        const authStatus = await authCheckResponse.json();
+        console.log('Auth status after registration:', authStatus);
+
+        if (!authStatus.isAuthenticated) {
+          console.log('Session not established yet, attempting to fetch user data');
+          // Try to fetch user data to confirm registration
+          const userResponse = await fetch('/api/user', {
+            credentials: 'include'
+          });
+
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            // Update the authentication state (simulated here)
+            setSuccess("Account created successfully!");
+            setShowPaymentOptions(true);
+          } else {
+            // If we can't get user data, redirect to login with success message
+            setSuccess("Account created. Please log in.");
+            setIsLoading(false);
+            window.location.href = '/login?registered=true';
+            return;
+          }
+        } else {
+          // Session is established, proceed normally
+          setSuccess("Account created successfully!");
+          setShowPaymentOptions(true);
+        }
+      } catch (authError) {
+        console.error('Auth verification error:', authError);
+        // Still try to use the data from registration
+        if (data.user) {
+          setSuccess("Account created successfully!");
+          setShowPaymentOptions(true);
+        } else {
+          // Fallback to redirect
+          setSuccess("Account created. Please log in.");
+          setIsLoading(false);
+          window.location.href = '/login?registered=true';
         }
       }
-
-      // Regardless of auth status, show payment modal
-      setShowPaymentOptions(true);
     } catch (err) {
       console.error("Signup error:", err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-    } finally {
       setIsLoading(false);
     }
   };
