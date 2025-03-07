@@ -3,8 +3,9 @@ import { useForm } from 'react-hook-form';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
-import { PaymentOptionsModal } from './PaymentOptionsModal';
 import { useLocation } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
+import { SubscriptionCheck } from './SubscriptionCheck';
 
 interface SignupFormProps {
   onSignup?: (data: any) => void;
@@ -13,43 +14,59 @@ interface SignupFormProps {
 export function SignupForm({ onSignup }: SignupFormProps) {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     try {
-      // Call your signup API endpoint
+      // Call signup API endpoint
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for session cookie
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        throw new Error('Signup failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Signup failed');
       }
 
-      // Show payment options after successful signup
-      setShowPaymentOptions(true);
+      const result = await response.json();
+
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Account created successfully!",
+      });
 
       // Call the onSignup callback if provided
       if (onSignup) {
-        onSignup(data);
+        onSignup(result);
       }
-    } catch (error) {
+
+      // Show subscription modal
+      setShowSubscriptionModal(true);
+
+    } catch (error: any) {
       console.error('Signup error:', error);
-      // Handle error (show notification, etc.)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || 'Failed to create account',
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClosePaymentModal = () => {
-    setShowPaymentOptions(false);
-    // Navigate to dashboard using wouter
+  const handleCloseSubscriptionModal = () => {
+    setShowSubscriptionModal(false);
+    // Redirect to dashboard
     setLocation('/dashboard');
   };
 
@@ -91,11 +108,11 @@ export function SignupForm({ onSignup }: SignupFormProps) {
 
             <div>
               <Input
-                placeholder="Full Name"
-                {...register('name', { required: 'Name is required' })}
+                placeholder="Username"
+                {...register('username', { required: 'Username is required' })}
                 className="w-full"
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message?.toString()}</p>}
+              {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username.message?.toString()}</p>}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -105,10 +122,13 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         </CardContent>
       </Card>
 
-      <PaymentOptionsModal 
-        isOpen={showPaymentOptions} 
-        onClose={handleClosePaymentModal} 
-      />
+      {showSubscriptionModal && (
+        <SubscriptionCheck 
+          showAsModal={true}
+          reason="signup"
+          onClose={handleCloseSubscriptionModal}
+        />
+      )}
     </>
   );
 }
