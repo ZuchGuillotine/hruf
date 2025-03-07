@@ -1,6 +1,25 @@
 # Changelog
 
 ## [March 2025]
+### Added
+- Stripe Subscription Integration
+  - Implemented correct price ID mapping for all subscription tiers
+  - Added direct signup URL for frictionless free trial flow
+  - Enhanced subscription page interface with clear tier options
+  - Configured seamless checkout process integration
+
+### Fixed
+- Stripe Checkout Issues:
+  - Resolved product/price ID mapping in checkout session creation
+  - Fixed authentication state preservation during checkout
+  - Implemented proper error handling and logging
+  - Added direct trial signup without payment info requirement
+- Subscription Page UX:
+  - Improved button labeling clarity
+  - Fixed redirect handling post-checkout
+  - Enhanced error messaging for failed checkouts
+  - Streamlined trial vs paid subscription flows
+
 ### Enhanced
 - Improved Chat Systems Separation
   - Updated Daily Notes section to exclude query chats
@@ -16,6 +35,18 @@
   - Added value proposition cards with enhanced styling
   - Optimized mobile responsiveness
   - Fixed background animation layer ordering
+
+### Enhanced
+- Authentication state management:
+  - Added comprehensive debug endpoints for auth verification
+  - Improved error handling in authentication flow
+  - Enhanced session security with proper cookie settings
+  - Optimized auth info middleware for consistent access
+- Implemented Google Analytics tracking
+  - Added Google Analytics tag to main HTML template
+  - Configured debug mode for verification
+  - Confirmed successful tracking implementation
+  - Enhanced with additional event tracking for better insights
 
 ### Fixed
 - Authentication Flow Improvements:
@@ -38,18 +69,6 @@
   - Improved cookie handling with proper security settings
   - Optimized authentication middleware chain
   - Reduced unnecessary debug logging for better performance
-
-### Enhanced
-- Authentication state management:
-  - Added comprehensive debug endpoints for auth verification
-  - Improved error handling in authentication flow
-  - Enhanced session security with proper cookie settings
-  - Optimized auth info middleware for consistent access
-- Implemented Google Analytics tracking
-  - Added Google Analytics tag to main HTML template
-  - Configured debug mode for verification
-  - Confirmed successful tracking implementation
-  - Enhanced with additional event tracking for better insights
 
 
 ## [February 2025]
