@@ -59,14 +59,29 @@ export default function SignupForm() {
       console.log('Signup successful:', data);
       setSuccess("Account created successfully!");
 
-      // After registration, verify authentication state
-      const authCheckResponse = await fetch('/api/debug/auth-status', {
-        credentials: 'include'
-      });
+      // After successful registration, force authentication check
+      const authCheckResponse = await fetch('/api/debug/auth-status', { credentials: 'include' });
       const authStatus = await authCheckResponse.json();
-      console.log('Auth status after registration:', authStatus);
+      console.log("Authentication status after signup:", authStatus);
 
-      // Show payment options after successful signup
+      if (!authStatus.isAuthenticated) {
+        // If not authenticated after registration, try to log in manually
+        console.log("Manual login attempt after signup");
+        const loginResponse = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: values.email, password: values.password }),
+          credentials: 'include'
+        });
+
+        if (!loginResponse.ok) {
+          throw new Error(await loginResponse.text() || 'Login failed');
+        }
+      }
+
+      // Regardless of auth status, show payment modal
       setShowPaymentOptions(true);
     } catch (err) {
       console.error("Signup error:", err);

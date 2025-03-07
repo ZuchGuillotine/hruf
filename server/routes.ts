@@ -970,24 +970,119 @@ export function registerRoutes(app: Express): Server {
       timestamp: new Date().toISOString()
     });
     
-    res.json({
-      isAuthenticated: req.isAuthenticated(),
-      hasSession: !!req.session,
-      sessionID: req.sessionID,
-      user: req.user ? {
-        id: req.user.id,
-        email: req.user.email,
-        username: req.user.username
-      } : null,
-      sessionDetails: req.session ? {
-        cookie: req.session.cookie,
-        passport: req.session.passport
-      } : null,
-      headers: {
-        cookie: req.headers.cookie,
-        authorization: req.headers.authorization
+    // Also check if the session store can retrieve the session
+    let sessionStoreCheck = "Not attempted";
+    if (req.sessionID && req.sessionStore) {
+      try {
+        req.sessionStore.get(req.sessionID, (err, session) => {
+          if (err) {
+            sessionStoreCheck = `Error retrieving session: ${err.message}`;
+          } else if (!session) {
+            sessionStoreCheck = "Session not found in store";
+          } else {
+            sessionStoreCheck = "Session successfully retrieved from store";
+            // Try refreshing the session in memory
+            req.session = session;
+            req.session.touch();
+            req.session.save();
+          }
+          
+          sendResponse();
+        });
+      } catch (e) {
+        sessionStoreCheck = `Exception checking session store: ${e.message}`;
+        sendResponse();
       }
-    });
+    } else {
+      sendResponse();
+    }
+    
+    function sendResponse() {
+      res.json({
+        isAuthenticated: req.isAuthenticated(),
+        hasSession: !!req.session,
+        sessionID: req.sessionID,
+        user: req.user ? {
+          id: req.user.id,
+          email: req.user.email,
+          username: req.user.username
+        } : null,
+        sessionDetails: req.session ? {
+          cookie: req.session.cookie,
+          passport: req.session.passport
+        } : null,
+        sessionStoreCheck,
+        headers: {
+          cookie: req.headers.cookie,
+          authorization: req.headers.authorization
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+  
+  // Session repair endpoint
+  app.post("/api/debug/repair-session", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required for session repair" });
+      }
+      
+      // Force logout first
+      if (req.isAuthenticated()) {
+        await new Promise<void>((resolve) => {
+          req.logout(() => {
+            resolve();
+          });
+        });
+      }
+      
+      // Manual authentication
+      passport.authenticate("local", (err, user, info) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        
+        if (!user) {
+          return res.status(401).json({ error: "Authentication failed" });
+        }
+        
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            return res.status(500).json({ error: `Login error: ${loginErr.message}` });
+          }
+          
+          // Force session save
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              return res.status(500).json({ error: `Session save error: ${saveErr.message}` });
+            }
+            
+            console.log('Session repaired:', {
+              userId: user.id,
+              isAuthenticated: req.isAuthenticated(),
+              sessionID: req.sessionID,
+              timestamp: new Date().toISOString()
+            });
+            
+            res.json({
+              success: true,
+              isAuthenticated: req.isAuthenticated(),
+              user: {
+                id: user.id,
+                email: user.email,
+                username: user.username
+              }
+            });
+          });
+        });
+      })(req, res);
+    } catch (error) {
+      console.error('Session repair error:', error);
+      res.status(500).json({ error: `Session repair failed: ${error.message}` });
+    }
   });
   
   // Session test endpoint

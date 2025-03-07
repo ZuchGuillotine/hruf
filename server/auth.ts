@@ -348,68 +348,70 @@ export function setupAuth(app: Express) {
         timestamp: new Date().toISOString()
       });
 
-      // Log the user in automatically with explicit session setup
-      req.login(newUser, (err) => {
-        if (err) {
-          console.error('Auto-login error after registration:', {
-            error: err instanceof Error ? err.message : String(err),
-            stack: err instanceof Error ? err.stack : undefined,
-            timestamp: new Date().toISOString()
-          });
-          
-          return res.status(200).json({
-            status: 'success',
-            message: "Registration successful, please proceed to payment",
-            user: {
-              id: newUser.id,
-              username: newUser.username,
-              email: newUser.email
-            },
-          });
-        }
-        
-        // Force session save to ensure authentication state is persisted
-        if (req.session) {
-          req.session.save((saveErr) => {
-            if (saveErr) {
-              console.error('Session save error:', {
-                error: saveErr instanceof Error ? saveErr.message : String(saveErr),
-                stack: saveErr instanceof Error ? saveErr.stack : undefined,
-                timestamp: new Date().toISOString()
-              });
-            }
-            
-            console.log('User logged in automatically after registration:', {
-              userId: newUser.id,
-              email: newUser.email,
-              isAuthenticated: req.isAuthenticated(),
-              hasSession: !!req.session,
-              sessionID: req.sessionID,
+      // Log the user in with a promise-based approach to ensure completion
+      return new Promise((resolve, reject) => {
+        req.login(newUser, (err) => {
+          if (err) {
+            console.error('Auto-login error after registration:', {
+              error: err instanceof Error ? err.message : String(err),
+              stack: err instanceof Error ? err.stack : undefined,
               timestamp: new Date().toISOString()
             });
+            // Even if login fails, we don't reject - we still return success for the signup
+          }
+          
+          // Force session save to ensure authentication state is persisted
+          if (req.session) {
+            req.session.passport = req.session.passport || {};
+            req.session.passport.user = newUser.id;
+            
+            req.session.save((saveErr) => {
+              if (saveErr) {
+                console.error('Session save error:', {
+                  error: saveErr instanceof Error ? saveErr.message : String(saveErr),
+                  stack: saveErr instanceof Error ? saveErr.stack : undefined,
+                  timestamp: new Date().toISOString()
+                });
+              }
+              
+              console.log('User logged in automatically after registration:', {
+                userId: newUser.id,
+                email: newUser.email,
+                isAuthenticated: req.isAuthenticated(),
+                hasSession: !!req.session,
+                sessionID: req.sessionID,
+                passport: req.session.passport,
+                timestamp: new Date().toISOString()
+              });
 
-            return res.status(200).json({
+              res.status(200).json({
+                status: 'success',
+                message: "Registration and authentication successful",
+                user: {
+                  id: newUser.id,
+                  username: newUser.username,
+                  email: newUser.email
+                },
+                sessionID: req.sessionID
+              });
+              
+              resolve();
+            });
+          } else {
+            console.error('No session object available after login');
+            res.status(200).json({
               status: 'success',
-              message: "Registration and authentication successful",
+              message: "Registration successful but session not created",
               user: {
                 id: newUser.id,
                 username: newUser.username,
                 email: newUser.email
               },
             });
-          });
-        } else {
-          console.error('No session object available after login');
-          return res.status(200).json({
-            status: 'success',
-            message: "Registration successful but session not created",
-            user: {
-              id: newUser.id,
-              username: newUser.username,
-              email: newUser.email
-            },
-          });
-        }
+            
+            resolve();
+          }
+        });
       });
     } catch (error) {
       console.error('Error in registration process:', {

@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
             Select a subscription plan that works best for you
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-1 gap-4">
             {/* Free Trial Option */}
@@ -35,7 +34,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
                 <span>14-Day Free Trial</span>
               </div>
               <p className="text-sm text-gray-500 mb-3">Try all features for free, then $21.99/month</p>
-              
+
               {/* Free trial option using the monthly link that includes 21-day trial */}
               <a 
                 href={freeTrialLink}
@@ -48,7 +47,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
                 </Button>
               </a>
             </div>
-            
+
             {/* Monthly Option */}
             <div className="border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all">
               <div className="font-medium flex items-center gap-2 mb-2">
@@ -56,7 +55,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
                 <span>Monthly Plan</span>
               </div>
               <p className="text-sm text-gray-500 mb-3">$21.99 per month, cancel anytime</p>
-              
+
               <a 
                 href={monthlyLink} 
                 className="block w-full"
@@ -68,7 +67,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
                 </Button>
               </a>
             </div>
-            
+
             {/* Yearly Option */}
             <div className="border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all bg-gray-50">
               <div className="font-medium flex items-center gap-2 mb-2">
@@ -77,7 +76,7 @@ export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, free
                 <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full ml-auto">Save 30%</span>
               </div>
               <p className="text-sm text-gray-500 mb-3">$184.72 per year ($15.39/month)</p>
-              
+
               <a 
                 href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE" 
                 className="block w-full"
