@@ -1,69 +1,45 @@
-
-import sgMail from '../config/sendgrid';
-import { EMAIL_TEMPLATES } from '../config/sendgrid';
+import sgMail from '@sendgrid/mail';
 import logger from '../utils/logger';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 2000;
+// Default sender email
+export const DEFAULT_SENDER = 'accounts@stacktracker.io';
 
-async function sendEmail(msg: sgMail.MailDataRequired): Promise<void> {
-  let attempt = 0;
-  
-  // Let SendGrid handle email authentication headers
-  msg.headers = {
-    ...msg.headers
-  };
+// Email template IDs
+export const EMAIL_TEMPLATES = {
+  WELCOME: process.env.SENDGRID_WELCOME_TEMPLATE_ID,
+  PASSWORD_RESET: process.env.SENDGRID_PASSWORD_RESET_TEMPLATE_ID,
+  VERIFICATION: process.env.SENDGRID_VERIFICATION_TEMPLATE_ID
+};
 
-  while (attempt < MAX_RETRIES) {
-    try {
-      await sgMail.send(msg);
-      logger.info(`Email sent successfully to ${msg.to}`);
-      return;
-    } catch (error: any) {
-      attempt++;
-      const errorMessage = error?.message || 'Unknown error';
-      logger.error(
-        `Error sending email (attempt ${attempt}): ${errorMessage}`
-      );
-
-      if (error.response?.body) {
-        logger.error(`SendGrid response: ${JSON.stringify(error.response.body)}`);
-      }
-
-      if (attempt >= MAX_RETRIES) {
-        throw new Error(`Failed to send email after ${MAX_RETRIES} attempts: ${errorMessage}`);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+/**
+ * Sends an email using SendGrid
+ */
+export async function sendEmail(msg: sgMail.MailDataRequired): Promise<boolean> {
+  try {
+    // Set API key if not already set
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key is not set');
+      return false;
     }
+
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    // Ensure from address is set
+    if (!msg.from) {
+      msg.from = DEFAULT_SENDER;
+    }
+
+    await sgMail.send(msg);
+    return true;
+  } catch (error) {
+    console.error('SendGrid error:', error);
+    logger.error('SendGrid error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error && 'response' in error ? (error as any).response?.body : undefined
+    });
+    return false;
   }
 }
-
-export async function sendWelcomeEmail(to: string, username: string): Promise<void> {
-  const currentYear = new Date().getFullYear();
-  
-  const msg = {
-    to,
-    from: process.env.SENDGRID_FROM_EMAIL,
-    templateId: EMAIL_TEMPLATES.WELCOME,
-    dynamicTemplateData: {
-      firstName: username,
-      setupAccountLink: `${process.env.APP_URL}/profile`,
-      currentYear: currentYear.toString(),
-      proPlanLink: '#' // Placeholder until pro plan page is created
-    }
-  };
-
-  await sendEmail(msg);
-}
-
-export {
-  sendEmail,
-  EMAIL_TEMPLATES
-};
-import sgMail from '@sendgrid/mail';
-import { EMAIL_TEMPLATES, DEFAULT_SENDER, sendEmail } from '../config/sendgrid';
-import logger from '../utils/logger';
 
 /**
  * Sends a welcome email after successful registration.
@@ -81,7 +57,7 @@ export async function sendWelcomeEmail(to: string, username: string): Promise<bo
         currentYear: new Date().getFullYear()
       },
     };
-    
+
     try {
       await sendEmail(msg);
       console.log(`Welcome email sent to ${to} using template`);
@@ -125,7 +101,7 @@ export async function sendWelcomeEmail(to: string, username: string): Promise<bo
  */
 export async function sendPasswordResetEmail(to: string, resetToken: string): Promise<boolean> {
   const resetLink = `https://stacktracker.io/reset-password?token=${resetToken}`;
-  
+
   const msg = {
     to,
     from: DEFAULT_SENDER,
@@ -139,6 +115,6 @@ export async function sendPasswordResetEmail(to: string, resetToken: string): Pr
       <p>If you didn't request this reset, please ignore this email or contact support if you have concerns.</p>
     `,
   };
-  
+
   return sendEmail(msg);
 }

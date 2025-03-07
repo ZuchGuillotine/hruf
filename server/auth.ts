@@ -532,9 +532,7 @@ export function setupAuth(app: Express) {
       // Send welcome email
       try {
         console.log('Attempting to send welcome email to:', email);
-        // Import using dynamic import instead of require
-        const emailServiceModule = await import('./services/emailService.js');
-        const sendWelcomeEmail = emailServiceModule.sendWelcomeEmail;
+        import { sendWelcomeEmail } from './services/emailService';
         await sendWelcomeEmail(email, username);
         console.log('Welcome email sent successfully to:', email);
       } catch (error) {
