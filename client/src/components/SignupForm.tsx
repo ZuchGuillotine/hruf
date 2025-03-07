@@ -1,233 +1,103 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import PaymentOptionsModal from './PaymentOptionsModal';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card, CardContent } from './ui/card';
+import { PaymentOptionsModal } from './PaymentOptionsModal';
+import { useNavigate } from 'react-router-dom';
 
-// Form schema with validation
-const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-});
+interface SignupFormProps {
+  onSignup?: (data: any) => void;
+}
 
-export default function SignupForm() {
+export function SignupForm({ onSignup }: SignupFormProps) {
+  const { register, handleSubmit, formState: { errors } } = useForm();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const navigate = useNavigate();
 
-  // Form definition using react-hook-form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      username: "",
-      password: "",
-    },
-  });
-
-  // Handle form submission
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setError(null);
-    setSuccess(null);
+  const onSubmit = async (data: any) => {
     setIsLoading(true);
-
     try {
-      console.log("Submitting signup form:", { email: values.email, username: values.username });
-
-      // Register the user
-      const response = await fetch('/api/register', {
+      // Call your signup API endpoint
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify(values),
+        body: JSON.stringify(data),
       });
-
-      console.log("Registration response status:", response.status);
-
+      
       if (!response.ok) {
-        const data = await response.json();
-        console.error("Registration error:", data);
-        setError(data.message || "Registration failed. Please try again.");
-        setIsLoading(false);
-        return;
+        throw new Error('Signup failed');
       }
-
-      const data = await response.json();
-      console.log("Registration response:", data);
-
-      // Update state for successful registration
-      setSuccess("Account created successfully!");
-      setIsLoading(false);
       
-      // Show payment options modal immediately and force it with higher priority
-      console.log("Setting payment modal to visible");
-      setShowPaymentOptions(false); // Reset state first to ensure clean state
+      // Show payment options after successful signup
+      setShowPaymentOptions(true);
       
-      // Set a global flag for the PaymentFlowWrapper to detect
-      sessionStorage.setItem('showPaymentModal', 'true');
-      
-      // Force a state update in the next tick to ensure DOM updates
-      requestAnimationFrame(() => {
-        setShowPaymentOptions(true);
-        console.log("Payment modal visibility state FORCED to:", true);
-      });
-      
-      // Backup timeout approach in case the first attempt fails
-      setTimeout(() => {
-        if (!showPaymentOptions) {
-          console.log("Backup trigger: Setting modal state again");
-          setShowPaymentOptions(true);
-        }
-      }, 100);
-      
-      // Extreme backup measure - if modal is still not showing after 1 second,
-      // redirect to a special URL that will trigger the PaymentFlowWrapper
-      setTimeout(() => {
-        if (!document.querySelector('[role="dialog"]')) {
-          console.log("Emergency backup: Redirecting to /welcome with payment flag");
-          window.location.href = '/welcome?showPayment=true';
-        }
-      }, 1000);
-
-      return; // Exit early since we've handled success
-    } catch (err) {
-      console.error("Signup error:", err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      // Call the onSignup callback if provided
+      if (onSignup) {
+        onSignup(data);
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      // Handle error (show notification, etc.)
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle closing the payment modal
   const handleClosePaymentModal = () => {
-    console.log("Closing payment modal");
-    
-    // Use a flag in sessionStorage to remember we showed the modal
-    sessionStorage.setItem('paymentModalShown', 'true');
-    
-    // First update state
     setShowPaymentOptions(false);
-    
-    // Then redirect after a slightly longer delay
-    setTimeout(() => {
-      console.log("Redirecting to dashboard after modal close");
-      window.location.href = '/dashboard';
-    }, 300);
+    // Navigate to dashboard if user closes modal without selecting a plan
+    navigate('/dashboard');
   };
-  
-  // Check on mount if we need to show the modal (e.g. after a page refresh)
-  React.useEffect(() => {
-    // If we have a success message but no flag that we showed the modal, show it
-    if (success && !sessionStorage.getItem('paymentModalShown')) {
-      console.log("Showing payment modal based on success state");
-      // Force state reset and then set to true to ensure proper rendering
-      setShowPaymentOptions(false);
-      
-      // Use multiple methods to ensure modal appears
-      setTimeout(() => {
-        setShowPaymentOptions(true);
-        // Also set a backup flag in sessionStorage for the wrapper component to check
-        sessionStorage.setItem('showPaymentModal', 'true');
-        console.log("Payment modal state forced to TRUE, session storage flag set");
-      }, 100);
-    }
-  }, [success]);
 
   return (
     <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert className="bg-green-50 text-green-800 border-green-200">
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="your@email.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input placeholder="username" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="********" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Sign Up"}
-          </Button>
-        </form>
-      </Form>
-
-      {/* Payment modal */}
-      {console.log("Rendering PaymentOptionsModal, isOpen:", showPaymentOptions)}
+      <Card>
+        <CardContent className="pt-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Input
+                placeholder="Email"
+                {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })}
+                className="w-full"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>}
+            </div>
+            
+            <div>
+              <Input
+                type="password"
+                placeholder="Password"
+                {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Password must be at least 8 characters' } })}
+                className="w-full"
+              />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message?.toString()}</p>}
+            </div>
+            
+            <div>
+              <Input
+                placeholder="Full Name"
+                {...register('name', { required: 'Name is required' })}
+                className="w-full"
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message?.toString()}</p>}
+            </div>
+            
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Sign Up'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      
       <PaymentOptionsModal 
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 
-        monthlyLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
-        freeTrialLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
       />
-      {/* Debug indicator - visible only during development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          position: 'fixed', 
-          top: 0, 
-          right: 0, 
-          background: showPaymentOptions ? 'green' : 'red', 
-          padding: '10px', 
-          color: 'white',
-          zIndex: 9999,
-          fontWeight: 'bold',
-          border: '2px solid black'
-        }}>
-          Payment Modal State: {showPaymentOptions ? 'VISIBLE' : 'HIDDEN'}
-        </div>
-      )}
     </>
   );
 }

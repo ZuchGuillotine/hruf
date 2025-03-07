@@ -1,156 +1,81 @@
-import * as React from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { BadgeCheck, Calendar, CreditCard } from "lucide-react";
+
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
 
 interface PaymentOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  monthlyLink: string;
-  freeTrialLink: string;
 }
 
-/**
- * A modal that presents payment options to the user after signup
- * Includes monthly, yearly, and free trial options with links to Stripe
- */
-export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, freeTrialLink }: PaymentOptionsModalProps) {
-  console.log("PaymentOptionsModal rendered with isOpen:", isOpen);
-  
-  // Force focus trap to ensure modal is properly focused when opened
-  React.useEffect(() => {
-    if (isOpen) {
-      console.log("Modal is open, ensuring visibility");
-      
-      // Force the modal to remain in the DOM
-      const modalElement = document.querySelector('[role="dialog"]');
-      if (modalElement) {
-        console.log("Modal element found in DOM, enhancing visibility");
-        modalElement.setAttribute('style', 'display: flex !important; z-index: 9999 !important;');
-      } else {
-        console.warn("Modal element NOT found in DOM despite isOpen=true");
-      }
-      
-      // Add a class to the body to prevent scrolling and ensure focus on modal
-      document.body.classList.add('modal-open');
-      
-      // Cleanup function
-      return () => {
-        document.body.classList.remove('modal-open');
-      };
-    }
-  }, [isOpen]);
-  
-  // Add global styling for modal visibility
-  React.useEffect(() => {
-    if (isOpen) {
-      // Create a style element to ensure the modal is properly displayed
-      const styleEl = document.createElement('style');
-      styleEl.id = 'payment-modal-styles';
-      styleEl.innerHTML = `
-        .modal-open [role="dialog"] {
-          display: flex !important;
-          z-index: 9999 !important;
-        }
-        .modal-open {
-          overflow: hidden;
-        }
-      `;
-      document.head.appendChild(styleEl);
-      
-      return () => {
-        const existingStyle = document.getElementById('payment-modal-styles');
-        if (existingStyle) {
-          document.head.removeChild(existingStyle);
-        }
-      };
-    }
-  }, [isOpen]);
-  
+export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProps) {
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={(open) => {
-        console.log("Dialog open state changing to:", open);
-        if (!open) onClose();
-      }}
-      // Force the modal to stay open and be higher in z-index
-      // This overrides any competing z-index issues
-      style={{ zIndex: 9999, position: 'fixed' }}
-      // Add a class for easier selection
-      className="payment-options-modal"
-    >
-      <DialogContent className="sm:max-w-md z-[9999]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold">Choose Your Plan</DialogTitle>
-          <DialogDescription className="text-center">
-            Select a subscription plan that works best for you
-          </DialogDescription>
         </DialogHeader>
-
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 gap-4">
-            {/* Free Trial Option */}
-            <div className="border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all">
-              <div className="font-medium flex items-center gap-2 mb-2">
-                <Calendar className="h-5 w-5 text-blue-500" />
-                <span>14-Day Free Trial</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-3">Try all features for free, then $21.99/month</p>
-
-              {/* Free trial option using the monthly link that includes 21-day trial */}
-              <a 
-                href={freeTrialLink}
-                className="block w-full"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline" className="w-full">
-                  Start Free Trial
-                </Button>
-              </a>
-            </div>
-
-            {/* Monthly Option */}
-            <div className="border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all">
-              <div className="font-medium flex items-center gap-2 mb-2">
-                <CreditCard className="h-5 w-5 text-blue-500" />
-                <span>Monthly Plan</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-3">$21.99 per month, cancel anytime</p>
-
-              <a 
-                href={monthlyLink} 
-                className="block w-full"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline" className="w-full">
-                  Subscribe Monthly
-                </Button>
-              </a>
-            </div>
-
-            {/* Yearly Option */}
-            <div className="border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all bg-gray-50">
-              <div className="font-medium flex items-center gap-2 mb-2">
-                <BadgeCheck className="h-5 w-5 text-green-500" />
-                <span>Yearly Plan</span>
-                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full ml-auto">Save 30%</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-3">$184.72 per year ($15.39/month)</p>
-
-              <a 
-                href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE" 
-                className="block w-full"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="default" className="w-full">
-                  Subscribe Yearly
-                </Button>
-              </a>
-            </div>
+        <div className="space-y-4 py-4">
+          <div className="text-center text-sm text-gray-500 mb-4">
+            Get access to all features and personalized supplement recommendations
+          </div>
+          
+          <div className="space-y-3">
+            {/* Monthly subscription option */}
+            <a
+              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE" 
+              className="block w-full"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="w-full bg-green-700 hover:bg-green-800">
+                Monthly - $21.99
+              </Button>
+            </a>
+            
+            {/* Yearly subscription option with savings highlight */}
+            <a 
+              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
+              className="block w-full" 
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="w-full" variant="outline">
+                Yearly - $184.72 (Save 30%)
+              </Button>
+            </a>
+            
+            {/* Free trial option */}
+            <a 
+              href="#"
+              className="block w-full"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  const response = await fetch('/api/stripe/start-free-trial', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    }
+                  });
+                  
+                  if (!response.ok) {
+                    throw new Error('Failed to start free trial');
+                  }
+                  
+                  // Close modal and redirect to dashboard
+                  onClose();
+                  window.location.href = '/dashboard';
+                } catch (error) {
+                  console.error('Free trial error:', error);
+                  // You could show an error message here
+                }
+              }}
+            >
+              <Button className="w-full" variant="link">
+                Start 14-Day Free Trial
+              </Button>
+            </a>
           </div>
         </div>
       </DialogContent>

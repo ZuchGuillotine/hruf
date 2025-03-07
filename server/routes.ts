@@ -1,7 +1,6 @@
 import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
-import { ensurePaymentFlow } from "./middleware/paymentFlow";
 import { chatWithAI } from "./openai";
 import { queryWithAI } from "./services/openaiQueryService";
 import { db } from "@db";
@@ -100,8 +99,61 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Registration endpoint is handled in auth.ts
-  // This is a comment to indicate routes.ts should not handle registration
+  // Remove email verification from registration endpoint
+  app.post("/api/register", async (req, res) => {
+    try {
+      console.log('Starting registration process:', {
+        email: req.body.email,
+        bodyKeys: Object.keys(req.body),
+        timestamp: new Date().toISOString()
+      });
+
+      // Check for existing user with same email
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, req.body.email));
+
+      if (existingUser) {
+        return res.status(409).json({
+          status: 'error',
+          message: "An account with this email already exists. Please use a different email or try logging in.",
+          code: "EMAIL_EXISTS"
+        });
+      }
+
+      // Create user
+      const [user] = await db
+        .insert(users)
+        .values({
+          ...req.body,
+          emailVerified: true, // Auto-verify for now since we don't have email service
+        })
+        .returning();
+
+      console.log('User created successfully:', {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        message: "Registration successful",
+        user: user
+      });
+    } catch (error: any) {
+      console.error('Error in registration process:', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+
+      res.status(500).json({
+        message: "Error registering user",
+        error: error.message
+      });
+    }
+  });
 
   // Chat endpoint with storage
   app.post("/api/chat", requireAuth, async (req, res) => {
@@ -959,186 +1011,6 @@ export function registerRoutes(app: Express): Server {
         count: result.length,
         timestamp: new Date().toISOString()
       });
-
-
-  // Welcome route for new users to ensure they see payment options
-  app.get("/welcome", ensurePaymentFlow, (req, res) => {
-    // Redirect to dashboard after setting payment flag
-    res.redirect('/dashboard');
-  });
-  
-  // API endpoint to check if payment modal should be shown
-  app.get("/api/payment-flow/check", (req, res) => {
-    const showPaymentModal = req.session?.showPaymentModal === true;
-    
-    if (showPaymentModal && req.session) {
-      // Clear the flag after checking it to avoid showing modal multiple times
-      req.session.showPaymentModal = false;
-      
-      console.log('Payment modal flag checked and cleared:', {
-        sessionId: req.sessionID,
-        originalValue: true,
-        newValue: false,
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-    res.json({ showPaymentModal });
-  });
-  
-  // Authentication debug endpoint
-  app.get("/api/debug/auth-status", (req, res) => {
-    console.log('Debug auth status request:', {
-      isAuthenticated: req.isAuthenticated(),
-      hasSession: !!req.session,
-      sessionID: req.sessionID,
-      hasUser: !!req.user,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Also check if the session store can retrieve the session
-    let sessionStoreCheck = "Not attempted";
-    if (req.sessionID && req.sessionStore) {
-      try {
-        req.sessionStore.get(req.sessionID, (err, session) => {
-          if (err) {
-            sessionStoreCheck = `Error retrieving session: ${err.message}`;
-          } else if (!session) {
-            sessionStoreCheck = "Session not found in store";
-          } else {
-            sessionStoreCheck = "Session successfully retrieved from store";
-            // Try refreshing the session in memory
-            req.session = session;
-            req.session.touch();
-            req.session.save();
-          }
-          
-          sendResponse();
-        });
-      } catch (e) {
-        sessionStoreCheck = `Exception checking session store: ${e.message}`;
-        sendResponse();
-      }
-    } else {
-      sendResponse();
-    }
-    
-    function sendResponse() {
-      res.json({
-        isAuthenticated: req.isAuthenticated(),
-        hasSession: !!req.session,
-        sessionID: req.sessionID,
-        user: req.user ? {
-          id: req.user.id,
-          email: req.user.email,
-          username: req.user.username
-        } : null,
-        sessionDetails: req.session ? {
-          cookie: req.session.cookie,
-          passport: req.session.passport
-        } : null,
-        sessionStoreCheck,
-        headers: {
-          cookie: req.headers.cookie,
-          authorization: req.headers.authorization
-        },
-        timestamp: new Date().toISOString()
-      });
-    }
-  });
-  
-  // Session repair endpoint
-  app.post("/api/debug/repair-session", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password required for session repair" });
-      }
-      
-      // Force logout first
-      if (req.isAuthenticated()) {
-        await new Promise<void>((resolve) => {
-          req.logout(() => {
-            resolve();
-          });
-        });
-      }
-      
-      // Manual authentication
-      passport.authenticate("local", (err, user, info) => {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-        
-        if (!user) {
-          return res.status(401).json({ error: "Authentication failed" });
-        }
-        
-        req.login(user, (loginErr) => {
-          if (loginErr) {
-            return res.status(500).json({ error: `Login error: ${loginErr.message}` });
-          }
-          
-          // Force session save
-          req.session.save((saveErr) => {
-            if (saveErr) {
-              return res.status(500).json({ error: `Session save error: ${saveErr.message}` });
-            }
-            
-            console.log('Session repaired:', {
-              userId: user.id,
-              isAuthenticated: req.isAuthenticated(),
-              sessionID: req.sessionID,
-              timestamp: new Date().toISOString()
-            });
-            
-            res.json({
-              success: true,
-              isAuthenticated: req.isAuthenticated(),
-              user: {
-                id: user.id,
-                email: user.email,
-                username: user.username
-              }
-            });
-          });
-        });
-      })(req, res);
-    } catch (error) {
-      console.error('Session repair error:', error);
-      res.status(500).json({ error: `Session repair failed: ${error.message}` });
-    }
-  });
-  
-  // Session test endpoint
-  app.post("/api/debug/test-session", (req, res) => {
-    // Set a random value in session to test session functionality
-    if (!req.session) {
-      return res.status(500).json({ error: "No session object available" });
-    }
-    
-    req.session.testValue = Math.random().toString(36).substring(7);
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error in test endpoint:', {
-          error: err instanceof Error ? err.message : String(err),
-          stack: err instanceof Error ? err.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
-        return res.status(500).json({ 
-          error: "Failed to save session",
-          details: err instanceof Error ? err.message : String(err)
-        });
-      }
-      
-      res.json({ 
-        success: true, 
-        sessionID: req.sessionID,
-        testValue: req.session.testValue
-      });
-    });
-  });
 
       res.json({
         message: `Successfully deleted ${result.length} non-admin users`,

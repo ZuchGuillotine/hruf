@@ -286,162 +286,6 @@ export function setupAuth(app: Express) {
         return res.redirect('/login?error=missing_auth_code');
       }
       
-
-  // Modified registration endpoint to properly handle login after signup
-  app.post("/api/register", async (req, res, next) => {
-    try {
-      console.log('Starting registration process:', {
-        email: req.body.email,
-        bodyKeys: Object.keys(req.body),
-        timestamp: new Date().toISOString()
-      });
-
-      // Check if there's a valid body
-      if (!req.body || !req.body.email || !req.body.password) {
-        return res.status(400).json({ 
-          message: "Invalid input: Missing required fields",
-          details: "Email and password are required" 
-        });
-      }
-
-      const { email, username, password } = req.body;
-
-      // Check if user already exists with either email or username
-      const [existingUser] = await db
-        .select()
-        .from(users)
-        .where(
-          or(
-            eq(users.email, email),
-            username ? eq(users.username, username) : undefined
-          )
-        )
-        .limit(1);
-
-      if (existingUser) {
-        if (existingUser.email === email) {
-          return res.status(400).json({ message: "Email already registered" });
-        }
-        return res.status(400).json({ message: "Username already taken" });
-      }
-
-      // Hash password
-      const hashedPassword = await crypto.hash(password);
-
-      // Create user with basic validation
-      const userData = {
-        email,
-        username: username || email.split('@')[0],
-        password: hashedPassword,
-        emailVerified: true, // Auto-verify for now
-      };
-
-      // Create user
-      const [newUser] = await db
-        .insert(users)
-        .values(userData)
-        .returning();
-
-      console.log('User created successfully:', {
-        userId: newUser.id,
-        email: newUser.email,
-        timestamp: new Date().toISOString()
-      });
-
-      // Regenerate session to prevent session fixation attacks
-      await new Promise<void>((resolveRegen) => {
-        req.session.regenerate(function(err) {
-          if (err) {
-            console.error('Session regeneration error:', {
-              error: err instanceof Error ? err.message : String(err),
-              timestamp: new Date().toISOString()
-            });
-          }
-          resolveRegen();
-        });
-      });
-
-      // Log the user in directly - simplified approach
-      await new Promise<void>((resolveLogin) => {
-        req.login(newUser, { session: true }, (loginErr) => {
-          if (loginErr) {
-            console.error('Auto-login error after registration:', {
-              error: loginErr instanceof Error ? loginErr.message : String(loginErr),
-              stack: loginErr instanceof Error ? loginErr.stack : undefined,
-              timestamp: new Date().toISOString()
-            });
-          }
-          
-          // Make sure passport data is in the session
-          if (!req.session.passport) {
-            req.session.passport = { user: newUser.id };
-          }
-          
-          console.log('Login completed, saving session:', { 
-            userId: newUser.id,
-            hasPassport: !!req.session.passport,
-            timestamp: new Date().toISOString()
-          });
-          
-          resolveLogin();
-        });
-      });
-      
-      // Force session save and wait for completion
-      await new Promise<void>((resolveSave, rejectSave) => {
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error('Session save error:', {
-              error: saveErr instanceof Error ? saveErr.message : String(saveErr),
-              stack: saveErr instanceof Error ? saveErr.stack : undefined,
-              timestamp: new Date().toISOString()
-            });
-            // Continue despite error
-          }
-          
-          console.log('Session saved after registration:', {
-            userId: newUser.id,
-            isAuthenticated: req.isAuthenticated(),
-            hasSession: !!req.session,
-            sessionID: req.sessionID,
-            passport: req.session.passport,
-            timestamp: new Date().toISOString()
-          });
-          
-          resolveSave();
-        });
-      });
-
-      // Final authentication check
-      const isAuthSuccess = req.isAuthenticated();
-      console.log('Final auth check:', {
-        isAuthenticated: isAuthSuccess,
-        userId: req.user?.id,
-        timestamp: new Date().toISOString()
-      });
-
-      return res.status(200).json({
-        status: 'success',
-        message: isAuthSuccess ? "Registration and authentication successful" : "Registration successful but authentication may require login",
-        user: {
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email
-        },
-        authenticated: isAuthSuccess,
-        sessionID: req.sessionID
-      });
-      
-    } catch (error) {
-      console.error('Error in registration process:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
-      next(error);
-    }
-  });
-
       next();
     },
     (req, res, next) => {
@@ -479,8 +323,8 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          // Redirect to a special route that will show payment options first
-          res.redirect('/welcome?signup=success&showPayment=true');
+          // Redirect to dashboard with success message
+          res.redirect('/dashboard?login=success');
         });
       })(req, res, next);
     }
@@ -532,7 +376,7 @@ export function setupAuth(app: Express) {
       // Send welcome email
       try {
         console.log('Attempting to send welcome email to:', email);
-        const { sendWelcomeEmail } = await import('./services/emailService');
+        const { sendWelcomeEmail } = require('./services/emailService');
         await sendWelcomeEmail(email, username);
         console.log('Welcome email sent successfully to:', email);
       } catch (error) {
