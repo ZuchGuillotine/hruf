@@ -1,25 +1,38 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent } from './ui/card';
-import { PaymentOptionsModal } from './PaymentOptionsModal';
-import { useNavigate } from 'react-router-dom';
+import PaymentOptionsModal from './PaymentOptionsModal';
 
-interface SignupFormProps {
-  onSignup?: (data: any) => void;
-}
+type FormValues = {
+  username: string;
+  email: string;
+  password: string;
+};
 
-export function SignupForm({ onSignup }: SignupFormProps) {
-  const { register, handleSubmit, formState: { errors }, setError } = useForm();
+const SignupForm: React.FC = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
-  const navigate = useNavigate();
+  const [registeredUser, setRegisteredUser] = useState<any>(null);
 
-  const onSubmit = async (formData: any) => {
+  const handleClosePaymentModal = () => {
+    setShowPaymentOptions(false);
+    // Redirect to dashboard if they've already registered
+    if (registeredUser) {
+      window.location.href = '/dashboard';
+    }
+  };
+
+  const onSubmit = async (data: FormValues) => {
+    setError(null);
     setIsLoading(true);
+    
     try {
-      console.log('Beginning signup process with data:', { email: formData.email, username: formData.username });
+      console.log('Submitting registration data:', {
+        email: data.email,
+        username: data.username
+      });
 
       // Call your signup API endpoint
       const response = await fetch('/api/register', {
@@ -27,83 +40,118 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
-        credentials: 'include' // Important: include credentials for cookies
+        body: JSON.stringify(data),
+        credentials: 'include' // Important for cookies/session
       });
 
-      const data = await response.json();
-
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Signup failed');
+        throw new Error(responseData.message || responseData.error || 'Signup failed');
       }
 
-      console.log('Signup successful, user data:', data);
-
-      // Show payment options regardless of authentication state
+      console.log('Registration successful:', responseData);
+      setRegisteredUser(responseData.user);
+      
+      // Show payment options after successful signup
+      // Important: This must execute before any redirects
       setShowPaymentOptions(true);
-
-    } catch (error) {
-      console.error('Signup error:', error);
-      setError('form', {
-        type: 'manual',
-        message: error instanceof Error ? error.message : 'An error occurred during signup'
-      });
+      
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'An error occurred during signup');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClosePaymentModal = () => {
-    setShowPaymentOptions(false);
-    navigate('/dashboard');
-  };
-
   return (
     <>
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Input
-                placeholder="Email"
-                {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })}
-                className="w-full"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>}
-            </div>
-
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Password must be at least 8 characters' } })}
-                className="w-full"
-              />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message?.toString()}</p>}
-            </div>
-
-            <div>
-              <Input
-                placeholder="Full Name"
-                {...register('name', { required: 'Name is required' })}
-                className="w-full"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message?.toString()}</p>}
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating Account...' : 'Sign Up'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="p-6 bg-white rounded-lg shadow-md max-w-md w-full mx-auto">
+        <h2 className="text-2xl font-bold mb-6 text-center">Create an Account</h2>
+        
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="mb-4">
+            <label htmlFor="username" className="block mb-1 font-medium">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              className="w-full p-2 border rounded"
+              {...register('username', { required: 'Username is required' })}
+            />
+            {errors.username && (
+              <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
+            )}
+          </div>
+          
+          <div className="mb-4">
+            <label htmlFor="email" className="block mb-1 font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="w-full p-2 border rounded"
+              {...register('email', { 
+                required: 'Email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Invalid email address'
+                }
+              })}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+            )}
+          </div>
+          
+          <div className="mb-6">
+            <label htmlFor="password" className="block mb-1 font-medium">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              className="w-full p-2 border rounded"
+              {...register('password', { 
+                required: 'Password is required',
+                minLength: {
+                  value: 8,
+                  message: 'Password must be at least 8 characters'
+                }
+              })}
+            />
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+            )}
+          </div>
+          
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition duration-200"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing up...' : 'Sign Up'}
+          </button>
+        </form>
+      </div>
 
       <PaymentOptionsModal 
         isOpen={showPaymentOptions} 
         onClose={handleClosePaymentModal} 
         monthlyLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
-        freeTrialLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
+        freeTrialLink="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
       />
     </>
   );
-}
+};
+
+export default SignupForm;

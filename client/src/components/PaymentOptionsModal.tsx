@@ -5,102 +5,92 @@ interface PaymentOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   monthlyLink: string;
-  yearlyLink?: string;
   freeTrialLink: string;
 }
 
 /**
- * Modal component that displays payment options
+ * Modal component that displays payment options after a user signs up.
  */
-const PaymentOptionsModal: React.FC<PaymentOptionsModalProps> = ({
-  isOpen,
+const PaymentOptionsModal: React.FC<PaymentOptionsModalProps> = ({ 
+  isOpen, 
   onClose,
   monthlyLink,
-  yearlyLink = "https://buy.stripe.com/14k3fJeRWakp8a8aEJ",
   freeTrialLink
 }) => {
   if (!isOpen) return null;
 
-  console.log('Displaying payment options modal with links:', { 
-    monthlyLink, 
-    yearlyLink, 
-    freeTrialLink 
-  });
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Choose a Plan</h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-teal-400 py-4 px-6">
+          <h2 className="text-xl font-bold text-white">Choose Your Plan</h2>
         </div>
-        
-        <div className="space-y-4">
-          {/* Monthly subscription option */}
-          <div className="border border-gray-200 rounded-lg p-4 hover:border-green-500 transition-colors">
-            <a 
-              href={monthlyLink}
-              className="block w-full"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-medium text-gray-800">Monthly Subscription</h3>
-                  <p className="text-sm text-gray-600">$21.99 per month</p>
-                </div>
-                <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                  Select
-                </button>
-              </div>
-            </a>
-          </div>
+
+        <div className="p-6">
+          <p className="text-gray-700 mb-4">
+            Thank you for signing up! Please select a plan to continue:
+          </p>
           
-          {/* Yearly subscription option */}
-          <div className="border border-gray-200 rounded-lg p-4 hover:border-green-500 transition-colors">
-            <a 
-              href={yearlyLink}
-              className="block w-full"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-medium text-gray-800">Yearly Subscription</h3>
-                  <p className="text-sm text-gray-600">$184.72 per year (16% savings)</p>
-                </div>
-                <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                  Select
+          <div className="space-y-4">
+            {/* Monthly plan option */}
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <h3 className="font-semibold text-lg">Monthly Plan</h3>
+              <p className="text-gray-600 mb-2">$21.99 per month</p>
+              <p className="text-sm text-gray-500 mb-3">Full access to all features</p>
+              <a 
+                href={monthlyLink}
+                className="block w-full"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+                  Select Monthly
                 </button>
-              </div>
-            </a>
-          </div>
-          
-          {/* Free trial option using the monthly link that includes 21-day trial */}
-          <div className="border border-gray-200 rounded-lg p-4 hover:border-green-500 transition-colors">
+              </a>
+            </div>
+            
+            {/* Yearly plan option */}
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <h3 className="font-semibold text-lg">Annual Plan</h3>
+              <p className="text-gray-600 mb-2">$184.72 per year <span className="text-green-600">(30% savings)</span></p>
+              <p className="text-sm text-gray-500 mb-3">All features + priority support</p>
+              <a 
+                href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
+                className="block w-full"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+                  Select Annual
+                </button>
+              </a>
+            </div>
+            
+            {/* Free trial option using the monthly link that includes 21-day trial */}
             <a 
               href={freeTrialLink}
               className="block w-full"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-medium text-gray-800">14-Day Free Trial</h3>
-                  <p className="text-sm text-gray-600">Then $21.99 per month</p>
-                </div>
-                <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                  Start Free
+              <div className="border-2 border-blue-400 rounded-lg p-4 hover:shadow-md transition-shadow bg-blue-50">
+                <h3 className="font-semibold text-lg">14-Day Free Trial</h3>
+                <p className="text-gray-600 mb-2">Try all features free for 14 days</p>
+                <p className="text-sm text-gray-500 mb-3">Then $21.99/month</p>
+                <button className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors">
+                  Start Free Trial
                 </button>
               </div>
             </a>
+          </div>
+          
+          <div className="mt-6 pt-4 border-t text-center">
+            <button 
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              I'll choose later
+            </button>
           </div>
         </div>
       </div>
