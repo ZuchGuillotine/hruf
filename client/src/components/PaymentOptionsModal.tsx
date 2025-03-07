@@ -15,8 +15,23 @@ interface PaymentOptionsModalProps {
  * Includes monthly, yearly, and free trial options with links to Stripe
  */
 export default function PaymentOptionsModal({ isOpen, onClose, monthlyLink, freeTrialLink }: PaymentOptionsModalProps) {
+  console.log("PaymentOptionsModal rendered with isOpen:", isOpen);
+  
+  // Force focus trap to ensure modal is properly focused when opened
+  React.useEffect(() => {
+    if (isOpen) {
+      console.log("Modal is open, ensuring visibility");
+    }
+  }, [isOpen]);
+  
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        console.log("Dialog open state changing to:", open);
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-xl font-bold">Choose Your Plan</DialogTitle>

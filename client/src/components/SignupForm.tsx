@@ -66,12 +66,14 @@ export default function SignupForm() {
       // Update state for successful registration
       setSuccess("Account created successfully!");
       setIsLoading(false);
-
-      // Show payment options modal
+      
+      // Show payment options modal with proper state handling
+      console.log("Setting payment modal to visible");
+      // Use a slightly longer timeout to ensure DOM updates complete
       setTimeout(() => {
         setShowPaymentOptions(true);
-        console.log("Payment modal should now be visible:", showPaymentOptions);
-      }, 100); // Small delay to ensure state updates properly
+        console.log("Payment modal visibility state updated to:", true);
+      }, 300);
 
       return; // Exit early since we've handled success
     } catch (err) {
@@ -85,9 +87,12 @@ export default function SignupForm() {
   const handleClosePaymentModal = () => {
     console.log("Closing payment modal");
     setShowPaymentOptions(false);
-
-    // Redirect to dashboard after closing the modal
-    window.location.href = '/dashboard';
+    
+    // Use timeout to ensure state updates before redirect
+    setTimeout(() => {
+      console.log("Redirecting to dashboard after modal close");
+      window.location.href = '/dashboard';
+    }, 100);
   };
 
   return (
@@ -163,9 +168,19 @@ export default function SignupForm() {
         freeTrialLink="https://buy.stripe.com/6oEg2154g7KH7604gi"
       />
       {/* Debug indicator - visible only during development */}
-      {showPaymentOptions && process.env.NODE_ENV === 'development' && (
-        <div style={{position: 'fixed', bottom: 0, right: 0, background: 'red', padding: '5px', color: 'white'}}>
-          Modal should be visible
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'fixed', 
+          top: 0, 
+          right: 0, 
+          background: showPaymentOptions ? 'green' : 'red', 
+          padding: '10px', 
+          color: 'white',
+          zIndex: 9999,
+          fontWeight: 'bold',
+          border: '2px solid black'
+        }}>
+          Payment Modal State: {showPaymentOptions ? 'VISIBLE' : 'HIDDEN'}
         </div>
       )}
     </>
