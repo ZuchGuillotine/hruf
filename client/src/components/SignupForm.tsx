@@ -52,7 +52,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         onSignup(result);
       }
 
-      // Show subscription modal instead of redirecting
+      // Immediately show the subscription modal
       setShowSubscriptionModal(true);
 
     } catch (error: any) {

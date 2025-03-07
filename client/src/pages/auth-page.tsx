@@ -38,14 +38,26 @@ export default function AuthPage() {
   const { login, register } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { handleSubmit, register: registerField, formState: { isSubmitting } } = useForm<FormData>();
 
-  const form = useForm<FormData>({
-    defaultValues: {
-      email: "",
-      password: "",
-      username: "",
-    },
-  });
+  // Check URL parameters for Google OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth') === 'google' && params.get('success') === 'true') {
+      // Show subscription modal for new Google OAuth signups
+      setShowSubscriptionModal(true);
+    }
+  }, []);
+
+  const handleCloseSubscriptionModal = () => {
+    console.log('Subscription modal closed, redirecting to dashboard');
+    setShowSubscriptionModal(false);
+    setLocation('/dashboard');
+  };
+
+  const handleGoogleSignup = () => {
+    window.location.href = '/auth/google?signup=true';
+  };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -55,7 +67,6 @@ export default function AuthPage() {
       } else {
         console.log('Starting registration process');
         const response = await register(data);
-
         if (response.requiresVerification) {
           setVerificationSent(true);
         } else {
@@ -84,12 +95,6 @@ export default function AuthPage() {
         duration: 5000,
       });
     }
-  };
-
-  const handleCloseSubscriptionModal = () => {
-    console.log('Subscription modal closed, redirecting to dashboard');
-    setShowSubscriptionModal(false);
-    setLocation('/dashboard');
   };
 
   if (verificationSent) {
@@ -162,7 +167,7 @@ export default function AuthPage() {
                     : "Join StackTracker to improve your supplementation protocol"}
                 </CardDescription>
               </CardHeader>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <form onSubmit={handleSubmit(onSubmit)}>
                 <CardContent className="space-y-3">
                   {!isLogin && (
                     <div className="space-y-2">
@@ -172,7 +177,7 @@ export default function AuthPage() {
                       <Input
                         id="username"
                         type="text"
-                        {...form.register("username")}
+                        {...registerField("username")}
                         required={!isLogin}
                       />
                     </div>
@@ -184,7 +189,7 @@ export default function AuthPage() {
                     <Input
                       id="email"
                       type={isLogin ? "text" : "email"}
-                      {...form.register("email")}
+                      {...registerField("email")}
                       placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
                     />
                   </div>
@@ -195,7 +200,7 @@ export default function AuthPage() {
                     <Input
                       id="password"
                       type="password"
-                      {...form.register("password")}
+                      {...registerField("password")}
                     />
                   </div>
 
@@ -214,7 +219,7 @@ export default function AuthPage() {
                     type="button"
                     variant="outline"
                     className="w-full"
-                    onClick={() => window.location.href = '/auth/google'}
+                    onClick={handleGoogleSignup}
                   >
                     <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
                       <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
@@ -226,9 +231,9 @@ export default function AuthPage() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={form.formState.isSubmitting}
+                    disabled={isSubmitting}
                   >
-                    {form.formState.isSubmitting && (
+                    {isSubmitting && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     {isLogin ? "Sign In" : "Sign Up"}
