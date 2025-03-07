@@ -14,10 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 interface SubscriptionCheckProps {
   showAsModal?: boolean;
   reason?: 'signup' | 'usage_limit' | 'trial_expiring';
-  onClose?: () => void;
 }
 
-export function SubscriptionCheck({ showAsModal = false, reason, onClose }: SubscriptionCheckProps) {
+export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionCheckProps) {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -25,9 +24,10 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
   const handleSubscribe = async (isYearly: boolean, withTrial: boolean = false) => {
     setLoading(true);
     try {
+      // These are placeholder IDs - replace with your actual Stripe product IDs
       const priceId = isYearly 
-        ? 'price_1Op8KjFgPXPVwLJGZwB6YZWX'  // Yearly price ID
-        : 'price_1Op8KaFgPXPVwLJGtWx9I88p';  // Monthly price ID
+        ? 'placeholder_yearly_price_id'  // Replace with actual yearly price ID
+        : 'placeholder_monthly_price_id'; // Replace with actual monthly price ID
 
       console.log('Creating checkout session with:', {
         priceId,

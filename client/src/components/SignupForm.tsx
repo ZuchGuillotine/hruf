@@ -52,7 +52,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         onSignup(result);
       }
 
-      // Immediately show the subscription modal
+      // Show subscription modal and prevent any other navigation
       setShowSubscriptionModal(true);
 
     } catch (error: any) {
@@ -67,12 +67,6 @@ export function SignupForm({ onSignup }: SignupFormProps) {
     }
   };
 
-  const handleCloseSubscriptionModal = () => {
-    console.log('Subscription modal closed, redirecting to dashboard');
-    setShowSubscriptionModal(false);
-    // Only redirect to dashboard when modal is closed
-    setLocation('/dashboard');
-  };
 
   return (
     <>
@@ -130,7 +124,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         <SubscriptionCheck 
           showAsModal={true}
           reason="signup"
-          onClose={handleCloseSubscriptionModal}
+          
         />
       )}
     </>
