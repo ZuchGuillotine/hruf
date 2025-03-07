@@ -20,6 +20,13 @@ export default function SubscriptionPage() {
   const handleSubscribe = async (planType: 'monthlyWithTrial' | 'monthly' | 'yearly') => {
     setLoading(true);
     try {
+      // For the free trial option, redirect directly to Stripe's hosted page
+      if (planType === 'monthlyWithTrial') {
+        window.location.href = 'https://buy.stripe.com/eVa6rr9kw6GD9e8aEE';
+        return;
+      }
+
+      // For paid options, create a checkout session
       let priceId;
       switch (planType) {
         case 'yearly':
@@ -28,13 +35,8 @@ export default function SubscriptionPage() {
         case 'monthly':
           priceId = 'prod_RtcuCvjOY9gHvm';
           break;
-        case 'monthlyWithTrial':
-          priceId = 'prod_Rpderg7Xqdw1zZ';
-          break;
-      }
-
-      if (!priceId) {
-        throw new Error('Invalid plan type selected');
+        default:
+          throw new Error('Invalid plan type selected');
       }
 
       console.log('Creating checkout session with priceId:', priceId);
