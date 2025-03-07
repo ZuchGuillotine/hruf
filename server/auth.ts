@@ -532,7 +532,7 @@ export function setupAuth(app: Express) {
       // Send welcome email
       try {
         console.log('Attempting to send welcome email to:', email);
-        import { sendWelcomeEmail } from './services/emailService';
+        const { sendWelcomeEmail } = await import('./services/emailService');
         await sendWelcomeEmail(email, username);
         console.log('Welcome email sent successfully to:', email);
       } catch (error) {
