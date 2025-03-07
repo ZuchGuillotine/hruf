@@ -17,12 +17,20 @@ export default function SubscriptionPage() {
     return null;
   }
 
-  const handleSubscribe = async (isYearly: boolean) => {
+  const handleSubscribe = async (planType: 'monthly' | 'monthlyNoTrial' | 'yearly') => {
     setLoading(true);
     try {
-      const priceId = isYearly 
-        ? 'price_yearly_id'  // Replace with your actual yearly price ID
-        : 'price_monthly_id'; // Replace with your actual monthly price ID
+      let priceId;
+      switch (planType) {
+        case 'yearly':
+          priceId = import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID;
+          break;
+        case 'monthlyNoTrial':
+          priceId = import.meta.env.VITE_STRIPE_MONTHLYNOTRIAL_PRICE_ID;
+          break;
+        default:
+          priceId = import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID;
+      }
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -30,6 +38,7 @@ export default function SubscriptionPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ priceId }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -37,13 +46,17 @@ export default function SubscriptionPage() {
       }
 
       const { url } = await response.json();
+      if (!url) {
+        throw new Error('No checkout URL received');
+      }
+
       window.location.href = url;
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to start subscription process"
+        description: "Failed to start subscription process. Please try again."
       });
     } finally {
       setLoading(false);
@@ -111,18 +124,28 @@ export default function SubscriptionPage() {
               </div>
             </div>
 
-            {/* Monthly Option */}
+            {/* Monthly Option with Trial */}
             <Button 
-              onClick={() => handleSubscribe(false)}
+              onClick={() => handleSubscribe('monthly')}
               disabled={loading}
               className="w-full"
             >
-              {loading ? "Processing..." : "Monthly - $21.99/month"}
+              {loading ? "Processing..." : "Monthly with Trial - $21.99/month"}
+            </Button>
+
+            {/* Monthly Option without Trial */}
+            <Button 
+              onClick={() => handleSubscribe('monthlyNoTrial')}
+              disabled={loading}
+              className="w-full"
+              variant="outline"
+            >
+              {loading ? "Processing..." : "Monthly - $21.99/month (No Trial)"}
             </Button>
 
             {/* Yearly Option */}
             <Button 
-              onClick={() => handleSubscribe(true)}
+              onClick={() => handleSubscribe('yearly')}
               disabled={loading}
               variant="outline"
               className="w-full"
