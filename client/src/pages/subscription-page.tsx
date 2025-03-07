@@ -17,7 +17,7 @@ export default function SubscriptionPage() {
     return null;
   }
 
-  const handleSubscribe = async (planType: 'monthly' | 'monthlyWithTrial' | 'yearly') => {
+  const handleSubscribe = async (planType: 'monthlyWithTrial' | 'monthly' | 'yearly') => {
     setLoading(true);
     try {
       let priceId;
@@ -49,7 +49,8 @@ export default function SubscriptionPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create checkout session');
       }
 
       const { url } = await response.json();
