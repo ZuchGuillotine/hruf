@@ -147,11 +147,14 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
   if (user?.isPro) return null;
 
   return showAsModal ? (
-    <Dialog open={true} onOpenChange={undefined}>
+    <Dialog 
+      open={true} 
+      onOpenChange={() => {}} // Prevent dialog from closing
+    >
       <DialogContent 
-        className="sm:max-w-[425px]" 
+        className="sm:max-w-[425px]"
+        onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
