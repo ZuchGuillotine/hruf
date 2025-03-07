@@ -29,16 +29,12 @@ import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitat
 import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
-import stripeRouter from './routes/stripe';
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Mount supplements router
   app.use('/api/supplements', supplementsRouter);
-
-  // Mount stripe router
-  app.use('/api/stripe', stripeRouter);
 
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
@@ -762,6 +758,19 @@ export function registerRoutes(app: Express): Server {
 
   // Blog routes - Removed as blog management is now in a separate application
   // Only maintaining direct implementation for backward compatibility
+  app.get("/api/blog", async (req, res) => {
+    try {
+      const posts = await db
+        .select()
+        .from(blogPosts)
+        .orderBy(sql`${blogPosts.publishedAt} DESC`);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      res.status(500).send("Failed to fetch blog posts");
+    }
+  });
+
   app.get("/api/blog/:slug", async (req, res) => {
     try {
       const [post] = await db
@@ -903,7 +912,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
+  // Blog management endpoints
   app.get("/api/blog", async (req, res) => {
     try {
       const posts = await db
@@ -914,6 +923,24 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching blog posts:", error);
       res.status(500).send("Failed to fetch blog posts");
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, req.params.slug))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).send("Blog post not found");
+      }
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching blog post:", error);
+      res.status(500).send("Failed to fetch blog post");
     }
   });
 
@@ -936,7 +963,7 @@ export function registerRoutes(app: Express): Server {
       res.json(post);
     } catch (error) {
       console.error("Error creating blog post:", error);
-      res.status(500).send("Failedto create blog post");
+      res.status(500).send("Failed to create blog post");
     }
   });
 
