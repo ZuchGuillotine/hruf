@@ -17,7 +17,7 @@ export default function SubscriptionPage() {
     return null;
   }
 
-  const handleSubscribe = async (planType: 'monthly' | 'monthlyNoTrial' | 'yearly') => {
+  const handleSubscribe = async (planType: 'monthly' | 'monthlyWithTrial' | 'yearly') => {
     setLoading(true);
     try {
       let priceId;
@@ -25,11 +25,12 @@ export default function SubscriptionPage() {
         case 'yearly':
           priceId = import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID;
           break;
-        case 'monthlyNoTrial':
+        case 'monthly':
           priceId = import.meta.env.VITE_STRIPE_MONTHLYNOTRIAL_PRICE_ID;
           break;
-        default:
+        case 'monthlyWithTrial':
           priceId = import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID;
+          break;
       }
 
       const response = await fetch('/api/stripe/create-checkout-session', {
@@ -63,36 +64,6 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleStartTrial = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/user/start-trial', {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start trial');
-      }
-
-      toast({
-        title: "Success",
-        description: "Your trial has started! Welcome to StackTracker.",
-      });
-
-      setLocation('/dashboard');
-    } catch (error) {
-      console.error('Failed to start trial:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to start trial period"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#e8f3e8] flex flex-col">
       <div className="flex-grow flex items-center justify-center p-4">
@@ -107,12 +78,12 @@ export default function SubscriptionPage() {
           <div className="space-y-4">
             {/* Free Trial Option */}
             <Button 
-              onClick={handleStartTrial}
+              onClick={() => handleSubscribe('monthlyWithTrial')}
               disabled={loading}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {loading ? "Starting Trial..." : "Start 14-Day Free Trial"}
+              {loading ? "Processing..." : "Start 14-Day Free Trial"}
             </Button>
 
             <div className="relative">
@@ -124,23 +95,13 @@ export default function SubscriptionPage() {
               </div>
             </div>
 
-            {/* Monthly Option with Trial */}
+            {/* Monthly Option */}
             <Button 
               onClick={() => handleSubscribe('monthly')}
               disabled={loading}
               className="w-full"
             >
-              {loading ? "Processing..." : "Monthly with Trial - $21.99/month"}
-            </Button>
-
-            {/* Monthly Option without Trial */}
-            <Button 
-              onClick={() => handleSubscribe('monthlyNoTrial')}
-              disabled={loading}
-              className="w-full"
-              variant="outline"
-            >
-              {loading ? "Processing..." : "Monthly - $21.99/month (No Trial)"}
+              {loading ? "Processing..." : "Monthly - $21.99/month"}
             </Button>
 
             {/* Yearly Option */}
