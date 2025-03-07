@@ -120,6 +120,19 @@ export default function AuthPage() {
 
       {/* Main content area with responsive layout */}
       <div className="flex-grow container mx-auto px-4 py-8 relative z-50">
+        {/* Header Card - Centered above columns */}
+        <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
+              Optimize Your Supplement Stack
+            </h1>
+            <p className="text-xl text-gray-600">
+              Track, analyze, and optimize your supplement regimen with AI-powered insights
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Two-column layout */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-start">
           {/* Left column - Value Proposition */}
           <div className="mb-8 lg:mb-0">
