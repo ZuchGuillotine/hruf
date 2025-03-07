@@ -296,14 +296,15 @@ export function setupAuth(app: Express) {
         timestamp: new Date().toISOString()
       });
 
-      const result = insertUserSchema.safeParse(req.body);
-      if (!result.success) {
-        return res
-          .status(400)
-          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+      // Check if there's a valid body
+      if (!req.body || !req.body.email || !req.body.password) {
+        return res.status(400).json({ 
+          message: "Invalid input: Missing required fields",
+          details: "Email and password are required" 
+        });
       }
 
-      const { email, username, password } = result.data;
+      const { email, username, password } = req.body;
 
       // Check if user already exists with either email or username
       const [existingUser] = await db
@@ -312,7 +313,7 @@ export function setupAuth(app: Express) {
         .where(
           or(
             eq(users.email, email),
-            eq(users.username, username)
+            username ? eq(users.username, username) : undefined
           )
         )
         .limit(1);
@@ -327,14 +328,18 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await crypto.hash(password);
 
+      // Create user with basic validation
+      const userData = {
+        email,
+        username: username || email.split('@')[0],
+        password: hashedPassword,
+        emailVerified: true, // Auto-verify for now
+      };
+
       // Create user
       const [newUser] = await db
         .insert(users)
-        .values({
-          ...result.data,
-          password: hashedPassword,
-          emailVerified: true, // Auto-verify for now
-        })
+        .values(userData)
         .returning();
 
       console.log('User created successfully:', {
@@ -347,13 +352,14 @@ export function setupAuth(app: Express) {
       req.login(newUser, (err) => {
         if (err) {
           console.error('Auto-login error after registration:', {
-            error: err.message,
-            stack: err.stack,
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
             timestamp: new Date().toISOString()
           });
-          // Continue despite login error - return user data
-          return res.status(201).json({
-            message: "Registration successful, but auto-login failed",
+          
+          return res.status(200).json({
+            status: 'success',
+            message: "Registration successful, please proceed to payment",
             user: {
               id: newUser.id,
               username: newUser.username,
@@ -369,7 +375,8 @@ export function setupAuth(app: Express) {
           timestamp: new Date().toISOString()
         });
 
-        return res.status(201).json({
+        return res.status(200).json({
+          status: 'success',
           message: "Registration and authentication successful",
           user: {
             id: newUser.id,

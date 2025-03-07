@@ -99,61 +99,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Remove email verification from registration endpoint
-  app.post("/api/register", async (req, res) => {
-    try {
-      console.log('Starting registration process:', {
-        email: req.body.email,
-        bodyKeys: Object.keys(req.body),
-        timestamp: new Date().toISOString()
-      });
-
-      // Check for existing user with same email
-      const [existingUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, req.body.email));
-
-      if (existingUser) {
-        return res.status(409).json({
-          status: 'error',
-          message: "An account with this email already exists. Please use a different email or try logging in.",
-          code: "EMAIL_EXISTS"
-        });
-      }
-
-      // Create user
-      const [user] = await db
-        .insert(users)
-        .values({
-          ...req.body,
-          emailVerified: true, // Auto-verify for now since we don't have email service
-        })
-        .returning();
-
-      console.log('User created successfully:', {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date().toISOString()
-      });
-
-      res.json({
-        message: "Registration successful",
-        user: user
-      });
-    } catch (error: any) {
-      console.error('Error in registration process:', {
-        error: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      });
-
-      res.status(500).json({
-        message: "Error registering user",
-        error: error.message
-      });
-    }
-  });
+  // Registration endpoint is handled in auth.ts
+  // This is a comment to indicate routes.ts should not handle registration
 
   // Chat endpoint with storage
   app.post("/api/chat", requireAuth, async (req, res) => {

@@ -16,52 +16,30 @@ export function SignupForm({ onSignup }: SignupFormProps) {
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (formData: any) => {
     setIsLoading(true);
     try {
+      console.log('Beginning signup process with data:', { email: formData.email, username: formData.username });
+
       // Call your signup API endpoint
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
-        credentials: 'include' // Important: this ensures cookies are sent with the request
+        body: JSON.stringify(formData),
+        credentials: 'include' // Important: include credentials for cookies
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'Signup failed');
+        throw new Error(data.message || data.error || 'Signup failed');
       }
 
-      const userData = await response.json();
-      console.log('Signup successful:', userData);
+      console.log('Signup successful, user data:', data);
 
-      // After successful signup, explicitly log the user in
-      try {
-        const loginResponse = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: data.email,
-            password: data.password
-          }),
-          credentials: 'include' // Important: this ensures cookies are sent with the request
-        });
-
-        if (!loginResponse.ok) {
-          console.warn('Auto-login after signup failed, continuing to payment options');
-        } else {
-          console.log('Auto-login after signup successful');
-        }
-      } catch (loginError) {
-        console.warn('Auto-login error:', loginError);
-        // Continue even if auto-login fails
-      }
-
-      // Show payment options after successful signup
+      // Show payment options regardless of authentication state
       setShowPaymentOptions(true);
 
     } catch (error) {
