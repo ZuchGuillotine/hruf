@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,10 +36,10 @@ export default function SignupForm() {
     setError(null);
     setSuccess(null);
     setIsLoading(true);
-    
+
     try {
       console.log("Submitting signup form:", { email: values.email, username: values.username });
-      
+
       // Call your signup API endpoint
       const response = await fetch('/api/register', {
         method: 'POST',
@@ -52,14 +51,21 @@ export default function SignupForm() {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || data.error || 'Signup failed');
       }
 
       console.log('Signup successful:', data);
       setSuccess("Account created successfully!");
-      
+
+      // After registration, verify authentication state
+      const authCheckResponse = await fetch('/api/debug/auth-status', {
+        credentials: 'include'
+      });
+      const authStatus = await authCheckResponse.json();
+      console.log('Auth status after registration:', authStatus);
+
       // Show payment options after successful signup
       setShowPaymentOptions(true);
     } catch (err) {
@@ -86,13 +92,13 @@ export default function SignupForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           {success && (
             <Alert className="bg-green-50 text-green-800 border-green-200">
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}
-          
+
           <FormField
             control={form.control}
             name="email"
@@ -106,7 +112,7 @@ export default function SignupForm() {
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="username"
@@ -120,7 +126,7 @@ export default function SignupForm() {
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="password"
@@ -134,7 +140,7 @@ export default function SignupForm() {
               </FormItem>
             )}
           />
-          
+
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Creating account..." : "Sign Up"}
           </Button>

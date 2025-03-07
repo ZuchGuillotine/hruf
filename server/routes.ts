@@ -962,6 +962,14 @@ export function registerRoutes(app: Express): Server {
 
   // Authentication debug endpoint
   app.get("/api/debug/auth-status", (req, res) => {
+    console.log('Debug auth status request:', {
+      isAuthenticated: req.isAuthenticated(),
+      hasSession: !!req.session,
+      sessionID: req.sessionID,
+      hasUser: !!req.user,
+      timestamp: new Date().toISOString()
+    });
+    
     res.json({
       isAuthenticated: req.isAuthenticated(),
       hasSession: !!req.session,
@@ -979,6 +987,35 @@ export function registerRoutes(app: Express): Server {
         cookie: req.headers.cookie,
         authorization: req.headers.authorization
       }
+    });
+  });
+  
+  // Session test endpoint
+  app.post("/api/debug/test-session", (req, res) => {
+    // Set a random value in session to test session functionality
+    if (!req.session) {
+      return res.status(500).json({ error: "No session object available" });
+    }
+    
+    req.session.testValue = Math.random().toString(36).substring(7);
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error in test endpoint:', {
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        return res.status(500).json({ 
+          error: "Failed to save session",
+          details: err instanceof Error ? err.message : String(err)
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        sessionID: req.sessionID,
+        testValue: req.session.testValue
+      });
     });
   });
 
