@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { CalendarIcon, CheckCircleIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionCheckProps {
   showAsModal?: boolean;
@@ -19,22 +20,47 @@ interface SubscriptionCheckProps {
 export function SubscriptionCheck({ showAsModal = false, reason, onClose }: SubscriptionCheckProps) {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubscribe = async (isYearly: boolean, withTrial: boolean = false) => {
     setLoading(true);
     try {
-      const priceId = isYearly ? process.env.STRIPE_YEARLY_PRICE_ID : process.env.STRIPE_MONTHLY_PRICE_ID;
+      const priceId = isYearly 
+        ? 'price_1Op8KjFgPXPVwLJGZwB6YZWX'  // Yearly price ID
+        : 'price_1Op8KaFgPXPVwLJGtWx9I88p';  // Monthly price ID
+
+      console.log('Creating checkout session with:', {
+        priceId,
+        withTrial,
+        isYearly
+      });
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ priceId, withTrial }),
       });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create checkout session');
+      }
+
       const { url } = await response.json();
+      if (!url) {
+        throw new Error('No checkout URL received');
+      }
+
+      // Redirect to Stripe Checkout
       window.location.href = url;
     } catch (error) {
       console.error('Failed to start subscription:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to start subscription"
+      });
     } finally {
       setLoading(false);
     }
@@ -77,7 +103,7 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
             className="w-full bg-green-600 hover:bg-green-700 mb-4"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            Start 14-Day Free Trial
+            {loading ? "Processing..." : "Start 14-Day Free Trial"}
           </Button>
         )}
 
@@ -87,7 +113,7 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
           disabled={loading}
           className="w-full"
         >
-          Monthly - $21.99/month
+          {loading ? "Processing..." : "Monthly - $21.99/month"}
         </Button>
 
         {/* Yearly Option */}
@@ -97,7 +123,7 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
           variant="outline"
           className="w-full mt-2"
         >
-          Yearly - $184.71/year (Save 30%)
+          {loading ? "Processing..." : "Yearly - $184.71/year (Save 30%)"}
         </Button>
       </div>
 
@@ -122,7 +148,11 @@ export function SubscriptionCheck({ showAsModal = false, reason, onClose }: Subs
 
   return showAsModal ? (
     <Dialog open={true} onOpenChange={undefined}>
-      <DialogContent className="sm:max-w-[425px]" onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent 
+        className="sm:max-w-[425px]" 
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription>{getDescription()}</DialogDescription>

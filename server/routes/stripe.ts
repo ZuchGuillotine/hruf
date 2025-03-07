@@ -13,10 +13,53 @@ router.post('/create-checkout-session', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const session = await stripeService.createCheckoutSession(userId, priceId, withTrial);
+    console.log('Creating checkout session:', {
+      userId,
+      priceId,
+      withTrial,
+      timestamp: new Date().toISOString()
+    });
+
+    // Create Stripe checkout session
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2023-10-16',
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      subscription_data: withTrial ? {
+        trial_period_days: 14,
+      } : undefined,
+      success_url: `${process.env.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL}/dashboard`,
+      client_reference_id: userId.toString(),
+      customer_email: req.user?.email,
+    });
+
+    console.log('Checkout session created:', {
+      sessionId: session.id,
+      url: session.url,
+      timestamp: new Date().toISOString()
+    });
+
     res.json({ url: session.url });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    console.error('Error creating checkout session:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    res.status(500).json({ 
+      error: 'Failed to create checkout session',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
