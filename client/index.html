@@ -16,7 +16,11 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-NGDFVQPN39');
+      gtag('config', 'G-NGDFVQPN39', {
+        'debug_mode': true,
+        'send_page_view': true
+      });
+      console.log('Google Analytics initialized with ID: G-NGDFVQPN39');
     </script>
   </head>
   <body>
