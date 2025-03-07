@@ -56,6 +56,14 @@ export default function SignupForm() {
         setIsLoading(false);
         return;
       }
+      
+      // Registration was successful
+      const data = await response.json();
+      setSuccess(data.message || 'Account created successfully!');
+      setIsLoading(false);
+      
+      // Show payment options modal
+      setShowPaymentOptions(true);
 
       // Registration successful
       const data = await response.json();
