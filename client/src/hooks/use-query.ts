@@ -104,32 +104,31 @@ export function useQuery() {
         // Handle errors with retry logic
         let retryCount = 0;
         const maxRetries = 3;
-        
+
         eventSource.onerror = (err) => {
           console.error("EventSource error encountered:", err);
-          
+
           if (retryCount < maxRetries) {
             retryCount++;
             console.log(`Attempting to reconnect (${retryCount}/${maxRetries})...`);
             // EventSource will automatically try to reconnect
             return;
           }
-          
+
           // After max retries, close and fallback
           eventSource.close();
           setIsLoading(false);
           setIsStreaming(false);
-          
+
           // Fallback to non-streaming approach
           if (responseContent === "") {
-            setError("Streaming failed. Trying standard request...");
-            // Implement fallback to non-streaming request here if needed
+            setError("Streaming failed. Falling back to standard request...");
             fallbackToNonStreaming(userMessage);
           } else {
             setError("Connection to the server was lost, but partial response was received.");
           }
         };
-        
+
         // Add timeout to prevent hanging connections
         const connectionTimeout = setTimeout(() => {
           if (responseContent === "") {
@@ -140,7 +139,7 @@ export function useQuery() {
             setError("Request timed out. Please try again.");
           }
         }, 30000); // 30 second timeout
-        
+
         // Clear timeout when we get a response
         eventSource.onmessage = (event) => {
           clearTimeout(connectionTimeout);

@@ -23,17 +23,28 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
     });
 
     if (stream) {
-      // For streaming, return the stream directly
-      const stream = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-        stream: true,
-      });
-
-      // For streaming, we'll collect the full response in the controller
-      return { stream };
+      try {
+        // For streaming, return the stream directly with a timeout
+        console.log('Creating OpenAI streaming request');
+        const startTime = Date.now();
+        
+        const stream = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: messages,
+          temperature: 0.7,
+          max_tokens: 1000,
+          stream: true,
+          timeout: 30000, // 30 second timeout for the request
+        });
+        
+        console.log(`OpenAI stream created in ${Date.now() - startTime}ms`);
+        
+        // For streaming, we'll collect the full response in the controller
+        return { stream };
+      } catch (streamErr) {
+        console.error('Error creating OpenAI stream:', streamErr);
+        throw streamErr;
+      }
     } else {
       // Non-streaming response - original implementation
       const completion = await openai.chat.completions.create({

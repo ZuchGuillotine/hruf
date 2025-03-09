@@ -38,12 +38,19 @@ export async function handleQueryRequest(req: Request, res: Response) {
         'Access-Control-Allow-Origin': '*', // Adjust for production as needed
       });
       
-      // Send an initial connection message
+      // Send an initial connection message immediately
       res.write(`data: ${JSON.stringify({ initializing: true })}\n\n`);
+      
+      // Flush the response to ensure the client gets the initialization message
+      if (res.flush) {
+        res.flush();
+      }
 
       let fullResponse = '';
       
       try {
+        console.log('Starting streaming response to client');
+        
         // Get the stream from OpenAI
         const { stream } = await queryWithAI(contextualizedMessages, userId, true);
         
@@ -56,11 +63,19 @@ export async function handleQueryRequest(req: Request, res: Response) {
           console.log('Client closed connection before streaming completed');
         });
         
-        // Send a heartbeat every 15 seconds to keep the connection alive
+        // Send a heartbeat every 5 seconds to keep the connection alive
         const heartbeatInterval = setInterval(() => {
           if (clientConnected) {
             try {
-              res.write(`:heartbeat\n\n`); // Comment line for SSE
+              // Standard SSE comment for heartbeat
+              res.write(`:heartbeat\n\n`);
+              
+              // Also send an empty data event that clients can detect
+              res.write(`data: ${JSON.stringify({ heartbeat: true })}\n\n`);
+              
+              if (res.flush) {
+                res.flush();
+              }
             } catch (err) {
               clientConnected = false;
               console.error('Failed to send heartbeat:', err);
@@ -68,28 +83,61 @@ export async function handleQueryRequest(req: Request, res: Response) {
           } else {
             clearInterval(heartbeatInterval);
           }
-        }, 15000);
+        }, 5000); // Reduced from 15s to 5s for more frequent keepalive
         
-        // Send each chunk as it arrives
-        for await (const chunk of stream) {
-          // Stop if client disconnected
-          if (!clientConnected) {
-            clearInterval(heartbeatInterval);
-            break;
-          }
-          
-          const content = chunk.choices[0]?.delta?.content || '';
-          if (content) {
-            fullResponse += content;
-            try {
-              // Format as SSE - ensure proper format with data: prefix and double newlines
-              res.write(`data: ${JSON.stringify({ content })}\n\n`);
-            } catch (writeError) {
-              console.error('Error writing stream chunk:', writeError);
+        // Send each chunk as it arrives with timing logging
+        console.log('Starting to process OpenAI stream chunks');
+        let chunkCount = 0;
+        
+        try {
+          for await (const chunk of stream) {
+            // Stop if client disconnected
+            if (!clientConnected) {
+              console.log('Client disconnected, stopping stream processing');
               clearInterval(heartbeatInterval);
               break;
             }
+            
+            chunkCount++;
+            const content = chunk.choices[0]?.delta?.content || '';
+            
+            if (content) {
+              fullResponse += content;
+              try {
+                // Format as SSE - ensure proper format with data: prefix and double newlines
+                res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                
+                // Flush the output to ensure it's sent immediately
+                if (res.flush) {
+                  res.flush();
+                }
+                
+                // Log progress occasionally
+                if (chunkCount % 10 === 0) {
+                  console.log(`Sent ${chunkCount} chunks so far, current response length: ${fullResponse.length}`);
+                }
+              } catch (writeError) {
+                console.error('Error writing stream chunk:', writeError);
+                clearInterval(heartbeatInterval);
+                break;
+              }
+            }
           }
+          console.log(`Finished streaming. Total chunks: ${chunkCount}, Final response length: ${fullResponse.length}`);
+        } catch (streamError) {
+          console.error('Error processing stream:', streamError);
+          
+          // Try to send an error message to the client
+          try {
+            res.write(`data: ${JSON.stringify({ error: 'Error processing stream' })}\n\n`);
+            if (res.flush) {
+              res.flush();
+            }
+          } catch (writeError) {
+            console.error('Failed to send error message:', writeError);
+          }
+          
+          clearInterval(heartbeatInterval);
         }
         
         clearInterval(heartbeatInterval);
