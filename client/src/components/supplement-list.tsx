@@ -53,6 +53,9 @@ export default function SupplementList() {
    * Effect hook to initialize and maintain supplement states
    * Also handles daily reminder notification logic
    */
+  // Track if notification has been shown
+  const [notificationShown, setNotificationShown] = useState(false);
+
   useEffect(() => {
     // Create a new state object for tracking supplement intake
     const newStates = supplements.reduce((acc, supplement) => {
@@ -67,20 +70,24 @@ export default function SupplementList() {
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
     }
+  }, [supplements, supplementStates]);
 
+  // Separate effect for notification to better control when it runs
+  useEffect(() => {
     // Daily reminder notification logic
     // Shows notification if supplements haven't been logged for the current calendar day
     const today = new Date().toISOString().split('T')[0];
     const lastLoggedDate = localStorage.getItem('lastSupplementLogDate');
 
-    if (today !== lastLoggedDate && supplements.length > 0) {
+    if (today !== lastLoggedDate && supplements.length > 0 && !notificationShown) {
       toast({
         title: "Daily Supplement Log Reminder",
         description: "Don't forget to log your supplements for today!",
         duration: 5000,
       });
+      setNotificationShown(true);
     }
-  }, [supplements, supplementStates, toast]);
+  }, [supplements.length, toast, notificationShown]);
 
   /**
    * Handles saving the daily supplement intake log
