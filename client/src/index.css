@@ -32,11 +32,13 @@
 
 /* Background Word Animation Styles */
 .background-words-container {
-  @apply absolute overflow-hidden pointer-events-none;
-  top: 4rem;
+  @apply fixed overflow-hidden pointer-events-none;
+  top: 0;
   left: 0;
   right: 0;
-  bottom: 4rem;
+  bottom: 0;
+  min-height: 100vh;
+  z-index: 0;
 }
 
 .word-row {

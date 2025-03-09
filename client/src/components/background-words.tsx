@@ -29,16 +29,17 @@ const phrases = [
 
 export const BackgroundWords: React.FC = () => {
   const createRows = () => {
-    const shuffled = [...phrases].sort(() => Math.random() - 0.5);
+    // Create more rows to cover the entire page height
+    const numRows = 12; // Increased number of rows
     const rows: string[] = [];
-    let currentIndex = 0;
-
-    while (currentIndex < shuffled.length) {
-      const phrasesInRow = 2 + (rows.length % 2); 
-      const rowPhrases = shuffled.slice(currentIndex, currentIndex + phrasesInRow);
-      const combinedPhrase = rowPhrases.join('                •                '); 
+    
+    for (let i = 0; i < numRows; i++) {
+      // Shuffle phrases for each row to get variation
+      const shuffled = [...phrases].sort(() => Math.random() - 0.5);
+      const phrasesInRow = 2 + (i % 2);
+      const rowPhrases = shuffled.slice(0, phrasesInRow);
+      const combinedPhrase = rowPhrases.join('                •                ');
       rows.push(combinedPhrase);
-      currentIndex += phrasesInRow;
     }
 
     return rows;
