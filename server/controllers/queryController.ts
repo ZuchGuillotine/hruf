@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import { constructQueryContext } from "../services/llmContextService_query";
 import { queryWithAI } from "../services/openaiQueryService";
@@ -10,10 +9,10 @@ export async function query(req: Request, res: Response) {
   try {
     // Determine if this is a streaming request
     const isStreaming = req.query.stream === 'true';
-    
+
     // Get messages either from query parameter (streaming) or body (non-streaming)
     let messages: Message[] = [];
-    
+
     if (isStreaming) {
       // For streaming requests, we get messages from query params
       try {
@@ -35,13 +34,13 @@ export async function query(req: Request, res: Response) {
       }
       messages = req.body.messages;
     }
-    
+
     // Get the user query from the last message
     const userQuery = messages[messages.length - 1]?.content;
     if (!userQuery) {
       return res.status(400).json({ error: "No user query found in messages" });
     }
-    
+
     // Check for user authentication
     const userId = req.isAuthenticated() && req.user ? req.user.id : null;
     console.log("Processing query:", {
@@ -51,26 +50,33 @@ export async function query(req: Request, res: Response) {
       isAuthenticated: !!userId,
       timestamp: new Date().toISOString()
     });
-    
+
     // Get user context if available, or use minimal context
     const queryContext = await constructQueryContext(userId, userQuery);
     const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
-    
+
     // Handle streaming response
     if (isStreaming) {
       // Set appropriate headers for streaming
       res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx
-      
+      res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin requests
+
+      // Immediately send response headers to establish connection
+      res.flushHeaders();
+
+      // Send a ping to keep the connection alive
+      res.write(': ping\n\n');
+
       // Begin streaming response
       return await queryWithAI(contextualizedMessages, userId, res);
     }
-    
+
     // For non-streaming responses, continue with standard approach
     const { response } = await queryWithAI(contextualizedMessages, userId);
-    
+
     // If user is authenticated, store the query in query_chats table (not qualitative_logs)
     if (userId) {
       await db
@@ -84,7 +90,7 @@ export async function query(req: Request, res: Response) {
           }
         });
     }
-    
+
     // Send AI response
     res.json({ response });
   } catch (error) {
@@ -93,7 +99,7 @@ export async function query(req: Request, res: Response) {
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
-    
+
     // If streaming was already started, try to end it gracefully
     if (res.headersSent) {
       try {
@@ -104,7 +110,7 @@ export async function query(req: Request, res: Response) {
       }
       return;
     }
-    
+
     // Otherwise send a standard error response
     res.status(500).json({
       error: "Query error",

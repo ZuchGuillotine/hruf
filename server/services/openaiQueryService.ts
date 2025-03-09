@@ -63,9 +63,19 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         res.write('data: [DONE]\n\n');
         res.end();
       } catch (streamError) {
-        console.error("Error during streaming:", streamError);
-        res.write(`data: ${JSON.stringify({ error: "An error occurred during streaming" })}\n\n`);
-        res.end();
+        console.error("Error during streaming:", {
+          error: streamError instanceof Error ? streamError.message : 'Unknown error',
+          stack: streamError instanceof Error ? streamError.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Attempt to send error to client if headers haven't been sent yet
+        try {
+          res.write(`data: ${JSON.stringify({ error: "An error occurred during streaming" })}\n\n`);
+          res.end();
+        } catch (endError) {
+          console.error("Error sending error message:", endError);
+        }
       }
       
       return { streaming: true };

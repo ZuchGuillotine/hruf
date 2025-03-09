@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from "react";
 
 export type Message = {
@@ -42,20 +41,20 @@ export function useQuery() {
         // First, make a POST request to initiate the streaming response
         const messagesPayload = [userMessage];
         const encodedMessages = encodeURIComponent(JSON.stringify(messagesPayload));
-        
+
         // Create a new EventSource connection for streaming
         const url = `/api/query?stream=true&messages=${encodedMessages}`;
         console.log("Creating EventSource with URL:", url);
         eventSourceRef.current = new EventSource(url);
-        
+
         // Initialize an empty assistant message
         const assistantMessage: Message = { role: 'assistant', content: '' };
         setMessages(prev => [...prev, assistantMessage]);
-        
+
         // Listen for messages
         eventSourceRef.current.onmessage = (event) => {
           console.log("Received SSE event:", event.data);
-          
+
           if (event.data === '[DONE]') {
             // Stream completed
             setIsLoading(false);
@@ -63,10 +62,10 @@ export function useQuery() {
             eventSourceRef.current = null;
             return;
           }
-          
+
           try {
             const data = JSON.parse(event.data);
-            
+
             if (data.error) {
               setError(data.error);
               setIsLoading(false);
@@ -74,7 +73,7 @@ export function useQuery() {
               eventSourceRef.current = null;
               return;
             }
-            
+
             if (data.content) {
               // Append to the current assistant message content
               setMessages(prev => {
@@ -102,7 +101,7 @@ export function useQuery() {
           console.error('EventSource error:', err);
           setError('Connection error. Please try again.');
           setIsLoading(false);
-          
+
           // Close the connection on error
           eventSourceRef.current?.close();
           eventSourceRef.current = null;
@@ -118,12 +117,12 @@ export function useQuery() {
             messages: [userMessage]
           })
         });
-        
+
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
+
         const data = await response.json();
         if (data.error) throw new Error(data.error);
-        
+
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
         setIsLoading(false);
       }
