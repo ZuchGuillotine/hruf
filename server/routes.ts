@@ -219,9 +219,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Import query controller for direct handling
-  import { handleQueryRequest } from './controllers/queryController';
-  
   // Direct route for streaming and non-streaming queries - bypass standard middleware chain
   app.post("/api/query", (req, res) => {
     // Handle all query requests, including streaming, through the dedicated controller
