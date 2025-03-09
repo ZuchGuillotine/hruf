@@ -1,3 +1,4 @@
+
 import OpenAI from "openai";
 import { constructQueryContext } from "./llmContextService_query";
 import { db } from "../../db";
@@ -15,7 +16,7 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
     console.log('Processing query with OpenAI:', {
       userId,
       userIdType: typeof userId,
-      messageCount: messages.length,
+      userIdCount: messages.length,
       isAuthenticated: !!userId,
       timestamp: new Date().toISOString(),
       isStreaming: !!res
@@ -148,15 +149,14 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         console.error("Error in streaming setup:", error);
         throw error;
       }
-    } 
-    
-    // Regular non-streaming mode for backward compatibility
-    const completion = await openai.chat.completions.create({
-      model: "o3-mini-2025-01-31", // Updated model
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    } else {
+      // Regular non-streaming mode for backward compatibility
+      const completion = await openai.chat.completions.create({
+        model: "o3-mini-2025-01-31", // Updated model
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
 
       const response = completion.choices[0].message.content;
 
