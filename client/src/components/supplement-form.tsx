@@ -173,18 +173,39 @@ export default function SupplementForm({
               <SelectValue placeholder="Amount" />
             </SelectTrigger>
             <SelectContent className="max-h-60">
-              {form.watch("dosageUnit") === "mg"
-                ? [...Array(20)].map((_, i) => (
+              {(() => {
+                const unit = form.watch("dosageUnit");
+                
+                if (unit === "mg") {
+                  // mg: 50-1000 in multiples of 50
+                  return [...Array(20)].map((_, i) => (
                     <SelectItem key={i} value={(50 * (i + 1)).toString()}>
                       {50 * (i + 1)}
                     </SelectItem>
-                  ))
-                : [...Array(10)].map((_, i) => (
+                  ));
+                } else if (unit === "mcg") {
+                  // mcg: 50-1000 in multiples of 50
+                  return [...Array(20)].map((_, i) => (
+                    <SelectItem key={i} value={(50 * (i + 1)).toString()}>
+                      {50 * (i + 1)}
+                    </SelectItem>
+                  ));
+                } else if (unit === "IU") {
+                  // IU: 50-2000 in multiples of 50
+                  return [...Array(40)].map((_, i) => (
+                    <SelectItem key={i} value={(50 * (i + 1)).toString()}>
+                      {50 * (i + 1)}
+                    </SelectItem>
+                  ));
+                } else {
+                  // g: 1-10
+                  return [...Array(10)].map((_, i) => (
                     <SelectItem key={i + 1} value={(i + 1).toString()}>
                       {i + 1}
                     </SelectItem>
-                  ))
-              }
+                  ));
+                }
+              })()}
             </SelectContent>
           </Select>
           {/* Dosage Unit Dropdown */}
@@ -194,6 +215,10 @@ export default function SupplementForm({
               form.setValue("dosageUnit", value);
               // Reset dosage amount to appropriate default when unit changes
               if (value === "mg") {
+                form.setValue("dosageAmount", "50");
+              } else if (value === "mcg") {
+                form.setValue("dosageAmount", "50");
+              } else if (value === "IU") {
                 form.setValue("dosageAmount", "50");
               } else {
                 form.setValue("dosageAmount", "1");
@@ -206,6 +231,8 @@ export default function SupplementForm({
             <SelectContent>
               <SelectItem value="mg">mg</SelectItem>
               <SelectItem value="g">g</SelectItem>
+              <SelectItem value="mcg">mcg</SelectItem>
+              <SelectItem value="IU">IU</SelectItem>
             </SelectContent>
           </Select>
         </div>
