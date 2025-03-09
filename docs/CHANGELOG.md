@@ -2,6 +2,13 @@
 
 ## [March 2025]
 ### Added
+- Enhanced Background Animation System
+  - Improved full-page coverage of background scrolling text
+  - Fixed background text visibility in taller pages with cards
+  - Adjusted header styling to prevent background text showing through
+  - Optimized z-index layering for proper component visibility
+  - Increased number of word rows for consistent page coverage
+  - Preserved original animation style, speed and direction
 - Stripe Subscription Integration
   - Implemented correct price ID mapping for all subscription tiers
   - Added direct signup URL for frictionless free trial flow
