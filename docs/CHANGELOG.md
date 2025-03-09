@@ -1,6 +1,17 @@
 # Changelog
 
 ## [March 2025]
+### Enhanced
+- Supplement Form Dosage Options:
+  - Enhanced dosage unit options to include IU (International Units) and mcg (micrograms)
+  - Implemented dynamic dosage amount ranges based on selected unit:
+    - mg: 50-1000 in increments of 50
+    - mcg: 50-1000 in increments of 50
+    - IU: 50-2000 in increments of 50
+    - g: 1-10 in increments of 1
+  - Improved user experience with automatic default value selection when changing units
+  - Added proper reset logic to maintain appropriate dosage values for each unit type
+
 ### Fixed
 - Duplicate Notification Issue:
   - Fixed issue where supplement intake reminder notifications appeared twice
