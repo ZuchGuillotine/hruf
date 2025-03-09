@@ -51,21 +51,21 @@ export function useQuery() {
       // Add unique identifier to prevent caching
       const timestamp = Date.now();
       const requestId = Math.random().toString(36).substring(2, 15);
-      
+
       // Create event source for server-sent events with cache-busting
       const eventSourceUrl = `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}&rid=${requestId}`;
       console.log("Creating EventSource with URL:", eventSourceUrl);
-      
+
       // Create a fetch request first to check connection status
       const testConnection = await fetch('/api/query?ping=true', { 
         method: 'HEAD',
         credentials: 'same-origin' 
       });
-      
+
       if (!testConnection.ok) {
         throw new Error(`API server not responding: ${testConnection.status}`);
       }
-      
+
       // Create EventSource with proper credentials
       const eventSource = new EventSource(eventSourceUrl);
 
@@ -162,6 +162,7 @@ export function useQuery() {
         setIsStreaming(false);
         setError("Failed to set up streaming connection. Please try again.");
       }
+    ; // Added semicolon here to fix the syntax error
     } else {
       // Non-streaming implementation (fallback)
       try {
