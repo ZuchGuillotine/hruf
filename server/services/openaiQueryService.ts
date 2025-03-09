@@ -29,7 +29,7 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         content: msg.content
       })),
       temperature: 0.7,
-      max_tokens: 1000,
+      max_completion_tokens: 1000, // Updated parameter name for the new model
       stream: false // Keep non-streaming for query service
     });
 

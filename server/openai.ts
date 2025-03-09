@@ -46,7 +46,7 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
         }))
       ],
       temperature: 0.7, // Balanced between creativity and consistency
-      max_tokens: 500, // Limit response length for conciseness
+      max_completion_tokens: 500, // Updated parameter name for the new model
       stream: true // Enable streaming
     });
 
