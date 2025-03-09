@@ -23,13 +23,12 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
 
     // Call OpenAI API with chat completion
     const completion = await openai.chat.completions.create({
-      model: "o3-mini-2025-01-31", // Updated to use new model
+      model: "o3-mini-2025-01-31",
       messages: messages.map(msg => ({
         role: msg.role as "user" | "assistant" | "system",
         content: msg.content
       })),
-      temperature: 0.7,
-      max_completion_tokens: 1000, // Updated parameter name for the new model
+      max_completion_tokens: 1000,
       stream: false // Keep non-streaming for query service
     });
 

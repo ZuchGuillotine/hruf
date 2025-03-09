@@ -37,7 +37,7 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
   try {
     // Send request to OpenAI API
     const response = await openai.chat.completions.create({
-      model: "o3-mini-2025-01-31", // Updated to use new model
+      model: "o3-mini-2025-01-31",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...messages.map(msg => ({
@@ -45,9 +45,8 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
           content: msg.content
         }))
       ],
-      temperature: 0.7, // Balanced between creativity and consistency
-      max_completion_tokens: 500, // Updated parameter name for the new model
-      stream: true // Enable streaming
+      max_completion_tokens: 500,
+      stream: true
     });
 
     // Handle streaming response
