@@ -10,11 +10,21 @@ export async function ping(req: Request, res: Response) {
 }
 
 export async function handleQueryRequest(req: Request, res: Response) {
+  console.log(`Handling ${req.method} request to /api/query, params:`, {
+    method: req.method,
+    query: req.query,
+    isAuthenticated: !!req.user,
+    headers: {
+      contentType: req.headers['content-type'],
+      accept: req.headers['accept']
+    }
+  });
+
   // Handle ping requests for connection testing
   if (req.query.ping === 'true') {
     return res.status(200).send('API is available');
   }
-  
+
   try {
     // Handle OPTIONS requests for CORS preflight
     if (req.method === 'OPTIONS') {
@@ -28,12 +38,12 @@ export async function handleQueryRequest(req: Request, res: Response) {
     if (req.method === 'GET') {
       return res.status(200).json({ status: 'Query endpoint is operational' });
     }
-    
+
     // Check if the request body is valid
     if (!req.body || !req.body.messages || !Array.isArray(req.body.messages)) {
       return res.status(400).json({ error: "Invalid request body. Messages must be an array." });
     }
-    
+
     const { messages } = req.body;
     const userQuery = messages[messages.length - 1].content;
     const isStreamRequest = req.query.stream === 'true';
