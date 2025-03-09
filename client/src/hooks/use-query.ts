@@ -17,24 +17,114 @@ export function useQuery() {
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [result, setResult] = useState<QueryResult | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
-  const sendQuery = async (query: string) => {
+  // Reset the chat state
+  const resetChat = () => {
+    setMessages([]);
+    setError(null);
+    setResult(null);
+  };
+
+  // Add user message to the chat
+  const addUserMessage = (content: string) => {
+    const userMessage: Message = { role: "user", content };
+    setMessages((prev) => [...prev, userMessage]);
+    return userMessage;
+  };
+
+  // Add assistant message to the chat
+  const addAssistantMessage = (content: string) => {
+    const assistantMessage: Message = { role: "assistant", content };
+    setMessages((prev) => [...prev, assistantMessage]);
+    return assistantMessage;
+  };
+
+  // Stream query using server-sent events
+  const streamQuery = async (userQuery: string) => {
+    setIsLoading(true);
+    setIsStreaming(true);
+    setError(null);
+    
+    const userMessage = addUserMessage(userQuery);
+    const timestamp = Date.now(); // Add timestamp to prevent caching
+    
     try {
-      setIsLoading(true);
-      setError(null);
+      // Create placeholder for assistant response
+      let assistantMessage = addAssistantMessage("");
       
-      // Add user message to the chat
-      const newUserMessage: Message = { role: "user", content: query };
-      const updatedMessages = [...messages, newUserMessage];
-      setMessages(updatedMessages);
+      // Create event source for server-sent events
+      console.log("Creating EventSource with URL:", `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}`);
+      const eventSource = new EventSource(`/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}`);
       
-      // Send query to API
+      let responseContent = "";
+      
+      // Handle incoming events
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // If done, close the connection
+          if (data.done) {
+            eventSource.close();
+            setIsLoading(false);
+            setIsStreaming(false);
+            setResult({
+              response: responseContent,
+            });
+            return;
+          }
+          
+          // Otherwise, append content to the message
+          if (data.content) {
+            responseContent += data.content;
+            
+            // Update the assistant message with new content
+            setMessages((prevMessages) => {
+              const newMessages = [...prevMessages];
+              newMessages[newMessages.length - 1] = {
+                role: "assistant",
+                content: responseContent,
+              };
+              return newMessages;
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing SSE message:", e);
+        }
+      };
+      
+      // Handle errors
+      eventSource.onerror = (err) => {
+        console.error("EventSource detailed error info:", err);
+        eventSource.close();
+        setIsLoading(false);
+        setIsStreaming(false);
+        setError("An error occurred while streaming the response. Please try again.");
+      };
+      
+    } catch (err) {
+      setIsLoading(false);
+      setIsStreaming(false);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    }
+  };
+
+  // Traditional non-streaming query
+  const sendQueryTraditional = async (userQuery: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    const userMessage = addUserMessage(userQuery);
+    
+    try {
       const response = await fetch("/api/query", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: updatedMessages }),
+        body: JSON.stringify({ messages: [userMessage] }),
+        credentials: "include",
       });
       
       if (!response.ok) {
@@ -43,63 +133,32 @@ export function useQuery() {
       }
       
       const data = await response.json();
-      
-      // Add assistant response to the chat
-      const assistantMessage: Message = { role: "assistant", content: data.response };
-      const finalMessages = [...updatedMessages, assistantMessage];
-      setMessages(finalMessages);
+      addAssistantMessage(data.response);
       setResult(data);
       
-      // Save the chat to our dedicated query chat storage
-      try {
-        await fetch("/api/query/save", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ messages: finalMessages }),
-        });
-      } catch (saveErr) {
-        console.error("Failed to save query chat:", saveErr);
-        // Non-blocking error - we don't need to alert the user
-      }
-      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      console.error("Query error:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const resetChat = () => {
-    setMessages([]);
-    setResult(null);
-    setError(null);
-  };
-  
-  const loadHistory = async () => {
-    try {
-      const response = await fetch("/api/query/history");
-      if (!response.ok) {
-        throw new Error("Failed to fetch query history");
-      }
-      
-      const history = await response.json();
-      return history;
-    } catch (err) {
-      console.error("Error loading query history:", err);
-      return [];
+
+  // Main query function - use streaming by default
+  const sendQuery = async (userQuery: string, useStreaming = true) => {
+    if (useStreaming) {
+      await streamQuery(userQuery);
+    } else {
+      await sendQueryTraditional(userQuery);
     }
   };
 
   return {
     sendQuery,
-    resetChat,
-    loadHistory,
     messages,
-    result,
     isLoading,
+    isStreaming,
     error,
+    resetChat,
+    result,
   };
 }
