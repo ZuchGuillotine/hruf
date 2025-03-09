@@ -11,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 
 export default function AskPage() {
   const [inputValue, setInputValue] = useState("");
-  const { sendQuery, messages, isLoading, isStreaming, error, resetChat } = useQuery();
+  const { sendQuery, messages, isLoading, error, resetChat } = useQuery();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -86,9 +86,7 @@ export default function AskPage() {
             {isLoading && (
               <div className="flex justify-center items-center py-4">
                 <Spinner className="h-6 w-6 text-green-600" />
-                <span className="ml-2 text-gray-600 dark:text-gray-400">
-                  {isStreaming ? "Streaming response..." : "Thinking..."}
-                </span>
+                <span className="ml-2 text-gray-600 dark:text-gray-400">Thinking...</span>
               </div>
             )}
             

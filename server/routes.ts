@@ -219,10 +219,45 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Direct route for streaming and non-streaming queries - bypass standard middleware chain
-  app.post("/api/query", (req, res) => {
-    // Handle all query requests, including streaming, through the dedicated controller
-    handleQueryRequest(req, res);
+  // Supplement query endpoint - works for both authenticated and non-authenticated users
+  app.post("/api/query", async (req, res) => {
+    try {
+      const { messages } = req.body;
+
+      if (!Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages must be an array" });
+      }
+
+      const userQuery = messages[messages.length - 1].content;
+      const userId = req.isAuthenticated() ? req.user?.id : null;
+
+      // Get user context if available, or use minimal context for non-authenticated users
+      const queryContext = await constructQueryContext(userId, userQuery);
+      const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
+
+      // Get AI response with appropriate context
+      const aiResponse = await queryWithAI(contextualizedMessages, userId);
+
+      if (!aiResponse?.response) {
+        return res.status(500).json({ 
+          error: "Failed to get AI response",
+          message: "The AI service did not provide a valid response"
+        });
+      }
+
+      // Send AI response
+      res.json(aiResponse);
+    } catch (error: any) {
+      console.error("Error in query endpoint:", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({
+        error: "Query error",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   });
 
   // Endpoint to save chat
