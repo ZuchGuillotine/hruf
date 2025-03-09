@@ -62,52 +62,54 @@ function setupQueryRoutes(app: Express) {
 
       const userQuery = messages[messages.length - 1].content;
       const isAuthenticated = req.isAuthenticated();
-      const userId = isAuthenticated && req.user ? req.user.id : null;
+      const userId = isAuthenticated && req.user ? req.user.id.toString() : null;
 
       // Get user context if available, or use minimal context for non-authenticated users
       const queryContext = await constructQueryContext(userId, userQuery);
       const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
 
-      // Get AI response with appropriate context
-      const aiResponse = await queryWithAI(contextualizedMessages, userId);
+      // Set up streaming headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
 
-      if (!aiResponse?.response) {
-        return res.status(500).json({ 
-          error: "Failed to get AI response",
-          message: "The AI service did not provide a valid response"
-        });
-      }
+      console.log('Starting streaming response');
 
-      // Store chat history if user is authenticated
-      if (isAuthenticated && userId) {
-        try {
-          await db.insert(queryChats).values({
-            userId,
-            messages: [...messages],
-            metadata: {
-              savedAt: new Date().toISOString()
-            }
-          });
-        } catch (error) {
-          console.error("Error saving query chat:", {
-            userId,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
+      try {
+        // Get streaming response
+        const queryStream = queryWithAI(contextualizedMessages, userId);
+
+        // Handle each chunk
+        for await (const chunk of queryStream) {
+          console.log('Processing stream chunk:', {
+            hasContent: !!chunk.response,
+            contentLength: chunk.response?.length,
+            isStreaming: chunk.streaming,
             timestamp: new Date().toISOString()
           });
-        }
-      }
 
-      res.json(aiResponse);
+          const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
+          res.write(sseData);
+
+          // End response when streaming is complete
+          if (!chunk.streaming) {
+            res.end();
+            return;
+          }
+        }
+      } catch (streamError) {
+        console.error("Streaming error:", {
+          error: streamError instanceof Error ? streamError.message : 'Unknown error',
+          stack: streamError instanceof Error ? streamError.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
+        res.end();
+      }
     } catch (error) {
       console.error("Error in query endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        authStatus: {
-          hasUser: !!req.user,
-          hasSession: !!req.session,
-          isAuthenticated: req.isAuthenticated()
-        },
         timestamp: new Date().toISOString()
       });
       res.status(500).json({

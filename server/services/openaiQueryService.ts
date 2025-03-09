@@ -9,7 +9,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_QUERY_KEY,
 });
 
-export async function queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
+export async function* queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
   try {
     // Log processing details for debugging
     console.log('Processing query with OpenAI:', {
@@ -22,35 +22,49 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
     });
 
     // Call OpenAI API with chat completion
-    const completion = await openai.chat.completions.create({
+    const stream = await openai.chat.completions.create({
       model: "o3-mini-2025-01-31",
       messages: messages.map(msg => ({
         role: msg.role as "user" | "assistant" | "system",
         content: msg.content
       })),
       max_completion_tokens: 1000,
-      stream: false // Keep non-streaming for query service
+      stream: true
     });
 
-    const response = completion.choices[0].message.content;
+    let fullResponse = "";
 
-    // If user is authenticated, save the interaction to qualitative logs
+    // Process each chunk from the stream
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || "";
+
+      if (content) {
+        console.log('Processing stream chunk:', {
+          contentLength: content.length,
+          preview: content.substring(0, 30),
+          timestamp: new Date().toISOString()
+        });
+
+        fullResponse += content;
+        yield { response: content, streaming: true };
+      }
+    }
+
+    // If user is authenticated, save the complete interaction
     if (userId) {
-      await saveInteraction(userId, messages[messages.length - 1].content, response || "");
+      await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
     }
 
     // Log successful completion
     console.log('OpenAI query completed successfully:', {
       userId,
-      responseLength: response?.length || 0,
+      responseLength: fullResponse.length,
       timestamp: new Date().toISOString()
     });
 
-    return {
-      response,
-      usage: completion.usage,
-      model: completion.model,
-    };
+    // Send final chunk
+    yield { response: "", streaming: false };
+
   } catch (error) {
     console.error("OpenAI query error:", {
       error: error instanceof Error ? error.message : 'Unknown error',
