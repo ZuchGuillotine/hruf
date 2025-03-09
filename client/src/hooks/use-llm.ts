@@ -38,8 +38,19 @@ export function useLLM() {
             if (done) break;
 
             const chunk = decoder.decode(value);
-            fullResponse += chunk;
-            onStream?.(chunk);
+            // Parse SSE format
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  fullResponse += data.response;
+                  onStream?.(data.response);
+                } catch (e) {
+                  console.error('Error parsing SSE data:', e);
+                }
+              }
+            }
           }
         } finally {
           reader.releaseLock();

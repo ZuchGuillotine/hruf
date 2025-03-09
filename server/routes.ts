@@ -180,6 +180,13 @@ export function registerRoutes(app: Express): Server {
   // Chat endpoint with storage
   app.post("/api/chat", requireAuth, async (req, res) => {
     try {
+      console.log('Chat request received:', {
+        session: req.sessionID,
+        isAuthenticated: req.isAuthenticated(),
+        userId: req.user?.id,
+        timestamp: new Date().toISOString()
+      });
+
       const { messages } = req.body;
 
       if (!Array.isArray(messages)) {
@@ -199,20 +206,48 @@ export function registerRoutes(app: Express): Server {
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
 
-      // Get AI response with context
-      const aiResponse = await chatWithAI(contextualizedMessages);
+      console.log('Starting streaming response');
 
-      if ('streaming' in aiResponse) {
-        // Handle streaming response
-        if (aiResponse.streaming) {
-          res.write(aiResponse.response);
-        } else {
-          res.write(aiResponse.response);
-          res.end();
+      // Create streaming response
+      try {
+        // Get AI response with context
+        const chatStream = chatWithAI(contextualizedMessages);
+
+        // Handle each chunk from the stream
+        for await (const chunk of chatStream) {
+          console.log('Processing stream chunk:', {
+            hasContent: !!chunk.response,
+            contentLength: chunk.response?.length,
+            isStreaming: chunk.streaming,
+            timestamp: new Date().toISOString()
+          });
+
+          if (chunk.streaming) {
+            const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
+            console.log('Sending SSE chunk:', {
+              dataLength: sseData.length,
+              timestamp: new Date().toISOString()
+            });
+            res.write(sseData);
+          } else {
+            const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
+            console.log('Sending final SSE chunk:', {
+              dataLength: sseData.length,
+              timestamp: new Date().toISOString()
+            });
+            res.write(sseData);
+            res.end();
+            return;
+          }
         }
-      } else {
-        // Handle non-streaming response for backward compatibility
-        res.json(aiResponse);
+      } catch (streamError) {
+        console.error('Streaming error:', {
+          error: streamError instanceof Error ? streamError.message : 'Unknown error',
+          stack: streamError instanceof Error ? streamError.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
+        res.end();
       }
     } catch (error: any) {
       console.error("Error in chat endpoint:", {
@@ -247,7 +282,7 @@ export function registerRoutes(app: Express): Server {
       const aiResponse = await queryWithAI(contextualizedMessages, userId);
 
       if (!aiResponse?.response) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to get AI response",
           message: "The AI service did not provide a valid response"
         });
@@ -816,7 +851,7 @@ export function registerRoutes(app: Express): Server {
       res.status(200).json(documents);
     } catch (error) {
       console.error("Error fetching research documents:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to retrieve research documents",
         message: error instanceof Error ? error.message : "Unknown error"
       });
@@ -840,7 +875,7 @@ export function registerRoutes(app: Express): Server {
       res.status(200).json(document);
     } catch (error) {
       console.error("Error fetching research document:", error);
-      res.status(404).json({ 
+      res.status(404).json({
         error: "Research document not found",
         message: error instanceof Error ? error.message : "Unknown error"
       });
@@ -924,7 +959,7 @@ export function registerRoutes(app: Express): Server {
       return res.status(200).json({ message: "Research document deleted successfully" });
     } catch (error) {
       console.error("Error deleting research document:", error);
-      return res.status(500).json({ error: "Failed to delete research document" });
+      return res.status(500).json({ error: "Failed todelete research document" });
     }
   });
 

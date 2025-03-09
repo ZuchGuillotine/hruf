@@ -31,12 +31,18 @@ Instructions:
 /**
  * Main function to interact with OpenAI's chat API
  * @param messages - Array of message objects containing role and content
- * @returns Promise containing the AI's response
+ * @returns AsyncGenerator yielding streaming chunks of the AI's response
  */
-export async function chatWithAI(messages: Array<{ role: string; content: string }>) {
+export async function* chatWithAI(messages: Array<{ role: string; content: string }>) {
   try {
+    console.log('Starting chatWithAI with messages:', {
+      messageCount: messages.length,
+      lastMessage: messages[messages.length - 1]?.content.substring(0, 50) + '...',
+      timestamp: new Date().toISOString()
+    });
+
     // Send request to OpenAI API
-    const response = await openai.chat.completions.create({
+    const stream = await openai.chat.completions.create({
       model: "o3-mini-2025-01-31",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -49,18 +55,28 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       stream: true
     });
 
-    // Handle streaming response
-    const stream = response;
+    // Create async iterator for streaming response
     let fullResponse = "";
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || "";
+      console.log('Received chunk:', {
+        contentLength: content.length,
+        content: content.substring(0, 50) + '...',
+        timestamp: new Date().toISOString()
+      });
 
-    for await (const part of stream) {
-      const content = part.choices[0]?.delta?.content || "";
       fullResponse += content;
-      // Return each chunk as it arrives
-      return { response: content, streaming: true };
+      if (content) {
+        yield { response: content, streaming: true };
+      }
     }
 
-    // Return full response when stream ends
+    console.log('Stream completed:', {
+      fullResponseLength: fullResponse.length,
+      timestamp: new Date().toISOString()
+    });
+
+    // Return final response when stream ends
     return { response: fullResponse, streaming: false };
   } catch (error: any) {
     console.error("OpenAI API Error:", error);
