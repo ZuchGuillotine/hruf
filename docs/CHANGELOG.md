@@ -1,6 +1,15 @@
 # Changelog
 
 ## [March 2025]
+### Fixed
+- Login Redirection Issue:
+  - Resolved issue where users received a 404 page after login instead of being redirected to dashboard
+  - Added explicit redirect URL parameter in authentication response
+  - Updated client-side login flow to properly handle server redirects
+  - Preserved new user signup flow including payment modal functionality
+  - Enhanced login handler to ensure consistent post-authentication navigation
+
+## [March 2025]
 ### Added
 - Enhanced Background Animation System
   - Improved full-page coverage of background scrolling text
