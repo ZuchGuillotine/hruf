@@ -30,14 +30,20 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         res.setHeader('Cache-Control', 'no-cache, no-transform');
         res.setHeader('Connection', 'keep-alive');
         res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        
+        // CORS headers - use the origin from the request if available
+        const origin = res.req?.headers.origin || '*';
+        res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-        // Send initial ping to establish connection
+        // Send initial ping and debug info to keep the connection alive and verify it's working
         res.write(': ping\n\n');
+        res.write(`data: ${JSON.stringify({ debug: "Connection established" })}\n\n`);
 
-        // Flush headers to ensure client connection is established
-        if (res.flush) {
+        // Force flush headers and initial data to ensure client connection is established
+        if (typeof res.flush === 'function') {
           res.flush();
         }
 
@@ -45,7 +51,8 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           model: "o3-mini-2025-01-31",
           messageCount: messages.length,
           streaming: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          userAuthenticated: !!userId
         });
 
         // Call OpenAI API with streaming enabled
@@ -78,9 +85,11 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
             await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
           }
 
-          // End the stream
+          // End the stream with a proper DONE marker
           res.write('data: [DONE]\n\n');
           res.end();
+          
+          console.log('Stream completed successfully');
         } catch (streamError) {
           console.error("Error during streaming:", {
             error: streamError instanceof Error ? streamError.message : 'Unknown error',
@@ -92,7 +101,8 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
             timestamp: new Date().toISOString(),
             userId: userId,
             messageCount: messages.length,
-            modelUsed: "o3-mini-2025-01-31"
+            modelUsed: "o3-mini-2025-01-31",
+            responseHeaders: res.getHeaders ? JSON.stringify(res.getHeaders()) : 'Not available'
           });
 
           // Try to send a detailed error to the client
@@ -108,7 +118,7 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
               res.setHeader('Connection', 'keep-alive');
 
               // Add CORS headers
-              const origin = (res as any).req?.get('Origin') || '*';
+              const origin = res.req?.headers.origin || '*';
               res.setHeader('Access-Control-Allow-Origin', origin);
               res.setHeader('Access-Control-Allow-Credentials', 'true');
             }

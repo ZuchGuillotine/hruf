@@ -64,18 +64,27 @@ export async function query(req: Request, res: Response) {
       res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx
       
       // CORS headers with credentials support
-      const origin = req.get('Origin') || '*';
+      const origin = req.headers.origin || '*';
       res.setHeader('Access-Control-Allow-Origin', origin); 
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      // Log headers for debugging
+      console.log('Setting headers for streaming response:', {
+        origin,
+        contentType: res.getHeader('Content-Type'),
+        cacheControl: res.getHeader('Cache-Control'),
+        connection: res.getHeader('Connection'),
+        timestamp: new Date().toISOString()
+      });
 
       // Immediately send response headers to establish connection
       res.flushHeaders();
 
       // Send a ping and debug info to keep the connection alive
       res.write(': ping\n\n');
-      res.write(`data: ${JSON.stringify({ debug: "Connection established" })}\n\n`);
+      res.write(`data: ${JSON.stringify({ debug: "Connection established", auth: !!userId })}\n\n`);
       
       // Force flush any buffered data
       if (typeof res.flush === 'function') {
