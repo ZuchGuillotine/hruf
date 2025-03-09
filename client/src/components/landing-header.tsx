@@ -13,7 +13,7 @@ export default function LandingHeader() {
   const { user } = useUser();
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="border-b bg-background relative z-10">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-4">
           <DropdownMenu>
