@@ -2,6 +2,13 @@
 
 ## [March 2025]
 ### Fixed
+- Duplicate Notification Issue:
+  - Fixed issue where supplement intake reminder notifications appeared twice
+  - Implemented notification tracking state to prevent duplicate toast messages
+  - Separated effect hooks to better control notification trigger conditions
+  - Added proper dependency array optimization to prevent unnecessary re-renders
+  - Enhanced notification visibility control for improved user experience
+
 - Login Redirection Issue:
   - Resolved issue where users received a 404 page after login instead of being redirected to dashboard
   - Added explicit redirect URL parameter in authentication response
