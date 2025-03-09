@@ -24,13 +24,12 @@
      - Context: Combines health stats, supplement logs and previous observations
      - Components: LLMChat, llmContextService, logService
      - Display: Shown in the Daily Notes section of supplement history
-   - General Query Chat:
+   - General Query Chat (Implemented):
      - Purpose: Provide factual information about supplements
-     - Storage: query_chats table (separate from qualitative_logs)
+     - Storage: Uses same database tables but different context structure
      - Context: Specialized context with health stats and different system prompt
      - Components: AskPage, llmContextService_query, openaiQueryService
      - Authentication-aware: Provides personalized context for auth users
-     - Display: Not shown in Daily Notes section of supplement history
 
 2. Supplement Management:
    - User selections stored in supplements table
@@ -340,3 +339,72 @@ Manages the daily limit for non-paying users.
 Error Handling & Logging:
 Robust error handling across all routes.
 Security logging and monitoring to support HIPAA compliance.
+
+### AI Service Architecture Updates (March 2025)
+
+#### Streaming Response Implementation
+- Chat Service:
+  - Converted `chatWithAI` to async generator function
+  - Implemented SSE (Server-Sent Events) for real-time delivery
+  - Enhanced error handling and recovery mechanisms
+  - Added comprehensive chunk-level logging
+
+- Query Service:
+  - Modified `queryWithAI` to support streaming responses
+  - Implemented parallel streaming architecture to chat service
+  - Added user context preservation during streaming
+  - Enhanced client-side stream parsing
+
+#### Technical Specifications
+- OpenAI Integration:
+  - Model: "o3-mini-2025-01-31"
+  - Parameters:
+    - max_completion_tokens: Controls response length
+    - stream: true for real-time delivery
+  - Removed legacy parameters:
+    - temperature (unsupported)
+    - max_tokens (replaced)
+
+#### Response Flow
+1. Client Request:
+   - Initiates connection with appropriate headers
+   - Sets up EventSource listener for streaming
+   - Maintains connection for duration of response
+
+2. Server Processing:
+   - Configures SSE headers
+   - Creates streaming response channel
+   - Processes chunks via async generator
+   - Maintains proper error boundaries
+
+3. Stream Handling:
+   - Word-by-word content delivery
+   - Real-time UI updates
+   - Proper connection closure
+   - Error recovery mechanisms
+
+#### Logging Infrastructure
+- Stream Processing:
+  - Chunk-level content logging
+  - Timing information for each chunk
+  - Error tracking and recovery
+  - Performance metrics
+
+- Client Integration:
+  - SSE connection status
+  - Parse success/failure
+  - UI update verification
+  - Error boundary activation
+
+#### Error Handling
+- Comprehensive error recovery:
+  - Stream interruption handling
+  - Connection dropout recovery
+  - Parse error management
+  - Client-side error boundaries
+
+#### Performance Optimizations
+- Efficient stream processing
+- Minimal memory footprint
+- Proper connection management
+- Enhanced debugging capabilities

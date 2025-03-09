@@ -12,6 +12,28 @@
   - Improved user experience with automatic default value selection when changing units
   - Added proper reset logic to maintain appropriate dosage values for each unit type
 
+### Enhanced (March 09, 2025)
+- AI Integration and Streaming Updates:
+  - Upgraded to new model "o3-mini-2025-01-31"
+  - Implemented real-time streaming response functionality:
+    - Added streaming support in chat and query interfaces
+    - Enhanced client-side handling of streamed responses
+    - Improved user experience with word-by-word display
+  - Updated OpenAI API configuration:
+    - Removed unsupported parameters (temperature, max_tokens)
+    - Added max_completion_tokens parameter
+    - Enhanced error handling for API responses
+  - Improved debugging and logging:
+    - Added detailed stream chunk logging
+    - Enhanced error tracking in streaming responses
+    - Improved client-side parsing of SSE data
+  - Technical improvements:
+    - Converted chatWithAI to async generator function
+    - Enhanced SSE handling in routes
+    - Optimized streaming response delivery
+    - Improved error recovery mechanisms
+
+
 ### Fixed
 - Duplicate Notification Issue:
   - Fixed issue where supplement intake reminder notifications appeared twice
