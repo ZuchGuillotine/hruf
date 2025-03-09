@@ -1,226 +1,82 @@
 import { useState } from "react";
-import { Message } from "@/lib/types";
 
-export interface QueryResult {
+type Message = {
+  role: "user" | "assistant" | "system";
+  content: string;
+};
+
+type QueryResult = {
   response: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+  usage?: any;
   model?: string;
-}
+};
 
 export function useQuery() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [result, setResult] = useState<QueryResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const enableStreaming = true; // Added enableStreaming flag
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<QueryResult | null>(null);
 
-
-  // Reset the chat state
   const resetChat = () => {
     setMessages([]);
+    setIsLoading(false);
+    setIsStreaming(false);
     setError(null);
     setResult(null);
   };
 
-  // Add user message to the chat
-  const addUserMessage = (content: string) => {
-    const userMessage: Message = { role: "user", content };
+  const sendQuery = async (content: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    const userMessage: Message = {
+      role: "user",
+      content,
+    };
+
+    // Add user message to the chat
     setMessages((prev) => [...prev, userMessage]);
-    return userMessage;
-  };
 
-  // Add assistant message to the chat
-  const addAssistantMessage = (content: string) => {
-    const assistantMessage: Message = { role: "assistant", content };
-    setMessages((prev) => [...prev, assistantMessage]);
-    return assistantMessage;
-  };
+    // Add empty assistant message for streaming
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "" },
+    ]);
 
-  // Fallback function for non-streaming requests
-  const fallbackToNonStreaming = async (userMessage: Message, updatedMessages: Message[]) => {
-    try {
-      const response = await fetch("/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: [userMessage] }),
-        credentials: "include",
-      });
+    // Determine if we should use streaming
+    const useStreaming = true; // Always use streaming
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to get response");
-      }
-
-      const data = await response.json();
-      addAssistantMessage(data.response);
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
-    } finally {
-      setIsLoading(false);
-      setIsStreaming(false);
-    }
-  };
-
-
-  // Stream query using server-sent events
-  const streamQuery = async (userQuery: string) => {
-    setIsLoading(true);
-    setIsStreaming(true);
-    setError(null);
-
-    const userMessage = addUserMessage(userQuery);
-    const timestamp = Date.now(); // Add timestamp to prevent caching
-
-    try {
-      // Create placeholder for assistant response
-      let assistantMessage = addAssistantMessage("");
-
-      // Create event source for server-sent events
-      console.log("Creating EventSource with URL:", `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}`);
-      const eventSource = new EventSource(`/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}`);
-
-      let responseContent = "";
-
-      // Handle incoming events
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          // If done, close the connection
-          if (data.done) {
-            eventSource.close();
-            setIsLoading(false);
-            setIsStreaming(false);
-            setResult({
-              response: responseContent,
-            });
-            return;
-          }
-
-          // Otherwise, append content to the message
-          if (data.content) {
-            responseContent += data.content;
-
-            // Update the assistant message with new content
-            setMessages((prevMessages) => {
-              const newMessages = [...prevMessages];
-              newMessages[newMessages.length - 1] = {
-                role: "assistant",
-                content: responseContent,
-              };
-              return newMessages;
-            });
-          }
-        } catch (e) {
-          console.error("Error parsing SSE message:", e);
-        }
-      };
-
-      // Handle errors
-      eventSource.onerror = (err) => {
-        console.error("EventSource detailed error info:", err);
-        eventSource.close();
-        setIsLoading(false);
-        setIsStreaming(false);
-        setError("An error occurred while streaming the response. Please try again.");
-      };
-
-    } catch (err) {
-      setIsLoading(false);
-      setIsStreaming(false);
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
-    }
-  };
-
-  // Traditional non-streaming query
-  const sendQueryTraditional = async (userQuery: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    const userMessage = addUserMessage(userQuery);
-
-    try {
-      const response = await fetch("/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: [userMessage] }),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to get response");
-      }
-
-      const data = await response.json();
-      addAssistantMessage(data.response);
-      setResult(data);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Main query function - use streaming by default
-  const sendQuery = async (query: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    // Add user message to chat
-    const userMessage: Message = { role: "user", content: query };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-
-    // If streaming is enabled, use EventSource
-    if (enableStreaming) {
+    if (useStreaming) {
       setIsStreaming(true);
 
-      // Create query string with messages
-      const params = new URLSearchParams();
-      params.set('stream', 'true');
-      params.set('messages', JSON.stringify([userMessage]));
-
-      // Add timestamp to prevent caching
-      params.set('t', Date.now().toString());
-
-      // Create URL for EventSource
-      const url = `/api/query?${params.toString()}`;
-      console.log('Creating EventSource with URL:', url);
-
-      // Create a temporary message that will be updated
-      const tempAssistantMessage: Message = { role: "assistant", content: "" };
-      setMessages([...updatedMessages, tempAssistantMessage]);
-
-      // Create EventSource connection with error handling
-      let eventSource: EventSource | null = null;
       try {
-        eventSource = new EventSource(url);
+        const timestamp = Date.now();
 
-        // Listen for messages
+        // Create event source for server-sent events
+        const eventSourceUrl = `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}`;
+        console.log("Creating EventSource with URL:", eventSourceUrl);
+
+        const eventSource = new EventSource(eventSourceUrl);
+
+        let responseContent = "";
+
+        // Handle incoming events
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
 
-            // If content is provided, update the assistant's message
+            // If content is provided, update the message
             if (data.content) {
-              setMessages(prevMessages => {
+              responseContent += data.content;
+
+              // Update the last message (assistant's response)
+              setMessages((prevMessages) => {
                 const newMessages = [...prevMessages];
-                const lastMsg = newMessages[newMessages.length - 1];
-                newMessages[newMessages.length - 1] = {
-                  ...lastMsg,
-                  content: lastMsg.content + data.content
+                const lastIndex = newMessages.length - 1;
+                newMessages[lastIndex] = {
+                  ...newMessages[lastIndex],
+                  content: responseContent,
                 };
                 return newMessages;
               });
@@ -228,42 +84,73 @@ export function useQuery() {
 
             // If done is signaled, close the connection
             if (data.done) {
-              eventSource?.close();
+              eventSource.close();
               setIsLoading(false);
               setIsStreaming(false);
+              setResult({
+                response: responseContent,
+              });
             }
-          } catch (error) {
-            console.error('Error parsing streaming response:', error);
-            eventSource?.close();
-            setIsLoading(false);
-            setIsStreaming(false);
-            setError('Failed to parse streaming response');
+          } catch (err) {
+            console.error("Error parsing SSE message:", err);
           }
         };
 
+        // Handle connection opening
+        eventSource.onopen = () => {
+          console.log("EventSource connection opened");
+        };
+
         // Handle errors
-        eventSource.onerror = (error) => {
-          console.error('EventSource detailed error info:', error);
-          eventSource?.close();
+        eventSource.onerror = (err) => {
+          console.error("EventSource detailed error info:", err);
+          eventSource.close();
           setIsLoading(false);
           setIsStreaming(false);
-
-          // Fall back to non-streaming request if streaming fails
-          fallbackToNonStreaming(userMessage, updatedMessages);
+          setError("Connection to the server was lost. Please try again.");
         };
-      } catch (connectionError) {
-        console.error('Failed to establish EventSource connection:', connectionError);
+
+      } catch (err) {
+        console.error("Failed to set up streaming:", err);
         setIsLoading(false);
         setIsStreaming(false);
-        setError('Failed to establish streaming connection');
-
-        // Fall back to non-streaming request
-        fallbackToNonStreaming(userMessage, updatedMessages);
+        setError("Failed to set up streaming connection. Please try again.");
       }
-
-      return;
     } else {
-      await sendQueryTraditional(query);
+      // Non-streaming implementation (fallback)
+      try {
+        const response = await fetch("/api/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: [userMessage] }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = {
+            role: "assistant",
+            content: data.response,
+          };
+          return newMessages;
+        });
+
+        setResult(data);
+      } catch (err) {
+        console.error("Error in non-streaming query:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An unknown error occurred. Please try again."
+        );
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -273,7 +160,7 @@ export function useQuery() {
     isLoading,
     isStreaming,
     error,
-    resetChat,
     result,
+    resetChat,
   };
 }

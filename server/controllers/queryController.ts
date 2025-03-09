@@ -59,10 +59,12 @@ export async function handleQueryRequest(req: Request, res: Response) {
           if (content) {
             fullResponse += content;
             try {
-              // Format as SSE
+              // Format as SSE - ensure proper format with data: prefix and double newlines
               res.write(`data: ${JSON.stringify({ content })}\n\n`);
-              // Flush the response to ensure chunks are sent immediately
-              res.flush?.();
+              // Explicitly flush to ensure immediate delivery
+              if (typeof res.flush === 'function') {
+                res.flush();
+              }
             } catch (writeError) {
               console.error('Error writing stream chunk:', writeError);
               break;
