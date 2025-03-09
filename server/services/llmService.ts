@@ -24,13 +24,43 @@ async function getUserDailyChatCount(userId: number): Promise<number> {
 import { chatWithAI as openAIChatWithAI, MODELS } from "../openai";
 
 export async function chatWithAI(messages: Array<{ role: string; content: string }>, userId: number) {
-  const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  const chatCount = await getUserDailyChatCount(userId);
+  try {
+    console.log('Qualitative chat request:', {
+      userId,
+      messageCount: messages.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (!userRecord || userRecord.length === 0) {
+      console.error('User record not found:', { userId });
+      throw new Error('User not found');
+    }
+    
+    const chatCount = await getUserDailyChatCount(userId);
+    console.log('Daily chat count:', { userId, chatCount, isPro: userRecord[0].isPro });
 
-  if (!userRecord[0].isPro && chatCount >= 5) {
-    throw new Error('Daily chat limit reached. Please upgrade to Pro to continue.');
+    if (!userRecord[0].isPro && chatCount >= 5) {
+      throw new Error('Daily chat limit reached. Please upgrade to Pro to continue.');
+    }
+    
+    // Verify model being used
+    console.log('Using qualitative chat model:', { 
+      model: MODELS.QUALITATIVE_CHAT,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Call OpenAI chat with the qualitative model
+    return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT);
+  } catch (error) {
+    console.error('Error in qualitative chat service:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
   }
-  
-  // Call OpenAI chat with the qualitative model
-  return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT);
 }

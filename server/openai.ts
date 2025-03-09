@@ -81,7 +81,20 @@ export async function* chatWithAI(
     // Send final confirmation
     yield { response: "", streaming: false };
   } catch (error) {
-    console.error("OpenAI API Error:", error);
+    console.error("OpenAI API Error:", {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      model: modelOverride || MODELS.QUALITATIVE_CHAT,
+      messageCount: messages.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Check if it's an API error related to the model
+    if (error instanceof Error && 
+        (error.message.includes("model") || error.message.includes("4o-mini"))) {
+      console.error("Model error detected. This may be due to an invalid model name or API restrictions.");
+    }
+    
     throw error;
   }
 }

@@ -79,6 +79,18 @@ ${userQuery}
     ];
 
     console.log('LLM Context being sent:', JSON.stringify(messages, null, 2));
+    
+    // Add more detailed logging about the context construction
+    console.log('Context construction details:', {
+      userId,
+      hasHealthStats: !!userHealthStats,
+      quantitativeLogsCount: quantitativeLogs.length,
+      qualitativeLogsCount: recentLogs.length,
+      summariesCount: historicalSummaries.length,
+      systemPromptLength: SYSTEM_PROMPT.length,
+      totalContextSize: JSON.stringify(messages).length,
+      timestamp: new Date().toISOString()
+    });
 
     return { messages };
   } catch (error) {

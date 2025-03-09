@@ -210,6 +210,14 @@ export function registerRoutes(app: Express): Server {
 
       // Create streaming response
       try {
+        console.log('Starting qualitative chat with context:', {
+          messageCount: contextualizedMessages.length,
+          userContextIncluded: true,
+          userId: req.user?.id,
+          model: "4o-mini", // Model being used for qualitative feedback
+          timestamp: new Date().toISOString()
+        });
+
         // Get AI response with context
         const chatStream = chatWithAI(contextualizedMessages);
 
