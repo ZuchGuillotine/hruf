@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Message } from "@/lib/types";
 
@@ -120,7 +119,7 @@ export function useQuery() {
 
           // Process the stream
           let accumulatedResponse = "";
-          
+
           // Create a timeout for connection
           let timeoutTimer = setTimeout(() => {
             console.log("Connection timeout - canceling stream");
@@ -129,12 +128,12 @@ export function useQuery() {
             setIsLoading(false);
             setError("Connection timeout. The server did not respond in time.");
           }, 20000);
-          
+
           async function readStream() {
             try {
               while (true) {
                 const { done, value } = await reader.read();
-                
+
                 if (done) {
                   console.log("Stream complete");
                   clearTimeout(timeoutTimer);
@@ -142,7 +141,7 @@ export function useQuery() {
                   setIsLoading(false);
                   break;
                 }
-                
+
                 // Reset timeout on each chunk
                 clearTimeout(timeoutTimer);
                 timeoutTimer = setTimeout(() => {
@@ -151,49 +150,49 @@ export function useQuery() {
                   setIsStreaming(false);
                   setIsLoading(false);
                 }, 20000);
-                
+
                 const chunk = decoder.decode(value, { stream: true });
-                
+
                 // Process SSE format (data: {...}\n\n)
                 const lines = chunk.split('\n\n');
-                
+
                 for (const line of lines) {
                   if (line.startsWith('data:')) {
                     try {
                       const jsonStr = line.substring(5).trim();
                       if (jsonStr) {
                         const data = JSON.parse(jsonStr);
-                        
+
                         // Handle normal content chunks
                         if (data.content !== undefined) {
                           accumulatedResponse += data.content;
                           setMessages((prev) => {
                             const newMessages = [...prev];
-                  if (newMessages.length > 0) {
+                            if (newMessages.length > 0) {
                               const lastMessage = newMessages[newMessages.length - 1];
                               lastMessage.content = accumulatedResponse;
                             }
                             return newMessages;
                           });
                         }
-                        
+
                         // Handle completion
                         if (data.done) {
                           clearTimeout(timeoutTimer);
                           setIsStreaming(false);
                           setIsLoading(false);
                         }
-                        
+
                         // Handle initialization message
                         if (data.initializing) {
                           console.log("Stream initialized");
                         }
-                        
+
                         // Handle heartbeat
                         if (data.heartbeat) {
                           console.log("Heartbeat received");
                         }
-                        
+
                         // Handle errors
                         if (data.error) {
                           setError(data.error);
@@ -217,7 +216,7 @@ export function useQuery() {
               setIsLoading(false);
             }
           }
-          
+
           // Start reading the stream
           readStream().catch(err => {
             console.error("Stream processing failed:", err);
@@ -225,7 +224,7 @@ export function useQuery() {
             setIsStreaming(false);
             setIsLoading(false);
           });
-            
+
             // Handle cleanup if component unmounts during streaming
           return () => {
             clearTimeout(timeoutTimer);
@@ -237,7 +236,7 @@ export function useQuery() {
           console.error("Streaming setup error:", streamError);
           setIsStreaming(false);
           setError("Failed to set up streaming connection. Falling back to standard request.");
-          
+
           // Fallback to non-streaming after streaming setup failure
           await fallbackToStandardFetch(userMessage);
         }
@@ -251,40 +250,6 @@ export function useQuery() {
       setIsLoading(false);
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  // Helper function for fallback to standard fetch
-  const fallbackToStandardFetch = async (userMessage: Message) => {
-    try {
-      const response = await fetch("/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: [userMessage] }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error ${response.status}: ${await response.text()}`);
-      }
-
-      const data = await response.json();
-
-      // Update the assistant message with the response
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1].content = data.response;
-        return newMessages;
-      });
-
-      setResult(data);
-    } catch (apiError) {
-      console.error("API error:", apiError);
-
-      // Remove the empty assistant message
-      setMessages((prev) => prev.slice(0, -1));
-      setError(apiError instanceof Error ? apiError.message : "Unknown error occurred");
     }
   };
 
