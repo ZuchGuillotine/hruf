@@ -173,17 +173,32 @@ export default function SupplementForm({
               <SelectValue placeholder="Amount" />
             </SelectTrigger>
             <SelectContent className="max-h-60">
-              {[...Array(10)].map((_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  {i + 1}
-                </SelectItem>
-              ))}
+              {form.watch("dosageUnit") === "mg"
+                ? [...Array(20)].map((_, i) => (
+                    <SelectItem key={i} value={(50 * (i + 1)).toString()}>
+                      {50 * (i + 1)}
+                    </SelectItem>
+                  ))
+                : [...Array(10)].map((_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()}>
+                      {i + 1}
+                    </SelectItem>
+                  ))
+              }
             </SelectContent>
           </Select>
           {/* Dosage Unit Dropdown */}
           <Select
             defaultValue={form.getValues("dosageUnit")}
-            onValueChange={(value) => form.setValue("dosageUnit", value)}
+            onValueChange={(value) => {
+              form.setValue("dosageUnit", value);
+              // Reset dosage amount to appropriate default when unit changes
+              if (value === "mg") {
+                form.setValue("dosageAmount", "50");
+              } else {
+                form.setValue("dosageAmount", "1");
+              }
+            }}
           >
             <SelectTrigger className={cn("bg-white text-[#1b4332] flex-1", selectClassName)}>
               <SelectValue placeholder="Unit" />
