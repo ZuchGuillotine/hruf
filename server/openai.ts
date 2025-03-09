@@ -10,23 +10,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
  * System prompt that defines the AI assistant's behavior and capabilities
- * This prompt instructs the AI to act as a supplement advisor and feedback collector
  */
-export const SYSTEM_PROMPT = `You are a friendly and insightful assistant designed to help users reflect on their supplement regimen and share qualitative feedback about their experiences. Your role is to engage the user with thoughtful follow-up questions and encourage detailed responses about how specific supplements are affecting their mood, energy, and overall well-being. Your tone should be supportive but authoritative as you are an expert on the subject matter.
-
-Context:
-- You will receive two types of context data:
-  1. Quantitative supplementation logs (e.g., supplement names, dosages, frequencies, dates).
-  2. Summaries or recent qualitative logs from previous conversations.
-- Please integrate this context intelligently into your reply without directly listing all raw data.
-
-Instructions:
-1. Review the provided context and ask the user follow-up questions that are tailored to their supplement regimen.
-2. Encourage the user to provide detailed qualitative feedback about their experiences.
-3. Remind the user to save the conversation by using the visible "Save" button if they find the discussion helpful.
-4. Do not include any diagnostic or treatment advice or warnings.
-5. Do include high level information about the supplements the user is taking.
-6. Keep your tone supportive, engaging, and focused on helping the user reflect on their supplementation experience.`;
+export const SYSTEM_PROMPT = `You are a friendly and insightful assistant designed to help users reflect on their supplement regimen and share qualitative feedback about their experiences. Your role is to engage the user with thoughtful follow-up questions and encourage detailed responses about how specific supplements are affecting their mood, energy, and overall well-being.`;
 
 /**
  * Main function to interact with OpenAI's chat API
@@ -35,13 +20,12 @@ Instructions:
  */
 export async function* chatWithAI(messages: Array<{ role: string; content: string }>) {
   try {
-    console.log('Starting chatWithAI with messages:', {
+    console.log('Starting chatWithAI:', {
       messageCount: messages.length,
       lastMessage: messages[messages.length - 1]?.content.substring(0, 50) + '...',
       timestamp: new Date().toISOString()
     });
 
-    // Send request to OpenAI API
     const stream = await openai.chat.completions.create({
       model: "o3-mini-2025-01-31",
       messages: [
@@ -55,31 +39,35 @@ export async function* chatWithAI(messages: Array<{ role: string; content: strin
       stream: true
     });
 
-    // Create async iterator for streaming response
+    console.log('Stream created, starting to process chunks');
+
     let fullResponse = "";
+
+    // Process each chunk from the stream
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content || "";
-      console.log('Received chunk:', {
-        contentLength: content.length,
-        content: content.substring(0, 50) + '...',
-        timestamp: new Date().toISOString()
-      });
 
-      fullResponse += content;
       if (content) {
+        console.log('Processing chunk:', {
+          chunkLength: content.length,
+          preview: content.substring(0, 30),
+          timestamp: new Date().toISOString()
+        });
+
+        fullResponse += content;
         yield { response: content, streaming: true };
       }
     }
 
     console.log('Stream completed:', {
-      fullResponseLength: fullResponse.length,
+      totalLength: fullResponse.length,
       timestamp: new Date().toISOString()
     });
 
-    // Return final response when stream ends
-    return { response: fullResponse, streaming: false };
-  } catch (error: any) {
+    // Send final confirmation
+    yield { response: "", streaming: false };
+  } catch (error) {
     console.error("OpenAI API Error:", error);
-    throw new Error(error.message);
+    throw error;
   }
 }

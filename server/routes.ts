@@ -222,20 +222,15 @@ export function registerRoutes(app: Express): Server {
             timestamp: new Date().toISOString()
           });
 
-          if (chunk.streaming) {
-            const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
-            console.log('Sending SSE chunk:', {
-              dataLength: sseData.length,
-              timestamp: new Date().toISOString()
-            });
-            res.write(sseData);
-          } else {
-            const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
-            console.log('Sending final SSE chunk:', {
-              dataLength: sseData.length,
-              timestamp: new Date().toISOString()
-            });
-            res.write(sseData);
+          const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
+          console.log('Sending SSE chunk:', {
+            dataLength: sseData.length,
+            timestamp: new Date().toISOString()
+          });
+          res.write(sseData);
+
+          // If this is the final chunk, end the response
+          if (!chunk.streaming) {
             res.end();
             return;
           }
@@ -249,7 +244,7 @@ export function registerRoutes(app: Express): Server {
         res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
         res.end();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error in chat endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
