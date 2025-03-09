@@ -81,7 +81,7 @@ export async function handleQueryRequest(req: Request, res: Response) {
       res.write(`data: ${JSON.stringify({ initializing: true })}\n\n`);
 
       // Flush the response to ensure the client gets the initialization message
-      if (res.flush) {
+      if (res.flush && typeof res.flush === 'function') {
         res.flush();
       }
 
@@ -112,7 +112,7 @@ export async function handleQueryRequest(req: Request, res: Response) {
               // Also send an empty data event that clients can detect
               res.write(`data: ${JSON.stringify({ heartbeat: true })}\n\n`);
 
-              if (res.flush) {
+              if (res.flush && typeof res.flush === 'function') {
                 res.flush();
               }
             } catch (err) {
@@ -160,7 +160,7 @@ export async function handleQueryRequest(req: Request, res: Response) {
               res.write(`data: ${JSON.stringify({ content, chunkId: chunkCount })}\n\n`);
 
               // Flush the output to ensure it's sent immediately
-              if (res.flush) {
+              if (res.flush && typeof res.flush === 'function') {
                 res.flush();
               }
 

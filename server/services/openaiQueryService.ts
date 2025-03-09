@@ -70,6 +70,18 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           console.error('Possible API key issue detected with OpenAI');
         }
         
+        // Check if it's a timeout issue
+        if (streamErr instanceof Error && streamErr.message.includes('timeout')) {
+          console.error('Request timeout detected when connecting to OpenAI');
+        }
+        
+        // Log environment variables (without exposing the actual key)
+        console.error('Environment check:', {
+          hasOpenAIKey: !!process.env.OPENAI_QUERY_KEY,
+          keyLength: process.env.OPENAI_QUERY_KEY ? process.env.OPENAI_QUERY_KEY.length : 0,
+          nodeEnv: process.env.NODE_ENV
+        });
+        
         throw streamErr;
       }
     } else {
