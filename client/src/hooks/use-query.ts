@@ -1,9 +1,5 @@
 import { useState } from "react";
-
-type Message = {
-  role: "user" | "assistant" | "system";
-  content: string;
-};
+import { Message } from "@/lib/types";
 
 type QueryResult = {
   response: string;
@@ -44,376 +40,212 @@ export function useQuery() {
       { role: "assistant", content: "" },
     ]);
 
-    // Always use streaming but with fallback
-    setIsStreaming(true);
-
     try {
-      // Add unique identifier to prevent caching
-      const timestamp = Date.now();
-      const requestId = Math.random().toString(36).substring(2, 15);
+      // Check if stream is available and try it first
+      if (window.EventSource) {
+        try {
+          // Add unique identifier to prevent caching
+          const timestamp = Date.now();
+          const requestId = Math.random().toString(36).substring(2, 15);
 
-      // Create event source for server-sent events with cache-busting
-      const eventSourceUrl = `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}&rid=${requestId}`;
-      console.log("Creating EventSource with URL:", eventSourceUrl);
+          // Create event source for server-sent events with cache-busting
+          const eventSourceUrl = `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}&rid=${requestId}`;
+          console.log("Creating EventSource with URL:", eventSourceUrl);
 
-      // Create a fetch request first to check connection status
-      const testConnection = await fetch('/api/query?ping=true', { 
-        method: 'HEAD',
-        credentials: 'same-origin' 
-      });
+          // Create a fetch request first to check connection status
+          const testConnection = await fetch('/api/query?ping=true', { 
+            method: 'HEAD',
+            credentials: 'same-origin' 
+          });
 
-      if (!testConnection.ok) {
-        throw new Error(`API server not responding: ${testConnection.status}`);
-      }
+          if (!testConnection.ok) {
+            throw new Error(`API server not responding: ${testConnection.status}`);
+          }
 
-      // Create EventSource with proper credentials
-      const eventSource = new EventSource(eventSourceUrl);
+          // Create EventSource with proper credentials
+          const eventSource = new EventSource(eventSourceUrl);
+          setIsStreaming(true);
 
-        let responseContent = "";
+          let responseText = "";
+          let timeoutTimer: NodeJS.Timeout;
+          let reconnectAttempts = 0;
+          const MAX_RECONNECT_ATTEMPTS = 3;
+          const RECONNECT_TIMEOUT = 3000;
 
-        // Handle incoming events
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
+          // Set up event handlers
+          eventSource.onopen = () => {
+            // Reset timeout when connection opens
+            clearTimeout(timeoutTimer);
 
-            // If content is provided, update the message
-            if (data.content) {
-              responseContent += data.content;
-
-              // Update the last message (assistant's response)
-              setMessages((prevMessages) => {
-                const newMessages = [...prevMessages];
-                const lastIndex = newMessages.length - 1;
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  content: responseContent,
-                };
-                return newMessages;
-              });
-            }
-
-            // If done is signaled, close the connection
-            if (data.done) {
+            // Set a new timeout as a safeguard
+            timeoutTimer = setTimeout(() => {
+              console.log("Connection timeout - closing EventSource");
               eventSource.close();
               setIsLoading(false);
               setIsStreaming(false);
-              setResult({
-                response: responseContent,
-              });
+
+              if (responseText) {
+                // If we received some content, use it
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1].content = responseText;
+                  return newMessages;
+                });
+              } else {
+                setError("Connection timed out. Please try again.");
+              }
+            }, 15000); // 15 second timeout
+          };
+
+          eventSource.onmessage = (event) => {
+            clearTimeout(timeoutTimer); // Reset timeout on each message
+
+            try {
+              const data = JSON.parse(event.data);
+
+              // Handle different message types
+              if (data.initializing) {
+                // Initial connection established
+                timeoutTimer = setTimeout(() => {
+                  eventSource.close();
+                  setError("Response timeout. Please try again.");
+                  setIsLoading(false);
+                  setIsStreaming(false);
+                }, 20000); // 20 second timeout for first content
+              } else if (data.heartbeat) {
+                // Heartbeat - do nothing but keep connection alive
+              } else if (data.content !== undefined) {
+                // Content chunk received
+                responseText += data.content;
+
+                // Update the assistant message with the latest content
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1].content = responseText;
+                  return newMessages;
+                });
+
+                // Extend timeout after receiving content
+                timeoutTimer = setTimeout(() => {
+                  eventSource.close();
+                  setIsLoading(false);
+                  setIsStreaming(false);
+                }, 10000); // 10 seconds without new content will close connection
+              } else if (data.done) {
+                // End of stream
+                eventSource.close();
+                setIsLoading(false);
+                setIsStreaming(false);
+              } else if (data.error) {
+                // Server reported an error
+                throw new Error(data.error);
+              }
+            } catch (err) {
+              console.error("Error parsing SSE message:", err);
+              eventSource.close();
+              setIsLoading(false);
+              setIsStreaming(false);
+              setError("Failed to parse streaming response");
             }
-          } catch (err) {
-            console.error("Error parsing SSE message:", err);
-          }
-        };
+          };
 
-        // Handle connection opening
-        eventSource.onopen = () => {
-          console.log("EventSource connection opened successfully");
-        };
+          eventSource.onerror = (err) => {
+            console.log("EventSource error encountered:", err);
 
-        // Handle errors with retry logic
-        let retryCount = 0;
-        const maxRetries = 3;
+            // Attempt to reconnect a limited number of times
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+              reconnectAttempts++;
+              console.log(`Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
 
-        eventSource.onerror = (err) => {
-          console.error("EventSource error encountered:", err);
+              // Close current connection
+              eventSource.close();
 
-          if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Attempting to reconnect (${retryCount}/${maxRetries})...`);
-            // EventSource will automatically try to reconnect
-            return;
-          }
+              // Try to reconnect after a delay
+              setTimeout(() => {
+                const newEventSource = new EventSource(eventSourceUrl);
+                // Update the reference to the new EventSource
+                Object.assign(eventSource, newEventSource);
+              }, RECONNECT_TIMEOUT);
+            } else {
+              // Give up after max attempts
+              eventSource.close();
+              setIsLoading(false);
+              setIsStreaming(false);
 
-          // After max retries, close and fallback
-          eventSource.close();
-          setIsLoading(false);
-          setIsStreaming(false);
+              // If we have partial content, show it
+              if (responseText) {
+                setMessages((prev) => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1].content = responseText;
+                  return newMessages;
+                });
+              } else {
+                setError("Connection failed. Please try again.");
+              }
+            }
+          };
 
-          // Fallback to non-streaming approach
-          if (responseContent === "") {
-            setError("Streaming failed. Falling back to standard request...");
-            fallbackToNonStreaming(userMessage);
-          } else {
-            setError("Connection to the server was lost, but partial response was received.");
-          }
-        };
-
-        // Add timeout to prevent hanging connections
-        const connectionTimeout = setTimeout(() => {
-          if (responseContent === "") {
-            console.log("Connection timeout - closing EventSource");
+          // Handle cleanup if component unmounts during streaming
+          return () => {
+            clearTimeout(timeoutTimer);
             eventSource.close();
             setIsLoading(false);
             setIsStreaming(false);
-            setError("Request timed out. Please try again.");
-          }
-        }, 30000); // 30 second timeout
-
-        // Clear timeout when we get a response
-        eventSource.onmessage = (event) => {
-          clearTimeout(connectionTimeout);
-          // ... existing message handling code
-        };
-
-      } catch (err) {
-        console.error("Failed to set up streaming:", err);
-        setIsLoading(false);
-        setIsStreaming(false);
-        setError("Failed to set up streaming connection. Please try again.");
-      }
-    ; // Added semicolon here to fix the syntax error
-    } else {
-      // Non-streaming implementation (fallback)
-      try {
-        const response = await fetch("/api/query", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [userMessage] }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = {
-            role: "assistant",
-            content: data.response,
           };
-          return newMessages;
-        });
+        } catch (streamError) {
+          console.error("Streaming error:", streamError);
+          setIsStreaming(false);
+          setError("Failed to set up streaming connection. Please try again.");
+        }
+      } else {
+        // Non-streaming implementation (fallback)
+        try {
+          const response = await fetch("/api/query", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ messages: [userMessage] }),
+          });
 
-        setResult(data);
-      } catch (err) {
-        console.error("Error in non-streaming query:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "An unknown error occurred. Please try again."
-        );
-      } finally {
-        setIsLoading(false);
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}: ${await response.text()}`);
+          }
+
+          const data = await response.json();
+
+          // Update the assistant message with the response
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1].content = data.response;
+            return newMessages;
+          });
+
+          setResult(data);
+        } catch (apiError) {
+          console.error("API error:", apiError);
+
+          // Remove the empty assistant message
+          setMessages((prev) => prev.slice(0, -1));
+
+          setError(apiError instanceof Error ? apiError.message : "Unknown error occurred");
+        }
       }
-    }
-  };
-
-  const updateStreamingMessage = (assistantMessage: string) => {
-    setMessages((prevMessages) => {
-      const newMessages = [...prevMessages];
-      const lastIndex = newMessages.length - 1;
-      newMessages[lastIndex] = {
-        ...newMessages[lastIndex],
-        content: assistantMessage,
-      };
-      return newMessages;
-    });
-  };
-
-  // Start streaming query with EventSource
-  const startStream = async (queryText: string) => {
-    setIsLoading(true);
-    setIsStreaming(true);
-    const newMessages = [...messages, { role: 'user', content: queryText }];
-    setMessages(newMessages);
-
-    try {
-      // Add timestamp to prevent caching
-      const params = new URLSearchParams({
-        stream: 'true',
-        messages: JSON.stringify(newMessages),
-        t: Date.now().toString()
-      });
-
-      console.log('Creating EventSource with URL:', `/api/query?${params}`);
-
-      // Create EventSource for the stream
-      let eventSource = new EventSource(`/api/query?${params}`);
-      let assistantMessage = '';
-      let reconnectAttempt = 0;
-      const maxReconnects = 3;
-      let lastMessageTime = Date.now();
-
-      const attemptReconnect = () => {
-        if (reconnectAttempt < maxReconnects) {
-          reconnectAttempt++;
-          console.log(`Attempting to reconnect (${reconnectAttempt}/${maxReconnects})...`);
-
-          // Close existing connection first
-          if (eventSource) {
-            eventSource.close();
-          }
-
-          // Create a new connection
-          eventSource = new EventSource(`/api/query?${params}`);
-          setupEventListeners();
-          return true;
-        } else {
-          console.error('Max reconnection attempts reached');
-          setError('Connection lost. Max reconnection attempts reached.');
-          setIsLoading(false);
-          setIsStreaming(false);
-          return false;
-        }
-      };
-
-      const setupEventListeners = () => {
-        eventSource.onopen = () => {
-          console.log('EventSource connection established');
-          lastMessageTime = Date.now();
-        };
-
-        eventSource.onmessage = (event) => {
-          try {
-            lastMessageTime = Date.now();
-            reconnectAttempt = 0; // Reset reconnect attempts on successful message
-
-            const data = JSON.parse(event.data);
-
-            // Debug received message
-            if (data.content) {
-              console.log(`Received chunk: "${data.content.substring(0, 20)}${data.content.length > 20 ? '...' : ''}"`);
-            } else {
-              console.log('Received message:', JSON.stringify(data).substring(0, 50));
-            }
-
-            // Handle initializing message
-            if (data.initializing) {
-              console.log('Stream initializing...');
-              return;
-            }
-
-            // Handle heartbeat
-            if (data.heartbeat) {
-              console.log('Heartbeat received');
-              return;
-            }
-
-            // Handle content chunks
-            if (data.content) {
-              assistantMessage += data.content;
-              updateStreamingMessage(assistantMessage);
-            }
-
-            // Handle completion
-            if (data.done) {
-              console.log('Stream completed normally');
-              eventSource.close();
-              setIsLoading(false);
-              setIsStreaming(false);
-            }
-
-            // Handle error messages
-            if (data.error) {
-              console.error('Server reported error:', data.error);
-              setError(`Server error: ${data.error}`);
-              eventSource.close();
-              setIsLoading(false);
-              setIsStreaming(false);
-            }
-          } catch (parseError) {
-            console.error('Error parsing event data:', parseError, event.data);
-          }
-        };
-
-        eventSource.onerror = (error) => {
-          console.error('EventSource error encountered:', error);
-
-          // If we've gone too long without a message, try to reconnect
-          const timeSinceLastMessage = Date.now() - lastMessageTime;
-          if (timeSinceLastMessage > 10000) { // 10 seconds
-            if (!attemptReconnect()) {
-              eventSource.close();
-              setIsLoading(false);
-              setIsStreaming(false);
-              setError('Connection to server lost. Please try again.');
-            }
-          }
-        };
-      };
-
-      setupEventListeners();
-
-      // Keep track of connection activity with a watchdog timer
-      const activityTimer = setInterval(() => {
-        const timeSinceLastMessage = Date.now() - lastMessageTime;
-        console.log(`Time since last message: ${Math.round(timeSinceLastMessage/1000)}s`);
-
-        if (timeSinceLastMessage > 30000) { // 30 seconds
-          console.log('Connection timeout - closing EventSource');
-          clearInterval(activityTimer);
-          eventSource.close();
-          setIsLoading(false);
-          setIsStreaming(false);
-          if (assistantMessage === '') {
-            setError('Request timed out. Please try again.');
-          } else {
-            // We got some response, so just finalize it
-            updateStreamingMessage(assistantMessage + "\n\n[Connection closed due to timeout]");
-          }
-        }
-      }, 5000); // Check every 5 seconds
-
-      // Clean up function to close the EventSource when component unmounts
-      return () => {
-        clearInterval(activityTimer);
-        eventSource.close();
-      };
     } catch (error) {
-      console.error('Error starting stream:', error);
+      console.error("Query error:", error);
+      setError(error instanceof Error ? error.message : "Unknown error occurred");
+    } finally {
       setIsLoading(false);
-      setIsStreaming(false);
-      setError('Failed to connect to streaming service');
     }
   };
-
 
   return {
-    sendQuery,
     messages,
     isLoading,
     isStreaming,
     error,
     result,
+    sendQuery,
     resetChat,
   };
 }
-const fallbackToNonStreaming = async (userMessage: Message) => {
-  try {
-    const response = await fetch("/api/query", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [userMessage] }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    setMessages((prev) => {
-      const newMessages = [...prev];
-      // Update the last message with the response
-      newMessages[newMessages.length - 1] = {
-        role: "assistant",
-        content: data.response,
-      };
-      return newMessages;
-    });
-
-    setIsLoading(false);
-    setResult({
-      response: data.response,
-      usage: data.usage,
-      model: data.model,
-    });
-  } catch (err) {
-    console.error("Fallback request failed:", err);
-    setError("Failed to get a response. Please try again later.");
-    setIsLoading(false);
-  }
-};
