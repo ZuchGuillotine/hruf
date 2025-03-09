@@ -30,7 +30,6 @@ import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
 import stripeRouter from './routes/stripe';  // Import Stripe routes
-import { debugSse, connectionInfo } from "./controllers/debugController";
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication first
@@ -940,7 +939,7 @@ export function registerRoutes(app: Express): Server {
       const [post] = await db
         .select()
         .from(blogPosts)
-        .where(eq(blogPosts.slug,req.params.slug))
+        .where(eq(blogPosts.slug, req.params.slug))
         .limit(1);
 
       if (!post) {

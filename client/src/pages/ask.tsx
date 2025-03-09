@@ -77,16 +77,13 @@ export default function AskPage() {
                     </p>
                     <div className="whitespace-pre-wrap">
                       {message.content}
-                      {message.role === "assistant" && message === messages[messages.length - 1] && isLoading && (
-                        <span className="inline-block w-2 h-4 ml-1 bg-blue-500 animate-pulse"></span>
-                      )}
                     </div>
                   </div>
                 )
               ))
             )}
             
-            {isLoading && messages.length === 0 && (
+            {isLoading && (
               <div className="flex justify-center items-center py-4">
                 <Spinner className="h-6 w-6 text-green-600" />
                 <span className="ml-2 text-gray-600 dark:text-gray-400">Thinking...</span>
@@ -116,7 +113,7 @@ export default function AskPage() {
                 disabled={isLoading || inputValue.trim() === ""}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                {isLoading && messages.length === 0 ? <Spinner className="h-4 w-4 mr-2" /> : null}
+                {isLoading ? <Spinner className="h-4 w-4 mr-2" /> : null}
                 Send
               </Button>
               <Button 
