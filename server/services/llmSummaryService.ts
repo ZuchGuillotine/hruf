@@ -77,11 +77,22 @@ export async function summarizeOldChats(userId: number) {
     }
   }).join('\n---\n');
 
-  // Generate summary using OpenAI
-  const summaryResponse = await chatWithAI([
-    { role: 'system', content: SUMMARY_PROMPT },
-    { role: 'user', content: chatContent }
-  ]);
+  // Generate summary using OpenAI with qualitative model
+  const { chatWithAI } = await import('../openai');
+  const { MODELS } = await import('../openai');
+  
+  // Start generating the summary
+  const summaryGenerator = chatWithAI(
+    [
+      { role: 'system', content: SUMMARY_PROMPT },
+      { role: 'user', content: chatContent }
+    ],
+    MODELS.QUALITATIVE_CHAT
+  );
+  
+  // Get the first response (we don't need streaming for summaries)
+  const first = await summaryGenerator.next();
+  const summaryResponse = first.value;
 
   // Store summary
   await db.insert(chatSummaries).values({

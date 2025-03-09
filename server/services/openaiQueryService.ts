@@ -4,9 +4,11 @@ import { db } from "../../db";
 import { qualitativeLogs } from "../../db/schema";
 import { Message } from "@/lib/types";
 
+import { MODELS } from "../openai";
+
 // Initialize OpenAI with the separate API key for queries
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_QUERY_KEY,
+  apiKey: process.env.OPENAI_QUERY_KEY || process.env.OPENAI_API_KEY,
 });
 
 export async function* queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
@@ -18,12 +20,13 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
       userIdValue: userId,
       messageCount: messages.length,
       isAuthenticated: !!userId,
+      model: MODELS.QUERY_CHAT,
       timestamp: new Date().toISOString()
     });
 
     // Call OpenAI API with chat completion
     const stream = await openai.chat.completions.create({
-      model: "o3-mini-2025-01-31",
+      model: MODELS.QUERY_CHAT,
       messages: messages.map(msg => ({
         role: msg.role as "user" | "assistant" | "system",
         content: msg.content

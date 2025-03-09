@@ -21,6 +21,8 @@ async function getUserDailyChatCount(userId: number): Promise<number> {
   return count[0].count;
 }
 
+import { chatWithAI as openAIChatWithAI, MODELS } from "../openai";
+
 export async function chatWithAI(messages: Array<{ role: string; content: string }>, userId: number) {
   const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const chatCount = await getUserDailyChatCount(userId);
@@ -28,5 +30,7 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
   if (!userRecord[0].isPro && chatCount >= 5) {
     throw new Error('Daily chat limit reached. Please upgrade to Pro to continue.');
   }
-  // ...rest of chatWithAI function remains the same (not provided in original code)
+  
+  // Call OpenAI chat with the qualitative model
+  return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT);
 }
