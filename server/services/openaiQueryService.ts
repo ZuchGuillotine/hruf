@@ -56,102 +56,107 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           stream: true,
         });
 
-      let fullResponse = '';
+        let fullResponse = '';
 
-      try {
-        // Stream each chunk to the client
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            fullResponse += content;
-            res.write(`data: ${JSON.stringify({ content })}\n\n`);
-            // Force flush the response to ensure chunks are sent immediately
-            if (res.flush) {
-              res.flush();
+        try {
+          // Stream each chunk to the client
+          for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || "";
+            if (content) {
+              fullResponse += content;
+              res.write(`data: ${JSON.stringify({ content })}\n\n`);
+              // Force flush the response to ensure chunks are sent immediately
+              if (res.flush) {
+                res.flush();
+              }
             }
           }
-        }
 
-        // If user is authenticated, save the interaction to qualitative logs
-        if (userId) {
-          await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
-        }
-
-        // End the stream
-        res.write('data: [DONE]\n\n');
-        res.end();
-      } catch (streamError) {
-        console.error("Error during streaming:", {
-          error: streamError instanceof Error ? streamError.message : 'Unknown error',
-          stack: streamError instanceof Error ? streamError.stack : undefined,
-          name: streamError instanceof Error ? streamError.name : 'Unknown',
-          code: (streamError as any)?.code, // Capture network error codes
-          statusCode: (streamError as any)?.statusCode, // Capture HTTP status if available
-          type: (streamError as any)?.type, // OpenAI error type
-          timestamp: new Date().toISOString(),
-          userId: userId,
-          messageCount: messages.length,
-          modelUsed: "o3-mini-2025-01-31"
-        });
-
-        // Try to send a detailed error to the client
-        try {
-          const errorMessage = streamError instanceof Error 
-            ? `${streamError.name}: ${streamError.message}`
-            : "Unknown streaming error";
-
-          // Make sure we have headers set
-          if (!res.headersSent) {
-            res.setHeader('Content-Type', 'text/event-stream');
-            res.setHeader('Cache-Control', 'no-cache');
-            res.setHeader('Connection', 'keep-alive');
-
-            // Add CORS headers
-            const origin = (res as any).req?.get('Origin') || '*';
-            res.setHeader('Access-Control-Allow-Origin', origin);
-            res.setHeader('Access-Control-Allow-Credentials', 'true');
+          // If user is authenticated, save the interaction to qualitative logs
+          if (userId) {
+            await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
           }
 
-          // Send an error that the client can understand
-          res.write(`data: ${JSON.stringify({ 
-            error: "An error occurred during streaming",
-            details: errorMessage,
-            recoverable: true
-          })}\n\n`);
-
-          // End the stream with a proper DONE marker
+          // End the stream
           res.write('data: [DONE]\n\n');
-
-          // Explicitly end the response
           res.end();
-        } catch (endError) {
-          console.error("Error sending error message to client:", {
-            error: endError instanceof Error ? endError.message : 'Unknown error',
-            originalError: streamError instanceof Error ? streamError.message : 'Unknown error',
-            headersSent: res.headersSent,
-            timestamp: new Date().toISOString()
+        } catch (streamError) {
+          console.error("Error during streaming:", {
+            error: streamError instanceof Error ? streamError.message : 'Unknown error',
+            stack: streamError instanceof Error ? streamError.stack : undefined,
+            name: streamError instanceof Error ? streamError.name : 'Unknown',
+            code: (streamError as any)?.code, // Capture network error codes
+            statusCode: (streamError as any)?.statusCode, // Capture HTTP status if available
+            type: (streamError as any)?.type, // OpenAI error type
+            timestamp: new Date().toISOString(),
+            userId: userId,
+            messageCount: messages.length,
+            modelUsed: "o3-mini-2025-01-31"
           });
 
-          // Last resort attempt to close the connection
+          // Try to send a detailed error to the client
           try {
-            if (!res.writableEnded) {
-              res.end();
+            const errorMessage = streamError instanceof Error 
+              ? `${streamError.name}: ${streamError.message}`
+              : "Unknown streaming error";
+
+            // Make sure we have headers set
+            if (!res.headersSent) {
+              res.setHeader('Content-Type', 'text/event-stream');
+              res.setHeader('Cache-Control', 'no-cache');
+              res.setHeader('Connection', 'keep-alive');
+
+              // Add CORS headers
+              const origin = (res as any).req?.get('Origin') || '*';
+              res.setHeader('Access-Control-Allow-Origin', origin);
+              res.setHeader('Access-Control-Allow-Credentials', 'true');
             }
-          } catch (finalError) {
-            console.error("Final attempt to close stream failed:", finalError);
+
+            // Send an error that the client can understand
+            res.write(`data: ${JSON.stringify({ 
+              error: "An error occurred during streaming",
+              details: errorMessage,
+              recoverable: true
+            })}\n\n`);
+
+            // End the stream with a proper DONE marker
+            res.write('data: [DONE]\n\n');
+
+            // Explicitly end the response
+            res.end();
+          } catch (endError) {
+            console.error("Error sending error message to client:", {
+              error: endError instanceof Error ? endError.message : 'Unknown error',
+              originalError: streamError instanceof Error ? streamError.message : 'Unknown error',
+              headersSent: res.headersSent,
+              timestamp: new Date().toISOString()
+            });
+
+            // Last resort attempt to close the connection
+            try {
+              if (!res.writableEnded) {
+                res.end();
+              }
+            } catch (finalError) {
+              console.error("Final attempt to close stream failed:", finalError);
+            }
           }
         }
-      }
 
-      return { streaming: true };
-    } else {
-      // Regular non-streaming mode for backward compatibility
-      const completion = await openai.chat.completions.create({
-        model: "o3-mini-2025-01-31", // Updated model
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-      });
+        return { streaming: true };
+      } catch (error) {
+        console.error("Error in streaming setup:", error);
+        throw error;
+      }
+    } 
+    
+    // Regular non-streaming mode for backward compatibility
+    const completion = await openai.chat.completions.create({
+      model: "o3-mini-2025-01-31", // Updated model
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
 
       const response = completion.choices[0].message.content;
 
