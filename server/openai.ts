@@ -16,7 +16,7 @@ export const SYSTEM_PROMPT = `You are a friendly and insightful assistant design
 
 // Model configuration
 export const MODELS = {
-  QUALITATIVE_CHAT: "4o-mini", // For qualitative feedback chat
+  QUALITATIVE_CHAT: "gpt-4o-mini-2024-07-18", // For qualitative feedback chat
   QUERY_CHAT: "o3-mini-2025-01-31" // For general supplement queries
 };
 
