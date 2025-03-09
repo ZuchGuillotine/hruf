@@ -41,20 +41,43 @@ export async function handleQueryRequest(req: Request, res: Response) {
         // Get the stream from OpenAI
         const { stream } = await queryWithAI(contextualizedMessages, userId, true);
         
+        // Check if client is still connected
+        let clientConnected = true;
+        
+        // Handle client disconnection
+        res.on('close', () => {
+          clientConnected = false;
+          console.log('Client closed connection before streaming completed');
+        });
+        
         // Send each chunk as it arrives
         for await (const chunk of stream) {
+          // Stop if client disconnected
+          if (!clientConnected) break;
+          
           const content = chunk.choices[0]?.delta?.content || '';
           if (content) {
             fullResponse += content;
-            // Format as SSE
-            res.write(`data: ${JSON.stringify({ content })}\n\n`);
-            // Flush the response to ensure chunks are sent immediately
-            res.flush?.();
+            try {
+              // Format as SSE
+              res.write(`data: ${JSON.stringify({ content })}\n\n`);
+              // Flush the response to ensure chunks are sent immediately
+              res.flush?.();
+            } catch (writeError) {
+              console.error('Error writing stream chunk:', writeError);
+              break;
+            }
           }
         }
         
-        // Send end of stream event
-        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        // Send end of stream event if client is still connected
+        if (clientConnected) {
+          try {
+            res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+          } catch (endError) {
+            console.error('Error sending end of stream event:', endError);
+          }
+        }
         
         // If user is authenticated, store the query
         if (userId) {
