@@ -53,8 +53,11 @@ export default function AuthPage() {
   const onSubmit = async (data: FormData) => {
     try {
       if (isLogin) {
-        await login(data);
-        setLocation('/dashboard');
+        const loginResponse = await login(data);
+        // Server handles redirect now, but as a fallback:
+        if (!loginResponse.redirectUrl) {
+          setLocation('/dashboard');
+        }
       } else {
         console.log('Starting registration process');
         const response = await register(data);
