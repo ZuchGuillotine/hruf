@@ -1,7 +1,7 @@
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from "react";
 
-type Message = {
+export type Message = {
   role: string;
   content: string;
 };
@@ -78,15 +78,24 @@ export function useQuery() {
             }
           } catch (err) {
             console.error('Error parsing SSE data:', err);
+            setError('Error processing server response. Please try again.');
           }
         };
-        
+
+        // Handle connection open
+        eventSourceRef.current.onopen = () => {
+          console.log('SSE connection established');
+        };
+
         // Handle errors
         eventSourceRef.current.onerror = (err) => {
           console.error('EventSource error:', err);
           setError('Connection error. Please try again.');
           setIsLoading(false);
+          
+          // Close the connection on error
           eventSourceRef.current?.close();
+          eventSourceRef.current = null;
         };
       } else {
         // Fallback for browsers not supporting EventSource
@@ -111,6 +120,7 @@ export function useQuery() {
     setError(null);
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
   }, []);
 

@@ -40,23 +40,33 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
 
       let fullResponse = '';
 
-      // Stream each chunk to the client
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
-        if (content) {
-          fullResponse += content;
-          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      try {
+        // Stream each chunk to the client
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || "";
+          if (content) {
+            fullResponse += content;
+            res.write(`data: ${JSON.stringify({ content })}\n\n`);
+            // Force flush the response to ensure chunks are sent immediately
+            if (res.flush) {
+              res.flush();
+            }
+          }
         }
-      }
 
-      // If user is authenticated, save the interaction to qualitative logs
-      if (userId) {
-        await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
-      }
+        // If user is authenticated, save the interaction to qualitative logs
+        if (userId) {
+          await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
+        }
 
-      // End the stream
-      res.write('data: [DONE]\n\n');
-      res.end();
+        // End the stream
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (streamError) {
+        console.error("Error during streaming:", streamError);
+        res.write(`data: ${JSON.stringify({ error: "An error occurred during streaming" })}\n\n`);
+        res.end();
+      }
       
       return { streaming: true };
     } else {
