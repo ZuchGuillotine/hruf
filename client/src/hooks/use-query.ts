@@ -36,10 +36,16 @@ export function useQuery() {
         // Close existing connection if any
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
+          eventSourceRef.current = null;
         }
 
+        // First, make a POST request to initiate the streaming response
+        const messagesPayload = [userMessage];
+        const encodedMessages = encodeURIComponent(JSON.stringify(messagesPayload));
+        
         // Create a new EventSource connection for streaming
-        const url = `/api/query?stream=true&query=${encodeURIComponent(query)}`;
+        const url = `/api/query?stream=true&messages=${encodedMessages}`;
+        console.log("Creating EventSource with URL:", url);
         eventSourceRef.current = new EventSource(url);
         
         // Initialize an empty assistant message
@@ -48,10 +54,13 @@ export function useQuery() {
         
         // Listen for messages
         eventSourceRef.current.onmessage = (event) => {
+          console.log("Received SSE event:", event.data);
+          
           if (event.data === '[DONE]') {
             // Stream completed
             setIsLoading(false);
             eventSourceRef.current?.close();
+            eventSourceRef.current = null;
             return;
           }
           
@@ -62,6 +71,7 @@ export function useQuery() {
               setError(data.error);
               setIsLoading(false);
               eventSourceRef.current?.close();
+              eventSourceRef.current = null;
               return;
             }
             
@@ -99,7 +109,16 @@ export function useQuery() {
         };
       } else {
         // Fallback for browsers not supporting EventSource
-        const response = await fetch(`/api/query?query=${encodeURIComponent(query)}`);
+        const response = await fetch('/api/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [userMessage]
+          })
+        });
+        
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
