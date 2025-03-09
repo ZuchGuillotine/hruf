@@ -125,7 +125,7 @@ export default function LLMChat() {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about supplements, interactions, or health advice..."
+            placeholder="Enter your mood, energy, interactions, or other effects. . "
             className="bg-white/10 text-white placeholder:text-white/60"
             disabled={isLoading}
           />
