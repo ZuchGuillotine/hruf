@@ -29,11 +29,17 @@ export async function handleQueryRequest(req: Request, res: Response) {
     );
 
     if (isStreamRequest) {
-      // Set headers for SSE
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.flushHeaders();
+      // Set proper headers for SSE
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // Prevents buffering for Nginx
+        'Access-Control-Allow-Origin': '*', // Adjust for production as needed
+      });
+      
+      // Send an initial connection message
+      res.write(`data: ${JSON.stringify({ initializing: true })}\n\n`);
 
       let fullResponse = '';
       
@@ -50,10 +56,27 @@ export async function handleQueryRequest(req: Request, res: Response) {
           console.log('Client closed connection before streaming completed');
         });
         
+        // Send a heartbeat every 15 seconds to keep the connection alive
+        const heartbeatInterval = setInterval(() => {
+          if (clientConnected) {
+            try {
+              res.write(`:heartbeat\n\n`); // Comment line for SSE
+            } catch (err) {
+              clientConnected = false;
+              console.error('Failed to send heartbeat:', err);
+            }
+          } else {
+            clearInterval(heartbeatInterval);
+          }
+        }, 15000);
+        
         // Send each chunk as it arrives
         for await (const chunk of stream) {
           // Stop if client disconnected
-          if (!clientConnected) break;
+          if (!clientConnected) {
+            clearInterval(heartbeatInterval);
+            break;
+          }
           
           const content = chunk.choices[0]?.delta?.content || '';
           if (content) {
@@ -61,16 +84,15 @@ export async function handleQueryRequest(req: Request, res: Response) {
             try {
               // Format as SSE - ensure proper format with data: prefix and double newlines
               res.write(`data: ${JSON.stringify({ content })}\n\n`);
-              // Explicitly flush to ensure immediate delivery
-              if (typeof res.flush === 'function') {
-                res.flush();
-              }
             } catch (writeError) {
               console.error('Error writing stream chunk:', writeError);
+              clearInterval(heartbeatInterval);
               break;
             }
           }
         }
+        
+        clearInterval(heartbeatInterval);
         
         // Send end of stream event if client is still connected
         if (clientConnected) {
