@@ -9,9 +9,9 @@ export function useLLM() {
   const chatMutation = useMutation<
     { response: string },
     Error,
-    { messages: Message[] }
+    { messages: Message[]; onStream?: (chunk: string) => void }
   >({
-    mutationFn: async ({ messages }) => {
+    mutationFn: async ({ messages, onStream }) => {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -24,6 +24,31 @@ export function useLLM() {
         throw new Error(JSON.stringify(errorData));
       }
 
+      // Handle streaming response
+      if (response.headers.get("content-type")?.includes("text/event-stream")) {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+
+        if (!reader) throw new Error("No response body");
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            fullResponse += chunk;
+            onStream?.(chunk);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        return { response: fullResponse };
+      }
+
+      // Handle non-streaming response
       return response.json();
     },
     onError: (error) => {
@@ -33,6 +58,6 @@ export function useLLM() {
 
   return {
     chat: chatMutation.mutateAsync,
-    isLoading: chatMutation.isLoading,
+    isLoading: chatMutation.isPending,
   };
 }

@@ -12,13 +12,10 @@ type Message = {
   content: string;
 };
 
-// LLMChat Component - Handles qualitative feedback collection about user's supplement experiences
-// This interface specifically focuses on gathering detailed user observations and reflections
 export default function LLMChat() {
-  // Track conversation history between user and AI for qualitative feedback
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  // Custom hook for managing qualitative feedback chat interactions
+  const [streamingContent, setStreamingContent] = useState('');
   const { chat, isLoading } = useLLM();
   const { toast } = useToast();
 
@@ -33,24 +30,27 @@ export default function LLMChat() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setStreamingContent(''); // Reset streaming content
 
     try {
-      console.log('Sending message to API:', userMessage);
-      const result = await chat({
+      // Add a placeholder assistant message that will be updated during streaming
+      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
+      await chat({
         messages: [...messages, userMessage],
+        onStream: (chunk) => {
+          setStreamingContent((prev) => prev + chunk);
+          // Update the last message (assistant's response) with the streamed content
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = {
+              role: 'assistant',
+              content: prev[prev.length - 1].content + chunk
+            };
+            return newMessages;
+          });
+        },
       });
-      console.log('Received API response:', result);
-
-      if (!result || !result.response) {
-        throw new Error('Invalid response format from server');
-      }
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: result.response,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error('Chat Error:', error);
       let errorMessage = 'Failed to get response from AI';
@@ -113,7 +113,10 @@ export default function LLMChat() {
               }`}
             >
               <CardContent className="p-4">
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap">
+                  {message.content}
+                  {isLoading && index === messages.length - 1 && message.role === 'assistant' && '▋'}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -141,7 +144,7 @@ export default function LLMChat() {
             )}
           </Button>
         </form>
-        
+
         {messages.length > 0 && (
           <Button
             onClick={handleSaveChat}

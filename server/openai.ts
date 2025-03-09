@@ -1,4 +1,3 @@
-
 import OpenAI from "openai";
 
 // Ensure API key is present
@@ -38,18 +37,32 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
   try {
     // Send request to OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Using optimized GPT-4 model
+      model: "o3-mini-2025-01-31", // Updated to use new model
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        ...messages
+        ...messages.map(msg => ({
+          role: msg.role as "user" | "assistant" | "system",
+          content: msg.content
+        }))
       ],
       temperature: 0.7, // Balanced between creativity and consistency
       max_tokens: 500, // Limit response length for conciseness
+      stream: true // Enable streaming
     });
 
-    return {
-      response: response.choices[0].message.content,
-    };
+    // Handle streaming response
+    const stream = response;
+    let fullResponse = "";
+
+    for await (const part of stream) {
+      const content = part.choices[0]?.delta?.content || "";
+      fullResponse += content;
+      // Return each chunk as it arrives
+      return { response: content, streaming: true };
+    }
+
+    // Return full response when stream ends
+    return { response: fullResponse, streaming: false };
   } catch (error: any) {
     console.error("OpenAI API Error:", error);
     throw new Error(error.message);

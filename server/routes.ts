@@ -191,21 +191,29 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ error: "User not authenticated" });
       }
 
-      const userContext = await constructUserContext(req.user.id, messages[messages.length - 1].content);
+      const userContext = await constructUserContext(req.user.id.toString(), messages[messages.length - 1].content);
       const contextualizedMessages = [...userContext.messages, ...messages.slice(1)];
+
+      // Set up streaming headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
 
       // Get AI response with context
       const aiResponse = await chatWithAI(contextualizedMessages);
 
-      if (!aiResponse?.response) {
-        return res.status(500).json({ 
-          error: "Failed to get AI response",
-          message: "The AI service did not provide a valid response"
-        });
+      if ('streaming' in aiResponse) {
+        // Handle streaming response
+        if (aiResponse.streaming) {
+          res.write(aiResponse.response);
+        } else {
+          res.write(aiResponse.response);
+          res.end();
+        }
+      } else {
+        // Handle non-streaming response for backward compatibility
+        res.json(aiResponse);
       }
-
-      // Send AI response
-      res.json(aiResponse);
     } catch (error: any) {
       console.error("Error in chat endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',

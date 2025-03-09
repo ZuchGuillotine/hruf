@@ -23,17 +23,21 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
 
     // Call OpenAI API with chat completion
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: messages,
+      model: "o3-mini-2025-01-31", // Updated to use new model
+      messages: messages.map(msg => ({
+        role: msg.role as "user" | "assistant" | "system",
+        content: msg.content
+      })),
       temperature: 0.7,
       max_tokens: 1000,
+      stream: false // Keep non-streaming for query service
     });
 
     const response = completion.choices[0].message.content;
 
     // If user is authenticated, save the interaction to qualitative logs
     if (userId) {
-      await saveInteraction(userId, messages[messages.length - 1].content, response);
+      await saveInteraction(userId, messages[messages.length - 1].content, response || "");
     }
 
     // Log successful completion
@@ -65,7 +69,7 @@ async function saveInteraction(userId: string, query: string, response: string) 
     await db
       .insert(qualitativeLogs)
       .values({
-        userId,
+        userId: parseInt(userId),
         content: `Query: ${query}\n\nResponse: ${response}`,
         type: 'query',
         tags: ['ai_query'],
