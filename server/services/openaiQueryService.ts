@@ -1,4 +1,3 @@
-
 import OpenAI from "openai";
 import { constructQueryContext } from "./llmContextService_query";
 import { db } from "../../db";
@@ -32,15 +31,15 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
-        
+
         // Send initial ping to establish connection
         res.write(': ping\n\n');
-        
+
         // Flush headers to ensure client connection is established
         if (res.flush) {
           res.flush();
         }
-        
+
         console.log('SSE headers sent, creating OpenAI stream with params:', {
           model: "o3-mini-2025-01-31",
           messageCount: messages.length,
@@ -82,7 +81,6 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         res.write('data: [DONE]\n\n');
         res.end();
       } catch (streamError) {
-        // Detailed error logging with request context
         console.error("Error during streaming:", {
           error: streamError instanceof Error ? streamError.message : 'Unknown error',
           stack: streamError instanceof Error ? streamError.stack : undefined,
@@ -95,28 +93,36 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           messageCount: messages.length,
           modelUsed: "o3-mini-2025-01-31"
         });
-        
+
         // Try to send a detailed error to the client
         try {
           const errorMessage = streamError instanceof Error 
             ? `${streamError.name}: ${streamError.message}`
             : "Unknown streaming error";
-            
-          // Send error as SSE event
+
+          // Make sure we have headers set
           if (!res.headersSent) {
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
+
+            // Add CORS headers
+            const origin = (res as any).req?.get('Origin') || '*';
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
           }
-          
+
+          // Send an error that the client can understand
           res.write(`data: ${JSON.stringify({ 
             error: "An error occurred during streaming",
             details: errorMessage,
             recoverable: true
           })}\n\n`);
-          
-          // End the stream
+
+          // End the stream with a proper DONE marker
           res.write('data: [DONE]\n\n');
+
+          // Explicitly end the response
           res.end();
         } catch (endError) {
           console.error("Error sending error message to client:", {
@@ -125,9 +131,18 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
             headersSent: res.headersSent,
             timestamp: new Date().toISOString()
           });
+
+          // Last resort attempt to close the connection
+          try {
+            if (!res.writableEnded) {
+              res.end();
+            }
+          } catch (finalError) {
+            console.error("Final attempt to close stream failed:", finalError);
+          }
         }
       }
-      
+
       return { streaming: true };
     } else {
       // Regular non-streaming mode for backward compatibility
@@ -165,13 +180,13 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
       userId,
       timestamp: new Date().toISOString()
     });
-    
+
     // If streaming, inform the client of the error
     if (res) {
       res.write(`data: ${JSON.stringify({ error: "An error occurred during the streaming process" })}\n\n`);
       res.end();
     }
-    
+
     throw error;
   }
 }
@@ -191,7 +206,7 @@ async function saveInteraction(userId: number, query: string, response: string) 
           queryType: 'supplement_info'
         }
       });
-      
+
     console.log('Saved query interaction to qualitative logs', {
       userId,
       timestamp: new Date().toISOString()

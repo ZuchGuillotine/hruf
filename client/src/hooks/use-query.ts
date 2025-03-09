@@ -42,10 +42,10 @@ export function useQuery() {
         const messagesPayload = [userMessage];
         const encodedMessages = encodeURIComponent(JSON.stringify(messagesPayload));
 
-        // Create a new EventSource connection for streaming
-        const url = `/api/query?stream=true&messages=${encodedMessages}`;
+        // Create a new EventSource connection for streaming with credentials
+        const url = `/api/query?stream=true&messages=${encodedMessages}&t=${Date.now()}`; // Add cache buster
         console.log("Creating EventSource with URL:", url);
-        eventSourceRef.current = new EventSource(url);
+        eventSourceRef.current = new EventSource(url, { withCredentials: true });
 
         // Initialize an empty assistant message
         const assistantMessage: Message = { role: 'assistant', content: '' };

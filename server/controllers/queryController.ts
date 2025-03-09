@@ -62,13 +62,25 @@ export async function query(req: Request, res: Response) {
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx
-      res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin requests
+      
+      // CORS headers with credentials support
+      const origin = req.get('Origin') || '*';
+      res.setHeader('Access-Control-Allow-Origin', origin); 
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
       // Immediately send response headers to establish connection
       res.flushHeaders();
 
-      // Send a ping to keep the connection alive
+      // Send a ping and debug info to keep the connection alive
       res.write(': ping\n\n');
+      res.write(`data: ${JSON.stringify({ debug: "Connection established" })}\n\n`);
+      
+      // Force flush any buffered data
+      if (typeof res.flush === 'function') {
+        res.flush();
+      }
 
       // Begin streaming response
       return await queryWithAI(contextualizedMessages, userId, res);
