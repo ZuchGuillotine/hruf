@@ -96,10 +96,29 @@ export function useQuery() {
           console.log('SSE connection established');
         };
 
-        // Handle errors
+        // Handle errors with improved debugging
         eventSourceRef.current.onerror = (err) => {
           console.error('EventSource error:', err);
-          setError('Connection error. Please try again.');
+          
+          // Enhanced error inspection
+          const errDetails = {
+            type: err.type,
+            target: err.target,
+            eventPhase: err.eventPhase,
+            timeStamp: err.timeStamp,
+            readyState: eventSourceRef.current?.readyState,
+            url: url
+          };
+          
+          console.error('EventSource detailed error info:', errDetails);
+          
+          // Check if connection was never established or dropped after connecting
+          if (eventSourceRef.current?.readyState === 0) {
+            setError('Failed to establish connection. Please try again.');
+          } else {
+            setError('Connection lost. Please try again.');
+          }
+          
           setIsLoading(false);
 
           // Close the connection on error

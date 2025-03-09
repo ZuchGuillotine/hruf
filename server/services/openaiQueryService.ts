@@ -24,19 +24,38 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
 
     // If a response object is provided, use streaming
     if (res) {
-      // Set appropriate headers for streaming
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
+      try {
+        // Set appropriate headers for streaming
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        
+        // Send initial ping to establish connection
+        res.write(': ping\n\n');
+        
+        // Flush headers to ensure client connection is established
+        if (res.flush) {
+          res.flush();
+        }
+        
+        console.log('SSE headers sent, creating OpenAI stream with params:', {
+          model: "o3-mini-2025-01-31",
+          messageCount: messages.length,
+          streaming: true,
+          timestamp: new Date().toISOString()
+        });
 
-      // Call OpenAI API with streaming enabled
-      const stream = await openai.chat.completions.create({
-        model: "o3-mini-2025-01-31", // Updated model
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-        stream: true,
-      });
+        // Call OpenAI API with streaming enabled
+        const stream = await openai.chat.completions.create({
+          model: "o3-mini-2025-01-31", // Updated model
+          messages: messages,
+          temperature: 0.7,
+          max_tokens: 1000,
+          stream: true,
+        });
 
       let fullResponse = '';
 
@@ -63,18 +82,49 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         res.write('data: [DONE]\n\n');
         res.end();
       } catch (streamError) {
+        // Detailed error logging with request context
         console.error("Error during streaming:", {
           error: streamError instanceof Error ? streamError.message : 'Unknown error',
           stack: streamError instanceof Error ? streamError.stack : undefined,
-          timestamp: new Date().toISOString()
+          name: streamError instanceof Error ? streamError.name : 'Unknown',
+          code: (streamError as any)?.code, // Capture network error codes
+          statusCode: (streamError as any)?.statusCode, // Capture HTTP status if available
+          type: (streamError as any)?.type, // OpenAI error type
+          timestamp: new Date().toISOString(),
+          userId: userId,
+          messageCount: messages.length,
+          modelUsed: "o3-mini-2025-01-31"
         });
         
-        // Attempt to send error to client if headers haven't been sent yet
+        // Try to send a detailed error to the client
         try {
-          res.write(`data: ${JSON.stringify({ error: "An error occurred during streaming" })}\n\n`);
+          const errorMessage = streamError instanceof Error 
+            ? `${streamError.name}: ${streamError.message}`
+            : "Unknown streaming error";
+            
+          // Send error as SSE event
+          if (!res.headersSent) {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+          }
+          
+          res.write(`data: ${JSON.stringify({ 
+            error: "An error occurred during streaming",
+            details: errorMessage,
+            recoverable: true
+          })}\n\n`);
+          
+          // End the stream
+          res.write('data: [DONE]\n\n');
           res.end();
         } catch (endError) {
-          console.error("Error sending error message:", endError);
+          console.error("Error sending error message to client:", {
+            error: endError instanceof Error ? endError.message : 'Unknown error',
+            originalError: streamError instanceof Error ? streamError.message : 'Unknown error',
+            headersSent: res.headersSent,
+            timestamp: new Date().toISOString()
+          });
         }
       }
       
