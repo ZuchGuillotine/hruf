@@ -1,7 +1,8 @@
+
 import OpenAI from "openai";
 import { constructQueryContext } from "./llmContextService_query";
 import { db } from "../../db";
-import { qualitativeLogs } from "../../db/schema";
+import { qualitativeLogs, queryChats } from "../../db/schema";
 import { Message } from "@/lib/types";
 
 // Initialize OpenAI with the separate API key for queries
@@ -9,45 +10,84 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_QUERY_KEY,
 });
 
-export async function queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
+export async function queryWithAI(messages: Array<{ role: string; content: string }>, userId: number | null, res?: any) {
   try {
     // Log processing details for debugging
     console.log('Processing query with OpenAI:', {
       userId,
       userIdType: typeof userId,
-      userIdValue: userId,
       messageCount: messages.length,
       isAuthenticated: !!userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      isStreaming: !!res
     });
 
-    // Call OpenAI API with chat completion
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    // If a response object is provided, use streaming
+    if (res) {
+      // Set appropriate headers for streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
 
-    const response = completion.choices[0].message.content;
+      // Call OpenAI API with streaming enabled
+      const stream = await openai.chat.completions.create({
+        model: "o3-mini-2025-01-31", // Updated model
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+        stream: true,
+      });
 
-    // If user is authenticated, save the interaction to qualitative logs
-    if (userId) {
-      await saveInteraction(userId, messages[messages.length - 1].content, response);
+      let fullResponse = '';
+
+      // Stream each chunk to the client
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || "";
+        if (content) {
+          fullResponse += content;
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+
+      // If user is authenticated, save the interaction to qualitative logs
+      if (userId) {
+        await saveInteraction(userId, messages[messages.length - 1].content, fullResponse);
+      }
+
+      // End the stream
+      res.write('data: [DONE]\n\n');
+      res.end();
+      
+      return { streaming: true };
+    } else {
+      // Regular non-streaming mode for backward compatibility
+      const completion = await openai.chat.completions.create({
+        model: "o3-mini-2025-01-31", // Updated model
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      const response = completion.choices[0].message.content;
+
+      // If user is authenticated, save the interaction to qualitative logs
+      if (userId) {
+        await saveInteraction(userId, messages[messages.length - 1].content, response);
+      }
+
+      // Log successful completion
+      console.log('OpenAI query completed successfully:', {
+        userId,
+        responseLength: response?.length || 0,
+        timestamp: new Date().toISOString()
+      });
+
+      return {
+        response,
+        usage: completion.usage,
+        model: completion.model,
+      };
     }
-
-    // Log successful completion
-    console.log('OpenAI query completed successfully:', {
-      userId,
-      responseLength: response?.length || 0,
-      timestamp: new Date().toISOString()
-    });
-
-    return {
-      response,
-      usage: completion.usage,
-      model: completion.model,
-    };
   } catch (error) {
     console.error("OpenAI query error:", {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -55,12 +95,19 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
       userId,
       timestamp: new Date().toISOString()
     });
+    
+    // If streaming, inform the client of the error
+    if (res) {
+      res.write(`data: ${JSON.stringify({ error: "An error occurred during the streaming process" })}\n\n`);
+      res.end();
+    }
+    
     throw error;
   }
 }
 
 // Save the query interaction to the qualitative logs
-async function saveInteraction(userId: string, query: string, response: string) {
+async function saveInteraction(userId: number, query: string, response: string) {
   try {
     await db
       .insert(qualitativeLogs)
@@ -74,6 +121,11 @@ async function saveInteraction(userId: string, query: string, response: string) 
           queryType: 'supplement_info'
         }
       });
+      
+    console.log('Saved query interaction to qualitative logs', {
+      userId,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error("Failed to save query interaction:", error);
   }

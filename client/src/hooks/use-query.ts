@@ -1,105 +1,118 @@
 
-import { useState } from "react";
-import { Message } from "@/lib/types";
+import { useState, useCallback, useRef, useEffect } from 'react';
 
-export interface QueryResult {
-  response: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-  model?: string;
-}
+type Message = {
+  role: string;
+  content: string;
+};
 
 export function useQuery() {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [result, setResult] = useState<QueryResult | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
-  const sendQuery = async (query: string) => {
+  // Clean up event source on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
+  const sendQuery = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    const userMessage: Message = { role: 'user', content: query };
+    setMessages(prev => [...prev, userMessage]);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Add user message to the chat
-      const newUserMessage: Message = { role: "user", content: query };
-      const updatedMessages = [...messages, newUserMessage];
-      setMessages(updatedMessages);
-      
-      // Send query to API
-      const response = await fetch("/api/query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: updatedMessages }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to get response");
+      // Check if EventSource is supported
+      if (typeof EventSource !== 'undefined') {
+        // Close existing connection if any
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+        }
+
+        // Create a new EventSource connection for streaming
+        const url = `/api/query?stream=true&query=${encodeURIComponent(query)}`;
+        eventSourceRef.current = new EventSource(url);
+        
+        // Initialize an empty assistant message
+        const assistantMessage: Message = { role: 'assistant', content: '' };
+        setMessages(prev => [...prev, assistantMessage]);
+        
+        // Listen for messages
+        eventSourceRef.current.onmessage = (event) => {
+          if (event.data === '[DONE]') {
+            // Stream completed
+            setIsLoading(false);
+            eventSourceRef.current?.close();
+            return;
+          }
+          
+          try {
+            const data = JSON.parse(event.data);
+            
+            if (data.error) {
+              setError(data.error);
+              setIsLoading(false);
+              eventSourceRef.current?.close();
+              return;
+            }
+            
+            if (data.content) {
+              // Append to the current assistant message content
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage.role === 'assistant') {
+                  lastMessage.content += data.content;
+                }
+                return newMessages;
+              });
+            }
+          } catch (err) {
+            console.error('Error parsing SSE data:', err);
+          }
+        };
+        
+        // Handle errors
+        eventSourceRef.current.onerror = (err) => {
+          console.error('EventSource error:', err);
+          setError('Connection error. Please try again.');
+          setIsLoading(false);
+          eventSourceRef.current?.close();
+        };
+      } else {
+        // Fallback for browsers not supporting EventSource
+        const response = await fetch(`/api/query?query=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+        setIsLoading(false);
       }
-      
-      const data = await response.json();
-      
-      // Add assistant response to the chat
-      const assistantMessage: Message = { role: "assistant", content: data.response };
-      const finalMessages = [...updatedMessages, assistantMessage];
-      setMessages(finalMessages);
-      setResult(data);
-      
-      // Save the chat to our dedicated query chat storage
-      try {
-        await fetch("/api/query/save", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ messages: finalMessages }),
-        });
-      } catch (saveErr) {
-        console.error("Failed to save query chat:", saveErr);
-        // Non-blocking error - we don't need to alert the user
-      }
-      
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      console.error("Query error:", err);
-    } finally {
+      console.error('Query error:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       setIsLoading(false);
     }
-  };
-  
-  const resetChat = () => {
-    setMessages([]);
-    setResult(null);
-    setError(null);
-  };
-  
-  const loadHistory = async () => {
-    try {
-      const response = await fetch("/api/query/history");
-      if (!response.ok) {
-        throw new Error("Failed to fetch query history");
-      }
-      
-      const history = await response.json();
-      return history;
-    } catch (err) {
-      console.error("Error loading query history:", err);
-      return [];
-    }
-  };
+  }, []);
 
-  return {
-    sendQuery,
-    resetChat,
-    loadHistory,
-    messages,
-    result,
-    isLoading,
-    error,
-  };
+  const resetChat = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+  }, []);
+
+  return { sendQuery, messages, isLoading, error, resetChat };
 }
