@@ -190,6 +190,176 @@ export function useQuery() {
     }
   };
 
+  const updateStreamingMessage = (assistantMessage: string) => {
+    setMessages((prevMessages) => {
+      const newMessages = [...prevMessages];
+      const lastIndex = newMessages.length - 1;
+      newMessages[lastIndex] = {
+        ...newMessages[lastIndex],
+        content: assistantMessage,
+      };
+      return newMessages;
+    });
+  };
+
+  // Start streaming query with EventSource
+  const startStream = async (queryText: string) => {
+    setIsLoading(true);
+    setIsStreaming(true);
+    const newMessages = [...messages, { role: 'user', content: queryText }];
+    setMessages(newMessages);
+
+    try {
+      // Add timestamp to prevent caching
+      const params = new URLSearchParams({
+        stream: 'true',
+        messages: JSON.stringify(newMessages),
+        t: Date.now().toString()
+      });
+
+      console.log('Creating EventSource with URL:', `/api/query?${params}`);
+
+      // Create EventSource for the stream
+      let eventSource = new EventSource(`/api/query?${params}`);
+      let assistantMessage = '';
+      let reconnectAttempt = 0;
+      const maxReconnects = 3;
+      let lastMessageTime = Date.now();
+
+      const attemptReconnect = () => {
+        if (reconnectAttempt < maxReconnects) {
+          reconnectAttempt++;
+          console.log(`Attempting to reconnect (${reconnectAttempt}/${maxReconnects})...`);
+
+          // Close existing connection first
+          if (eventSource) {
+            eventSource.close();
+          }
+
+          // Create a new connection
+          eventSource = new EventSource(`/api/query?${params}`);
+          setupEventListeners();
+          return true;
+        } else {
+          console.error('Max reconnection attempts reached');
+          setError('Connection lost. Max reconnection attempts reached.');
+          setIsLoading(false);
+          setIsStreaming(false);
+          return false;
+        }
+      };
+
+      const setupEventListeners = () => {
+        eventSource.onopen = () => {
+          console.log('EventSource connection established');
+          lastMessageTime = Date.now();
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            lastMessageTime = Date.now();
+            reconnectAttempt = 0; // Reset reconnect attempts on successful message
+
+            const data = JSON.parse(event.data);
+
+            // Debug received message
+            if (data.content) {
+              console.log(`Received chunk: "${data.content.substring(0, 20)}${data.content.length > 20 ? '...' : ''}"`);
+            } else {
+              console.log('Received message:', JSON.stringify(data).substring(0, 50));
+            }
+
+            // Handle initializing message
+            if (data.initializing) {
+              console.log('Stream initializing...');
+              return;
+            }
+
+            // Handle heartbeat
+            if (data.heartbeat) {
+              console.log('Heartbeat received');
+              return;
+            }
+
+            // Handle content chunks
+            if (data.content) {
+              assistantMessage += data.content;
+              updateStreamingMessage(assistantMessage);
+            }
+
+            // Handle completion
+            if (data.done) {
+              console.log('Stream completed normally');
+              eventSource.close();
+              setIsLoading(false);
+              setIsStreaming(false);
+            }
+
+            // Handle error messages
+            if (data.error) {
+              console.error('Server reported error:', data.error);
+              setError(`Server error: ${data.error}`);
+              eventSource.close();
+              setIsLoading(false);
+              setIsStreaming(false);
+            }
+          } catch (parseError) {
+            console.error('Error parsing event data:', parseError, event.data);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('EventSource error encountered:', error);
+
+          // If we've gone too long without a message, try to reconnect
+          const timeSinceLastMessage = Date.now() - lastMessageTime;
+          if (timeSinceLastMessage > 10000) { // 10 seconds
+            if (!attemptReconnect()) {
+              eventSource.close();
+              setIsLoading(false);
+              setIsStreaming(false);
+              setError('Connection to server lost. Please try again.');
+            }
+          }
+        };
+      };
+
+      setupEventListeners();
+
+      // Keep track of connection activity with a watchdog timer
+      const activityTimer = setInterval(() => {
+        const timeSinceLastMessage = Date.now() - lastMessageTime;
+        console.log(`Time since last message: ${Math.round(timeSinceLastMessage/1000)}s`);
+
+        if (timeSinceLastMessage > 30000) { // 30 seconds
+          console.log('Connection timeout - closing EventSource');
+          clearInterval(activityTimer);
+          eventSource.close();
+          setIsLoading(false);
+          setIsStreaming(false);
+          if (assistantMessage === '') {
+            setError('Request timed out. Please try again.');
+          } else {
+            // We got some response, so just finalize it
+            updateStreamingMessage(assistantMessage + "\n\n[Connection closed due to timeout]");
+          }
+        }
+      }, 5000); // Check every 5 seconds
+
+      // Clean up function to close the EventSource when component unmounts
+      return () => {
+        clearInterval(activityTimer);
+        eventSource.close();
+      };
+    } catch (error) {
+      console.error('Error starting stream:', error);
+      setIsLoading(false);
+      setIsStreaming(false);
+      setError('Failed to connect to streaming service');
+    }
+  };
+
+
   return {
     sendQuery,
     messages,

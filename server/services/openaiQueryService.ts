@@ -34,7 +34,7 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           temperature: 0.7,
           max_tokens: 1000,
           stream: true,
-          timeout: 30000, // 30 second timeout for the request
+          timeout: 60000, // Increased to 60 second timeout for the request
         });
         
         console.log(`OpenAI stream created in ${Date.now() - startTime}ms`);
@@ -42,7 +42,12 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
         // For streaming, we'll collect the full response in the controller
         return { stream };
       } catch (streamErr) {
-        console.error('Error creating OpenAI stream:', streamErr);
+        console.error('Error creating OpenAI stream:', {
+          error: streamErr instanceof Error ? streamErr.message : 'Unknown error',
+          stack: streamErr instanceof Error ? streamErr.stack : undefined,
+          type: typeof streamErr,
+          detail: JSON.stringify(streamErr)
+        });
         throw streamErr;
       }
     } else {
