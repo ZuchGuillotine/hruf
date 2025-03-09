@@ -93,23 +93,3 @@ export async function saveInteraction(userId: string, query: string, response: s
     console.error("Failed to save query interaction:", error);
   }
 }
-
-// Save the query interaction to the qualitative logs
-async function saveInteraction(userId: string, query: string, response: string) {
-  try {
-    await db
-      .insert(qualitativeLogs)
-      .values({
-        userId,
-        content: `Query: ${query}\n\nResponse: ${response}`,
-        type: 'query',
-        tags: ['ai_query'],
-        metadata: {
-          savedAt: new Date().toISOString(),
-          queryType: 'supplement_info'
-        }
-      });
-  } catch (error) {
-    console.error("Failed to save query interaction:", error);
-  }
-}
