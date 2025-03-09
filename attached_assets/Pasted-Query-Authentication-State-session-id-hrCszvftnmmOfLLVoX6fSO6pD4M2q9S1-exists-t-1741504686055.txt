@@ -1,0 +1,87 @@
+Query Authentication State: {
+  session: {
+    id: 'hrCszvftnmmOfLLVoX6fSO6pD4M2q9S1',
+    exists: true,
+    cookie: {
+      path: '/',
+      _expires: 2025-03-10T06:31:47.744Z,
+      originalMaxAge: 86400000,
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax'
+    }
+  },
+  auth: { isAuthenticated: true, hasUser: true, userId: 1 },
+  timestamp: '2025-03-09T06:32:56.083Z'
+}
+Building context for authenticated user: { userId: 1, timestamp: '2025-03-09T06:32:56.086Z' }
+Context built successfully: {
+  userId: 1,
+  hasHealthStats: true,
+  hasSupplementLogs: true,
+  hasQualitativeLogs: true,
+  hasSummaries: true,
+  timestamp: '2025-03-09T06:32:56.267Z'
+}
+Processing query with OpenAI: {
+  userId: 1,
+  userIdType: 'number',
+  userIdValue: 1,
+  messageCount: 2,
+  isAuthenticated: true,
+  timestamp: '2025-03-09T06:32:56.268Z'
+}
+OpenAI query completed successfully: {
+  userId: 1,
+  responseLength: 1675,
+  timestamp: '2025-03-09T06:33:03.227Z'
+}
+7:02:14 AM [vite] hmr update /src/pages/ask.tsx, /src/index.css?v=D8_rm74Qzz_tS-lwK3sch
+7:02:14 AM [vite] hmr update /src/pages/ask.tsx, /src/index.css?v=D8_rm74Qzz_tS-lwK3sch (x2)
+User info request: {
+  isAuthenticated: true,
+  hasUser: true,
+  userId: 1,
+  timestamp: '2025-03-09T07:02:31.326Z'
+}
+7:04:32 AM [vite] hmr update /src/pages/ask.tsx, /src/index.css?v=D8_rm74Qzz_tS-lwK3sch (x3)
+Logging out user: {
+  userId: 1,
+  email: 'bencox820@hotmail.com',
+  timestamp: '2025-03-09T07:04:54.567Z'
+}
+User info request: {
+  isAuthenticated: false,
+  hasUser: false,
+  userId: undefined,
+  timestamp: '2025-03-09T07:04:54.668Z'
+}
+User info request: {
+  isAuthenticated: false,
+  hasUser: false,
+  userId: undefined,
+  timestamp: '2025-03-09T07:05:06.040Z'
+}
+User logged in successfully: {
+  userId: 1,
+  email: 'bencox820@hotmail.com',
+  timestamp: '2025-03-09T07:05:14.403Z'
+}
+User info request: {
+  isAuthenticated: true,
+  hasUser: true,
+  userId: 1,
+  timestamp: '2025-03-09T07:05:14.529Z'
+}
+7:08:58 AM [vite] hmr update /src/pages/ask.tsx, /src/index.css?v=D8_rm74Qzz_tS-lwK3sch (x4)
+7:12:31 AM [vite] hmr update /src/pages/ask.tsx, /src/index.css?v=D8_rm74Qzz_tS-lwK3sch (x5)
+7:16:29 AM [vite] hmr update /src/pages/ask.tsx, /src/index.css?v=D8_rm74Qzz_tS-lwK3sch (x6)
+7:16:30 AM [vite] page reload src/hooks/use-debug.ts
+User info request: {
+  isAuthenticated: true,
+  hasUser: true,
+  userId: 1,
+  timestamp: '2025-03-09T07:16:36.122Z'
+}
+
+
