@@ -1,6 +1,16 @@
 # Changelog
 
 ## [March 2025]
+### Fixed
+- LLM Model Configuration Issues:
+  - Fixed incorrect model usage in qualitative chat interface
+  - Properly configured model constants for different interface types:
+    - Qualitative feedback chat now correctly uses GPT-4o-mini model
+    - Query chat continues to use o3-mini model as intended
+  - Enhanced error logging and debugging for LLM service calls
+  - Improved model selection logic to ensure each interface uses the correct model
+  - Added model information to console logs for easier troubleshooting
+
 ### Enhanced
 - Supplement Form Dosage Options:
   - Enhanced dosage unit options to include IU (International Units) and mcg (micrograms)

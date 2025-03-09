@@ -25,6 +25,14 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
     });
 
     // Call OpenAI API with chat completion
+    // IMPORTANT: This service must always use the QUERY_CHAT model (o3-mini)
+    console.log('Using query chat model:', {
+      model: MODELS.QUERY_CHAT,
+      modelName: "o3-mini",
+      isAuthenticated: !!userId,
+      timestamp: new Date().toISOString()
+    });
+    
     const stream = await openai.chat.completions.create({
       model: MODELS.QUERY_CHAT,
       messages: messages.map(msg => ({

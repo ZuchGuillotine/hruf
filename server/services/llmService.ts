@@ -45,14 +45,17 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       throw new Error('Daily chat limit reached. Please upgrade to Pro to continue.');
     }
     
-    // Verify model being used
+    // Verify model being used - explicitly logging to help debug model selection issues
+    // IMPORTANT: This service must always use the QUALITATIVE_CHAT model (gpt-4o-mini)
     console.log('Using qualitative chat model:', { 
       model: MODELS.QUALITATIVE_CHAT,
+      modelName: "gpt-4o-mini",
       userId,
       timestamp: new Date().toISOString()
     });
     
     // Call OpenAI chat with the qualitative model
+    // The second parameter ensures we're always using the correct model for this context
     return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT);
   } catch (error) {
     console.error('Error in qualitative chat service:', {

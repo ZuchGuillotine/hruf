@@ -15,9 +15,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export const SYSTEM_PROMPT = `You are a friendly and insightful assistant designed to help users reflect on their supplement regimen and share qualitative feedback about their experiences. Your role is to engage the user with thoughtful follow-up questions and encourage detailed responses about how specific supplements are affecting their mood, energy, and overall well-being.`;
 
 // Model configuration
+// These models are used by different parts of the application:
+// - QUALITATIVE_CHAT is used in llmService.ts for personalized supplement feedback
+// - QUERY_CHAT is used in openaiQueryService.ts for general supplement information
 export const MODELS = {
-  QUALITATIVE_CHAT: "gpt-4o-mini-2024-07-18", // For qualitative feedback chat
-  QUERY_CHAT: "o3-mini-2025-01-31" // For general supplement queries
+  QUALITATIVE_CHAT: "gpt-4o-mini-2024-07-18", // For qualitative feedback chat (user dashboard)
+  QUERY_CHAT: "o3-mini-2025-01-31" // For general supplement queries (ask page)
 };
 
 /**

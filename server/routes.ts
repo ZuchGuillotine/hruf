@@ -214,7 +214,8 @@ export function registerRoutes(app: Express): Server {
           messageCount: contextualizedMessages.length,
           userContextIncluded: true,
           userId: req.user?.id,
-          model: "4o-mini", // Model being used for qualitative feedback
+          model: "gpt-4o-mini-2024-07-18", // Explicitly using this model for qualitative feedback
+          modelConstant: "QUALITATIVE_CHAT", // Using the constant from MODELS object
           timestamp: new Date().toISOString()
         });
 
