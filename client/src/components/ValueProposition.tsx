@@ -15,10 +15,7 @@ export function ValueProposition() {
       title: "Health Progress Analytics",
       description: "Visualize your health journey with detailed analytics and trends"
     },
-    {
-      title: "HIPPA Compliant",
-      description: "Your health data is secure and protected"
-    }
+    
   ];
 
   return (
