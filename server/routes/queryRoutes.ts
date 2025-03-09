@@ -46,8 +46,9 @@ function setupQueryRoutes(app: Express) {
     });
   });
 
-  // Mount the query router at /api/query
+  // Mount the query router at /api/query.  This handles standard requests.
   app.use('/api/query', queryRouter);
+
 
   // Get query history (only for authenticated users)
   app.get("/api/query/history", async (req: Request, res: Response) => {

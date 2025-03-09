@@ -44,20 +44,30 @@ export function useQuery() {
       { role: "assistant", content: "" },
     ]);
 
-    // Determine if we should use streaming
-    const useStreaming = true; // Always use streaming
+    // Always use streaming but with fallback
+    setIsStreaming(true);
 
-    if (useStreaming) {
-      setIsStreaming(true);
-
-      try {
-        const timestamp = Date.now();
-
-        // Create event source for server-sent events
-        const eventSourceUrl = `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}`;
-        console.log("Creating EventSource with URL:", eventSourceUrl);
-
-        const eventSource = new EventSource(eventSourceUrl);
+    try {
+      // Add unique identifier to prevent caching
+      const timestamp = Date.now();
+      const requestId = Math.random().toString(36).substring(2, 15);
+      
+      // Create event source for server-sent events with cache-busting
+      const eventSourceUrl = `/api/query?stream=true&messages=${encodeURIComponent(JSON.stringify([userMessage]))}&t=${timestamp}&rid=${requestId}`;
+      console.log("Creating EventSource with URL:", eventSourceUrl);
+      
+      // Create a fetch request first to check connection status
+      const testConnection = await fetch('/api/query?ping=true', { 
+        method: 'HEAD',
+        credentials: 'same-origin' 
+      });
+      
+      if (!testConnection.ok) {
+        throw new Error(`API server not responding: ${testConnection.status}`);
+      }
+      
+      // Create EventSource with proper credentials
+      const eventSource = new EventSource(eventSourceUrl);
 
         let responseContent = "";
 

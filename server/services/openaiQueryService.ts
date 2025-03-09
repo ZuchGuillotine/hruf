@@ -24,9 +24,21 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
 
     if (stream) {
       try {
-        // For streaming, return the stream directly with a timeout
-        console.log('Creating OpenAI streaming request');
+        // Log detailed debugging info 
+        console.log('Creating OpenAI streaming request with these parameters:', {
+          model: "gpt-4o-mini",
+          messageCount: messages.length,
+          firstMessage: messages[0]?.role,
+          lastMessage: messages[messages.length-1]?.role,
+          stream: true,
+          timeout: 60000
+        });
+        
         const startTime = Date.now();
+        
+        // Create the stream with explicit abort controller for reliable timeout handling
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 55000); // 55s timeout
         
         const stream = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -34,8 +46,11 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           temperature: 0.7,
           max_tokens: 1000,
           stream: true,
-          timeout: 60000, // Increased to 60 second timeout for the request
+          signal: abortController.signal
         });
+        
+        // Clear timeout if successful
+        clearTimeout(timeoutId);
         
         console.log(`OpenAI stream created in ${Date.now() - startTime}ms`);
         
@@ -46,8 +61,15 @@ export async function queryWithAI(messages: Array<{ role: string; content: strin
           error: streamErr instanceof Error ? streamErr.message : 'Unknown error',
           stack: streamErr instanceof Error ? streamErr.stack : undefined,
           type: typeof streamErr,
-          detail: JSON.stringify(streamErr)
+          detail: JSON.stringify(streamErr),
+          apiKey: openai.apiKey ? 'API key exists' : 'API key missing'
         });
+        
+        // Check if it's an API key issue
+        if (streamErr instanceof Error && streamErr.message.includes('auth')) {
+          console.error('Possible API key issue detected with OpenAI');
+        }
+        
         throw streamErr;
       }
     } else {

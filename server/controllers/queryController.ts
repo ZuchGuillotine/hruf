@@ -4,18 +4,48 @@ import { queryWithAI, saveInteraction } from '../services/openaiQueryService';
 import { db } from '../../db';
 import { queryChats } from '../../db/schema';
 
+// Simple ping endpoint to check API availability
+export async function ping(req: Request, res: Response) {
+  res.status(200).send('API is available');
+}
+
 export async function handleQueryRequest(req: Request, res: Response) {
+  // Handle ping requests for connection testing
+  if (req.query.ping === 'true') {
+    return res.status(200).send('API is available');
+  }
+  
   try {
+    // Handle OPTIONS requests for CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return res.status(204).send('');
+    }
+
+    // For GET requests, return a simple health check
+    if (req.method === 'GET') {
+      return res.status(200).json({ status: 'Query endpoint is operational' });
+    }
+    
+    // Check if the request body is valid
+    if (!req.body || !req.body.messages || !Array.isArray(req.body.messages)) {
+      return res.status(400).json({ error: "Invalid request body. Messages must be an array." });
+    }
+    
     const { messages } = req.body;
     const userQuery = messages[messages.length - 1].content;
     const isStreamRequest = req.query.stream === 'true';
 
-    // Check if user is authenticated
+    // Determine user authentication status safely
     const userId = req.user?.id || null;
+    const isAuthenticated = !!userId;
 
     console.log('Query request received:', {
-      isAuthenticated: !!userId,
-      userId: userId,
+      method: req.method,
+      isAuthenticated,
+      userId,
       messageCount: messages?.length || 0,
       isStreaming: isStreamRequest,
       timestamp: new Date().toISOString()
