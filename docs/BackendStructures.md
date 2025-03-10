@@ -255,6 +255,19 @@
 
 ### Security Measures
 1. CORS Configuration:
+
+#### Supplement History Routes
+GET /api/supplement-logs/:date
+- Retrieves all supplement logs for a specific date
+- Implements UTC day boundary handling for consistent results
+- Returns combined data:
+  - Supplement logs for the requested date
+  - Qualitative logs for the date (excluding query-type logs)
+  - Daily summaries for the date
+- All data is properly joined with relevant tables
+- Requires authentication
+- Enhanced error handling with detailed logging
+
    - Credentials properly handled
    - Essential headers allowed: Content-Type, Authorization, Cookie
    - Secure methods: GET, POST, PUT, DELETE, OPTIONS

@@ -1,3 +1,31 @@
+
+# Changelog
+
+## [March 2025]
+### Enhanced 
+- Supplement History Component:
+  - Updated supplement-history page to work with summary-based approach
+  - Improved data fetching from qualitative logs and daily summaries
+  - Enhanced UI to display both supplement logs and summaries
+  - Added better error handling and loading states
+  - Fixed date handling for proper UTC boundaries
+  - Improved navigation and user experience
+
+- Server API Routes:
+  - Modified /api/supplement-logs/:date endpoint to support summarization
+  - Enhanced data retrieval with proper UTC day boundary handling
+  - Improved error logging and debugging information
+  - Optimized database queries for better performance
+  - Added comprehensive data enrichment for history view
+
+### Fixed
+- Timezone Issues:
+  - Resolved date mismatch between client and server
+  - Implemented proper UTC day boundary handling
+  - Fixed date display in supplement history calendar
+  - Improved date/time conversions across application
+
+
 # Changelog
 
 ## [March 2025]

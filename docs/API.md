@@ -38,6 +38,46 @@ Add new supplement.
 
 ## Health Stats
 
+## Supplement History
+
+### GET /api/supplement-logs/:date
+Get all supplement logs and related data for a specific date.
+
+Response includes:
+```typescript
+{
+  supplements: Array<{
+    id: number
+    supplementId: number
+    name: string
+    dosage: string
+    frequency: string
+    takenAt: string
+    notes: string
+    effects: object
+  }>,
+  qualitativeLogs: Array<{
+    id: number
+    content: string
+    type: string
+    loggedAt: string
+    tags: string[]
+    metadata: object
+  }>,
+  dailySummaries: Array<{
+    id: number
+    content: string
+    summaryType: string
+    startDate: string
+    endDate: string
+    metadata: object
+  }>
+}
+```
+
+The endpoint properly handles UTC day boundaries to ensure consistent results regardless of timezone.
+
+
 ### GET /api/health-stats
 Get user's health statistics.
 
