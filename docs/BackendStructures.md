@@ -268,6 +268,27 @@ GET /api/supplement-logs/:date
 - Requires authentication
 - Enhanced error handling with detailed logging
 
+#### Summary Routes
+GET /api/summaries
+- Retrieves all summaries for the current user
+- Requires authentication
+- Returns array of summary objects with metadata
+
+POST /api/summaries/daily
+- Generates a daily summary for a specific date
+- Requires authentication and date parameter
+- Creates a comprehensive summary of supplement intake and qualitative feedback
+
+POST /api/summaries/weekly
+- Generates a weekly summary for a date range
+- Requires authentication and date range parameters
+- Identifies patterns and trends across multiple days
+
+POST /api/summaries/realtime
+- Triggers immediate summarization for the current user
+- Requires authentication
+- Used for on-demand context building and analysis
+
    - Credentials properly handled
    - Essential headers allowed: Content-Type, Authorization, Cookie
    - Secure methods: GET, POST, PUT, DELETE, OPTIONS

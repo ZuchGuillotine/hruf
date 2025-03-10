@@ -2,6 +2,19 @@
 # Changelog
 
 ## [March 2025]
+### Added
+- Summary Controller and Routes:
+  - Created dedicated summaryController.ts with comprehensive functionality
+  - Implemented modular summaryRoutes.ts for better code organization
+  - Added /api/summaries endpoint with various actions:
+    - GET / for retrieving all summaries
+    - POST /daily for generating daily summaries
+    - POST /weekly for generating weekly summaries
+    - POST /realtime for triggering immediate summarization
+  - Enhanced authentication with dedicated middleware
+  - Improved error handling and response formatting
+  - Added robust parameter validation
+
 ### Enhanced 
 - Supplement History Component:
   - Updated supplement-history page to work with summary-based approach

@@ -77,6 +77,37 @@ Response includes:
 
 The endpoint properly handles UTC day boundaries to ensure consistent results regardless of timezone.
 
+## Summaries
+
+### GET /api/summaries
+Get all summaries for the current user.
+
+### POST /api/summaries/daily
+Generate a daily summary for a specific date.
+
+Request:
+```typescript
+{
+  date: string // ISO date string (YYYY-MM-DD)
+}
+```
+
+### POST /api/summaries/weekly
+Generate a weekly summary for a date range.
+
+Request:
+```typescript
+{
+  startDate: string // ISO date string (YYYY-MM-DD)
+  endDate: string // ISO date string (YYYY-MM-DD)
+}
+```
+
+### POST /api/summaries/realtime
+Trigger a real-time summarization for the current user.
+
+All summary endpoints require authentication.
+
 
 ### GET /api/health-stats
 Get user's health statistics.
