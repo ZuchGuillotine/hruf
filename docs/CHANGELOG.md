@@ -3,7 +3,7 @@
 
 ## [March 2025]
 ### Added
-- Summary Controller and Routes:
+- Summary Controller and Routes Integration:
   - Created dedicated summaryController.ts with comprehensive functionality
   - Implemented modular summaryRoutes.ts for better code organization
   - Added /api/summaries endpoint with various actions:
@@ -14,6 +14,8 @@
   - Enhanced authentication with dedicated middleware
   - Improved error handling and response formatting
   - Added robust parameter validation
+  - Successfully integrated summary routes into the main server application
+  - Added setupSummaryRoutes import and initialization in server/index.ts
 
 ### Enhanced 
 - Supplement History Component:
