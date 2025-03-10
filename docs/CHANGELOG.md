@@ -1,6 +1,17 @@
 # Changelog
 
 ## [March 2025]
+### Added
+- Vector Search Capabilities:
+  - Implemented pgvector PostgreSQL extension
+  - Added log_embeddings table for storing log vectors
+  - Added summary_embeddings table for chat summary vectors
+  - Created vector search indexes using ivfflat algorithm
+  - Configured for 1536-dimension OpenAI embeddings
+  - Updated schema.ts with vector field definitions
+  - Fixed migration script execution for TypeScript files
+  - Enhanced run_migration.js with ES module compatibility
+
 ### Fixed
 - LLM Model Configuration Issues:
   - Fixed incorrect model usage in qualitative chat interface

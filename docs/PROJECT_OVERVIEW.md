@@ -11,6 +11,8 @@ A cutting-edge health tracking and content management application that combines 
     - All database tables are now stored in NeonDB Postgres
     - Previous RDS dependency has been removed
     - Complete database architecture including user data, supplements, logs, and chat interactions
+    - Vector search capability with pgvector extension
+    - Semantic similarity search for logs and summaries
 
 ### AI Service Architecture Updates (March 2025)
 

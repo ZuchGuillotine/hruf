@@ -57,6 +57,19 @@
 
 ### Tables Schema Overview
 
+#### Vector Search Tables
+- logEmbeddings:
+  - Purpose: Stores vector embeddings for semantic search of logs
+  - Fields: id, logId, logType, embedding (vector(1536)), createdAt
+  - Indexing: Uses ivfflat index with cosine similarity for fast search
+  - Relations: References log entries across different log tables
+
+- summaryEmbeddings:
+  - Purpose: Stores vector embeddings for chat summaries
+  - Fields: id, summaryId, embedding (vector(1536)), createdAt
+  - Indexing: Uses ivfflat index with cosine similarity for fast search
+  - Relations: References entries in the logSummaries table
+
 #### Core Tables
 - users:
   - Authentication data (username, email, password)
