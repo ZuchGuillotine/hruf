@@ -1,6 +1,7 @@
 
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 // Get the migration file to run from command line arguments
 const migrationFile = process.argv[2];
@@ -11,7 +12,8 @@ if (!migrationFile) {
   process.exit(1);
 }
 
-const fullPath = path.resolve(migrationFile);
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const fullPath = resolve(__dirname, '..', migrationFile);
 
 try {
   console.log(`Running migration: ${migrationFile}`);
