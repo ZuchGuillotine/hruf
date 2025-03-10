@@ -13,6 +13,11 @@ A cutting-edge health tracking and content management application that combines 
     - Complete database architecture including user data, supplements, logs, and chat interactions
     - Vector search capability with pgvector extension
     - Semantic similarity search for logs and summaries
+  - **Vector Search Services**:
+    - embeddingService: Generates and manages OpenAI embeddings for vector search
+    - advancedSummaryService: Creates intelligent summaries of user supplement data
+    - Postgres pgvector extension for efficient semantic similarity search
+    - 1536-dimension vectors optimized for relevance matching
 
 ### AI Service Architecture Updates (March 2025)
 

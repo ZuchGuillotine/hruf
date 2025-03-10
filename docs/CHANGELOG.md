@@ -2,6 +2,23 @@
 
 ## [March 2025]
 ### Added
+- Advanced Context Management Services:
+  - Implemented embeddingService for vector embedding management:
+    - OpenAI embedding generation for logs and summaries
+    - Semantic similarity search functionality
+    - Batch processing for efficient API usage
+    - Support for both qualitative and quantitative logs
+  - Implemented advancedSummaryService for intelligent summarization:
+    - Daily summaries of supplement logs and experiences
+    - Weekly summaries identifying patterns and trends
+    - Automatic extraction of significant changes
+    - Token-optimized context for LLM interactions
+  - Enhanced token efficiency through smart context building:
+    - Retrieval of semantically relevant content
+    - Prioritization of recent and significant information
+    - Reduced token usage while maintaining context quality
+    - Improved response relevance for both chat systems
+
 - Vector Search Capabilities:
   - Implemented pgvector PostgreSQL extension
   - Added log_embeddings table for storing log vectors

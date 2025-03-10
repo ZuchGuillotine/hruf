@@ -55,6 +55,34 @@
   - Reduces token usage while maintaining context quality
   - Includes sentiment analysis and metadata
 
+#### Advanced Summary System
+- Service: advancedSummaryService.ts
+  - Purpose: Creates intelligent summaries of user supplement logs and experiences
+  - Features:
+    - Daily summaries combining supplement logs and qualitative observations
+    - Weekly summaries that identify patterns and trends
+    - Automatic extraction of significant changes
+    - Token-optimized context building for LLM interactions
+  - Integration:
+    - Works with logSummaries table
+    - Provides context to both chat systems
+    - Reduces token usage in LLM calls
+    - Improves relevance of AI responses
+
+#### Vector Embedding System
+- Service: embeddingService.ts
+  - Purpose: Creates vector embeddings for semantic search
+  - Features:
+    - Generates 1536-dimension vectors using OpenAI embeddings
+    - Supports similarity search via cosine distance
+    - Processes both logs and summaries
+    - Batch processing for efficient API usage
+  - Integration:
+    - Works with logEmbeddings and summaryEmbeddings tables
+    - Enables semantic search in context building
+    - Powers relevant context retrieval for query interface
+    - Improves response quality with targeted context
+
 ### Tables Schema Overview
 
 #### Vector Search Tables
