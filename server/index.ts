@@ -1,3 +1,4 @@
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -106,6 +107,22 @@ if (app.get("env") === "development") {
   serveStatic(app);
 }
 
+// Initialize services before starting the server
+async function initializeAndStart() {
+  try {
+    // Initialize our services
+    await serviceInitializer.initializeServices();
+    console.log('Services initialized successfully');
+    
+    // Start server with improved error handling and retries
+    await startServer();
+  } catch (error) {
+    console.error('Failed to initialize services:', error);
+    // Start server anyway, with reduced capabilities
+    await startServer();
+  }
+}
+
 // Start server with improved error handling and retries
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 const MAX_RETRIES = 3;
@@ -134,29 +151,14 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    // Initialize AI context services
-    await serviceInitializer.initializeServices()
-      .catch(error => {
-        console.warn('Service initialization warning:', error.message);
-        // Continue server startup even if services fail to initialize
-      });
-    
     const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
     server.listen(port, "0.0.0.0", () => {
       log(`Server started successfully on port ${port}`);
     });
-
-    // Set up graceful shutdown
-    const shutdownHandler = async () => {
-      console.log('Shutting down server...');
-      await serviceInitializer.shutdownServices();
-      process.exit(0);
-    };
-
-    // Handle termination signals
-    process.on('SIGTERM', shutdownHandler);
-    process.on('SIGINT', shutdownHandler);
     
+    // Handle graceful shutdown
+    process.on('SIGTERM', handleShutdown);
+    process.on('SIGINT', handleShutdown);
   } catch (err) {
     console.error('Failed to start server:', {
       error: err.message,
@@ -167,4 +169,30 @@ async function startServer() {
   }
 }
 
-startServer().catch(console.error);
+// Graceful shutdown function
+async function handleShutdown() {
+  console.log('Received shutdown signal, closing server...');
+  
+  try {
+    // Shutdown services gracefully
+    await serviceInitializer.shutdownServices();
+    
+    // Close server connections
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+    
+    // Force shutdown after timeout
+    setTimeout(() => {
+      console.error('Forced shutdown due to timeout');
+      process.exit(1);
+    }, 10000); // 10 seconds timeout
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+// Start services and server
+initializeAndStart().catch(console.error);
