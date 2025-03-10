@@ -61,3 +61,50 @@ export {
   sendEmail,
   EMAIL_TEMPLATES
 };
+import * as sgMail from '@sendgrid/mail';
+import logger from '../utils/logger';
+
+// Set API key from environment
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+
+/**
+ * Send an email using SendGrid
+ * @param {Object} emailData Email data
+ * @param {string} emailData.to Recipient email
+ * @param {string} emailData.subject Email subject
+ * @param {string} emailData.text Plain text email content
+ * @param {string} emailData.html HTML email content
+ * @returns {Promise<void>}
+ */
+export async function sendEmail(emailData: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<void> {
+  try {
+    // Validate required fields
+    if (!emailData.to) {
+      throw new Error('Email recipient is required');
+    }
+
+    // Prepare message
+    const msg = {
+      from: 'accounts@stacktracker.io', // Default sender
+      to: emailData.to,
+      subject: emailData.subject,
+      text: emailData.text,
+      html: emailData.html,
+    };
+
+    // Send the email
+    const response = await sgMail.send(msg);
+    logger.info('Email sent successfully', {
+      statusCode: response[0]?.statusCode,
+      to: emailData.to
+    });
+  } catch (error) {
+    logger.error('Error sending email:', error);
+    throw error;
+  }
+}

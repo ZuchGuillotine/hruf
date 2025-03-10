@@ -1,5 +1,6 @@
 
 // server/services/serviceInitializer.ts
+import embeddingService from './embeddingService';
 
 import { embeddingService } from './embeddingService';
 import { advancedSummaryService } from './advancedSummaryService';
@@ -49,12 +50,12 @@ class ServiceInitializer {
     try {
       logger.info('Initializing PGVector services...');
       
-      // Verify PGVector availability by checking if extension is installed
-      // We'll do a simple query to ensure the extension is working
-      /* 
-      This step is handled by our migration, but we'll leave a placeholder
-      for any additional initialization that might be needed in the future
-      */
+      // Verify PGVector availability and initialize embedding service
+      const initialized = await embeddingService.initialize();
+      
+      if (!initialized) {
+        throw new Error('Failed to initialize embedding service');
+      }
       
       logger.info('PGVector services initialized successfully');
     } catch (error) {

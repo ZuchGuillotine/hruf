@@ -1,11 +1,11 @@
 
 // server/openai.ts
 
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import logger from "./utils/logger";
 
-// Ensure API key is present
-if (!process.env.OPENAI_API_KEY) {
+// Ensure API key is present in non-test environment
+if (!process.env.OPENAI_API_KEY && process.env.NODE_ENV !== 'test') {
   throw new Error("OPENAI_API_KEY must be set");
 }
 

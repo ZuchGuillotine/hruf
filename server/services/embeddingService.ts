@@ -1,10 +1,14 @@
 // server/services/embeddingService.ts
 
-import OpenAI from "openai";
+import { OpenAI } from "openai";
+import logger from "../utils/logger";
+import { Cache } from "../utils/cache";
 import { db } from "../../db";
 import { logEmbeddings, summaryEmbeddings, logSummaries } from "../../db/schema";
 import { eq, sql } from "drizzle-orm";
-import logger from "../utils/logger";
+
+// Cache for embedding results to reduce API calls and costs
+const embeddingCache = new Cache<number[]>(60 * 60 * 1000); // 1 hour cache
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -232,5 +236,24 @@ class EmbeddingService {
   }
 }
 
+/**
+ * Initialize the embedding service
+ * This is used to verify the service is working properly during app startup
+ */
+async function initialize(): Promise<boolean> {
+  try {
+    // Perform a simple test to ensure OpenAI connectivity
+    await embeddingService.generateEmbedding('Test embedding service initialization');
+    logger.info('Embedding service initialized successfully');
+    return true;
+  } catch (error) {
+    logger.error('Failed to initialize embedding service:', error);
+    return false;
+  }
+}
+
 // Export a singleton instance
 export const embeddingService = new EmbeddingService();
+export default {
+  initialize
+};

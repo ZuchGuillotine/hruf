@@ -39,10 +39,14 @@ describe('SendGrid Email Service', () => {
     };
 
     // Mock a failure for this test
-    (sgMail.send as jest.Mock).mockRejectedValueOnce(new Error('Send failed'));
+    (sgMail.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Send failed');
+    });
 
     // Act & Assert
-    await expect(sendEmail(emailData)).rejects.toThrow('Send failed');
+    await expect(async () => {
+      await sendEmail(emailData);
+    }).rejects.toThrow('Send failed');
   });
 });
 
