@@ -1,25 +1,49 @@
 
-import sgMail from '@sendgrid/mail';
+import { sendEmail } from '../services/emailService';
+import * as sgMail from '@sendgrid/mail';
 
-// Set API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+// Mock SendGrid
+jest.mock('@sendgrid/mail', () => ({
+  setApiKey: jest.fn(),
+  send: jest.fn().mockResolvedValue([{ statusCode: 202 }])
+}));
 
-async function testSendEmail() {
-  const msg = {
-    from: 'accounts@stacktracker.io', // must be verified sender
-    subject: 'Sending with SendGrid is Fun',
-    text: 'and easy to do anywhere, even with Node.js',
-    html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-  };
+describe('SendGrid Email Service', () => {
+  test('should send an email successfully', async () => {
+    // Arrange
+    const emailData = {
+      to: 'test@example.com',
+      subject: 'Test Email',
+      text: 'This is a test email',
+      html: '<p>This is a test email</p>'
+    };
 
-  try {
-    await sgMail.send(msg);
-    console.log('Test email sent successfully');
-  } catch (error: any) {
-    console.error('Error sending test email:');
-    console.error(error.response ? error.response.body : error);
-  }
-}
+    // Act
+    await sendEmail(emailData);
 
-// Run the test
-testSendEmail();
+    // Assert
+    expect(sgMail.send).toHaveBeenCalled();
+    expect(sgMail.send).toHaveBeenCalledWith(expect.objectContaining({
+      to: 'test@example.com',
+      subject: 'Test Email'
+    }));
+  });
+
+  test('should handle errors when sending emails', async () => {
+    // Arrange
+    const emailData = {
+      to: 'test@example.com',
+      subject: 'Error Test Email',
+      text: 'This should fail',
+      html: '<p>This should fail</p>'
+    };
+
+    // Mock a failure for this test
+    (sgMail.send as jest.Mock).mockRejectedValueOnce(new Error('Send failed'));
+
+    // Act & Assert
+    await expect(sendEmail(emailData)).rejects.toThrow('Send failed');
+  });
+});
+
+// Remove the standalone function that was causing the error

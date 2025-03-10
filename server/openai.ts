@@ -10,7 +10,9 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 // Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || 'mock-key-for-testing'
+});
 
 /**
  * System prompt that defines the AI assistant's behavior and capabilities
