@@ -460,6 +460,12 @@ Security logging and monitoring to support HIPAA compliance.
   - Removed legacy parameters:
     - temperature (unsupported)
     - max_tokens (replaced)
+  - Enhanced Metrics and Logging:
+    - Token usage estimation and tracking
+    - Request and response token counting
+    - Detailed chunk-level streaming logs
+    - Comprehensive error diagnostics
+    - Performance timing metrics
 
 #### Response Flow
 1. Client Request:

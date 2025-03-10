@@ -34,6 +34,13 @@ A cutting-edge health tracking and content management application that combines 
 
 ### AI Service Architecture Updates (March 2025)
 
+#### OpenAI Service Enhancements
+- Advanced Token Management:
+  - Implemented token usage estimation and tracking
+  - Added analytics for context and response tokens
+  - Enhanced optimization of token usage
+  - Reduced unnecessary context overhead
+
 #### Streaming Response Implementation
 - Chat Service:
   - Converted `chatWithAI` to async generator function
