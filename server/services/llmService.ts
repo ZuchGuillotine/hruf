@@ -57,11 +57,14 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       throw new Error('Daily chat limit reached. Please upgrade to Pro to continue.');
     }
 
+    // Define the correct model for qualitative chat
+    const QUALITATIVE_MODEL = "gpt-4o-mini";
+
     // Verify model being used - explicitly logging to help debug model selection issues
-    // IMPORTANT: This service must always use the QUALITATIVE_CHAT model (gpt-4o-mini)
+    // IMPORTANT: This service must always use the qualitative model (gpt-4o-mini)
     console.log('Using qualitative chat model:', { 
-      model: MODELS.QUALITATIVE_CHAT,
-      modelName: "gpt-4o-mini",
+      model: QUALITATIVE_MODEL,
+      modelName: QUALITATIVE_MODEL,
       userId,
       timestamp: new Date().toISOString()
     });
@@ -69,7 +72,7 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
     // Call OpenAI chat with the qualitative model
     // The second parameter ensures we're always using the correct model for this context
     // Enable streaming for real-time responses
-    return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT, true); // Set streaming to true
+    return openAIChatWithAI(messages, QUALITATIVE_MODEL, true); // Set streaming to true
   } catch (error) {
     console.error('Error in qualitative chat service:', {
       error: error instanceof Error ? error.message : 'Unknown error',
