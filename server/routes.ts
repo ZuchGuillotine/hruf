@@ -1203,115 +1203,117 @@ export function registerRoutes(app: Express): Server {
   setupSummaryRoutes(app);
 
   app.get('/api/health-check', healthCheck);
+  
+  // Add the ChatGPT endpoint
+  app.post('/api/chat', async (req, res) => {
+    try {
+      // Extract user ID if authenticated, use default if not
+      const userId = req.user?.id || '0';
+
+      // Get user message from request body
+      const { message } = req.body;
+
+      // If no message, return error
+      if (!message) {
+        return res.status(400).json({ error: 'No message provided' });
+      }
+
+      // Setup streaming response
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      // Log request details for debugging
+      console.log('Qualitative chat request received:', {
+        userId,
+        messagePreview: message.substring(0, 50) + '...',
+        authenticated: !!req.user,
+        timestamp: new Date().toISOString()
+      });
+
+      try {
+        // Use the LLM service to generate a response with streaming
+        const stream = await qualitativeChatWithAI(userId.toString(), message);
+
+        // Process each chunk from the stream
+        for await (const chunk of stream) {
+          // Send chunk to client
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+
+          // Debug log chunk information
+          if (chunk.error) {
+            console.error('Stream chunk error:', chunk.error);
+          }
+        }
+
+        // End the stream
+        res.end();
+      } catch (error) {
+        console.error('Streaming error:', error);
+        res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
+        res.end();
+      }
+    } catch (error) {
+      console.error('Chat API error:', error);
+      // If headers are already sent, we need to send the error as an event
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: 'Server error occurred' })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: 'Server error occurred' });
+      }
+    }
+  });
+
+  // Add support for GET method with query parameter for EventSource compatibility
+  app.get('/api/chat', async (req, res) => {
+    try {
+      // Extract user ID if authenticated, use default if not
+      const userId = req.user?.id || '0';
+
+      // Get message from query parameter
+      const message = req.query.message as string;
+
+      // If no message, return error
+      if (!message) {
+        return res.status(400).json({ error: 'No message provided' });
+      }
+
+      // Setup streaming response
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      try {
+        // Use the LLM service to generate a response
+        const stream = await qualitativeChatWithAI(userId.toString(), message);
+
+        for await (const chunk of stream) {
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        }
+
+        // End the stream
+        res.end();
+      } catch (error) {
+        console.error('Streaming error:', error);
+        res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
+        res.end();
+      }
+    } catch (error) {
+      console.error('Chat API error:', error);
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: 'Server error occurred' })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: 'Server error occurred' });
+      }
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
 }
 
-// Add the ChatGPT endpoint
-app.post('/api/chat', async (req, res) => {
-  try {
-    // Extract user ID if authenticated, use default if not
-    const userId = req.user?.id || '0';
-
-    // Get user message from request body
-    const { message } = req.body;
-
-    // If no message, return error
-    if (!message) {
-      return res.status(400).json({ error: 'No message provided' });
-    }
-
-    // Setup streaming response
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    // Log request details for debugging
-    console.log('Qualitative chat request received:', {
-      userId,
-      messagePreview: message.substring(0, 50) + '...',
-      authenticated: !!req.user,
-      timestamp: new Date().toISOString()
-    });
-
-    try {
-      // Use the LLM service to generate a response with streaming
-      const stream = await qualitativeChatWithAI(userId.toString(), message);
-
-      // Process each chunk from the stream
-      for await (const chunk of stream) {
-        // Send chunk to client
-        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-
-        // Debug log chunk information
-        if (chunk.error) {
-          console.error('Stream chunk error:', chunk.error);
-        }
-      }
-
-      // End the stream
-      res.end();
-    } catch (error) {
-      console.error('Streaming error:', error);
-      res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
-      res.end();
-    }
-  } catch (error) {
-    console.error('Chat API error:', error);
-    // If headers are already sent, we need to send the error as an event
-    if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ error: 'Server error occurred' })}\n\n`);
-      res.end();
-    } else {
-      res.status(500).json({ error: 'Server error occurred' });
-    }
-  }
-});
-
-// Add support for GET method with query parameter for EventSource compatibility
-app.get('/api/chat', async (req, res) => {
-  try {
-    // Extract user ID if authenticated, use default if not
-    const userId = req.user?.id || '0';
-
-    // Get message from query parameter
-    const message = req.query.message as string;
-
-    // If no message, return error
-    if (!message) {
-      return res.status(400).json({ error: 'No message provided' });
-    }
-
-    // Setup streaming response
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    try {
-      // Use the LLM service to generate a response
-      const stream = await qualitativeChatWithAI(userId.toString(), message);
-
-      for await (const chunk of stream) {
-        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-      }
-
-      // End the stream
-      res.end();
-    } catch (error) {
-      console.error('Streaming error:', error);
-      res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
-      res.end();
-    }
-  } catch (error) {
-    console.error('Chat API error:', error);
-    if (res.headersSent) {
-      res.write(`data: ${JSON.stringify({ error: 'Server error occurred' })}\n\n`);
-      res.end();
-    } else {
-      res.status(500).json({ error: 'Server error occurred' });
-    }
-  }
-});
+// ChatGPT endpoints are now properly integrated into the registerRoutes function
