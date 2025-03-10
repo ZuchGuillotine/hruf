@@ -141,3 +141,57 @@ describe('Embedding Service Tests', () => {
     }
   });
 });
+import { embeddingService } from '../services/embeddingService';
+import { db } from '../../db';
+
+// Mock the db
+jest.mock('../../db', () => ({
+  db: {
+    insert: jest.fn().mockReturnValue({
+      values: jest.fn().mockReturnValue({
+        returning: jest.fn().mockResolvedValue([{ id: 1 }])
+      })
+    }),
+    select: jest.fn().mockReturnValue({
+      from: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockResolvedValue([])
+        })
+      })
+    }),
+    execute: jest.fn().mockResolvedValue([])
+  }
+}));
+
+describe('EmbeddingService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  test('generateEmbedding should return an embedding array', async () => {
+    const text = 'This is a test text for embedding';
+    const embedding = await embeddingService.generateEmbedding(text);
+    
+    expect(Array.isArray(embedding)).toBe(true);
+    expect(embedding.length).toBe(1536);
+  });
+  
+  test('createLogEmbedding should store an embedding for a log', async () => {
+    const logId = 1;
+    const content = 'Test log content';
+    const logType = 'qualitative';
+    
+    await embeddingService.createLogEmbedding(logId, content, logType as any);
+    
+    expect(db.insert).toHaveBeenCalled();
+  });
+  
+  test('findSimilarContent should return an array of similar content', async () => {
+    const query = 'Test query';
+    const userId = 1;
+    
+    const results = await embeddingService.findSimilarContent(query, userId);
+    
+    expect(Array.isArray(results)).toBe(true);
+  });
+});

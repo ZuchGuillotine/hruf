@@ -118,3 +118,44 @@ describe('OpenAI Service Tests', () => {
     expect(fullResponse.toLowerCase()).toMatch(/energy|supplements|vitamin|mineral/);
   });
 });
+import { chatWithAI, MODELS } from '../openai';
+
+describe('OpenAI Integration', () => {
+  test('chatWithAI should handle streaming responses', async () => {
+    const messages = [
+      { role: 'user', content: 'Hello, how are you?' }
+    ];
+    
+    const generator = chatWithAI(messages);
+    let fullResponse = '';
+    
+    // Consume the generator
+    for await (const chunk of generator) {
+      expect(chunk).toHaveProperty('response');
+      expect(chunk).toHaveProperty('streaming');
+      
+      if (chunk.response) {
+        fullResponse += chunk.response;
+      }
+    }
+    
+    expect(fullResponse).toContain('mock');
+  });
+  
+  test('chatWithAI should handle model override', async () => {
+    const messages = [
+      { role: 'user', content: 'Tell me about supplements' }
+    ];
+    
+    const generator = chatWithAI(messages, MODELS.QUERY_CHAT);
+    let received = false;
+    
+    // Just check if we get any response
+    for await (const chunk of generator) {
+      received = true;
+      break;
+    }
+    
+    expect(received).toBe(true);
+  });
+});

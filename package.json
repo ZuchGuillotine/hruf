@@ -14,7 +14,11 @@
     "test:summary": "jest --config=jest.config.cjs --testPathPattern=summaryManager",
     "test:embedding": "jest --config=jest.config.cjs --testPathPattern=embeddingService",
     "test:context": "jest --config=jest.config.cjs --testPathPattern=llmContextService",
-    "test:openai": "jest --config=jest.config.cjs --testPathPattern=openai"
+    "test:openai": "jest --config=jest.config.cjs --testPathPattern=openai",
+    "test:services": "jest --config=jest.config.cjs --testPathPattern=services",
+    "test:cron": "jest --config=jest.config.cjs --testPathPattern=cron",
+    "test:verbose": "jest --config=jest.config.cjs --verbose",
+    "test:debug": "NODE_OPTIONS=--inspect-brk jest --config=jest.config.cjs --runInBand"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

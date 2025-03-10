@@ -151,3 +151,48 @@ describe('LLM Context Service Tests', () => {
     logger.info(`Token difference: ${Math.abs(feedbackTokens - queryTokens)}`);
   });
 });
+import { constructUserContext } from '../services/llmContextService';
+import { db } from '../../db';
+
+// Mock the db
+jest.mock('../../db', () => ({
+  db: {
+    select: jest.fn().mockReturnValue({
+      from: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockResolvedValue([])
+        })
+      })
+    }),
+    execute: jest.fn().mockResolvedValue([])
+  }
+}));
+
+describe('LLM Context Service', () => {
+  test('constructUserContext should return a context object with messages array', async () => {
+    const userId = 1;
+    const messageHistory = [
+      { role: 'user', content: 'Hello' },
+      { role: 'assistant', content: 'Hi there!' }
+    ];
+    
+    const result = await constructUserContext(userId, messageHistory);
+    
+    expect(result).toHaveProperty('messages');
+    expect(Array.isArray(result.messages)).toBe(true);
+    expect(result.messages.length).toBeGreaterThan(0);
+  });
+  
+  test('constructUserContext should handle undefined userId', async () => {
+    const userId = undefined;
+    const messageHistory = [
+      { role: 'user', content: 'Hello' }
+    ];
+    
+    const result = await constructUserContext(userId as any, messageHistory);
+    
+    expect(result).toHaveProperty('messages');
+    expect(Array.isArray(result.messages)).toBe(true);
+    expect(result.messages.length).toBeGreaterThan(0);
+  });
+});

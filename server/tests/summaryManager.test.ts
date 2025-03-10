@@ -117,3 +117,47 @@ describe('Summary Task Manager Tests', () => {
     jest.useRealTimers();
   });
 });
+import { summaryTaskManager } from '../cron/summaryManager';
+import { advancedSummaryService } from '../services/advancedSummaryService';
+
+// Mock the advancedSummaryService
+jest.mock('../services/advancedSummaryService', () => ({
+  advancedSummaryService: {
+    processDailySummaries: jest.fn().mockResolvedValue(null),
+    processWeeklySummaries: jest.fn().mockResolvedValue(null),
+    generateDailySummary: jest.fn().mockResolvedValue(1)
+  }
+}));
+
+describe('SummaryTaskManager', () => {
+  beforeEach(() => {
+    // Clear mocks before each test
+    jest.clearAllMocks();
+    
+    // Stop any tasks that might be running
+    summaryTaskManager.stopAllTasks();
+  });
+  
+  test('runDailySummaryTask should call processDailySummaries', async () => {
+    await summaryTaskManager.runDailySummaryTask();
+    expect(advancedSummaryService.processDailySummaries).toHaveBeenCalled();
+  });
+  
+  test('runWeeklySummaryTask should call processWeeklySummaries', async () => {
+    await summaryTaskManager.runWeeklySummaryTask();
+    expect(advancedSummaryService.processWeeklySummaries).toHaveBeenCalled();
+  });
+  
+  test('runRealtimeSummary should call generateDailySummary with correct userId', async () => {
+    const userId = 123;
+    await summaryTaskManager.runRealtimeSummary(userId);
+    expect(advancedSummaryService.generateDailySummary).toHaveBeenCalledWith(userId, expect.any(Date));
+  });
+  
+  test('stopAllTasks should clear intervals', () => {
+    // We can't directly test the interval clearing, but we can ensure it doesn't throw errors
+    expect(() => {
+      summaryTaskManager.stopAllTasks();
+    }).not.toThrow();
+  });
+});
