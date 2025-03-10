@@ -1,31 +1,18 @@
 import * as sgMail from '@sendgrid/mail';
 import logger from '../utils/logger';
+import { SENDGRID_CONFIG } from '../config/sendgrid';
 
 // Set API key if available
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-// Email templates/configuration
-export const SENDGRID_CONFIG = {
-  apiKeyExists: !!process.env.SENDGRID_API_KEY,
-  fromEmail: process.env.SENDGRID_FROM_EMAIL || 'accounts@stacktracker.io',
-  templateIds: {
-    WELCOME: process.env.SENDGRID_WELCOME_TEMPLATE || 'd-fe1c448989a34f4697885de8d504b960',
-    TWO_FACTOR: process.env.SENDGRID_2FA_TEMPLATE || 'd-xxxxxxxxxxxxx',
-    PASSWORD_RESET: process.env.SENDGRID_RESET_TEMPLATE || 'd-xxxxxxxxxxxxx',
-    DRIP_1: process.env.SENDGRID_DRIP1_TEMPLATE || 'd-xxxxxxxxxxxxx',
-    DRIP_2: process.env.SENDGRID_DRIP2_TEMPLATE || 'd-xxxxxxxxxxxxx',
-    WEEKLY_SUMMARY: process.env.SENDGRID_WEEKLY_SUMMARY_TEMPLATE || 'd-xxxxxxxxxxxxx'
-  }
-};
-
 /**
  * Email data interface
  */
 interface EmailData {
   to: string;
-  subject: string;
+  subject?: string;
   text?: string;
   html?: string;
   templateId?: string;
@@ -33,9 +20,10 @@ interface EmailData {
 }
 
 /**
- * Send an email using SendGrid
- * @param {EmailData} emailData - Email data including recipient, subject, content
- * @returns {Promise<boolean>} - Success status
+ * Sends an email using SendGrid
+ * 
+ * @param emailData Email configuration
+ * @returns Promise resolving to boolean indicating success
  */
 export async function sendEmail(emailData: EmailData): Promise<boolean> {
   try {
@@ -89,5 +77,3 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
     throw error;
   }
 }
-
-export { SENDGRID_CONFIG };
