@@ -1,6 +1,34 @@
 
 # Changelog
 
+# Changelog
+
+## [March 2025]
+### Fixed
+- LLM Chat Service Streaming:
+  - Fixed streaming response issue in qualitative feedback chat
+  - Resolved problem where correct responses were being replaced with error messages
+  - Ensured complete responses are properly delivered to the client
+  - Improved error handling in stream processing
+  - Enhanced client-side parsing of Server-Sent Events
+
+### Added
+- Comprehensive Testing Framework:
+  - Implemented Jest-based testing infrastructure
+  - Created test suite for core services:
+    - LLM context building (llmContextService.test.ts)
+    - Vector embeddings (embeddingService.test.ts)
+    - Summary generation (advancedSummaryService.test.ts)
+    - Summary scheduling (summaryManager.test.ts)
+    - OpenAI integration (openai.test.ts)
+    - Service initialization (serviceInitializer.test.ts)
+  - Added test utilities in setup.ts
+  - Updated package.json with comprehensive test commands
+  - Configured jest.config.cjs for ES modules compatibility
+  - Added proper test environments for different service types
+  - Implemented database-aware tests with graceful fallbacks
+
+
 ## [March 2025]
 ### Added
 - Comprehensive Testing Framework:

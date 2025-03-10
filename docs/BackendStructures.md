@@ -634,3 +634,82 @@ npm run test:openai    # Test OpenAI integration
 3. **Mock Services**: External dependencies are mocked for reliable testing
 4. **Token Estimation**: A consistent token estimation strategy is used across tests
 5. **Timeouts**: Longer timeouts for API-dependent tests
+
+
+### AI Service Architecture Updates (March 2025)
+
+#### Streaming Response Implementation
+- Chat Service:
+  - Converted `chatWithAI` to async generator function
+  - Implemented SSE (Server-Sent Events) for real-time delivery
+  - Enhanced error handling and recovery mechanisms
+  - Added comprehensive chunk-level logging
+  - Fixed issues with premature stream termination
+  - Ensured proper completion of streaming responses
+  - Resolved race conditions in stream processing
+
+- Query Service:
+  - Modified `queryWithAI` to support streaming responses
+  - Implemented parallel streaming architecture to chat service
+  - Added user context preservation during streaming
+  - Enhanced client-side stream parsing
+
+#### Technical Specifications
+- OpenAI Integration:
+  - Model: "o3-mini-2025-01-31"
+  - Parameters:
+    - max_completion_tokens: Controls response length
+    - stream: true for real-time delivery
+  - Removed legacy parameters:
+    - temperature (unsupported)
+    - max_tokens (replaced)
+  - Enhanced Metrics and Logging:
+    - Token usage estimation and tracking
+    - Request and response token counting
+    - Detailed chunk-level streaming logs
+    - Comprehensive error diagnostics
+    - Performance timing metrics
+
+#### Response Flow
+1. Client Request:
+   - Initiates connection with appropriate headers
+   - Sets up EventSource listener for streaming
+   - Maintains connection for duration of response
+
+2. Server Processing:
+   - Configures SSE headers
+   - Creates streaming response channel
+   - Processes chunks via async generator
+   - Maintains proper error boundaries
+
+3. Stream Handling:
+   - Word-by-word content delivery
+   - Real-time UI updates
+   - Proper connection closure
+   - Error recovery mechanisms
+
+#### Logging Infrastructure
+- Stream Processing:
+  - Chunk-level content logging
+  - Timing information for each chunk
+  - Error tracking and recovery
+  - Performance metrics
+
+- Client Integration:
+  - SSE connection status
+  - Parse success/failure
+  - UI update verification
+  - Error boundary activation
+
+#### Error Handling
+- Comprehensive error recovery:
+  - Stream interruption handling
+  - Connection dropout recovery
+  - Parse error management
+  - Client-side error boundaries
+
+#### Performance Optimizations
+- Efficient stream processing
+- Minimal memory footprint
+- Proper connection management
+- Enhanced debugging capabilities
