@@ -31,6 +31,10 @@ import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
 import stripeRouter from './routes/stripe';  // Import Stripe routes
+import { generateResearch, getResearch, updateResearch, deleteResearch, getResearchBySlug } from './controllers/researchController';
+import { getFoodSensitivity, updateFoodSensitivity } from './controllers/foodSensitivityController';
+import { generateDailySummary, generateWeeklySummary, getSummaries, triggerRealtimeSummarization } from './controllers/summaryController';
+import { healthCheck } from './utils/healthCheck';
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication first
@@ -925,7 +929,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Admin endpoints for research documents CRUD
-  app.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
+  appapp.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { title, summary, content, authors, imageUrls, tags } = req.body;
 
@@ -1194,6 +1198,14 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({ error: "Failed to calculate streak" });
     }
   });
+
+  // Summary management routes
+  app.post('/api/summaries/daily', generateDailySummary);
+  app.post('/api/summaries/weekly', generateWeeklySummary);
+  app.get('/api/summaries', getSummaries);
+  app.post('/api/summaries/realtime', triggerRealtimeSummarization);
+
+  app.get('/api/health-check', healthCheck);
 
   const httpServer = createServer(app);
   return httpServer;
