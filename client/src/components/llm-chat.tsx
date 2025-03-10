@@ -29,6 +29,7 @@ export default function LLMChat() {
       content: input.trim(),
     };
 
+    // Add user message to the chat
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setStreamingResponse(''); // Reset streaming content
@@ -37,7 +38,8 @@ export default function LLMChat() {
       // Add a placeholder assistant message that will be updated during streaming
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
-      await fetchResponse(input.trim()); // Call the new fetchResponse function
+      // Call the fetchResponse function with just the user message
+      await fetchResponse(userMessage.content);
 
     } catch (error: any) {
       console.error('Chat Error:', error);
@@ -53,6 +55,9 @@ export default function LLMChat() {
         title: 'Error',
         description: errorMessage,
       });
+      
+      // Remove the empty assistant message on error
+      setMessages((prev) => prev.slice(0, -1));
     }
   };
 
@@ -60,47 +65,50 @@ export default function LLMChat() {
     setIsLoading(true);
 
     try {
-      // Set up EventSource for streaming response
-      const eventSource = new EventSource('/api/chat');
-
+      // Create a correctly formatted message array to match backend expectations
+      const messageArray = messages.concat({ role: 'user', content: message });
+      
+      // Set up EventSource for streaming response with correct URL
+      const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(message)}`);
+      
       // Initialize stream state
       setStreamingResponse('');
-
+      
       // Set timeout to close connection if it hangs
       const timeoutId = setTimeout(() => {
         console.log('Response timeout reached, closing connection');
         eventSource.close();
         setIsLoading(false);
-
+        
         // Add error message if no response was received
         if (streamingResponse === '') {
           setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: "I'm sorry, there was a timeout while generating a response. Please try again." },
+            ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+            { role: 'assistant', content: "I'm sorry, there was a timeout while generating a response. Please try again." }
           ]);
         }
       }, 30000); // 30 second timeout
-
+      
       eventSource.onmessage = (event) => {
         console.log('Received SSE chunk:', event.data);
-
+        
         try {
           const data = JSON.parse(event.data);
           console.log('Parsed SSE data:', data);
-
+          
           if (data.error) {
             // Handle error from server
             console.error('Server returned error:', data.error);
             eventSource.close();
             clearTimeout(timeoutId);
             setIsLoading(false);
-
-            // Add error message to chat
+            
+            // Update the placeholder message with error
             setMessages((prev) => [
-              ...prev,
-              { role: 'assistant', content: "I'm sorry, there was an error generating a response. Please try again." },
+              ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+              { role: 'assistant', content: "I'm sorry, there was an error generating a response. Please try again." }
             ]);
-
+            
             // Clear streaming state
             setStreamingResponse('');
           } else if (data.streaming === false) {
@@ -108,23 +116,31 @@ export default function LLMChat() {
             eventSource.close();
             clearTimeout(timeoutId);
             setIsLoading(false);
-
-            // Add complete response to messages
-            setMessages((prev) => [
-              ...prev,
-              { role: 'assistant', content: streamingResponse },
-            ]);
-
-            // Clear streaming state
-            setStreamingResponse('');
-          } else {
-            // Update streaming response
-            setStreamingResponse((prev) => prev + data.response);
+            
+            // Finalize the complete message
+            const finalContent = streamingResponse || "I don't have a response for that.";
             setMessages((prev) => {
               const newMessages = [...prev];
               newMessages[newMessages.length - 1] = {
                 role: 'assistant',
-                content: prev[prev.length - 1].content + data.response
+                content: finalContent
+              };
+              return newMessages;
+            });
+            
+            // Clear streaming state
+            setStreamingResponse('');
+          } else if (data.response !== undefined) {
+            // Update streaming response with new chunk
+            const newChunk = data.response || '';
+            setStreamingResponse((prev) => prev + newChunk);
+            
+            // Update the placeholder message with accumulated content
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = {
+                role: 'assistant',
+                content: newMessages[newMessages.length - 1].content + newChunk
               };
               return newMessages;
             });
@@ -133,40 +149,31 @@ export default function LLMChat() {
           console.error('Error parsing SSE data:', error);
         }
       };
-
+      
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
         eventSource.close();
         clearTimeout(timeoutId);
         setIsLoading(false);
-
-        // Add error message to chat if no content was received
+        
+        // Update with error message if no content was received
         if (streamingResponse === '') {
           setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: "I'm sorry, there was an error connecting to the AI service. Please try again later." },
+            ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+            { role: 'assistant', content: "I'm sorry, there was an error connecting to the AI service. Please try again later." }
           ]);
         }
       };
-
-      // Send the actual request
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message }),
-      }).catch((error) => {
-        console.error('Fetch error:', error);
-        eventSource.close();
-        clearTimeout(timeoutId);
-        setIsLoading(false);
-      });
+      
     } catch (error) {
       console.error('Error:', error);
       setIsLoading(false);
-    } finally {
-      setIsLoading(false);
+      
+      // Handle general errors
+      setMessages((prev) => [
+        ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+        { role: 'assistant', content: "I'm sorry, an unexpected error occurred. Please try again." }
+      ]);
     }
   };
 
