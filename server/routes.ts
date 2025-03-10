@@ -925,6 +925,7 @@ export function registerRoutes(app: Express): Server {
         error: "Research document not found",
         message: error instanceof Error ? error.message : "Unknown error"
       });
+    }
   });
 
   //// Admin endpoints for research documents CRUD
