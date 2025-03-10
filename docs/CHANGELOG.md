@@ -18,6 +18,12 @@
     - Prioritization of recent and significant information
     - Reduced token usage while maintaining context quality
     - Improved response relevance for both chat systems
+  - Implemented automated summary scheduling system:
+    - Scheduled daily summary generation (1 AM)
+    - Scheduled weekly summary generation (Sundays at 2 AM)
+    - Smart scheduling of first runs
+    - On-demand real-time summarization capability
+    - Comprehensive logging and error recovery
 
 - Vector Search Capabilities:
   - Implemented pgvector PostgreSQL extension

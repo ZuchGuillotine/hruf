@@ -17,6 +17,13 @@
     - Reduces token usage while improving response quality
     - Maintains more personalized user history context
     - Supports both chat and query interfaces
+  - Implemented automated summary scheduling system:
+    - Added cron-like functionality via summaryManager
+    - Configured daily summaries to run at 1 AM
+    - Scheduled weekly summaries for Sundays at 2 AM
+    - Added smart scheduling for first-time execution
+    - Implemented on-demand real-time summarization capability
+    - Enhanced error handling and logging for scheduled tasks
 
 ## Latest Status (March 10, 2025)
 

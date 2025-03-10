@@ -69,6 +69,20 @@
     - Reduces token usage in LLM calls
     - Improves relevance of AI responses
 
+#### Summary Scheduling System
+- Service: summaryManager.ts (in server/cron)
+  - Purpose: Manages automated scheduling of summary generation tasks
+  - Features:
+    - Configurable daily summaries (default: 1 AM)
+    - Configurable weekly summaries (default: Sunday 2 AM)
+    - Smart scheduling for first runs
+    - On-demand real-time summarization capability
+  - Integration:
+    - Works with advancedSummaryService
+    - Coordinates proper scheduling of resource-intensive tasks
+    - Implements proper error handling and recovery
+    - Provides comprehensive logging for monitoring
+
 #### Vector Embedding System
 - Service: embeddingService.ts
   - Purpose: Creates vector embeddings for semantic search
