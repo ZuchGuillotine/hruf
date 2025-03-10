@@ -122,6 +122,9 @@ export async function* chatWithAI(
       streaming: false,
       details: error instanceof Error ? error.stack : undefined
     };
+    
+    // Ensure we properly end the streaming
+    return;
   }
 }
 

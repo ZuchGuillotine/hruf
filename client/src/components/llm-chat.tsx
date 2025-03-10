@@ -61,22 +61,14 @@ export default function LLMChat() {
     }
   };
 
-  const fetchResponse = async (message: string) => {
+  const fetchResponse = async (userMessage: string) => {
     setIsLoading(true);
-
     try {
-      // Create a correctly formatted message array to match backend expectations
-      const messageArray = messages.concat({ role: 'user', content: message });
+      const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(userMessage)}`);
 
-      // Set up EventSource for streaming response with correct URL
-      const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(message)}`);
-
-      // Initialize stream state
-      setStreamingResponse('');
-
-      // Set timeout to close connection if it hangs
+      // Set a timeout to handle potential connection issues
       const timeoutId = setTimeout(() => {
-        console.log('Response timeout reached, closing connection');
+        console.error('Response timeout');
         eventSource.close();
         setIsLoading(false);
 
@@ -88,6 +80,9 @@ export default function LLMChat() {
           ]);
         }
       }, 30000); // 30 second timeout
+
+      // Initialize accumulated response
+      let fullResponse = '';
 
       eventSource.onmessage = (event) => {
         console.log('Received SSE chunk:', event.data);
@@ -112,41 +107,45 @@ export default function LLMChat() {
             // Clear streaming state
             setStreamingResponse('');
           } else if (data.streaming === false) {
-            // End of streaming
+            // End of streaming - use the accumulated response if available
             eventSource.close();
             clearTimeout(timeoutId);
             setIsLoading(false);
 
-            // Finalize the complete message
-            const finalContent = streamingResponse || "I don't have a response for that.";
-            setMessages((prev) => {
-              const newMessages = [...prev];
-              newMessages[newMessages.length - 1] = {
-                role: 'assistant',
-                content: finalContent
-              };
-              return newMessages;
-            });
+            // Only finalize if we have content
+            if (fullResponse.length > 0) {
+              // Use full accumulated response
+              setMessages((prev) => [
+                ...prev.slice(0, prev.length - 1),
+                { role: 'assistant', content: fullResponse }
+              ]);
+            } else {
+              setMessages((prev) => [
+                ...prev.slice(0, prev.length - 1),
+                { role: 'assistant', content: "I don't have a response for that." }
+              ]);
+            }
 
             // Clear streaming state
             setStreamingResponse('');
-          } else if (data.response !== undefined) {
-            // Update streaming response with new chunk
-            const newChunk = data.response || '';
-            setStreamingResponse((prev) => prev + newChunk);
+          } else {
+            // Track the chunk's response content
+            const newContent = data.response || '';
 
-            // Update the placeholder message with accumulated content
-            setMessages((prev) => {
-              const newMessages = [...prev];
-              newMessages[newMessages.length - 1] = {
-                role: 'assistant',
-                content: newMessages[newMessages.length - 1].content + newChunk
-              };
-              return newMessages;
-            });
+            // Accumulate the full response (for completion)
+            fullResponse += newContent;
+
+            // Update streaming response state (for UI)
+            setStreamingResponse((prev) => prev + newContent);
+
+            // Update the last message with the current accumulated response
+            setMessages((prev) => [
+              ...prev.slice(0, prev.length - 1),
+              { role: 'assistant', content: fullResponse }
+            ]);
           }
-        } catch (error) {
-          console.error('Error parsing SSE data:', error);
+        } catch (parseError) {
+          console.error('Error parsing SSE data:', parseError, 'raw data:', event.data);
         }
       };
 
@@ -156,11 +155,17 @@ export default function LLMChat() {
         clearTimeout(timeoutId);
         setIsLoading(false);
 
-        // Update with error message if no content was received
-        if (streamingResponse === '') {
+        // Only show error if we didn't receive any content
+        if (fullResponse.trim() === '') {
           setMessages((prev) => [
-            ...prev.slice(0, prev.length - 1), // Remove the placeholder message
-            { role: 'assistant', content: "I'm sorry, there was an error connecting to the AI service. Please try again later." }
+            ...prev.slice(0, prev.length - 1),
+            { role: 'assistant', content: "I apologize, but there was an error connecting to the AI service. Please try again." }
+          ]);
+        } else {
+          // If we received partial content, keep it
+          setMessages((prev) => [
+            ...prev.slice(0, prev.length - 1),
+            { role: 'assistant', content: fullResponse }
           ]);
         }
       };
