@@ -50,7 +50,17 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // For the feedback chat, we need more comprehensive context about the user's supplement history
     // Use vector search to find relevant summaries and logs based on user query
+    logger.info(`Retrieving relevant summaries for user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
     const relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 8);
+    
+    // Log what we found
+    const contentTypes = {
+      summary: relevantContent.filter(item => item.type === 'summary').length,
+      qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
+      quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+    };
+    
+    logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
     
     // Format the relevant content
     let recentSummaryContent = '';
@@ -132,6 +142,10 @@ ${userQuery}
     ];
 
     logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
+    
+    // Debug the context being sent to the LLM
+    const { debugContext } = require('../utils/contextDebugger');
+    debugContext(userId, { messages }, 'qualitative');
     
     return { messages };
   } catch (error) {

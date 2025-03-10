@@ -62,7 +62,17 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
     // Use vector search to retrieve the most relevant summaries and logs
+    logger.info(`Retrieving relevant summaries for authenticated user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
     const relevantContent = await advancedSummaryService.getRelevantSummaries(userId, userQuery, 5);
+    
+    // Log what we found
+    const contentTypes = {
+      summary: relevantContent.filter(item => item.type === 'summary').length,
+      qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
+      quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+    };
+    
+    logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
     
     // Format the relevant content
     let contextContent = '';
@@ -138,6 +148,10 @@ ${userQuery}
     ];
 
     logger.info(`Context built successfully for user ${userId}`);
+    
+    // Debug the context being sent to the LLM
+    const { debugContext } = require('../utils/contextDebugger');
+    debugContext(userId, { messages }, 'query');
     
     return { messages };
   } catch (error) {
