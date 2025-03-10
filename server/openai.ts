@@ -1,5 +1,8 @@
 
+// server/openai.ts
+
 import OpenAI from "openai";
+import logger from "./utils/logger";
 
 // Ensure API key is present
 if (!process.env.OPENAI_API_KEY) {
@@ -34,11 +37,18 @@ export async function* chatWithAI(
   modelOverride?: string
 ) {
   try {
+    // Calculate token usage for logging purposes
+    const estimatedTokenCount = messages.reduce((total, msg) => {
+      // Rough estimation: ~4 characters per token
+      return total + Math.ceil(msg.content.length / 4);
+    }, 0);
+    
     const model = modelOverride || MODELS.QUALITATIVE_CHAT;
     
-    console.log('Starting chatWithAI:', {
+    logger.info('Starting chatWithAI:', {
       messageCount: messages.length,
       model: model,
+      estimatedTokenCount,
       lastMessage: messages[messages.length - 1]?.content.substring(0, 50) + '...',
       timestamp: new Date().toISOString()
     });
@@ -56,7 +66,7 @@ export async function* chatWithAI(
       stream: true
     });
 
-    console.log('Stream created, starting to process chunks');
+    logger.info('Stream created, starting to process chunks');
 
     let fullResponse = "";
 
@@ -65,7 +75,7 @@ export async function* chatWithAI(
       const content = chunk.choices[0]?.delta?.content || "";
 
       if (content) {
-        console.log('Processing chunk:', {
+        logger.info('Processing chunk:', {
           chunkLength: content.length,
           preview: content.substring(0, 30),
           timestamp: new Date().toISOString()
@@ -76,7 +86,7 @@ export async function* chatWithAI(
       }
     }
 
-    console.log('Stream completed:', {
+    logger.info('Stream completed:', {
       totalLength: fullResponse.length,
       timestamp: new Date().toISOString()
     });
@@ -84,8 +94,8 @@ export async function* chatWithAI(
     // Send final confirmation
     yield { response: "", streaming: false };
   } catch (error) {
-    console.error("OpenAI API Error:", {
-      error: error instanceof Error ? error.message : 'Unknown error',
+    logger.error("OpenAI API Error:", {
+      error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       model: modelOverride || MODELS.QUALITATIVE_CHAT,
       messageCount: messages.length,
@@ -95,9 +105,40 @@ export async function* chatWithAI(
     // Check if it's an API error related to the model
     if (error instanceof Error && 
         (error.message.includes("model") || error.message.includes("4o-mini"))) {
-      console.error("Model error detected. This may be due to an invalid model name or API restrictions.");
+      logger.error("Model error detected. This may be due to an invalid model name or API restrictions.");
     }
     
     throw error;
   }
+}
+
+/**
+ * Calculate token usage for monitoring and optimization
+ * @param text String to analyze for token count
+ * @returns Estimated token count
+ */
+export function estimateTokenCount(text: string): number {
+  // Conservative estimation of tokens
+  // This is a rough approximation - about 4 characters per token for English text
+  return Math.ceil(text.length / 4);
+}
+
+/**
+ * Log token usage for analytics and monitoring
+ * @param userId User ID
+ * @param context Complete context string
+ * @param response Complete response string
+ */
+export function logTokenUsage(userId: string | number, context: string, response: string): void {
+  const contextTokens = estimateTokenCount(context);
+  const responseTokens = estimateTokenCount(response);
+  const totalTokens = contextTokens + responseTokens;
+  
+  logger.info('LLM Token Usage:', {
+    userId,
+    contextTokens,
+    responseTokens,
+    totalTokens,
+    timestamp: new Date().toISOString()
+  });
 }
