@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, numeric, vector } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -190,3 +190,46 @@ export type ResearchDocument = typeof researchDocuments.$inferSelect;
 export type InsertResearchDocument = typeof researchDocuments.$inferInsert;
 export type InsertQueryChat = typeof queryChats.$inferInsert;
 export type SelectQueryChat = typeof queryChats.$inferSelect;
+
+// Log embeddings for vector search
+export const logEmbeddings = pgTable("log_embeddings", {
+  id: serial("id").primaryKey(),
+  logId: integer("log_id").notNull(),
+  logType: text("log_type").notNull(), // 'qualitative' or 'quantitative'
+  embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Summary embeddings for vector search 
+export const summaryEmbeddings = pgTable("summary_embeddings", {
+  id: serial("id").primaryKey(),
+  summaryId: integer("summary_id").notNull(),
+  embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Add log summaries table for storing summarized content
+export const logSummaries = pgTable("log_summaries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  summaryType: text("summary_type").notNull(), // 'daily', 'weekly', etc.
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  metadata: jsonb("metadata").$type<{
+    supplementCount?: number;
+    qualitativeLogCount?: number;
+    quantitativeLogCount?: number;
+    significantChanges?: string[];
+  }>().default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+// Add type definitions for the new tables
+export type InsertLogEmbedding = typeof logEmbeddings.$inferInsert;
+export type SelectLogEmbedding = typeof logEmbeddings.$inferSelect;
+export type InsertSummaryEmbedding = typeof summaryEmbeddings.$inferInsert;
+export type SelectSummaryEmbedding = typeof summaryEmbeddings.$inferSelect;
+export type InsertLogSummary = typeof logSummaries.$inferInsert;
+export type SelectLogSummary = typeof logSummaries.$inferSelect;
