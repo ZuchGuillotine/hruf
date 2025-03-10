@@ -150,8 +150,9 @@ ${userQuery}
     logger.info(`Context built successfully for user ${userId}`);
     
     // Debug the context being sent to the LLM
-    const { debugContext } = require('../utils/contextDebugger');
-    debugContext(userId, { messages }, 'query');
+    // Import dynamically to maintain compatibility with ES modules
+    const { debugContext } = await import('../utils/contextDebugger.js');
+    await debugContext(userId, { messages }, 'query');
     
     return { messages };
   } catch (error) {

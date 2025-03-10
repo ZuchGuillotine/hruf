@@ -1,62 +1,55 @@
 
-import fs from 'fs';
+// server/utils/contextDebugger.ts
+
+import fs from 'fs/promises';
 import path from 'path';
-import { estimateTokenCount } from '../openai';
 import logger from './logger';
 
 /**
- * Debug utility to log the context being sent to OpenAI
- * This will help identify issues with context construction
+ * Debugs LLM context by saving it to a file for inspection
+ * @param userId User ID for tracking context by user
+ * @param context The context object containing messages
+ * @param type The type of context (qualitative or query)
  */
-export function debugContext(userId: string | number, context: any, contextType: 'qualitative' | 'query'): void {
+export async function debugContext(userId: number | string, context: { messages: any[] }, type: 'qualitative' | 'query') {
   try {
-    const debugDir = path.join(__dirname, '../../debug_logs');
+    // Create debug directory if it doesn't exist
+    const debugDir = path.join(process.cwd(), 'debug_logs');
+    await fs.mkdir(debugDir, { recursive: true });
     
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(debugDir)) {
-      fs.mkdirSync(debugDir, { recursive: true });
-    }
+    // Create a log filename with timestamp and user ID
+    const timestamp = new Date().toISOString().replace(/:/g, '-');
+    const filename = `${type}_context_${userId}_${timestamp}.json`;
+    const filePath = path.join(debugDir, filename);
     
-    // Format the messages for better readability
-    const formattedMessages = context.messages.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content,
-      contentPreview: msg.content.substring(0, 200) + '...',
-      estimatedTokens: estimateTokenCount(msg.content)
-    }));
-    
-    // Calculate total tokens
-    const totalTokens = formattedMessages.reduce((sum: number, msg: any) => sum + msg.estimatedTokens, 0);
-    
-    // Create debug info
-    const debugInfo = {
-      timestamp: new Date().toISOString(),
+    // Log that we're debugging the context
+    logger.info(`Debugging ${type} context for user ${userId}`, {
       userId,
-      contextType,
-      totalMessages: context.messages.length,
-      totalEstimatedTokens: totalTokens,
-      messages: formattedMessages,
-    };
-    
-    // Save to file
-    const filename = `context_debug_${userId}_${contextType}_${Date.now()}.json`;
-    fs.writeFileSync(
-      path.join(debugDir, filename),
-      JSON.stringify(debugInfo, null, 2)
-    );
-    
-    logger.info(`Context debug info saved to ${filename}`, {
-      userId,
-      contextType,
-      totalTokens,
-      totalMessages: context.messages.length
+      contextType: type,
+      messageCount: context.messages.length,
+      timestamp: new Date().toISOString()
     });
     
-    // Log warnings if token count is excessive
-    if (totalTokens > 10000) {
-      logger.warn(`High token count (${totalTokens}) detected in ${contextType} context for user ${userId}`);
-    }
+    // Format the context for better readability
+    const formattedContext = JSON.stringify(context, null, 2);
+    
+    // Write to file
+    await fs.writeFile(filePath, formattedContext, 'utf8');
+    
+    logger.info(`Context debug saved to ${filename}`);
+    
+    // Return true to indicate success
+    return true;
   } catch (error) {
-    logger.error('Error saving context debug info:', error);
+    // Log errors but don't fail the entire operation
+    logger.error('Error debugging context:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      contextType: type
+    });
+    
+    // Return false to indicate failure
+    return false;
   }
 }

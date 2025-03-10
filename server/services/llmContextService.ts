@@ -144,8 +144,9 @@ ${userQuery}
     logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
     
     // Debug the context being sent to the LLM
-    const { debugContext } = require('../utils/contextDebugger');
-    debugContext(userId, { messages }, 'qualitative');
+    // Import dynamically to maintain compatibility with ES modules
+    const { debugContext } = await import('../utils/contextDebugger.js');
+    await debugContext(userId, { messages }, 'qualitative');
     
     return { messages };
   } catch (error) {
