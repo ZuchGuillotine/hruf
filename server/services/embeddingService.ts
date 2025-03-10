@@ -1,15 +1,12 @@
+
 // server/services/embeddingService.ts
 
 import { OpenAI } from "openai";
 import logger from "../utils/logger";
-// Remove dependency on missing cache
-// import { Cache } from "../utils/cache";
 import { db } from "../../db";
 import { logEmbeddings, summaryEmbeddings, logSummaries } from "../../db/schema";
-import { eq, sql } from "drizzle-orm";
-
-// Cache for embedding results to reduce API calls and costs
-const embeddingCache = new Cache<number[]>(60 * 60 * 1000); // 1 hour cache
+import { eq, sql, and } from "drizzle-orm";
+import LRUCache from "lru-cache";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -25,6 +22,20 @@ class EmbeddingService {
   private EMBEDDING_DIMENSIONS = 1536;
   private BATCH_SIZE = 5; // Number of items to process in a batch
   private SIMILARITY_THRESHOLD = 0.75; // Cosine similarity threshold
+  
+  // LRU Cache for embeddings
+  private embeddingCache: LRUCache<string, number[]>;
+  
+  constructor() {
+    // Initialize cache with TTL of 1 day and max size of 500 entries
+    this.embeddingCache = new LRUCache({
+      max: 500,
+      ttl: 1000 * 60 * 60 * 24, // 24 hours
+      allowStale: false
+    });
+    
+    logger.info('Embedding service initialized with LRU cache');
+  }
 
   /**
    * Initialize the embedding service
@@ -53,16 +64,39 @@ class EmbeddingService {
   }
 
   /**
-   * Generate an embedding for a text string
+   * Generate an embedding for a text string with caching
    */
   async generateEmbedding(text: string): Promise<number[]> {
     try {
+      // Create a cache key - use a hash of the text to avoid key size issues
+      const cacheKey = this.hashText(text);
+      
+      // Check cache first
+      const cachedEmbedding = this.embeddingCache.get(cacheKey);
+      if (cachedEmbedding) {
+        logger.debug('Cache hit for embedding', {
+          textLength: text.length,
+          textPreview: text.substring(0, 50) + '...'
+        });
+        return cachedEmbedding;
+      }
+      
+      // Not in cache, generate embedding
+      logger.debug('Cache miss, generating embedding', {
+        textLength: text.length
+      });
+      
       const response = await openai.embeddings.create({
         model: this.EMBEDDING_MODEL,
         input: text
       });
-
-      return response.data[0].embedding;
+      
+      const embedding = response.data[0].embedding;
+      
+      // Store in cache
+      this.embeddingCache.set(cacheKey, embedding);
+      
+      return embedding;
     } catch (error) {
       logger.error('Error generating embedding:', {
         error: error instanceof Error ? error.message : String(error),
@@ -71,20 +105,50 @@ class EmbeddingService {
       throw error;
     }
   }
+  
+  /**
+   * Generate a simple hash of text for cache keys
+   */
+  private hashText(text: string): string {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return 'emb_' + Math.abs(hash).toString(36);
+  }
 
   /**
    * Create an embedding for a qualitative log and store it
    */
   async createLogEmbedding(logId: number, content: string, logType: 'qualitative' | 'quantitative'): Promise<void> {
     try {
+      // Check if embedding already exists
+      const existingEmbedding = await db
+        .select()
+        .from(logEmbeddings)
+        .where(
+          and(
+            eq(logEmbeddings.logId, logId),
+            eq(logEmbeddings.logType, logType)
+          )
+        )
+        .limit(1);
+        
+      if (existingEmbedding.length > 0) {
+        logger.debug(`Embedding already exists for ${logType} log ${logId}`);
+        return;
+      }
+      
       const embedding = await this.generateEmbedding(content);
-
+      
       await db.insert(logEmbeddings).values({
         logId,
         logType,
         embedding
       });
-
+      
       logger.info(`Created embedding for ${logType} log ${logId}`);
     } catch (error) {
       logger.error(`Failed to create embedding for ${logType} log ${logId}:`, error);
@@ -97,20 +161,32 @@ class EmbeddingService {
    */
   async createSummaryEmbedding(summaryId: number, content: string): Promise<void> {
     try {
+      // Check if embedding already exists
+      const existingEmbedding = await db
+        .select()
+        .from(summaryEmbeddings)
+        .where(eq(summaryEmbeddings.summaryId, summaryId))
+        .limit(1);
+        
+      if (existingEmbedding.length > 0) {
+        logger.debug(`Embedding already exists for summary ${summaryId}`);
+        return;
+      }
+      
       const embedding = await this.generateEmbedding(content);
-
+      
       await db.insert(summaryEmbeddings).values({
         summaryId,
         embedding
       });
-
+      
       logger.info(`Created embedding for summary ${summaryId}`);
     } catch (error) {
       logger.error(`Failed to create embedding for summary ${summaryId}:`, error);
       throw error;
     }
   }
-
+  
   /**
    * Find similar summaries and logs for a query
    * @param query User query text
@@ -263,24 +339,8 @@ class EmbeddingService {
   }
 }
 
-/**
- * Initialize the embedding service
- * This is used to verify the service is working properly during app startup
- */
-async function initialize(): Promise<boolean> {
-  try {
-    // Perform a simple test to ensure OpenAI connectivity
-    await embeddingService.generateEmbedding('Test embedding service initialization');
-    logger.info('Embedding service initialized successfully');
-    return true;
-  } catch (error) {
-    logger.error('Failed to initialize embedding service:', error);
-    return false;
-  }
-}
-
 // Export a singleton instance
 export const embeddingService = new EmbeddingService();
 export default {
-  initialize
+  initialize: async () => embeddingService.initialize(),
 };
