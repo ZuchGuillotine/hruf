@@ -1,6 +1,6 @@
 import * as sgMail from '@sendgrid/mail';
 import logger from '../utils/logger';
-import { sendGridApiKey, fromEmail } from '../config/sendgrid'; //Corrected import
+import { DEFAULT_SENDER } from '../config/sendgrid';
 
 // Set API key if available
 if (process.env.SENDGRID_API_KEY) {
@@ -39,7 +39,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
     }
 
     // Check if SendGrid API key is configured
-    if (!sendGridApiKey) { //Corrected usage
+    if (!process.env.SENDGRID_API_KEY) {
       logger.warn('Email not sent: SendGrid API key not configured');
       return false;
     }
@@ -47,7 +47,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
     // Prepare email message
     const msg = {
       to: emailData.to,
-      from: fromEmail, //Corrected usage
+      from: DEFAULT_SENDER.email,
       subject: emailData.subject,
       text: emailData.text,
       html: emailData.html,
