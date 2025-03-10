@@ -1,51 +1,58 @@
+# Testing Documentation
 
-# Testing Framework
+## Overview
 
-This directory contains automated tests for the backend services of our application.
-
-## Test Structure
-
-- **Unit Tests**: Test individual functions and services in isolation
-- **Integration Tests**: Test services working together
-- **Mock Tests**: Use Jest mocks to simulate dependencies
+This directory contains tests for the key services of the application. The testing framework uses Jest with TypeScript support.
 
 ## Running Tests
 
-Run all tests:
-```
+You can run the tests using the following npm commands:
+
+```bash
+# Run all tests
 npm test
-```
 
-Run specific test suites:
-```
-npm run test:summary     # Test summary services
-npm run test:embedding   # Test embedding services
-npm run test:context     # Test context building services
-npm run test:openai      # Test OpenAI integration
-```
-
-Run tests in watch mode (automatically re-runs when files change):
-```
+# Run in watch mode (auto-re-run on file changes)
 npm run test:watch
+
+# Run specific test suites
+npm run test:summary     # Summary service tests
+npm run test:embedding   # Embedding service tests
+npm run test:context     # Context building tests
+npm run test:openai      # OpenAI integration tests
 ```
+
+## Test Structure
+
+The tests are organized by service:
+
+- `setup.ts` - Common setup code and utilities for all tests
+- `llmContextService.test.ts` - Tests for context construction
+- `embeddingService.test.ts` - Tests for vector embeddings
+- `advancedSummaryService.test.ts` - Tests for summary generation
+- `summaryManager.test.ts` - Tests for scheduled tasks
+- `openai.test.ts` - Tests for OpenAI API integration
+- `serviceInitializer.test.ts` - Tests for service initialization
+
+## Notes on Testing
+
+- Most tests that require database access are designed to skip if the database is unavailable
+- OpenAI tests may use mocked responses to avoid excessive API calls
+- Tests are designed to clean up after themselves when possible
+- The test environment is configured in setup.ts and Jest configuration
 
 ## Adding New Tests
 
-1. Create a new file named `[feature].test.ts` in this directory
-2. Import the services you want to test
-3. Structure tests with `describe` and `test` blocks
-4. Use `expect()` to make assertions about behavior
+When adding new tests:
 
-## Mock Data
+1. Create a new file following the naming pattern `*.test.ts`
+2. Import necessary utilities from setup.ts
+3. Use descriptive test names that explain the behavior being tested
+4. Add database availability checks if needed
+5. Implement cleanup for any test data created
 
-When testing services that require database access, consider:
-1. Using the existing test helpers in `setup.ts`
-2. Creating specific test fixtures for your service
-3. Using in-memory data when possible to avoid database dependencies
+## Common Issues
 
-## Best Practices
-
-1. Keep tests independent - each test should run in isolation
-2. Clean up test data after tests run
-3. Mock external services like OpenAI API for reliable testing
-4. Use descriptive test names that explain what is being tested
+- Token errors: May indicate OpenAI API key issues
+- Database connection errors: Check database availability
+- Timeout errors: May indicate slow API responses or network issues

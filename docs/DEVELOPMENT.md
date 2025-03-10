@@ -1,6 +1,59 @@
 
 # Development Guide
 
+## Testing Framework
+
+The application uses Jest for running unit and integration tests. The test configuration is in `jest.config.cjs` and uses a CommonJS format to be compatible with the ES module setup of the main project.
+
+### Running Tests
+
+Tests can be run with the following npm commands:
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:summary     # Test summary services
+npm run test:embedding   # Test embedding services 
+npm run test:context     # Test context building services
+npm run test:openai      # Test OpenAI integration
+
+# Run tests in watch mode (automatically re-runs when files change)
+npm run test:watch
+```
+
+### Test Structure
+
+Tests are organized in the `server/tests` directory and follow the pattern of `*.test.ts`. The main test modules include:
+
+- `llmContextService.test.ts` - Tests for context building functionality
+- `embeddingService.test.ts` - Tests for vector embedding generation
+- `advancedSummaryService.test.ts` - Tests for the summary generation service
+- `summaryManager.test.ts` - Tests for scheduled summary tasks
+- `openai.test.ts` - Tests for OpenAI integration
+- `serviceInitializer.test.ts` - Tests for service initialization and shutdown
+
+### Test Utilities
+
+A `setup.ts` file provides common utilities and mock functions for tests, including:
+
+- Test environment configuration
+- Token estimation functions
+- Mock implementations of external services
+- Database test helpers
+
+### Testing Database Operations
+
+Tests that interact with the database are designed to handle cases where the database might not be available. They include checks to skip tests when necessary.
+
+### Test Data Cleanup
+
+Many tests are designed to clean up after themselves to avoid test data accumulation. For example, summary tests track created records and remove them during test cleanup.
+
+
+# Development Guide
+
 ## Architecture Overview
 
 ### Frontend

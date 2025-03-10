@@ -550,3 +550,87 @@ Security logging and monitoring to support HIPAA compliance.
 - Minimal memory footprint
 - Proper connection management
 - Enhanced debugging capabilities
+
+## Testing Architecture
+
+The application uses Jest for testing core functionality with a focus on critical services.
+
+### Test Structure
+- **Location**: `server/tests/`
+- **Configuration**: `jest.config.cjs` (CommonJS format for ES module compatibility)
+- **Setup**: `server/tests/setup.ts` for shared testing utilities
+
+### Core Test Suites
+
+#### Context Building Tests
+- **File**: `llmContextService.test.ts`
+- **Purpose**: Verify context construction for both feedback and query systems
+- **Key Tests**:
+  - User context construction for feedback chat
+  - Query context construction for supplement information
+  - Context differences between different query types
+  - Unauthenticated user handling
+  - Token optimization verification
+
+#### Embedding Service Tests
+- **File**: `embeddingService.test.ts`
+- **Purpose**: Test vector embedding generation and similarity search
+- **Key Tests**:
+  - Embedding generation for different text types
+  - Vector similarity search functionality
+  - Batch processing capabilities
+  - Error handling and recovery
+
+#### Summary Service Tests
+- **File**: `advancedSummaryService.test.ts`
+- **Purpose**: Verify summarization functionality
+- **Key Tests**:
+  - Daily summary generation
+  - Weekly summary generation
+  - Handling of different log types
+  - Content extraction from summaries
+  - Vector search integration
+
+#### Scheduled Tasks Tests
+- **File**: `summaryManager.test.ts`
+- **Purpose**: Test the scheduling of summary generation
+- **Key Tests**:
+  - Daily task scheduling
+  - Weekly task scheduling
+  - Real-time summary triggering
+  - Task cleanup and shutdown
+
+#### OpenAI Integration Tests
+- **File**: `openai.test.ts`
+- **Purpose**: Verify OpenAI API integration
+- **Key Tests**:
+  - Chat completion generation
+  - Streaming response handling
+  - Error recovery mechanisms
+  - Token estimation accuracy
+
+#### Service Initialization Tests
+- **File**: `serviceInitializer.test.ts`
+- **Purpose**: Test service startup and shutdown
+- **Key Tests**:
+  - Proper initialization sequence
+  - Graceful shutdown
+  - Error handling during startup
+  - Service verification
+
+### Test Commands
+```
+npm test               # Run all tests
+npm run test:watch     # Run in watch mode (auto-rerun)
+npm run test:summary   # Test summary services
+npm run test:embedding # Test embedding services
+npm run test:context   # Test context building
+npm run test:openai    # Test OpenAI integration
+```
+
+### Testing Strategies
+1. **Database-Aware Testing**: Tests check for database availability and skip when unavailable
+2. **Cleanup**: Test data is cleaned up after tests to avoid accumulation
+3. **Mock Services**: External dependencies are mocked for reliable testing
+4. **Token Estimation**: A consistent token estimation strategy is used across tests
+5. **Timeouts**: Longer timeouts for API-dependent tests
