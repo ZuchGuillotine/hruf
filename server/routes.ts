@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { queryWithAI } from "./services/openaiQueryService";
+import { qualitativeChatWithAI } from "./services/llmService";
 import { db } from "@db";
 import {
   supplements,
