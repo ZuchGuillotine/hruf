@@ -15,7 +15,20 @@ A cutting-edge health tracking and content management application that combines 
     - Semantic similarity search for logs and summaries
   - **Vector Search Services**:
     - embeddingService: Generates and manages OpenAI embeddings for vector search
+      - Creates 1536-dimension vectors for semantic similarity 
+      - Powers intelligent context retrieval for AI responses
+      - Supports both logs and summaries with efficient indexing
+      - Implements batch processing for API efficiency
     - advancedSummaryService: Creates intelligent summaries of user supplement data
+      - Generates daily summaries of supplement intake and observations
+      - Creates weekly summaries that identify patterns and trends
+      - Extracts significant changes for easier reference
+      - Optimizes token usage in LLM context building
+    - summaryManager: Provides automated scheduling of summary tasks
+      - Configurable daily summaries (default: 1 AM)
+      - Weekly summaries on Sundays at 2 AM
+      - Real-time summary generation for immediate context needs
+      - Comprehensive error handling and recovery
     - Postgres pgvector extension for efficient semantic similarity search
     - 1536-dimension vectors optimized for relevance matching
 

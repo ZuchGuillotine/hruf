@@ -63,11 +63,16 @@
     - Weekly summaries that identify patterns and trends
     - Automatic extraction of significant changes
     - Token-optimized context building for LLM interactions
+    - Vector-based semantic similarity search
+    - Retrieval of relevant historical content
+    - Intelligent context prioritization 
   - Integration:
-    - Works with logSummaries table
-    - Provides context to both chat systems
+    - Works with logSummaries and embedding tables
+    - Provides context to both chat and query systems
     - Reduces token usage in LLM calls
     - Improves relevance of AI responses
+    - Integrates with embeddingService for semantic search
+    - Powers both qualitative feedback and general query systems
 
 #### Summary Scheduling System
 - Service: summaryManager.ts (in server/cron)

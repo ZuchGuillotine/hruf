@@ -24,6 +24,29 @@
     - Smart scheduling of first runs
     - On-demand real-time summarization capability
     - Comprehensive logging and error recovery
+### Added
+- Advanced Context Management Services:
+  - Implemented embeddingService for vector embedding management:
+    - OpenAI embedding generation for logs and summaries
+    - Semantic similarity search functionality
+    - Batch processing for efficient API usage
+    - Support for both qualitative and quantitative logs
+  - Implemented advancedSummaryService for intelligent summarization:
+    - Daily summaries of supplement logs and experiences
+    - Weekly summaries identifying patterns and trends
+    - Automatic extraction of significant changes
+    - Token-optimized context for LLM interactions
+  - Enhanced token efficiency through smart context building:
+    - Retrieval of semantically relevant content
+    - Prioritization of recent and significant information
+    - Reduced token usage while maintaining context quality
+    - Improved response relevance for both chat systems
+  - Implemented automated summary scheduling system:
+    - Scheduled daily summary generation (1 AM)
+    - Scheduled weekly summary generation (Sundays at 2 AM)
+    - Smart scheduling of first runs
+    - On-demand real-time summarization capability
+    - Comprehensive logging and error recovery
 
 - Vector Search Capabilities:
   - Implemented pgvector PostgreSQL extension
