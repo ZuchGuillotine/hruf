@@ -8,6 +8,7 @@ import { db } from '../db';
 import cors from 'cors';
 import { setupAuth } from './auth';
 import setupQueryRoutes from './routes/queryRoutes';
+import setupSummaryRoutes from './routes/summaryRoutes';
 import { setAuthInfo } from './middleware/authMiddleware';
 import session from 'express-session';
 import createMemoryStore from "memorystore";
@@ -79,6 +80,7 @@ app.use('/api', slowDown({
 
 // Setup routes and error handling
 setupQueryRoutes(app);
+setupSummaryRoutes(app);
 const server = registerRoutes(app);
 
 // Global error handling middleware
