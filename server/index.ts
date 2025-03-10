@@ -10,6 +10,7 @@ import setupQueryRoutes from './routes/queryRoutes';
 import { setAuthInfo } from './middleware/authMiddleware';
 import session from 'express-session';
 import createMemoryStore from "memorystore";
+import { serviceInitializer } from './services/serviceInitializer';
 
 const app = express();
 
@@ -133,10 +134,29 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
+    // Initialize AI context services
+    await serviceInitializer.initializeServices()
+      .catch(error => {
+        console.warn('Service initialization warning:', error.message);
+        // Continue server startup even if services fail to initialize
+      });
+    
     const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
     server.listen(port, "0.0.0.0", () => {
       log(`Server started successfully on port ${port}`);
     });
+
+    // Set up graceful shutdown
+    const shutdownHandler = async () => {
+      console.log('Shutting down server...');
+      await serviceInitializer.shutdownServices();
+      process.exit(0);
+    };
+
+    // Handle termination signals
+    process.on('SIGTERM', shutdownHandler);
+    process.on('SIGINT', shutdownHandler);
+    
   } catch (err) {
     console.error('Failed to start server:', {
       error: err.message,
