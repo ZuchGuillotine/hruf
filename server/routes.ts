@@ -12,9 +12,10 @@ import {
   supplementLogs,
   supplementReference,
   qualitativeLogs,
-  researchDocuments
+  researchDocuments,
+  logSummaries
 } from "@db/schema";
-import { eq, and, ilike, sql, desc, notInArray } from "drizzle-orm";
+import { eq, and, ilike, sql, desc, notInArray, between } from "drizzle-orm";
 import { supplementService } from "./services/supplements";
 import { sendTwoFactorAuthEmail } from './controllers/authController';
 import { sendWelcomeEmail } from './services/emailService';
@@ -547,12 +548,15 @@ export function registerRoutes(app: Express): Server {
       });
 
       // Convert the requested date to UTC day boundaries
-      // This ensures consistent date handling regardless of user timezone
       const startOfDay = new Date(`${date}T00:00:00.000Z`);
       const endOfDay = new Date(`${date}T23:59:59.999Z`);
 
-      // Fetch supplement logs within the UTC day boundaries
-      // This approach avoids timezone offset issues by using direct timestamp comparison
+      // In one query, fetch:
+      // 1. Supplement logs for the requested date
+      // 2. Qualitative logs for the date (excluding query-type logs)
+      // 3. Any daily summaries for this date
+
+      // First, get supplement logs for the date
       const logsResult = await db
         .select({
           id: supplementLogs.id,
@@ -569,25 +573,12 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(supplementLogs.userId, req.user!.id),
-            // Use direct timestamp comparison instead of DATE() casting
-            // This preserves the exact time while maintaining correct date boundaries
             sql`${supplementLogs.takenAt} >= ${startOfDay} AND ${supplementLogs.takenAt} <= ${endOfDay}`
           )
         )
         .orderBy(desc(supplementLogs.takenAt));
 
-      // Log retrieval results for debugging
-      console.log('Retrieved supplement logs:', {
-        count: logsResult.length,
-        sampleLog: logsResult[0] ? {
-          id: logsResult[0].id,
-          takenAt: logsResult[0].takenAt,
-          dateOnly: new Date(logsResult[0].takenAt).toISOString().split('T')[0]
-        } : null
-      });
-
-      // Apply the same UTC day boundary logic to qualitative logs
-      // Filter out entries with type='query' as those should only be in query_chats table
+      // Get qualitative logs for the date
       const qualitativeLogsResult = await db
         .select({
           id: qualitativeLogs.id,
@@ -600,19 +591,30 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(qualitativeLogs.userId, req.user!.id),
-            // Maintain consistent timestamp comparison approach
             sql`${qualitativeLogs.loggedAt} >= ${startOfDay} AND ${qualitativeLogs.loggedAt} <= ${endOfDay}`,
-            // Exclude query chats from qualitative logs
             notInArray(qualitativeLogs.type, ['query'])
           )
         )
         .orderBy(desc(qualitativeLogs.loggedAt));
 
+      // Get any summaries for this date
+      const summariesResult = await db
+        .select()
+        .from(logSummaries)
+        .where(
+          and(
+            eq(logSummaries.userId, req.user!.id),
+            eq(logSummaries.summaryType, 'daily'),
+            between(logSummaries.startDate, startOfDay, endOfDay)
+          )
+        )
+        .limit(1);
+
       // Format logs while preserving original timestamps
       const enrichedLogs = logsResult.map(log => ({
         id: log.id,
         supplementId: log.supplementId,
-        takenAt: log.takenAt.toISOString(), // Keep original timestamp
+        takenAt: log.takenAt.toISOString(),
         notes: log.notes,
         effects: log.effects,
         name: log.name || 'Unknown Supplement',
@@ -620,17 +622,53 @@ export function registerRoutes(app: Express): Server {
         frequency: log.frequency || ''
       }));
 
-      const processedLogs = qualitativeLogsResult.map(log => ({
-        ...log,
-        loggedAt: log.loggedAt.toISOString(), // Keep original timestamp
-        summary: log.content.length > 150 ?
-          log.content.substring(0, 150) + '...' :
-          log.content
-      }));
+      const processedQualLogs = qualitativeLogsResult.map(log => {
+        // Try to parse JSON content if it's a chat
+        let summary = log.content;
+        try {
+          if (log.type === 'chat') {
+            const messages = JSON.parse(log.content);
+            if (Array.isArray(messages) && messages.length >= 2) {
+              const userMsg = messages[0];
+              const assistantMsg = messages[1];
+              summary = `${req.user?.username || 'user'}: ${userMsg.content.slice(0, 50)}... | assistant: ${assistantMsg.content.slice(0, 100)}...`;
+            } else if (Array.isArray(messages) && messages.length === 1) {
+              const firstMessage = messages[0];
+              summary = `${firstMessage.role === 'user' ? req.user?.username || 'user' : 'assistant'}: ${firstMessage.content.slice(0, 150)}...`;
+            }
+          }
+        } catch (e) {
+          // Not JSON or couldn't parse, use content as is
+        }
+
+        return {
+          id: log.id,
+          content: log.content,
+          loggedAt: log.loggedAt.toISOString(),
+          type: log.type,
+          metadata: log.metadata,
+          summary
+        };
+      });
+
+      // Add the daily summary if available
+      if (summariesResult.length > 0) {
+        const summary = summariesResult[0];
+
+        // Add the summary as a special qualitative log entry
+        processedQualLogs.unshift({
+          id: -summary.id, // Negative ID to indicate it's a summary
+          content: summary.content,
+          loggedAt: summary.createdAt.toISOString(),
+          type: 'summary',
+          metadata: summary.metadata,
+          summary: `Daily Summary: ${summary.content.slice(0, 150)}...`
+        });
+      }
 
       res.json({
         supplements: enrichedLogs,
-        qualitativeLogs: processedLogs
+        qualitativeLogs: processedQualLogs
       });
     } catch (error) {
       console.error("Error fetching logs by date:", {
@@ -894,8 +932,7 @@ export function registerRoutes(app: Express): Server {
       // Generate slug from title
       const slug = title
         .toLowerCase()
-        .replace(/[^\w\s]/gi, '')
-        .replace(/\s+/g, '-');
+        .replace(/[^\w\s]/gi, '')        .replace(/\s+/g, '-');
 
       const [newDocument] = await db
         .insert(researchDocuments)

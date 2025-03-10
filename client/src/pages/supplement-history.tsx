@@ -1,12 +1,12 @@
+
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, FileText, Calendar, MessageCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useUser } from "@/hooks/use-user";
 import {
@@ -15,12 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function SupplementHistory() {
   const today = new Date();
   const { user } = useUser();
   const [selectedChat, setSelectedChat] = useState<any[]>([]);
   const [showChatDialog, setShowChatDialog] = useState(false);
+  const [selectedSummary, setSelectedSummary] = useState<string | null>(null);
+  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [currentMonth, setCurrentMonth] = useState<Date>(today);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -51,21 +54,6 @@ export default function SupplementHistory() {
         }
         const data = await response.json();
 
-        // Process dates to ensure proper timezone handling
-        if (data.supplements) {
-          data.supplements = data.supplements.map((log: any) => ({
-            ...log,
-            takenAt: new Date(log.takenAt).toISOString(),
-          }));
-        }
-
-        if (data.qualitativeLogs) {
-          data.qualitativeLogs = data.qualitativeLogs.map((log: any) => ({
-            ...log,
-            loggedAt: new Date(log.loggedAt).toISOString(),
-          }));
-        }
-
         console.log('Fetched logs:', data);
         return data;
       } catch (err) {
@@ -80,7 +68,7 @@ export default function SupplementHistory() {
     console.error('Query error:', error);
   }
 
-  const { supplements, qualitativeLogs } = logsData || { supplements: [], qualitativeLogs: [] };
+  const { supplements = [], qualitativeLogs = [] } = logsData || {};
 
   const nextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
@@ -89,6 +77,8 @@ export default function SupplementHistory() {
   const prevMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
   };
+
+  const hasSummary = qualitativeLogs.some(log => log.type === 'summary');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
@@ -148,8 +138,24 @@ export default function SupplementHistory() {
           {/* Daily Log Section */}
           <Card className="bg-white/10 border-none text-white">
             <CardHeader>
-              <CardTitle>
-                {format(selectedDate, 'MMMM d, yyyy')}
+              <CardTitle className="flex items-center justify-between">
+                <span>{format(selectedDate, 'MMMM d, yyyy')}</span>
+                {hasSummary && (
+                  <Badge 
+                    variant="outline" 
+                    className="bg-emerald-700 text-white border-emerald-600 hover:bg-emerald-800 cursor-pointer"
+                    onClick={() => {
+                      const summary = qualitativeLogs.find(log => log.type === 'summary');
+                      if (summary) {
+                        setSelectedSummary(summary.content);
+                        setShowSummaryDialog(true);
+                      }
+                    }}
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    Daily Summary
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -193,7 +199,9 @@ export default function SupplementHistory() {
                     <h3 className="text-lg font-semibold mb-4">Daily Notes</h3>
                     {qualitativeLogs.length > 0 ? (
                       <div className="space-y-4">
-                        {qualitativeLogs.map((log: any) => (
+                        {qualitativeLogs
+                          .filter(log => log.type !== 'summary') // Filter out summary logs as they're shown separately
+                          .map((log: any) => (
                           <div key={log.id} className="p-3 rounded-md bg-white/10">
                             <div className="flex justify-between items-start mb-2">
                               <span className="text-sm text-white/50">
@@ -204,7 +212,8 @@ export default function SupplementHistory() {
                                 })}
                               </span>
                               {log.type === 'chat' && (
-                                <span className="text-xs bg-white/20 px-2 py-1 rounded">
+                                <span className="text-xs bg-white/20 px-2 py-1 rounded flex items-center">
+                                  <MessageCircle className="h-3 w-3 mr-1" />
                                   AI Chat
                                 </span>
                               )}
@@ -212,31 +221,26 @@ export default function SupplementHistory() {
                             <button 
                               onClick={() => {
                                 try {
-                                  const messages = JSON.parse(log.content);
-                                  setSelectedChat(messages);
-                                  setShowChatDialog(true);
+                                  if (log.type === 'chat') {
+                                    const messages = JSON.parse(log.content);
+                                    setSelectedChat(messages);
+                                    setShowChatDialog(true);
+                                  } else {
+                                    // For non-chat logs, show content directly
+                                    setSelectedSummary(log.content);
+                                    setShowSummaryDialog(true);
+                                  }
                                 } catch (e) {
-                                  console.error("Error parsing chat:", e);
+                                  console.error("Error processing log content:", e);
+                                  // Fallback to showing raw content
+                                  setSelectedSummary(log.content);
+                                  setShowSummaryDialog(true);
                                 }
                               }}
                               className="text-left w-full"
                             >
                               <p className="text-white/70 text-sm hover:text-white/90 transition-colors">
-                                {(() => {
-                                  try {
-                                    const messages = JSON.parse(log.content);
-                                    if (messages.length >= 2) {
-                                      const userMsg = messages[0];
-                                      const assistantMsg = messages[1];
-                                      return `${user?.username || 'user'}: ${userMsg.content.slice(0, 50)}... | assistant: ${assistantMsg.content.slice(0, 100)}...`;
-                                    } else {
-                                      const firstMessage = messages[0];
-                                      return `${firstMessage.role === 'user' ? user?.username || 'user' : 'assistant'}: ${firstMessage.content.slice(0, 150)}...`;
-                                    }
-                                  } catch (e) {
-                                    return log.summary;
-                                  }
-                                })()}
+                                {log.summary || log.content.substring(0, 150) + (log.content.length > 150 ? '...' : '')}
                               </p>
                             </button>
                           </div>
@@ -286,6 +290,24 @@ export default function SupplementHistory() {
                   <p className="text-sm">{message.content}</p>
                 </div>
               ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Summary Dialog */}
+        <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
+            <DialogHeader>
+              <DialogTitle>
+                {hasSummary && qualitativeLogs.some(log => log.type === 'summary')
+                  ? "Daily Summary"
+                  : "Note Content"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="p-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="whitespace-pre-wrap text-gray-800">{selectedSummary}</p>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
