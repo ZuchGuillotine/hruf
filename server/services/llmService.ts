@@ -109,7 +109,8 @@ export async function qualitativeChatWithAI(userId: string, message: string) {
     ];
 
     // Use the existing chatWithAI function with the formatted messages
-    return chatWithAI(formattedMessages, userIdNum);
+    // Make sure to enable streaming (third parameter = true)
+    return chatWithAI(formattedMessages, MODELS.QUALITATIVE_CHAT, true);
   } catch (error) {
     console.error('Error in qualitative chat with AI service:', {
       error: error instanceof Error ? error.message : 'Unknown error',
