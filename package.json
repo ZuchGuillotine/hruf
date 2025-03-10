@@ -9,12 +9,12 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:summary": "jest --testPathPattern=summaryManager",
-    "test:embedding": "jest --testPathPattern=embeddingService",
-    "test:context": "jest --testPathPattern=llmContextService",
-    "test:openai": "jest --testPathPattern=openai"
+    "test": "jest --config=jest.config.cjs",
+    "test:watch": "jest --config=jest.config.cjs --watch",
+    "test:summary": "jest --config=jest.config.cjs --testPathPattern=summaryManager",
+    "test:embedding": "jest --config=jest.config.cjs --testPathPattern=embeddingService",
+    "test:context": "jest --config=jest.config.cjs --testPathPattern=llmContextService",
+    "test:openai": "jest --config=jest.config.cjs --testPathPattern=openai"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
