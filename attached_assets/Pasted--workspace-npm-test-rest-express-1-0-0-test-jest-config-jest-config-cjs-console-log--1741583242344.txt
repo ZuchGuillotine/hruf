@@ -1,0 +1,245 @@
+~/workspace$ npm test
+
+> rest-express@1.0.0 test
+> jest --config=jest.config.cjs
+
+  console.log
+    Test setup complete
+
+      at Object.<anonymous> (server/tests/setup.ts:13:13)
+
+  console.log
+    Test cleanup complete
+
+      at Object.<anonymous> (server/tests/setup.ts:24:13)
+
+ FAIL  server/tests/serviceInitializer.test.ts
+  Service Initializer Tests
+    ✕ Should initialize PGVector services (10 ms)
+    ✓ Should start scheduled tasks in production (1 ms)
+    ✕ Should not start scheduled tasks in development (2 ms)
+    ✕ Should initialize all services (15 ms)
+    ✓ Should properly shut down services (1 ms)
+
+  ● Service Initializer Tests › Should initialize PGVector services
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 0
+
+      41 |     
+      42 |     // Verify it called embeddingService
+    > 43 |     expect(embeddingService.generateEmbedding).toHaveBeenCalledTimes(1);
+         |                                                ^
+      44 |     
+      45 |     // Should have called with test string
+      46 |     const testArg = embeddingService.generateEmbedding.mock.calls[0][0];
+
+      at Object.<anonymous> (server/tests/serviceInitializer.test.ts:43:48)
+
+  ● Service Initializer Tests › Should not start scheduled tasks in development
+
+    expect(jest.fn()).not.toHaveBeenCalled()
+
+    Expected number of calls: 0
+    Received number of calls: 1
+
+    1: 1
+
+      78 |     
+      79 |     // Verify it did NOT call summaryTaskManager
+    > 80 |     expect(summaryTaskManager.startDailySummaryTask).not.toHaveBeenCalled();
+         |                                                          ^
+      81 |     expect(summaryTaskManager.startWeeklySummaryTask).not.toHaveBeenCalled();
+      82 |     
+      83 |     // Restore NODE_ENV
+
+      at Object.<anonymous> (server/tests/serviceInitializer.test.ts:80:58)
+
+  ● Service Initializer Tests › Should initialize all services
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 0
+
+       97 |     expect(serviceInitializer.initializePGVector).toHaveBeenCalledTimes(1);
+       98 |     expect(serviceInitializer.initializeSummarization).toHaveBeenCalledTimes(1);
+    >  99 |     expect(serviceInitializer.startScheduledTasks).toHaveBeenCalledTimes(1);
+          |                                                    ^
+      100 |   });
+      101 |   
+      102 |   test('Should properly shut down services', async () => {
+
+      at Object.<anonymous> (server/tests/serviceInitializer.test.ts:99:52)
+
+ FAIL  server/tests/llmContextService.test.ts
+  ● Test suite failed to run
+
+    TypeError: openai_1.default is not a constructor
+
+      11 |
+      12 | // Initialize OpenAI client
+    > 13 | const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+         |                ^
+      14 |
+      15 | /**
+      16 |  * System prompt that defines the AI assistant's behavior and capabilities
+
+      at Object.<anonymous> (server/openai.ts:13:16)
+      at Object.require (server/services/llmContextService.ts:4:1)
+      at Object.<anonymous> (server/tests/llmContextService.test.ts:4:1)
+
+  console.log
+    Test setup complete
+
+      at Object.<anonymous> (server/tests/setup.ts:13:13)
+
+  console.log
+    Test cleanup complete
+
+      at Object.<anonymous> (server/tests/setup.ts:24:13)
+
+ FAIL  server/tests/openai.test.ts
+  ● Test suite failed to run
+
+    TypeError: openai_1.default is not a constructor
+
+      11 |
+      12 | // Initialize OpenAI client
+    > 13 | const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+         |                ^
+      14 |
+      15 | /**
+      16 |  * System prompt that defines the AI assistant's behavior and capabilities
+
+      at Object.<anonymous> (server/openai.ts:13:16)
+      at Object.<anonymous> (server/tests/openai.test.ts:4:1)
+
+ PASS  server/tests/summaryManager.test.ts
+  Summary Task Manager Tests
+    ✓ Should run daily summary task (13 ms)
+    ✓ Should run weekly summary task (2 ms)
+    ✓ Should run real-time summary for specific user (3 ms)
+    ✓ Should schedule and stop daily summary task (4 ms)
+    ✓ Should schedule and stop weekly summary task (2 ms)
+  SummaryTaskManager
+    ✓ runDailySummaryTask should call processDailySummaries (1 ms)
+    ✓ runWeeklySummaryTask should call processWeeklySummaries (1 ms)
+    ✓ runRealtimeSummary should call generateDailySummary with correct userId (1 ms)
+    ✓ stopAllTasks should clear intervals (2 ms)
+
+  console.error
+    Error sending test email:
+
+      17 |     console.log('Test email sent successfully');
+      18 |   } catch (error: any) {
+    > 19 |     console.error('Error sending test email:');
+         |             ^
+      20 |     console.error(error.response ? error.response.body : error);
+      21 |   }
+      22 | }
+
+      at testSendEmail (server/tests/sendgrid.test.ts:19:13)
+
+  console.error
+    Error: Provide at least one of to, cc or bcc
+        at Mail.addTo (/home/runner/workspace/node_modules/@sendgrid/helpers/classes/mail.js:254:13)
+        at Mail.fromData (/home/runner/workspace/node_modules/@sendgrid/helpers/classes/mail.js:114:12)
+        at new Mail (/home/runner/workspace/node_modules/@sendgrid/helpers/classes/mail.js:46:12)
+        at Function.create (/home/runner/workspace/node_modules/@sendgrid/helpers/classes/mail.js:594:12)
+        at MailService.send (/home/runner/workspace/node_modules/@sendgrid/mail/src/classes/mail-service.js:194:25)
+        at testSendEmail (/home/runner/workspace/server/tests/sendgrid.test.ts:16:18)
+        at Object.<anonymous> (/home/runner/workspace/server/tests/sendgrid.test.ts:25:1)
+        at Runtime._execModule (/home/runner/workspace/node_modules/jest-runtime/build/index.js:1439:24)
+        at Runtime._loadModule (/home/runner/workspace/node_modules/jest-runtime/build/index.js:1022:12)
+        at Runtime.requireModule (/home/runner/workspace/node_modules/jest-runtime/build/index.js:882:12)
+        at jestAdapter (/home/runner/workspace/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at runTestInternal (/home/runner/workspace/node_modules/jest-runner/build/runTest.js:367:16)
+        at runTest (/home/runner/workspace/node_modules/jest-runner/build/runTest.js:444:34)
+        at Object.worker (/home/runner/workspace/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      18 |   } catch (error: any) {
+      19 |     console.error('Error sending test email:');
+    > 20 |     console.error(error.response ? error.response.body : error);
+         |             ^
+      21 |   }
+      22 | }
+      23 |
+
+      at testSendEmail (server/tests/sendgrid.test.ts:20:13)
+
+ FAIL  server/tests/sendgrid.test.ts
+  ● Test suite failed to run
+
+    Your test suite must contain at least one test.
+
+      at onResult (node_modules/@jest/core/build/TestScheduler.js:133:18)
+      at node_modules/@jest/core/build/TestScheduler.js:254:19
+      at node_modules/emittery/index.js:363:13
+          at Array.map (<anonymous>)
+      at Emittery.emit (node_modules/emittery/index.js:361:23)
+
+ FAIL  server/tests/embeddingService.test.ts
+  ● Test suite failed to run
+
+    TypeError: openai_1.default is not a constructor
+
+       8 |
+       9 | // Initialize OpenAI client
+    > 10 | const openai = new OpenAI({
+         |                ^
+      11 |   apiKey: process.env.OPENAI_API_KEY
+      12 | });
+      13 |
+
+      at Object.<anonymous> (server/services/embeddingService.ts:10:16)
+      at Object.<anonymous> (server/tests/embeddingService.test.ts:4:1)
+
+ FAIL  server/tests/advancedSummaryService.test.ts
+  ● Test suite failed to run
+
+    TypeError: openai_1.default is not a constructor
+
+       8 |
+       9 | // Initialize OpenAI client
+    > 10 | const openai = new OpenAI({
+         |                ^
+      11 |   apiKey: process.env.OPENAI_API_KEY
+      12 | });
+      13 |
+
+      at Object.<anonymous> (server/services/embeddingService.ts:10:16)
+      at Object.require (server/services/advancedSummaryService.ts:7:1)
+      at Object.<anonymous> (server/tests/advancedSummaryService.test.ts:4:1)
+
+---|---------|----------|---------|---------|-------------------
+... | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+---|---------|----------|---------|---------|-------------------
+... |    11.2 |     2.36 |   12.37 |   11.45 |                   
+ ... |       0 |        0 |       0 |       0 |                   
+   |       0 |        0 |       0 |       0 | 4-143             
+ ... |   77.14 |    36.36 |   72.72 |   77.14 |                   
+   |       0 |      100 |       0 |       0 | 2-13              
+   |   87.09 |    36.36 |      80 |   87.09 | ...84,101,117,137 
+ ... |    3.97 |     0.54 |    4.93 |    4.07 |                   
+   |       0 |        0 |       0 |       0 | 4-612             
+   |       0 |        0 |       0 |       0 | 2-62              
+   |       0 |        0 |       0 |       0 | 3-236             
+   |       0 |        0 |       0 |       0 | 4-145             
+   |       0 |        0 |       0 |       0 | 5-150             
+   |       0 |        0 |       0 |       0 | 1-67              
+   |       0 |        0 |       0 |       0 | 1-113             
+   |       0 |        0 |       0 |       0 | 1-77              
+   |       0 |        0 |       0 |       0 | 1-106             
+   |   58.97 |    16.66 |      80 |   58.97 | ...,61-86,105,123 
+   |       0 |        0 |       0 |       0 | 1-70              
+   |       0 |        0 |       0 |       0 | 2-125             
+---|---------|----------|---------|---------|-------------------
+Test Suites: 6 failed, 1 passed, 7 total
+Tests:       3 failed, 11 passed, 14 total
+Snapshots:   0 total
+Time:        4.274 s
+Ran all test suites.
