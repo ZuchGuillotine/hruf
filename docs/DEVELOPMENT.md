@@ -72,6 +72,31 @@ Many tests are designed to clean up after themselves to avoid test data accumula
 ### Setting Up Local Environment
 1. Install dependencies: `npm install`
 2. Set up environment variables
+
+
+## Testing Troubleshooting Guide
+
+### Common Test Issues and Solutions
+
+#### OpenAI Integration Testing
+When testing OpenAI integration:
+- Use `import OpenAI from "openai"` (default import) instead of named imports to avoid constructor errors
+- Set `NODE_ENV=test` to use mock keys in test environment
+- Use Jest's `mockImplementation` for embedding generation and API calls
+
+#### Embedding Service Testing
+For embedding service tests:
+- Mock the `initialize` method before testing other functionality
+- Ensure embedding dimensions match OpenAI's expected format (1536 for text-embedding-ada-002)
+- Clean up test embeddings from the database after tests complete
+
+#### Service Initialization Testing
+When testing service initialization:
+- Mock all dependent services with proper initialize/shutdown methods
+- Verify environment-specific behavior (production vs. development)
+- Test startup sequence and graceful shutdown separately
+
+
 3. Start development server: `npm run dev`
 
 ### Code Structure
