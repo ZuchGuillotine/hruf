@@ -80,6 +80,8 @@ function setupQueryRoutes(app: Express) {
         const queryStream = queryWithAI(contextualizedMessages, userId);
 
         // Handle each chunk
+        let contentSent = false; // Flag to track if any content was sent
+
         for await (const chunk of queryStream) {
           console.log('Processing stream chunk:', {
             hasContent: !!chunk.response,
@@ -88,22 +90,41 @@ function setupQueryRoutes(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          const sseData = `data: ${JSON.stringify(chunk)}\n\n`;
-          res.write(sseData);
+          if (chunk.error) {
+            // Handle error within the stream
+            console.error('Error in stream generation:', chunk.error);
+            res.write(`data: ${JSON.stringify({ error: chunk.error })}\n\n`);
+            contentSent = true;
+          } else {
+            // Send normal content chunk
+            res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+            contentSent = true;
+          }
 
+          // Flush to ensure data is sent immediately
+          if (res.flush) {
+            res.flush();
+          }
           // End response when streaming is complete
           if (!chunk.streaming) {
             res.end();
             return;
           }
         }
+
+        // If no content was sent, send an error message
+        if (!contentSent) {
+          res.write(`data: ${JSON.stringify({ error: 'No content generated' })}\n\n`);
+        }
+
+        res.end();
       } catch (streamError) {
         console.error("Streaming error:", {
           error: streamError instanceof Error ? streamError.message : 'Unknown error',
           stack: streamError instanceof Error ? streamError.stack : undefined,
           timestamp: new Date().toISOString()
         });
-        res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: 'Streaming error', details: streamError instanceof Error ? streamError.message : String(streamError) })}\n\n`);
         res.end();
       }
     } catch (error) {

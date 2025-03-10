@@ -72,17 +72,22 @@ export async function* chatWithAI(
 
     // Process each chunk from the stream
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || "";
+      try {
+        const content = chunk.choices[0]?.delta?.content || "";
 
-      if (content) {
-        logger.info('Processing chunk:', {
-          chunkLength: content.length,
-          preview: content.substring(0, 30),
-          timestamp: new Date().toISOString()
-        });
+        if (content) {
+          logger.info('Processing chunk:', {
+            chunkLength: content.length,
+            preview: content.substring(0, 30),
+            timestamp: new Date().toISOString()
+          });
 
-        fullResponse += content;
-        yield { response: content, streaming: true };
+          fullResponse += content;
+          yield { response: content, streaming: true };
+        }
+      } catch (chunkError) {
+        logger.error('Error processing chunk:', chunkError);
+        // Continue processing next chunks instead of breaking the stream
       }
     }
 
@@ -108,7 +113,8 @@ export async function* chatWithAI(
       logger.error("Model error detected. This may be due to an invalid model name or API restrictions.");
     }
     
-    throw error;
+    // Yield error information to client instead of throwing
+    yield { error: "Streaming error", streaming: false };
   }
 }
 

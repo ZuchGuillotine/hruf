@@ -15,8 +15,9 @@ type Message = {
 export default function LLMChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [streamingContent, setStreamingContent] = useState('');
-  const { chat, isLoading } = useLLM();
+  const [isLoading, setIsLoading] = useState(false); // Added isLoading state
+  const [streamingResponse, setStreamingResponse] = useState(''); // Added streamingResponse state
+  const { chat } = useLLM(); // Removed unnecessary isLoading from useLLM
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,27 +31,14 @@ export default function LLMChat() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setStreamingContent(''); // Reset streaming content
+    setStreamingResponse(''); // Reset streaming content
 
     try {
       // Add a placeholder assistant message that will be updated during streaming
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
-      await chat({
-        messages: [...messages, userMessage],
-        onStream: (chunk) => {
-          setStreamingContent((prev) => prev + chunk);
-          // Update the last message (assistant's response) with the streamed content
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1] = {
-              role: 'assistant',
-              content: prev[prev.length - 1].content + chunk
-            };
-            return newMessages;
-          });
-        },
-      });
+      await fetchResponse(input.trim()); // Call the new fetchResponse function
+
     } catch (error: any) {
       console.error('Chat Error:', error);
       let errorMessage = 'Failed to get response from AI';
@@ -65,6 +53,120 @@ export default function LLMChat() {
         title: 'Error',
         description: errorMessage,
       });
+    }
+  };
+
+  const fetchResponse = async (message: string) => {
+    setIsLoading(true);
+
+    try {
+      // Set up EventSource for streaming response
+      const eventSource = new EventSource('/api/chat');
+
+      // Initialize stream state
+      setStreamingResponse('');
+
+      // Set timeout to close connection if it hangs
+      const timeoutId = setTimeout(() => {
+        console.log('Response timeout reached, closing connection');
+        eventSource.close();
+        setIsLoading(false);
+
+        // Add error message if no response was received
+        if (streamingResponse === '') {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: "I'm sorry, there was a timeout while generating a response. Please try again." },
+          ]);
+        }
+      }, 30000); // 30 second timeout
+
+      eventSource.onmessage = (event) => {
+        console.log('Received SSE chunk:', event.data);
+
+        try {
+          const data = JSON.parse(event.data);
+          console.log('Parsed SSE data:', data);
+
+          if (data.error) {
+            // Handle error from server
+            console.error('Server returned error:', data.error);
+            eventSource.close();
+            clearTimeout(timeoutId);
+            setIsLoading(false);
+
+            // Add error message to chat
+            setMessages((prev) => [
+              ...prev,
+              { role: 'assistant', content: "I'm sorry, there was an error generating a response. Please try again." },
+            ]);
+
+            // Clear streaming state
+            setStreamingResponse('');
+          } else if (data.streaming === false) {
+            // End of streaming
+            eventSource.close();
+            clearTimeout(timeoutId);
+            setIsLoading(false);
+
+            // Add complete response to messages
+            setMessages((prev) => [
+              ...prev,
+              { role: 'assistant', content: streamingResponse },
+            ]);
+
+            // Clear streaming state
+            setStreamingResponse('');
+          } else {
+            // Update streaming response
+            setStreamingResponse((prev) => prev + data.response);
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              newMessages[newMessages.length - 1] = {
+                role: 'assistant',
+                content: prev[prev.length - 1].content + data.response
+              };
+              return newMessages;
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing SSE data:', error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        clearTimeout(timeoutId);
+        setIsLoading(false);
+
+        // Add error message to chat if no content was received
+        if (streamingResponse === '') {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: "I'm sorry, there was an error connecting to the AI service. Please try again later." },
+          ]);
+        }
+      };
+
+      // Send the actual request
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      }).catch((error) => {
+        console.error('Fetch error:', error);
+        eventSource.close();
+        clearTimeout(timeoutId);
+        setIsLoading(false);
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -132,8 +234,8 @@ export default function LLMChat() {
             className="bg-white/10 text-white placeholder:text-white/60"
             disabled={isLoading}
           />
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isLoading}
             className="bg-white text-[#1b4332] hover:bg-white/90"
           >
