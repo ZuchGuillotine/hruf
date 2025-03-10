@@ -15,7 +15,20 @@ export async function debugContext(userId: number | string, context: { messages:
   try {
     // Create debug directory if it doesn't exist
     const debugDir = path.join(process.cwd(), 'debug_logs');
-    await fs.mkdir(debugDir, { recursive: true });
+    try {
+      await fs.mkdir(debugDir, { recursive: true });
+      logger.info(`Debug directory ensured at: ${debugDir}`);
+    } catch (mkdirError) {
+      logger.error(`Error creating debug directory: ${mkdirError.message}`);
+      // Try a fallback approach with absolute path
+      try {
+        const absolutePath = '/home/runner/workspace/debug_logs';
+        await fs.mkdir(absolutePath, { recursive: true });
+        logger.info(`Created debug directory at absolute path: ${absolutePath}`);
+      } catch (fallbackError) {
+        logger.error(`Fallback directory creation also failed: ${fallbackError.message}`);
+      }
+    }
     
     // Create a log filename with timestamp and user ID
     const timestamp = new Date().toISOString().replace(/:/g, '-');
@@ -27,18 +40,41 @@ export async function debugContext(userId: number | string, context: { messages:
       userId,
       contextType: type,
       messageCount: context.messages.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      filePath
     });
     
     // Format the context for better readability
     const formattedContext = JSON.stringify(context, null, 2);
     
-    // Write to file
-    await fs.writeFile(filePath, formattedContext, 'utf8');
+    // Write to file with better error handling
+    try {
+      await fs.writeFile(filePath, formattedContext, 'utf8');
+      logger.info(`Successfully wrote context debug to: ${filePath}`);
+    } catch (writeError) {
+      logger.error(`Error writing debug file: ${writeError.message}`, {
+        error: writeError,
+        filePath
+      });
+      
+      // Try alternative approach with sync operations as fallback
+      try {
+        const fsSync = require('fs');
+        fsSync.writeFileSync(filePath, formattedContext, 'utf8');
+        logger.info(`Successfully wrote context debug using sync fallback: ${filePath}`);
+      } catch (syncError) {
+        logger.error(`Sync fallback also failed: ${syncError.message}`);
+      }
+    }
     
-    logger.info(`Context debug saved to ${filename}`);
+    // Additional logging to help debug
+    try {
+      const stats = await fs.stat(filePath);
+      logger.info(`File stats: exists=${stats.isFile()}, size=${stats.size}, permissions=${stats.mode.toString(8)}`);
+    } catch (statError) {
+      logger.error(`Could not get file stats: ${statError.message}`);
+    }
     
-    // Return true to indicate success
     return true;
   } catch (error) {
     // Log errors but don't fail the entire operation
