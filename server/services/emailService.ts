@@ -1,110 +1,93 @@
-
-import sgMail from '../config/sendgrid';
-import { EMAIL_TEMPLATES } from '../config/sendgrid';
-import logger from '../utils/logger';
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 2000;
-
-async function sendEmail(msg: sgMail.MailDataRequired): Promise<void> {
-  let attempt = 0;
-  
-  // Let SendGrid handle email authentication headers
-  msg.headers = {
-    ...msg.headers
-  };
-
-  while (attempt < MAX_RETRIES) {
-    try {
-      await sgMail.send(msg);
-      logger.info(`Email sent successfully to ${msg.to}`);
-      return;
-    } catch (error: any) {
-      attempt++;
-      const errorMessage = error?.message || 'Unknown error';
-      logger.error(
-        `Error sending email (attempt ${attempt}): ${errorMessage}`
-      );
-
-      if (error.response?.body) {
-        logger.error(`SendGrid response: ${JSON.stringify(error.response.body)}`);
-      }
-
-      if (attempt >= MAX_RETRIES) {
-        throw new Error(`Failed to send email after ${MAX_RETRIES} attempts: ${errorMessage}`);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-    }
-  }
-}
-
-export async function sendWelcomeEmail(to: string, username: string): Promise<void> {
-  const currentYear = new Date().getFullYear();
-  
-  const msg = {
-    to,
-    from: process.env.SENDGRID_FROM_EMAIL,
-    templateId: EMAIL_TEMPLATES.WELCOME,
-    dynamicTemplateData: {
-      firstName: username,
-      setupAccountLink: `${process.env.APP_URL}/profile`,
-      currentYear: currentYear.toString(),
-      proPlanLink: '#' // Placeholder until pro plan page is created
-    }
-  };
-
-  await sendEmail(msg);
-}
-
-export {
-  sendEmail,
-  EMAIL_TEMPLATES
-};
 import * as sgMail from '@sendgrid/mail';
 import logger from '../utils/logger';
 
-// Set API key from environment
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+// Set API key if available
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
+
+// Email templates/configuration
+export const SENDGRID_CONFIG = {
+  apiKeyExists: !!process.env.SENDGRID_API_KEY,
+  fromEmail: process.env.SENDGRID_FROM_EMAIL || 'accounts@stacktracker.io',
+  templateIds: {
+    WELCOME: process.env.SENDGRID_WELCOME_TEMPLATE || 'd-fe1c448989a34f4697885de8d504b960',
+    TWO_FACTOR: process.env.SENDGRID_2FA_TEMPLATE || 'd-xxxxxxxxxxxxx',
+    PASSWORD_RESET: process.env.SENDGRID_RESET_TEMPLATE || 'd-xxxxxxxxxxxxx',
+    DRIP_1: process.env.SENDGRID_DRIP1_TEMPLATE || 'd-xxxxxxxxxxxxx',
+    DRIP_2: process.env.SENDGRID_DRIP2_TEMPLATE || 'd-xxxxxxxxxxxxx',
+    WEEKLY_SUMMARY: process.env.SENDGRID_WEEKLY_SUMMARY_TEMPLATE || 'd-xxxxxxxxxxxxx'
+  }
+};
+
+/**
+ * Email data interface
+ */
+interface EmailData {
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  templateId?: string;
+  dynamicTemplateData?: Record<string, any>;
+}
 
 /**
  * Send an email using SendGrid
- * @param {Object} emailData Email data
- * @param {string} emailData.to Recipient email
- * @param {string} emailData.subject Email subject
- * @param {string} emailData.text Plain text email content
- * @param {string} emailData.html HTML email content
- * @returns {Promise<void>}
+ * @param {EmailData} emailData - Email data including recipient, subject, content
+ * @returns {Promise<boolean>} - Success status
  */
-export async function sendEmail(emailData: {
-  to: string;
-  subject: string;
-  text: string;
-  html: string;
-}): Promise<void> {
+export async function sendEmail(emailData: EmailData): Promise<boolean> {
   try {
     // Validate required fields
     if (!emailData.to) {
-      throw new Error('Email recipient is required');
+      logger.error('Email sending failed: No recipient specified');
+      return false;
     }
 
-    // Prepare message
+    if (!emailData.subject && !emailData.templateId) {
+      logger.error('Email sending failed: No subject or templateId specified');
+      return false;
+    }
+
+    // Check if SendGrid API key is configured
+    if (!SENDGRID_CONFIG.apiKeyExists) {
+      logger.warn('Email not sent: SendGrid API key not configured');
+      return false;
+    }
+
+    // Prepare email message
     const msg = {
-      from: 'accounts@stacktracker.io', // Default sender
       to: emailData.to,
+      from: SENDGRID_CONFIG.fromEmail,
       subject: emailData.subject,
       text: emailData.text,
       html: emailData.html,
+      templateId: emailData.templateId,
+      dynamicTemplateData: emailData.dynamicTemplateData
     };
 
-    // Send the email
+    // Send email
     const response = await sgMail.send(msg);
-    logger.info('Email sent successfully', {
-      statusCode: response[0]?.statusCode,
-      to: emailData.to
-    });
+
+    if (response && response[0].statusCode >= 200 && response[0].statusCode < 300) {
+      logger.info(`Email sent successfully to ${emailData.to}`);
+      return true;
+    } else {
+      logger.error('Email sending failed', { 
+        response: response[0],
+        recipient: emailData.to
+      });
+      return false;
+    }
   } catch (error) {
-    logger.error('Error sending email:', error);
+    logger.error('Error sending email:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      recipient: emailData.to
+    });
     throw error;
   }
 }
+
+export { SENDGRID_CONFIG };

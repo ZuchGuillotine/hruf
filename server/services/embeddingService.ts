@@ -2,7 +2,8 @@
 
 import { OpenAI } from "openai";
 import logger from "../utils/logger";
-import { Cache } from "../utils/cache";
+// Remove dependency on missing cache
+// import { Cache } from "../utils/cache";
 import { db } from "../../db";
 import { logEmbeddings, summaryEmbeddings, logSummaries } from "../../db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -24,6 +25,32 @@ class EmbeddingService {
   private EMBEDDING_DIMENSIONS = 1536;
   private BATCH_SIZE = 5; // Number of items to process in a batch
   private SIMILARITY_THRESHOLD = 0.75; // Cosine similarity threshold
+
+  /**
+   * Initialize the embedding service
+   * Verifies OpenAI connection and database setup
+   * @returns Promise<boolean> indicating initialization success
+   */
+  async initialize(testQuery?: string): Promise<boolean> {
+    try {
+      logger.info('Initializing EmbeddingService...');
+      
+      // Verify OpenAI connectivity with a test embedding
+      const testText = testQuery || "Test embedding service initialization";
+      const testEmbedding = await this.generateEmbedding(testText);
+      
+      if (!testEmbedding || testEmbedding.length !== this.EMBEDDING_DIMENSIONS) {
+        logger.error('Test embedding generation failed: incorrect dimensions');
+        return false;
+      }
+      
+      logger.info('EmbeddingService initialized successfully');
+      return true;
+    } catch (error) {
+      logger.error('EmbeddingService initialization failed:', error);
+      return false;
+    }
+  }
 
   /**
    * Generate an embedding for a text string

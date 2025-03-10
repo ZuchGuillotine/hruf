@@ -35,15 +35,26 @@ describe('Service Initializer Tests', () => {
   });
 
   test('Should initialize PGVector services', async () => {
-    // Mock embeddingService initialize method
-    embeddingService.initialize = jest.fn().mockResolvedValue(true);
-    embeddingService.generateEmbedding = jest.fn().mockResolvedValue([0.1, 0.2, 0.3]);
+    let testArg = '';
 
-    // Call the method
-    await serviceInitializer.initializePGVector();
+    // Set up expectations and mock the initialize method
+    jest.spyOn(embeddingService, 'initialize').mockImplementation(async (text) => {
+      if (text) testArg = text;
+      return true;
+    });
 
-    // For this test, we'll verify the function is called
+    jest.spyOn(embeddingService, 'generateEmbedding').mockImplementation(async (text) => {
+      testArg = text;
+      return new Array(1536).fill(0);
+    });
+
+    // Call the method that should call initialize
+    const serviceInit = new ServiceInitializer();
+    await serviceInit.initializePGVector();
+
+    // Verify the method was called
     expect(embeddingService.initialize).toHaveBeenCalled();
+    expect(embeddingService.initialize).toHaveReturnedWith(true);
   });
 
   test('Should start scheduled tasks in production', async () => {

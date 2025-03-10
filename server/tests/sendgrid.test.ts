@@ -19,7 +19,7 @@ describe('SendGrid Email Service', () => {
     };
 
     // Act
-    await sendEmail(emailData);
+    const result = await sendEmail(emailData);
 
     // Assert
     expect(sgMail.send).toHaveBeenCalled();
@@ -27,6 +27,7 @@ describe('SendGrid Email Service', () => {
       to: 'test@example.com',
       subject: 'Test Email'
     }));
+    expect(result).toBe(true);
   });
 
   test('should handle errors when sending emails', async () => {
@@ -49,5 +50,3 @@ describe('SendGrid Email Service', () => {
     }).rejects.toThrow('Send failed');
   });
 });
-
-// Remove the standalone function that was causing the error

@@ -9,7 +9,8 @@ if (!process.env.OPENAI_API_KEY && process.env.NODE_ENV !== 'test') {
   throw new Error("OPENAI_API_KEY must be set");
 }
 
-// Initialize OpenAI client
+// Initialize OpenAI client with direct import to avoid constructor error
+import OpenAI from "openai";
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || 'mock-key-for-testing'
 });
