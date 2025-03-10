@@ -1,5 +1,41 @@
 # Backend Structures Document
 
+## Service Initialization
+
+### Service Startup Architecture
+- Class: ServiceInitializer (in server/services/serviceInitializer.ts)
+  - Purpose: Provides orderly initialization of all dependent services
+  - Methods:
+    - `initializeServices()`: Main entry point for service initialization
+    - `initializePGVector()`: Sets up vector database services
+    - `initializeSummarization()`: Initializes summarization services
+    - `startScheduledTasks()`: Configures automated summary generation
+    - `shutdownServices()`: Provides graceful shutdown of all services
+  - Integration:
+    - Integrated with server startup in index.ts
+    - Environment-aware scheduling (only in production)
+    - Robust error handling to prevent startup failures
+    - Graceful shutdown with proper cleanup
+
+### Initialization Flow
+1. Server Startup:
+   - Express server initialization
+   - Database connection establishment
+   - Service initialization via serviceInitializer
+   - Proper signal handling for graceful shutdown
+   
+2. Service Initialization:
+   - PGVector services verification
+   - OpenAI API connectivity check
+   - Summarization service setup
+   - Automated task scheduling (production only)
+   
+3. Shutdown Process:
+   - Signal handler registration (SIGTERM, SIGINT)
+   - Task cleanup and termination
+   - Resource release
+   - Controlled process exit
+
 ## Database Structure
 
 ### Primary Database (NeonDB)
