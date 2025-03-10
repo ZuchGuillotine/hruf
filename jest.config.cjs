@@ -1,6 +1,4 @@
 
-// jest.config.cjs
-
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
@@ -18,6 +16,12 @@ module.exports = {
   testMatch: [
     '**/server/tests/**/*.test.ts'
   ],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.json',
+      isolatedModules: true
+    }]
+  },
   verbose: true,
   testTimeout: 10000, // 10 second timeout for tests
   collectCoverage: true,

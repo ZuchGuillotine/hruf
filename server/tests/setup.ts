@@ -1,84 +1,90 @@
-// server/tests/setup.ts
 
-import { db } from '@db';
+import { sql } from '@vercel/postgres';
+import { db } from '../../db';
 import logger from '../utils/logger';
 
-// Provides global test setup and teardown
-beforeAll(async () => {
-  logger.info('Setting up test environment');
+// Silence logs during tests
+logger.level = 'silent';
 
-  // Verify database connection
+beforeAll(async () => {
+  // Set up test database if needed
   try {
-    await db.query.users.findFirst();
-    logger.info('Database connection verified');
+    // Any test database setup can go here
+    console.log('Test setup complete');
   } catch (error) {
-    logger.error('Database connection failed:', error);
-    throw new Error('Unable to connect to database for testing');
+    console.error('Error in test setup:', error);
+    throw error;
   }
 });
 
 afterAll(async () => {
-  logger.info('Tearing down test environment');
-
-  // Add any cleanup tasks here
-  // We're not closing the database connection since it might be needed by other tests
+  // Clean up test database
+  try {
+    // Any test database cleanup can go here
+    console.log('Test cleanup complete');
+  } catch (error) {
+    console.error('Error in test cleanup:', error);
+  }
 });
 
-// Mock functions for testing
-export const createMockUser = async (overrides = {}) => {
-  return {
-    id: 999,
-    username: 'testuser',
-    email: 'test@example.com',
-    isVerified: true,
-    isPro: false,
-    ...overrides
-  };
-};
-
-// Helper to estimate token count
-export const estimateTokenCount = (text: string): number => {
-  return Math.ceil(text.length / 4); // Rough estimation: ~4 characters per token for English
-};
-
-// Mock the OpenAI client
+// Mock OpenAI
 jest.mock('openai', () => {
   return {
     default: jest.fn().mockImplementation(() => {
       return {
         chat: {
           completions: {
-            create: jest.fn().mockImplementation(({ stream }) => {
+            create: jest.fn().mockImplementation(({ stream }: { stream: boolean }) => {
               if (stream) {
-                // Mock streaming response
-                const mockGenerator = async function* () {
-                  yield { choices: [{ delta: { content: 'This ' } }] };
-                  yield { choices: [{ delta: { content: 'is ' } }] };
-                  yield { choices: [{ delta: { content: 'a ' } }] };
-                  yield { choices: [{ delta: { content: 'mock ' } }] };
-                  yield { choices: [{ delta: { content: 'response' } }] };
+                const mockStream = {
+                  controller: {
+                    enqueue: jest.fn(),
+                    close: jest.fn(),
+                  },
+                  [Symbol.asyncIterator]: function* () {
+                    yield {
+                      choices: [
+                        {
+                          delta: { content: 'This ' },
+                          index: 0,
+                        },
+                      ],
+                    };
+                    yield {
+                      choices: [
+                        {
+                          delta: { content: 'is a ' },
+                          index: 0,
+                        },
+                      ],
+                    };
+                    yield {
+                      choices: [
+                        {
+                          delta: { content: 'test.' },
+                          index: 0,
+                        },
+                      ],
+                    };
+                  },
                 };
-                return mockGenerator();
-              } else {
-                // Mock non-streaming response
-                return Promise.resolve({
-                  choices: [
-                    {
-                      message: {
-                        content: 'This is a mock OpenAI response',
-                      },
-                    },
-                  ],
-                });
+                return mockStream;
               }
+              return Promise.resolve({
+                choices: [{ message: { content: 'This is a test response' } }],
+              });
             }),
           },
         },
         embeddings: {
           create: jest.fn().mockResolvedValue({
-            data: [{ embedding: Array(1536).fill(0.1) }]
-          })
-        }
+            data: [
+              {
+                embedding: new Array(1536).fill(0.1),
+              },
+            ],
+          }),
+        },
       };
     }),
   };

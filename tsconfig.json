@@ -15,7 +15,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
-    "types": ["node", "vite/client"],
+    "types": ["jest", "node", "vite/client"],
     "paths": {
       "@db": ["./db/index.ts"],
       "@db/*": ["./db/*"],
