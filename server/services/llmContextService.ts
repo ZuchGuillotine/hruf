@@ -1,53 +1,43 @@
-import { getQuantitativeLogs, getQualitativeLogs } from "./logService";
+
+// server/services/llmContextService.ts
+
 import { SYSTEM_PROMPT } from "../openai";
 import { Message } from "@/lib/types";
 import { db } from "../../db";
-import { chatSummaries, healthStats } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { healthStats } from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { advancedSummaryService } from "./advancedSummaryService";
+import { summaryTaskManager } from "../cron/summaryManager";
+import logger from "../utils/logger";
 
-// Constructs context for qualitative feedback chat interactions
-// This service specifically handles context for supplement experience discussions
+/**
+ * Constructs context for qualitative feedback chat interactions using our hybrid approach
+ * @param userId User ID
+ * @param userQuery The user's query text
+ * @returns Object containing constructed messages
+ */
 export async function constructUserContext(userId: string, userQuery: string): Promise<{ messages: Message[] }> {
   try {
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      throw new Error('Invalid user ID');
+    }
 
-    // Fetch both quantitative and qualitative data to provide complete context for feedback discussions
-    const [quantitativeLogs, recentLogs, historicalSummaries, userHealthStats] = await Promise.all([
-      getQuantitativeLogs(userId),
-      getQualitativeLogs(userId, twoWeeksAgo),
-      db.query.chatSummaries.findMany({
-        where: eq(chatSummaries.userId, userId),
-        orderBy: desc(chatSummaries.periodEnd)
-      }),
-      db.query.healthStats.findFirst({
-        where: eq(healthStats.userId, userId)
-      })
-    ]);
-
-    const quantitativeContext = quantitativeLogs
-      .map(log => {
-        const date = new Date(log.takenAt).toISOString().split('T')[0];
-        const effects = log.effects ? 
-          `Effects: ${Object.entries(log.effects)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')}` : 'No effects recorded';
-
-        return `${date}: Supplement: ${log.supplementName}, Dosage: ${log.dosage}, Notes: ${log.notes || 'None'}, ${effects}`;
-      })
-      .join('\n');
-
-    const recentQualitativeContext = recentLogs
-      .map(log => {
-        const date = new Date(log.loggedAt).toISOString().split('T')[0];
-        const metadata = log.metadata ? ` (${JSON.stringify(log.metadata)})` : '';
-        return `${date}: ${log.content}${metadata}`;
-      })
-      .join('\n');
-
-    const historicalContext = historicalSummaries.length > 0 ? 
-      historicalSummaries.map(s => s.summary).join('\n\n') : 'No historical summaries found.';
-
+    logger.info(`Building context for user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
+    
+    // Check if we need to trigger a real-time summary
+    // This helps ensure we have up-to-date summaries before building context
+    try {
+      await summaryTaskManager.runRealtimeSummary(userIdNum);
+    } catch (error) {
+      logger.warn(`Real-time summary generation failed but continuing with context building: ${error}`);
+    }
+    
+    // Fetch user's health stats
+    const userHealthStats = await db.query.healthStats.findFirst({
+      where: eq(healthStats.userId, userIdNum)
+    });
+    
     // Format health stats data if available
     const healthStatsContext = userHealthStats ? `
 Weight: ${userHealthStats.weight || 'Not provided'} lbs
@@ -58,43 +48,100 @@ Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.av
 Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
+    // For the feedback chat, we need more comprehensive context about the user's supplement history
+    // Use vector search to find relevant summaries and logs based on user query
+    const relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 8);
+    
+    // Format the relevant content
+    let recentSummaryContent = '';
+    let historicalSummaryContent = '';
+    let qualitativeLogContent = '';
+    let quantitativeLogContent = '';
+    
+    // Current date for determining what's recent vs historical
+    const now = new Date();
+    const twoWeeksAgo = new Date(now);
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    
+    // Process summaries
+    relevantContent.filter(item => item.type === 'summary').forEach(summary => {
+      const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
+      const summaryEntry = `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
+      
+      // Determine if this is a recent or historical summary
+      if (new Date(summary.endDate) >= twoWeeksAgo) {
+        recentSummaryContent += summaryEntry;
+      } else {
+        historicalSummaryContent += summaryEntry;
+      }
+    });
+    
+    // Process qualitative logs
+    relevantContent.filter(item => item.type === 'qualitative_log').forEach(log => {
+      let content = log.content;
+      
+      // Try to extract meaningful content from JSON if applicable
+      try {
+        const parsed = JSON.parse(log.content);
+        if (Array.isArray(parsed)) {
+          content = parsed
+            .filter(msg => msg.role === 'user')
+            .map(msg => msg.content)
+            .join(' | ');
+        }
+      } catch (e) {
+        // Not JSON, use as is
+      }
+      
+      qualitativeLogContent += `[${new Date(log.loggedAt).toLocaleDateString()}] ${content}\n`;
+    });
+    
+    // Process quantitative logs
+    relevantContent.filter(item => item.type === 'quantitative_log').forEach(log => {
+      const effectsText = log.effects
+        ? Object.entries(log.effects)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ')
+        : 'No effects recorded';
+        
+      quantitativeLogContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
+    });
+
+    // Construct the final context message
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: `
 User Context - Health Statistics:
 ${healthStatsContext}
 
-User Context - Supplement Log History (last 30 days):
-${quantitativeContext || 'No recent supplement logs.'}
+User Context - Recent Summaries (last 14 days):
+${recentSummaryContent || 'No recent summaries available.'}
 
-User Context - Recent Health Notes and Observations (last 14 days):
-${recentQualitativeContext || 'No recent health notes.'}
+User Context - Historical Health Summaries:
+${historicalSummaryContent || 'No historical summaries available.'}
 
-User Context - Summarized Health Notes and Observations (older than 14 days):
-${historicalContext}
+User Context - Relevant Qualitative Observations:
+${qualitativeLogContent || 'No relevant qualitative observations found.'}
+
+User Context - Relevant Supplement Logs:
+${quantitativeLogContent || 'No relevant supplement logs found.'}
 
 User Query:
 ${userQuery}
 ` }
     ];
 
-    console.log('LLM Context being sent:', JSON.stringify(messages, null, 2));
+    logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
     
-    // Add more detailed logging about the context construction
-    console.log('Context construction details:', {
-      userId,
-      hasHealthStats: !!userHealthStats,
-      quantitativeLogsCount: quantitativeLogs.length,
-      qualitativeLogsCount: recentLogs.length,
-      summariesCount: historicalSummaries.length,
-      systemPromptLength: SYSTEM_PROMPT.length,
-      totalContextSize: JSON.stringify(messages).length,
-      timestamp: new Date().toISOString()
-    });
-
     return { messages };
   } catch (error) {
-    console.error("Error constructing user context:", error);
+    logger.error("Error constructing user context:", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    // Fallback to basic prompt on error
     return {
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
