@@ -1,4 +1,6 @@
 
+// client/src/components/SummaryTrigger.tsx
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -61,22 +63,21 @@ export default function SummaryTrigger({ className, onSummaryGenerated }: Summar
 
       const data = await response.json();
       
-      if (data.success) {
+      if (data.summary) {
         setGeneratedSummary(data.summary);
+        if (onSummaryGenerated) {
+          onSummaryGenerated(data.summary);
+        }
         
         toast({
           title: "Success",
           description: "Summary generated successfully",
         });
-        
-        if (onSummaryGenerated) {
-          onSummaryGenerated(data.summary);
-        }
       } else {
         toast({
           variant: "destructive",
           title: "Error",
-          description: data.message || "Failed to generate summary",
+          description: data.message || "No data available for summary generation",
         });
       }
     } catch (error) {
@@ -99,7 +100,7 @@ export default function SummaryTrigger({ className, onSummaryGenerated }: Summar
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-        },
+        }
       });
 
       if (!response.ok) {
