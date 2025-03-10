@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">58.97% </span>
+                <span class="strong">59.52% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>23/39</span>
+                <span class='fraction'>25/42</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">16.66% </span>
+                <span class="strong">14.28% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/6</span>
+                <span class='fraction'>1/7</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">58.97% </span>
+                <span class="strong">59.52% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>23/39</span>
+                <span class='fraction'>25/42</span>
             </div>
         
             
@@ -193,10 +193,12 @@
 <a name='L128'></a><a href='#L128'>128</a>
 <a name='L129'></a><a href='#L129'>129</a>
 <a name='L130'></a><a href='#L130'>130</a>
-<a name='L131'></a><a href='#L131'>131</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -245,16 +247,16 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -325,6 +327,7 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&nbsp;
 // server/services/serviceInitializer.ts
+import embeddingService from './embeddingService';
 &nbsp;
 import { embeddingService } from './embeddingService';
 import { advancedSummaryService } from './advancedSummaryService';
@@ -374,17 +377,17 @@ class ServiceInitializer {
     try {
       logger.info('Initializing PGVector services...');
       
-      // Verify PGVector availability by checking if extension is installed
-      // We'll do a simple query to ensure the extension is working
-      /* 
-      This step is handled by our migration, but we'll leave a placeholder
-      for any additional initialization that might be needed in the future
-      */
+      // Verify PGVector availability and initialize embedding service
+      const initialized = await embeddingService.initialize();
       
-      logger.info('PGVector services initialized successfully');
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (!initialized) {</span>
+<span class="cstat-no" title="statement not covered" >        throw new Error('Failed to initialize embedding service');</span>
+      }
+      
+<span class="cstat-no" title="statement not covered" >      logger.info('PGVector services initialized successfully');</span>
     } catch (error) {
-<span class="cstat-no" title="statement not covered" >      logger.error('PGVector initialization failed:', error);</span>
-<span class="cstat-no" title="statement not covered" >      throw error;</span>
+      logger.error('PGVector initialization failed:', error);
+      throw error;
     }
   }
   
@@ -460,7 +463,7 @@ export const serviceInitializer = new ServiceInitializer();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-03-10T05:12:39.275Z
+                at 2025-03-10T05:16:38.633Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
