@@ -56,7 +56,8 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
     
     // Call OpenAI chat with the qualitative model
     // The second parameter ensures we're always using the correct model for this context
-    return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT);
+    // Enable streaming for real-time responses
+    return openAIChatWithAI(messages, MODELS.QUALITATIVE_CHAT, true); // Set streaming to true
   } catch (error) {
     console.error('Error in qualitative chat service:', {
       error: error instanceof Error ? error.message : 'Unknown error',
