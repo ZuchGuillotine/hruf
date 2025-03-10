@@ -19,9 +19,13 @@
 
 ### Initialization Flow
 1. Server Startup:
-   - Express server initialization
+   - Express server initialization and middleware setup
    - Database connection establishment
-   - Service initialization via serviceInitializer
+   - Service initialization via `initializeAndStart()` function:
+     - Calls serviceInitializer.initializeServices()
+     - Continues server startup even if services fail
+     - Finds available port with retry mechanism
+     - Starts listening on available port
    - Proper signal handling for graceful shutdown
    
 2. Service Initialization:
@@ -31,10 +35,12 @@
    - Automated task scheduling (production only)
    
 3. Shutdown Process:
+   - Dedicated `handleShutdown()` function for clean termination
    - Signal handler registration (SIGTERM, SIGINT)
-   - Task cleanup and termination
-   - Resource release
-   - Controlled process exit
+   - Service cleanup via serviceInitializer.shutdownServices()
+   - Server connection closure
+   - Forced termination after 10-second timeout
+   - Comprehensive error handling during shutdown
 
 ## Database Structure
 

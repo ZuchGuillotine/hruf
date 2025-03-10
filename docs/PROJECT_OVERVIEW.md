@@ -6,6 +6,12 @@ A cutting-edge health tracking and content management application that combines 
 ## Technical Stack
 - **Frontend**: React with TypeScript, Tailwind CSS, shadcn/ui components
 - **Backend**: Express.js with TypeScript
+- **Server Architecture**:
+  - Robust service initialization system with graceful shutdown
+  - Port conflict resolution with automatic retry mechanism
+  - Comprehensive signal handling for reliability
+  - Timeout-enforced shutdown for resource management
+  - Improved error recovery during startup and shutdown
 - **Database Architecture**:
   - **Consolidated Database (NeonDB)**:
     - All database tables are now stored in NeonDB Postgres
