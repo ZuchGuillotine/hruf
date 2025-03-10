@@ -6,7 +6,7 @@ import logger from "../utils/logger";
 import { db } from "../../db";
 import { logEmbeddings, summaryEmbeddings, logSummaries } from "../../db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import LRUCache from "lru-cache";
+import { LRUCache } from "lru-cache";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
