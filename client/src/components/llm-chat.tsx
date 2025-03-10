@@ -55,7 +55,7 @@ export default function LLMChat() {
         title: 'Error',
         description: errorMessage,
       });
-      
+
       // Remove the empty assistant message on error
       setMessages((prev) => prev.slice(0, -1));
     }
@@ -67,19 +67,19 @@ export default function LLMChat() {
     try {
       // Create a correctly formatted message array to match backend expectations
       const messageArray = messages.concat({ role: 'user', content: message });
-      
+
       // Set up EventSource for streaming response with correct URL
       const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(message)}`);
-      
+
       // Initialize stream state
       setStreamingResponse('');
-      
+
       // Set timeout to close connection if it hangs
       const timeoutId = setTimeout(() => {
         console.log('Response timeout reached, closing connection');
         eventSource.close();
         setIsLoading(false);
-        
+
         // Add error message if no response was received
         if (streamingResponse === '') {
           setMessages((prev) => [
@@ -88,27 +88,27 @@ export default function LLMChat() {
           ]);
         }
       }, 30000); // 30 second timeout
-      
+
       eventSource.onmessage = (event) => {
         console.log('Received SSE chunk:', event.data);
-        
+
         try {
           const data = JSON.parse(event.data);
           console.log('Parsed SSE data:', data);
-          
+
           if (data.error) {
             // Handle error from server
             console.error('Server returned error:', data.error);
             eventSource.close();
             clearTimeout(timeoutId);
             setIsLoading(false);
-            
+
             // Update the placeholder message with error
             setMessages((prev) => [
               ...prev.slice(0, prev.length - 1), // Remove the placeholder message
               { role: 'assistant', content: "I'm sorry, there was an error generating a response. Please try again." }
             ]);
-            
+
             // Clear streaming state
             setStreamingResponse('');
           } else if (data.streaming === false) {
@@ -116,7 +116,7 @@ export default function LLMChat() {
             eventSource.close();
             clearTimeout(timeoutId);
             setIsLoading(false);
-            
+
             // Finalize the complete message
             const finalContent = streamingResponse || "I don't have a response for that.";
             setMessages((prev) => {
@@ -127,14 +127,14 @@ export default function LLMChat() {
               };
               return newMessages;
             });
-            
+
             // Clear streaming state
             setStreamingResponse('');
           } else if (data.response !== undefined) {
             // Update streaming response with new chunk
             const newChunk = data.response || '';
             setStreamingResponse((prev) => prev + newChunk);
-            
+
             // Update the placeholder message with accumulated content
             setMessages((prev) => {
               const newMessages = [...prev];
@@ -149,13 +149,13 @@ export default function LLMChat() {
           console.error('Error parsing SSE data:', error);
         }
       };
-      
+
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
         eventSource.close();
         clearTimeout(timeoutId);
         setIsLoading(false);
-        
+
         // Update with error message if no content was received
         if (streamingResponse === '') {
           setMessages((prev) => [
@@ -164,11 +164,11 @@ export default function LLMChat() {
           ]);
         }
       };
-      
+
     } catch (error) {
       console.error('Error:', error);
       setIsLoading(false);
-      
+
       // Handle general errors
       setMessages((prev) => [
         ...prev.slice(0, prev.length - 1), // Remove the placeholder message

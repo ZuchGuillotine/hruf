@@ -117,7 +117,11 @@ export async function* chatWithAI(
     }
     
     // Yield error information to client instead of throwing
-    yield { error: "Streaming error", streaming: false };
+    yield { 
+      error: error instanceof Error ? error.message : "Streaming error", 
+      streaming: false,
+      details: error instanceof Error ? error.stack : undefined
+    };
   }
 }
 

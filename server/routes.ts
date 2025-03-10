@@ -1236,11 +1236,19 @@ export function registerRoutes(app: Express): Server {
       try {
         // Use the LLM service to generate a response with streaming
         const stream = await qualitativeChatWithAI(userId.toString(), message);
+        
+        // Track if we've written any chunks to detect empty responses
+        let chunksWritten = 0;
 
         // Process each chunk from the stream
         for await (const chunk of stream) {
           // Send chunk to client
           res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+          
+          // Count valid chunks for monitoring
+          if (chunk.response) {
+            chunksWritten++;
+          }
 
           // Debug log chunk information
           if (chunk.error) {
@@ -1248,21 +1256,39 @@ export function registerRoutes(app: Express): Server {
           }
         }
 
+        console.log(`Chat stream completed: ${chunksWritten} chunks written`);
+        
         // End the stream
         res.end();
       } catch (error) {
-        console.error('Streaming error:', error);
-        res.write(`data: ${JSON.stringify({ error: 'Streaming error' })}\n\n`);
+        console.error('Streaming error:', error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : error);
+        res.write(`data: ${JSON.stringify({ 
+          error: 'Streaming error', 
+          details: error instanceof Error ? error.message : 'Unknown error'
+        })}\n\n`);
         res.end();
       }
     } catch (error) {
-      console.error('Chat API error:', error);
+      console.error('Chat API error:', error instanceof Error ? {
+        message: error.message,
+        stack: error.stack
+      } : error);
+      
       // If headers are already sent, we need to send the error as an event
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({ error: 'Server error occurred' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ 
+          error: 'Server error occurred',
+          details: error instanceof Error ? error.message : 'Unknown error' 
+        })}\n\n`);
         res.end();
       } else {
-        res.status(500).json({ error: 'Server error occurred' });
+        res.status(500).json({ 
+          error: 'Server error occurred',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   });

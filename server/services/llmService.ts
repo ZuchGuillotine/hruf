@@ -72,7 +72,10 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
     // Call OpenAI chat with the qualitative model
     // The second parameter ensures we're always using the correct model for this context
     // Enable streaming for real-time responses
-    return openAIChatWithAI(messages, QUALITATIVE_MODEL, true); // Set streaming to true
+    const fullStream = openAIChatWithAI(messages, QUALITATIVE_MODEL);
+    
+    // Make sure we properly yield each chunk of the stream without interruption
+    return fullStream;
   } catch (error) {
     console.error('Error in qualitative chat service:', {
       error: error instanceof Error ? error.message : 'Unknown error',
