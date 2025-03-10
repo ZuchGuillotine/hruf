@@ -1,4 +1,4 @@
-import * as sgMail from '@sendgrid/mail';
+import sgMail from '@sendgrid/mail';
 import logger from '../utils/logger';
 import { DEFAULT_SENDER } from '../config/sendgrid';
 
