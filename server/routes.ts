@@ -929,7 +929,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Admin endpoints for research documents CRUD
-  appapp.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
+  app.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
     try {
       const { title, summary, content, authors, imageUrls, tags } = req.body;
 
