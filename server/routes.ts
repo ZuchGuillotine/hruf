@@ -31,9 +31,9 @@ import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
 import stripeRouter from './routes/stripe';  // Import Stripe routes
+import setupSummaryRoutes from './routes/summaryRoutes'; // Import summary routes
 import { generateResearch, getResearch, updateResearch, deleteResearch, getResearchBySlug } from './controllers/researchController';
 import { getFoodSensitivity, updateFoodSensitivity } from './controllers/foodSensitivityController';
-import { generateDailySummary, generateWeeklySummary, getSummaries, triggerRealtimeSummarization } from './controllers/summaryController';
 import { healthCheck } from './utils/healthCheck';
 
 export function registerRoutes(app: Express): Server {
@@ -1199,11 +1199,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Summary management routes
-  app.post('/api/summaries/daily', generateDailySummary);
-  app.post('/api/summaries/weekly', generateWeeklySummary);
-  app.get('/api/summaries', getSummaries);
-  app.post('/api/summaries/realtime', triggerRealtimeSummarization);
+  // Setup summary routes
+  setupSummaryRoutes(app);
 
   app.get('/api/health-check', healthCheck);
 
