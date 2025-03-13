@@ -3,10 +3,48 @@
 
 import { Message } from "@/lib/types";
 import { db } from "../../db";
-import { healthStats } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { healthStats, supplementLogs, qualitativeLogs, logSummaries } from "../../db/schema";
+import { eq, count } from "drizzle-orm";
 import { advancedSummaryService } from "./advancedSummaryService";
 import logger from "../utils/logger";
+
+/**
+ * Check if the user has any logs or summaries in the database
+ * @param userId User ID
+ * @returns Boolean indicating if user has any logs
+ */
+async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
+  try {
+    // Check for supplement logs
+    const [supplementCount] = await db
+      .select({ count: count() })
+      .from(supplementLogs)
+      .where(eq(supplementLogs.userId, userId));
+    
+    // Check for qualitative logs
+    const [qualitativeCount] = await db
+      .select({ count: count() })
+      .from(qualitativeLogs)
+      .where(eq(qualitativeLogs.userId, userId));
+    
+    // Check for summaries
+    const [summaryCount] = await db
+      .select({ count: count() })
+      .from(logSummaries)
+      .where(eq(logSummaries.userId, userId));
+    
+    logger.info(`User ${userId} has ${supplementCount?.count || 0} supplement logs, ${qualitativeCount?.count || 0} qualitative logs, and ${summaryCount?.count || 0} summaries`);
+    
+    return (
+      (supplementCount?.count || 0) > 0 || 
+      (qualitativeCount?.count || 0) > 0 || 
+      (summaryCount?.count || 0) > 0
+    );
+  } catch (error) {
+    logger.error(`Error checking if user has logs:`, error);
+    return false;
+  }
+}
 
 // Separate system prompt for general supplement queries
 export const QUERY_SYSTEM_PROMPT = `You are an expert assistant specializing in supplement knowledge and health information. 
@@ -63,16 +101,42 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // Use vector search to retrieve the most relevant summaries and logs
     logger.info(`Retrieving relevant summaries for authenticated user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
-    const relevantContent = await advancedSummaryService.getRelevantSummaries(userId, userQuery, 5);
     
-    // Log what we found
-    const contentTypes = {
-      summary: relevantContent.filter(item => item.type === 'summary').length,
-      qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
-      quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
-    };
-    
-    logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
+    try {
+      // Check if the user has any logs or summaries first
+      const hasLogs = await checkUserHasAnyLogs(userId);
+      logger.info(`User ${userId} has logs: ${hasLogs}`);
+      
+      const relevantContent = await advancedSummaryService.getRelevantSummaries(userId, userQuery, 5);
+      
+      // Log what we found in detail
+      const contentTypes = {
+        summary: relevantContent.filter(item => item.type === 'summary').length,
+        qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
+        quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+      };
+      
+      logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
+      
+      // Log the actual content for debugging
+      if (relevantContent.length > 0) {
+        logger.info('First few relevant content items:', 
+          relevantContent.slice(0, 2).map(item => ({
+            type: item.type,
+            similarity: item.similarity,
+            id: item.id,
+            preview: item.content ? item.content.substring(0, 50) + '...' : 'No content'
+          }))
+        );
+      } else {
+        logger.info('No relevant content found by vector search');
+      }
+    } catch (searchError) {
+      logger.error(`Error during vector search:`, {
+        error: searchError instanceof Error ? searchError.message : String(searchError),
+        stack: searchError instanceof Error ? searchError.stack : undefined
+      });
+    }
     
     // Format the relevant content
     let contextContent = '';

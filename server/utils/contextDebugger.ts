@@ -44,8 +44,23 @@ export async function debugContext(userId: number | string, context: { messages:
       filePath
     });
     
+    // Add debugging metadata
+    const contextWithDebug = {
+      ...context,
+      _debug: {
+        timestamp: new Date().toISOString(),
+        userId,
+        contextType: type,
+        messageCount: context.messages.length,
+        // Include the query if it's in the last message
+        query: context.messages.length > 0 ? 
+          context.messages[context.messages.length - 1].content.split('User Query:').pop()?.trim() : 
+          null
+      }
+    };
+    
     // Format the context for better readability
-    const formattedContext = JSON.stringify(context, null, 2);
+    const formattedContext = JSON.stringify(contextWithDebug, null, 2);
     
     // Write to file with better error handling
     try {
