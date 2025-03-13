@@ -1,4 +1,15 @@
-
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/03/2025 - 15:29:10
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/03/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/services/embeddingService.ts
 
 import { OpenAI } from "openai";
@@ -196,10 +207,13 @@ class EmbeddingService {
    */
   async findSimilarContent(query: string, userId: number, limit: number = 5): Promise<any[]> {
     try {
+      logger.info(`Finding similar content for user ${userId} with query: "${query.substring(0, 50)}..."`);
       const queryEmbedding = await this.generateEmbedding(query);
 
+      logger.info(`Generated embedding for query with dimensions: ${queryEmbedding.length}`);
+
       // Query for similar summaries
-      const similarSummaries = await db.execute(sql`
+      const similarSummariesResult = await db.execute(sql`
         SELECT 
           s.id, 
           s.content, 
@@ -218,8 +232,16 @@ class EmbeddingService {
         LIMIT ${limit}
       `);
 
+      const similarSummaries = Array.isArray(similarSummariesResult) 
+        ? similarSummariesResult 
+        : similarSummariesResult.rows || [];
+
+      logger.info(`Found ${similarSummaries.length} similar summaries with similarities: ${
+        similarSummaries.map(s => (s.similarity as number).toFixed(3)).join(', ')
+      }`);
+
       // Query for similar logs
-      const similarLogs = await db.execute(sql`
+      const similarLogsResult = await db.execute(sql`
         SELECT 
           le.log_id, 
           le.log_type,
@@ -235,6 +257,12 @@ class EmbeddingService {
         LIMIT ${limit}
       `);
 
+      const similarLogs = Array.isArray(similarLogsResult) 
+        ? similarLogsResult 
+        : similarLogsResult.rows || [];
+
+      logger.info(`Found ${similarLogs.length} similar logs`);
+
       // Combine and sort results by similarity
       const combinedResults = [
         ...similarSummaries,
@@ -242,6 +270,8 @@ class EmbeddingService {
       ].sort((a, b) => b.similarity - a.similarity)
        .filter(item => item.similarity > this.SIMILARITY_THRESHOLD)
        .slice(0, limit);
+
+      logger.info(`Combined results: ${combinedResults.length} items with similarities above ${this.SIMILARITY_THRESHOLD}`);
 
       return combinedResults;
     } catch (error) {
