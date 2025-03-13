@@ -1,6 +1,6 @@
 
-const { constructQueryContext } = require('../server/services/llmContextService_query');
-const { debugContext } = require('../server/utils/contextDebugger');
+import { constructQueryContext } from '../server/services/llmContextService_query.js';
+import { debugContext } from '../server/utils/contextDebugger.js';
 
 // The user ID to test (change as needed)
 const userId = 1; 
@@ -32,4 +32,5 @@ async function testContextBuilding() {
   }
 }
 
+// Immediately invoke the function
 testContextBuilding();
