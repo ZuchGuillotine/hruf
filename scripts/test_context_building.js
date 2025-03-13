@@ -1,6 +1,6 @@
 
-import { constructQueryContext } from '../server/services/llmContextService_query.js';
-import { debugContext } from '../server/utils/contextDebugger.js';
+import { constructQueryContext } from '../server/services/llmContextService_query.ts';
+import { debugContext } from '../server/utils/contextDebugger.ts';
 
 // The user ID to test (change as needed)
 const userId = 1; 
