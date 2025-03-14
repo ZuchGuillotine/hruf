@@ -63,6 +63,26 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // Get direct supplement context using the new service
     const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
+    
+    // Get relevant qualitative chat logs
+    const qualitativeLogs = await db
+      .select()
+      .from(qualitativeLogs)
+      .where(
+        and(
+          eq(qualitativeLogs.userId, userIdNum),
+          eq(qualitativeLogs.type, 'chat')
+        )
+      )
+      .orderBy(desc(qualitativeLogs.loggedAt))
+      .limit(5);
+
+    const qualitativeContext = qualitativeLogs.length > 0 
+      ? `Recent Qualitative Observations:\n${qualitativeLogs.map(log => {
+          const date = new Date(log.loggedAt).toLocaleDateString();
+          return `[${date}] ${log.content}`;
+        }).join('\n')}`
+      : '';
 
     // ENHANCEMENT: Increase the number of relevant summaries retrieved
     logger.info(`Retrieving relevant summaries with expanded search`);

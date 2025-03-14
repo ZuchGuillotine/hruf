@@ -88,13 +88,16 @@ function calculateTokenEstimates(messages: ContextMessage[]) {
 function analyzeUserContext(messages: ContextMessage[]): UserContextFlags {
   const userMessage = messages.find(m => m.role === 'user')?.content || '';
   
+  const hasContent = (markers: string[]) => 
+    markers.some(marker => userMessage.toLowerCase().includes(marker.toLowerCase()));
+  
   return {
-    hasHealthStats: userMessage.includes('User Health Profile') && userMessage.includes('Weight:'),
-    hasRecentSummaries: userMessage.includes('Recent Daily Summaries:') || userMessage.includes('Supplement Log Summary'),
-    hasHistoricalSummaries: userMessage.includes('Recent Supplement History') || userMessage.includes('Historical Health Summaries'),
-    hasQualitativeObservations: userMessage.includes('Qualitative Observations:') || userMessage.includes('Effects Recorded:'),
-    hasSupplementLogs: userMessage.includes('Supplements Taken:') || userMessage.includes('Recent Supplement History'),
-    hasDirectSupplementInfo: userMessage.includes('Direct Supplement Information')
+    hasHealthStats: hasContent(['User Health Profile', 'Weight:', 'Height:', 'Gender:']),
+    hasRecentSummaries: hasContent(['Recent Daily Summaries:', 'Supplement Log Summary', 'Recent Summary:', '[SUMMARY:']),
+    hasHistoricalSummaries: hasContent(['Historical Health Summaries', 'Historical Summary:', 'Previous Summaries']),
+    hasQualitativeObservations: hasContent(['Qualitative Observations:', 'Effects Recorded:', 'User Reported:', 'Feedback:']),
+    hasSupplementLogs: hasContent(['Supplements Taken:', 'Recent Supplement History', 'Supplement Log:', 'Dosage:']),
+    hasDirectSupplementInfo: hasContent(['Direct Supplement Information', 'Supplement Details:', 'Current Regimen:'])
   };
 }
 
