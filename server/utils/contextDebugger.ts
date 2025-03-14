@@ -151,15 +151,20 @@ export async function debugContext(
 /**
  * Analyzes qualitative chat context for debugging
  */
-function analyzeQualitativeContext(messages: ContextMessage[]): DebugData['qualitativeContext'] {
+function analyzeContextComponents(messages: ContextMessage[], type: 'query' | 'qualitative'): DebugData['contextComponents'] {
   const userMessage = messages.find(m => m.role === 'user')?.content || '';
   
-  return {
-    recentLogs: userMessage.includes('Recent Daily Summaries:'),
-    historicalSummaries: userMessage.includes('Historical Summaries:'),
+  const baseAnalysis = {
     supplementData: userMessage.includes('Supplement Data:'),
     healthProfile: userMessage.includes('User Health Profile:')
   };
+
+  // Add qualitative-specific components while preserving query analysis
+  return type === 'qualitative' ? {
+    ...baseAnalysis,
+    recentLogs: userMessage.includes('Recent Daily Summaries:'),
+    historicalSummaries: userMessage.includes('Historical Summaries:'),
+  } : baseAnalysis;
 }
 
 /**
