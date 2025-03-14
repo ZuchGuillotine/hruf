@@ -122,12 +122,12 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     // Get direct supplement context using the new service
     const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery);
 
-    // First, get recent supplement summaries directly
+    // First, get recent supplement pattern summaries directly
     logger.info(`Getting recent supplement summaries for user ${userId}`);
 
     try {
-      // Get the most recent supplement summary
-      const [recentSummary] = await db
+      // Get recent supplement pattern summaries
+      const recentSummaries = await db
         .select()
         .from(logSummaries)
         .where(
@@ -137,13 +137,41 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
           )
         )
         .orderBy(desc(logSummaries.createdAt))
-        .limit(1);
+        .limit(2); // Get last two summaries for better context
 
       let contextContent = '';
 
-      if (recentSummary) {
-        contextContent += "Recent Supplement Summary:\n";
-        contextContent += `${recentSummary.content}\n\n`;
+      if (recentSummaries.length > 0) {
+        contextContent += "Recent Supplement Patterns:\n";
+        recentSummaries.forEach(summary => {
+          const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
+          contextContent += `[${dateRange}]\n${summary.content}\n\n`;
+        });
+      }
+
+      // Also get daily summaries for the last 3 days
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+      const dailySummaries = await db
+        .select()
+        .from(logSummaries)
+        .where(
+          and(
+            eq(logSummaries.userId, userId),
+            eq(logSummaries.summaryType, 'daily'),
+            gte(logSummaries.startDate, threeDaysAgo)
+          )
+        )
+        .orderBy(desc(logSummaries.startDate))
+        .limit(3);
+
+      if (dailySummaries.length > 0) {
+        contextContent += "Recent Daily Summaries:\n";
+        dailySummaries.forEach(summary => {
+          const date = new Date(summary.startDate).toLocaleDateString();
+          contextContent += `[${date}]\n${summary.content}\n\n`;
+        });
       }
 
       // Use vector search only for qualitative logs
