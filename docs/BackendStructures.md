@@ -27,13 +27,13 @@
      - Finds available port with retry mechanism
      - Starts listening on available port
    - Proper signal handling for graceful shutdown
-   
+
 2. Service Initialization:
    - PGVector services verification
    - OpenAI API connectivity check
    - Summarization service setup
    - Automated task scheduling (production only)
-   
+
 3. Shutdown Process:
    - Dedicated `handleShutdown()` function for clean termination
    - Signal handler registration (SIGTERM, SIGINT)
@@ -484,6 +484,9 @@ Security logging and monitoring to support HIPAA compliance.
   - Implemented SSE (Server-Sent Events) for real-time delivery
   - Enhanced error handling and recovery mechanisms
   - Added comprehensive chunk-level logging
+  - Fixed issues with premature stream termination
+  - Ensured proper completion of streaming responses
+  - Resolved race conditions in stream processing
 
 - Query Service:
   - Modified `queryWithAI` to support streaming responses
@@ -713,3 +716,43 @@ npm run test:openai    # Test OpenAI integration
 - Minimal memory footprint
 - Proper connection management
 - Enhanced debugging capabilities
+
+### Context Building Logic
+
+The context building service implements a sophisticated approach:
+
+1. Authentication and User Context:
+   - Properly validates user authentication state
+   - Fetches health statistics for authenticated users
+   - Handles anonymous users with appropriate defaults
+   - Maintains consistent authentication checks
+
+2. Vector Search Integration:
+   - Uses embeddingService for semantic similarity search
+   - Retrieves relevant qualitative chat logs
+   - Processes daily and weekly summaries
+   - Filters content based on relevance scores
+   - Optimizes token usage through smart filtering
+
+3. Content Processing:
+   - Combines multiple content types:
+     - Recent daily summaries
+     - Relevant historical summaries
+     - Qualitative observations
+     - Quantitative supplement logs
+   - Formats content with proper date information
+   - Maintains context hierarchy for better responses
+
+4. Debug Infrastructure:
+   - Generates detailed debug logs
+   - Tracks context components and flags
+   - Analyzes token usage
+   - Monitors content relevance
+   - Provides comprehensive error tracking
+
+5. Context Assembly:
+   - Constructs properly formatted messages array
+   - Includes system prompt with user context
+   - Maintains conversation history when relevant
+   - Optimizes context for token efficiency
+   - Ensures proper content ordering

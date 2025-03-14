@@ -1,4 +1,3 @@
-
 # Hybrid Context System Documentation
 
 ## Overview
@@ -90,6 +89,34 @@ The system extends the existing database with the following tables:
    - Tracks significant changes and patterns
 
 ## Implementation Details
+
+### Context Building Process
+1. Authentication Verification:
+   - Validates user authentication state
+   - Retrieves user-specific health data
+   - Handles anonymous users appropriately
+   - Maintains consistent auth checks
+
+2. Vector Search Integration:
+   - Uses embeddingService for semantic search
+   - Retrieves relevant qualitative logs
+   - Processes summaries and historical data
+   - Filters based on relevance scores
+
+3. Content Processing:
+   - Formats multiple content types:
+     - Daily summaries
+     - Historical summaries
+     - Qualitative observations
+     - Quantitative logs
+   - Maintains proper date formatting
+   - Ensures context hierarchy
+
+4. Debug Infrastructure:
+   - Generates detailed debug logs
+   - Tracks context components
+   - Analyzes token usage
+   - Monitors content relevance
 
 ### Summarization Process
 
