@@ -34,21 +34,21 @@ async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
       .select({ count: count() })
       .from(supplementLogs)
       .where(eq(supplementLogs.userId, userId));
-    
+
     // Check for qualitative logs
     const [qualitativeCount] = await db
       .select({ count: count() })
       .from(qualitativeLogs)
       .where(eq(qualitativeLogs.userId, userId));
-    
+
     // Check for summaries
     const [summaryCount] = await db
       .select({ count: count() })
       .from(logSummaries)
       .where(eq(logSummaries.userId, userId));
-    
+
     logger.info(`User ${userId} has ${supplementCount?.count || 0} supplement logs, ${qualitativeCount?.count || 0} qualitative logs, and ${summaryCount?.count || 0} summaries`);
-    
+
     return (
       (supplementCount?.count || 0) > 0 || 
       (qualitativeCount?.count || 0) > 0 || 
@@ -95,7 +95,7 @@ export async function constructQueryContext(userId: number | null, userQuery: st
     }
 
     logger.info(`Building context for authenticated user ${userId}`);
-    
+
     // ENHANCEMENT: Trigger real-time summary here as well for consistency
     try {
       await summaryTaskManager.runRealtimeSummary(userId);
@@ -103,12 +103,12 @@ export async function constructQueryContext(userId: number | null, userQuery: st
     } catch (summaryError) {
       logger.warn(`Real-time summary failed for query context: ${summaryError}`);
     }
-    
+
     // Fetch user's health stats
     const userHealthStats = await db.query.healthStats.findFirst({
       where: eq(healthStats.userId, userId)
     });
-    
+
     // Format health stats data if available
     const healthStatsContext = userHealthStats ? `
 Weight: ${userHealthStats.weight || 'Not provided'} lbs
@@ -121,29 +121,46 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // Get direct supplement context using the new service
     const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery);
-    
-    // Use vector search to retrieve the most relevant summaries and logs
-    logger.info(`Retrieving relevant summaries for authenticated user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
-    
+
+    // First, get recent supplement summaries directly
+    logger.info(`Getting recent supplement summaries for user ${userId}`);
+
     try {
-      // Check if the user has any logs or summaries first
-      const hasLogs = await checkUserHasAnyLogs(userId);
-      logger.info(`User ${userId} has logs: ${hasLogs}`);
-      
+      // Get the most recent supplement summary
+      const [recentSummary] = await db
+        .select()
+        .from(logSummaries)
+        .where(
+          and(
+            eq(logSummaries.userId, userId),
+            eq(logSummaries.summaryType, 'supplement_pattern')
+          )
+        )
+        .orderBy(desc(logSummaries.createdAt))
+        .limit(1);
+
+      let contextContent = '';
+
+      if (recentSummary) {
+        contextContent += "Recent Supplement Summary:\n";
+        contextContent += `${recentSummary.content}\n\n`;
+      }
+
+      // Use vector search only for qualitative logs
+      logger.info(`Retrieving relevant qualitative logs for user ${userId}`);
       const relevantContent = await advancedSummaryService.getRelevantSummaries(userId, userQuery, 5);
-      
+
       // Log what we found in detail
       const contentTypes = {
         summary: relevantContent.filter(item => item.type === 'summary').length,
         qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
         quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
       };
-      
+
       logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
-      
+
       // Format the relevant content
-      let contextContent = '';
-      
+
       // Process summaries
       const summaries = relevantContent.filter(item => item.type === 'summary');
       if (summaries.length > 0) {
@@ -153,14 +170,14 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
           contextContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
         });
       }
-      
+
       // Process qualitative logs
       const qualitativeLogs = relevantContent.filter(item => item.type === 'qualitative_log');
       if (qualitativeLogs.length > 0) {
         contextContent += "Relevant User Observations:\n";
         qualitativeLogs.forEach(log => {
           let content = log.content;
-          
+
           // Try to extract meaningful content from JSON if applicable
           try {
             const parsed = JSON.parse(log.content);
@@ -173,12 +190,12 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
           } catch (e) {
             // Not JSON, use as is
           }
-          
+
           contextContent += `[${new Date(log.loggedAt).toLocaleDateString()}] ${content}\n`;
         });
         contextContent += '\n';
       }
-      
+
       // Process quantitative logs
       const quantitativeLogs = relevantContent.filter(item => item.type === 'quantitative_log');
       if (quantitativeLogs.length > 0) {
@@ -189,19 +206,19 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
                 .map(([key, value]) => `${key}: ${value}`)
                 .join(', ')
             : 'No effects recorded';
-            
+
           contextContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
         });
         contextContent += '\n';
       }
-      
+
       // If no relevant content was found, fetch recent supplement logs as fallback
       if (contextContent === '') {
         logger.info('No relevant content found, fetching recent supplement logs as fallback');
-        
+
         const recentDate = new Date();
         recentDate.setDate(recentDate.getDate() - 7);
-        
+
         const recentLogs = await db
           .select({
             name: supplements.name,
@@ -228,7 +245,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
                   .map(([key, value]) => `${key}: ${value}`)
                   .join(', ')
               : 'No effects recorded';
-              
+
             contextContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
           });
         } else {
@@ -253,13 +270,13 @@ ${userQuery}
       ];
 
       logger.info(`Context built successfully for user ${userId}`);
-      
+
       // Debug the context being sent to the LLM
       const context = { messages };
-      
+
       // Add debug logging if enabled
       await debugContext(userId, context, 'query');
-      
+
       return context;
     } catch (error) {
       logger.error(`Error constructing query context for user ${userId}:`, {
