@@ -51,6 +51,18 @@ export interface DebugData {
     total: number;
     byMessage: TokenEstimate[];
   };
+  qualitativeContext?: {
+    recentLogs?: boolean;
+    historicalSummaries?: boolean;
+    supplementData?: boolean;
+    healthProfile?: boolean;
+  };
+}
+
+export interface QualitativeDebugInfo {
+  chatType: 'feedback' | 'query';
+  messagePreview: string;
+  contextComponents: string[];
 }
 
 /**
@@ -135,6 +147,46 @@ export async function debugContext(
 
     const debugDir = path.join(process.cwd(), 'debug_logs');
     
+
+/**
+ * Analyzes qualitative chat context for debugging
+ */
+function analyzeQualitativeContext(messages: ContextMessage[]): DebugData['qualitativeContext'] {
+  const userMessage = messages.find(m => m.role === 'user')?.content || '';
+  
+  return {
+    recentLogs: userMessage.includes('Recent Daily Summaries:'),
+    historicalSummaries: userMessage.includes('Historical Summaries:'),
+    supplementData: userMessage.includes('Supplement Data:'),
+    healthProfile: userMessage.includes('User Health Profile:')
+  };
+}
+
+/**
+ * Debug qualitative chat context
+ */
+export async function debugQualitativeChat(
+  userId: string | number,
+  messages: ContextMessage[],
+  chatInfo: QualitativeDebugInfo
+): Promise<DebugData | undefined> {
+  try {
+    if (!isDebugEnabled()) {
+      return;
+    }
+
+    logger.info(`Qualitative chat request with ${messages.length} message(s)`, {
+      userId,
+      messagePreview: chatInfo.messagePreview
+    });
+
+    return await debugContext(userId, { messages }, 'qualitative');
+  } catch (error) {
+    logger.error('Error in qualitative chat debugging:', error);
+    return undefined;
+  }
+}
+
     // Create directory if it doesn't exist
     await fs.mkdir(debugDir, { recursive: true }).catch(error => {
       logger.error('Error creating debug directory:', error);

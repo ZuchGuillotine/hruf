@@ -16,12 +16,14 @@ import { SYSTEM_PROMPT } from "../openai";
 import { Message } from "@/lib/types";
 import { db } from "../../db";
 import { healthStats, logSummaries } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { advancedSummaryService } from "./advancedSummaryService";
 import { summaryTaskManager } from "../cron/summaryManager";
 import { supplementLookupService } from "./supplementLookupService";
 import logger from "../utils/logger";
 import { debugContext } from '../utils/contextDebugger';
+import { qualitativeLogs } from '../../db/schema';
+
 
 /**
  * Constructs context for qualitative feedback chat interactions using our hybrid approach
@@ -37,7 +39,7 @@ export async function constructUserContext(userId: string, userQuery: string): P
     }
 
     logger.info(`Building context for user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
-    
+
     // Check if we need to trigger a real-time summary
     try {
       await summaryTaskManager.runRealtimeSummary(userIdNum);
@@ -45,12 +47,12 @@ export async function constructUserContext(userId: string, userQuery: string): P
     } catch (error) {
       logger.warn(`Real-time summary generation failed but continuing with context building: ${error}`);
     }
-    
+
     // Fetch user's health stats
     const userHealthStats = await db.query.healthStats.findFirst({
       where: eq(healthStats.userId, userIdNum)
     });
-    
+
     // Format health stats data if available
     const healthStatsContext = userHealthStats ? `
 Weight: ${userHealthStats.weight || 'Not provided'} lbs
@@ -63,7 +65,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // Get direct supplement context using the new service
     const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
-    
+
     // Get relevant qualitative chat logs
     const qualitativeLogs = await db
       .select()
@@ -87,33 +89,33 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     // ENHANCEMENT: Increase the number of relevant summaries retrieved
     logger.info(`Retrieving relevant summaries with expanded search`);
     const relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 12);
-    
+
     // Log what we found
     const contentTypes = {
       summary: relevantContent.filter(item => item.type === 'summary').length,
       qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
       quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
     };
-    
+
     logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
-    
+
     // Format the relevant content
     let recentSummaryContent = '';
     let historicalSummaryContent = '';
     let qualitativeLogContent = '';
     let quantitativeLogContent = '';
     let supplementLogContent = '';
-    
+
     // Current date for determining what's recent vs historical
     const now = new Date();
     const twoWeeksAgo = new Date(now);
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-    
+
     // Process summaries
     relevantContent.filter(item => item.type === 'summary').forEach(summary => {
       const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
       const summaryEntry = `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
-      
+
       // Determine if this is a recent or historical summary
       if (new Date(summary.endDate) >= twoWeeksAgo) {
         recentSummaryContent += summaryEntry;
@@ -121,11 +123,11 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         historicalSummaryContent += summaryEntry;
       }
     });
-    
+
     // ENHANCEMENT: Add fallback to get recent summaries if vector search returns insufficient results
     if (relevantContent.filter(item => item.type === 'summary').length < 3) {
       logger.info('Insufficient vector search results, fetching recent logs as fallback');
-      
+
       // Get the most recent summaries regardless of relevance
       const recentSummaries = await db
         .select()
@@ -133,20 +135,20 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         .where(eq(logSummaries.userId, userIdNum))
         .orderBy(desc(logSummaries.createdAt))
         .limit(5);
-        
+
       // Process recent summaries to add their content
       for (const summary of recentSummaries) {
         const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
         supplementLogContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
       }
-      
+
       logger.info(`Added ${recentSummaries.length} recent summaries as fallback context`);
     }
-    
+
     // Process qualitative logs
     relevantContent.filter(item => item.type === 'qualitative_log').forEach(log => {
       let content = log.content;
-      
+
       // Try to extract meaningful content from JSON if applicable
       try {
         const parsed = JSON.parse(log.content);
@@ -159,10 +161,10 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       } catch (e) {
         // Not JSON, use as is
       }
-      
+
       qualitativeLogContent += `[${new Date(log.loggedAt).toLocaleDateString()}] ${content}\n`;
     });
-    
+
     // Process quantitative logs
     relevantContent.filter(item => item.type === 'quantitative_log').forEach(log => {
       const effectsText = log.effects
@@ -170,7 +172,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
             .map(([key, value]) => `${key}: ${value}`)
             .join(', ')
         : 'No effects recorded';
-        
+
       quantitativeLogContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
     });
 
@@ -208,14 +210,21 @@ User Query:
 ${userQuery}
 ` }
     ];
-    
+
     logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
-    
+
     const context = { messages };
-    
+
     // Add debug logging if enabled
     await debugContext(userId, context, 'qualitative');
-    
+
+    // Added debugQualitativeChat function call.  This is a placeholder and needs a proper implementation.
+    await debugQualitativeChat(userId, messages, {
+      chatType: 'feedback',
+      messagePreview: userQuery.slice(0, 50),
+      contextComponents: ['healthStats', 'recentSummaries', 'supplementLogs']
+    });
+
     return context;
   } catch (error) {
     logger.error("Error constructing user context:", {
@@ -223,7 +232,7 @@ ${userQuery}
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
-    
+
     // Fallback to basic prompt on error
     return {
       messages: [
@@ -232,4 +241,9 @@ ${userQuery}
       ]
     };
   }
+}
+
+// Placeholder for debugQualitativeChat function.  Replace with actual implementation.
+async function debugQualitativeChat(userId: string, messages: Message[], debugInfo: any) {
+  logger.debug(`Qualitative Chat Debug: userId=${userId}, chatType=${debugInfo.chatType}, messagePreview=${debugInfo.messagePreview}, contextComponents=${debugInfo.contextComponents}, messages=${JSON.stringify(messages, null, 2)}`);
 }
