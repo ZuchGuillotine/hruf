@@ -121,6 +121,7 @@ class SummaryTaskManager {
   /**
    * Run a real-time summary update for a specific user
    * This is useful for generating summaries on demand when needed
+   * Generates summaries for both today and yesterday to ensure sufficient data
    */
   async runRealtimeSummary(userId: number): Promise<void> {
     try {
@@ -128,13 +129,26 @@ class SummaryTaskManager {
 
       // Today's date
       const today = new Date();
-
+      
+      // Also look at recent days to ensure we have sufficient data
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
       // Generate summary for today's data
-      await advancedSummaryService.generateDailySummary(userId, today);
-
-      logger.info(`Real-time summary completed for user ${userId}`);
+      const todaySummaryId = await advancedSummaryService.generateDailySummary(userId, today);
+      
+      // Also generate or ensure yesterday's summary exists
+      const yesterdaySummaryId = await advancedSummaryService.generateDailySummary(userId, yesterday);
+      
+      logger.info(`Real-time summary completed for user ${userId}:`, {
+        todaySummaryId,
+        yesterdaySummaryId
+      });
+      
+      return;
     } catch (error) {
       logger.error(`Error running real-time summary for user ${userId}:`, error);
+      throw error; // Re-throw to allow caller to handle the error
     }
   }
 

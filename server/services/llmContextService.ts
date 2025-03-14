@@ -1,14 +1,27 @@
-
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/03/2025 - 16:10:58
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/03/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/services/llmContextService.ts
 
 import { SYSTEM_PROMPT } from "../openai";
 import { Message } from "@/lib/types";
 import { db } from "../../db";
-import { healthStats } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { healthStats, logSummaries } from "../../db/schema";
+import { eq, desc } from "drizzle-orm";
 import { advancedSummaryService } from "./advancedSummaryService";
 import { summaryTaskManager } from "../cron/summaryManager";
+import { supplementLookupService } from "./supplementLookupService";
 import logger from "../utils/logger";
+import { debugContext } from '../utils/contextDebugger';
 
 /**
  * Constructs context for qualitative feedback chat interactions using our hybrid approach
@@ -26,9 +39,9 @@ export async function constructUserContext(userId: string, userQuery: string): P
     logger.info(`Building context for user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
     
     // Check if we need to trigger a real-time summary
-    // This helps ensure we have up-to-date summaries before building context
     try {
       await summaryTaskManager.runRealtimeSummary(userIdNum);
+      logger.info('Real-time summary successfully triggered');
     } catch (error) {
       logger.warn(`Real-time summary generation failed but continuing with context building: ${error}`);
     }
@@ -48,10 +61,12 @@ Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.av
 Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
-    // For the feedback chat, we need more comprehensive context about the user's supplement history
-    // Use vector search to find relevant summaries and logs based on user query
-    logger.info(`Retrieving relevant summaries for user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
-    const relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 8);
+    // Get direct supplement context using the new service
+    const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
+
+    // ENHANCEMENT: Increase the number of relevant summaries retrieved
+    logger.info(`Retrieving relevant summaries with expanded search`);
+    const relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 12);
     
     // Log what we found
     const contentTypes = {
@@ -67,6 +82,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     let historicalSummaryContent = '';
     let qualitativeLogContent = '';
     let quantitativeLogContent = '';
+    let supplementLogContent = '';
     
     // Current date for determining what's recent vs historical
     const now = new Date();
@@ -85,6 +101,27 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         historicalSummaryContent += summaryEntry;
       }
     });
+    
+    // ENHANCEMENT: Add fallback to get recent summaries if vector search returns insufficient results
+    if (relevantContent.filter(item => item.type === 'summary').length < 3) {
+      logger.info('Insufficient vector search results, fetching recent logs as fallback');
+      
+      // Get the most recent summaries regardless of relevance
+      const recentSummaries = await db
+        .select()
+        .from(logSummaries)
+        .where(eq(logSummaries.userId, userIdNum))
+        .orderBy(desc(logSummaries.createdAt))
+        .limit(5);
+        
+      // Process recent summaries to add their content
+      for (const summary of recentSummaries) {
+        const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
+        supplementLogContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
+      }
+      
+      logger.info(`Added ${recentSummaries.length} recent summaries as fallback context`);
+    }
     
     // Process qualitative logs
     relevantContent.filter(item => item.type === 'qualitative_log').forEach(log => {
@@ -117,12 +154,23 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       quantitativeLogContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
     });
 
+    // Debug logging enhancements
+    logger.info(`Context built with:
+    - Recent summaries: ${recentSummaryContent ? 'Yes' : 'No'}
+    - Historical summaries: ${historicalSummaryContent ? 'Yes' : 'No'}
+    - Qualitative logs: ${qualitativeLogContent ? 'Yes' : 'No'}
+    - Quantitative logs: ${quantitativeLogContent ? 'Yes' : 'No'}
+    - Fallback summaries: ${supplementLogContent ? 'Yes' : 'No'}
+    - Direct supplement context: ${directSupplementContext ? 'Yes' : 'No'}`);
+
     // Construct the final context message
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `
+    const messages: Message[] = [
+      { role: "system" as const, content: SYSTEM_PROMPT },
+      { role: "user" as const, content: `
 User Context - Health Statistics:
 ${healthStatsContext}
+
+${directSupplementContext ? `Direct Supplement Information:\n${directSupplementContext}\n` : ''}
 
 User Context - Recent Summaries (last 14 days):
 ${recentSummaryContent || 'No recent summaries available.'}
@@ -134,21 +182,21 @@ User Context - Relevant Qualitative Observations:
 ${qualitativeLogContent || 'No relevant qualitative observations found.'}
 
 User Context - Relevant Supplement Logs:
-${quantitativeLogContent || 'No relevant supplement logs found.'}
+${quantitativeLogContent || supplementLogContent || 'No relevant supplement logs found.'}
 
 User Query:
 ${userQuery}
 ` }
     ];
-
+    
     logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
     
-    // Debug the context being sent to the LLM
-    // Import dynamically to maintain compatibility with ES modules
-    const { debugContext } = await import('../utils/contextDebugger.js');
-    await debugContext(userId, { messages }, 'qualitative');
+    const context = { messages };
     
-    return { messages };
+    // Add debug logging if enabled
+    await debugContext(userId, context, 'qualitative');
+    
+    return context;
   } catch (error) {
     logger.error("Error constructing user context:", {
       userId,
@@ -159,8 +207,8 @@ ${userQuery}
     // Fallback to basic prompt on error
     return {
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userQuery }
+        { role: "system" as const, content: SYSTEM_PROMPT },
+        { role: "user" as const, content: userQuery }
       ]
     };
   }

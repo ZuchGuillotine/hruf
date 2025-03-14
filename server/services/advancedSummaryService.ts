@@ -1,11 +1,10 @@
-
 // server/services/advancedSummaryService.ts (summmarizes quantitative logs)
 
 import OpenAI from "openai";
 import { db } from "../../db";
-import { logSummaries, qualitativeLogs, supplementLogs, supplements } from "../../db/schema";
+import { logSummaries, qualitativeLogs, supplementLogs, supplements, InsertLogSummary } from "../../db/schema";
 import { embeddingService } from "./embeddingService";
-import { eq, and, between, sql } from "drizzle-orm";
+import { eq, and, between, sql, gte, desc } from "drizzle-orm";
 import logger from "../utils/logger";
 
 // Initialize OpenAI client
@@ -37,6 +36,21 @@ class AdvancedSummaryService {
 
   Your summary should help the user understand their supplement regimen's effects and changes over time.
   `;
+
+  private SUPPLEMENT_SUMMARY_PROMPT = `
+You are analyzing a user's supplement intake patterns. Focus on:
+1. Regular supplement intake patterns (frequency, dosage)
+2. Changes in supplement regimen (dosage changes, starting/stopping)
+3. Notable effects or side effects
+4. Interactions between supplements
+
+Create a concise summary that highlights:
+- Current supplement regimen
+- Recent changes (within 7 days)
+- Consistent patterns
+- Notable effects
+
+Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
 
   /**
    * Generates summary for a single day's logs
@@ -604,6 +618,129 @@ class AdvancedSummaryService {
     } catch (error) {
       logger.error(`Error getting relevant summaries for user ${userId}:`, error);
       return [];
+    }
+  }
+
+  /**
+   * Generate a summary of supplement patterns and changes
+   * @param userId User ID
+   * @param days Number of days to analyze
+   * @returns The created summary ID
+   */
+  async generateSupplementPatternSummary(userId: number, days: number = 7): Promise<number | null> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      
+      logger.info(`Generating supplement pattern summary for user ${userId} for the last ${days} days`);
+      
+      // Fetch all supplement logs for the period
+      const supplementLogEntries = await db
+        .select({
+          supplementId: supplementLogs.supplementId,
+          supplementName: supplements.name,
+          dosage: supplements.dosage,
+          frequency: supplements.frequency,
+          takenAt: supplementLogs.takenAt,
+          notes: supplementLogs.notes,
+          effects: supplementLogs.effects
+        })
+        .from(supplementLogs)
+        .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
+        .where(
+          and(
+            eq(supplementLogs.userId, userId),
+            gte(supplementLogs.takenAt, cutoffDate)
+          )
+        )
+        .orderBy(desc(supplementLogs.takenAt))
+        .execute();
+
+      const validLogs = supplementLogEntries.filter(log => log.takenAt !== null);
+      
+      if (validLogs.length === 0) {
+        logger.info(`No valid supplement logs found for user ${userId} in the last ${days} days`);
+        return null;
+      }
+
+      // Group logs by supplement for pattern analysis
+      const supplementGroups = new Map<string, Array<(typeof validLogs)[number]>>();
+      for (const log of validLogs) {
+        const name = log.supplementName || 'Unknown Supplement';
+        if (!supplementGroups.has(name)) {
+          supplementGroups.set(name, []);
+        }
+        supplementGroups.get(name)!.push(log);
+      }
+
+      // Format logs for pattern analysis
+      let summaryInput = 'Supplement Intake Patterns:\n\n';
+
+      for (const [name, logs] of supplementGroups) {
+        summaryInput += `${name}:\n`;
+        for (const log of logs) {
+          // We know takenAt is not null because we filtered earlier
+          const timestamp = new Date(log.takenAt!).toLocaleDateString();
+          const effectsText = log.effects 
+            ? Object.entries(log.effects)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ')
+            : 'No effects recorded';
+
+          summaryInput += `[${timestamp}] Dosage: ${log.dosage || 'Not specified'}, Frequency: ${log.frequency || 'Not specified'}, Effects: ${effectsText}\n`;
+        }
+        summaryInput += '\n';
+      }
+
+      // Generate pattern summary using OpenAI
+      const completion = await openai.chat.completions.create({
+        model: this.SUMMARY_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: this.SUPPLEMENT_SUMMARY_PROMPT
+          },
+          {
+            role: "user",
+            content: summaryInput
+          }
+        ],
+        max_tokens: 1000
+      });
+
+      const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No patterns identified.';
+
+      // Store summary in database
+      const summaryData: InsertLogSummary = {
+        userId,
+        content: summaryContent,
+        summaryType: 'supplement_pattern',
+        startDate: cutoffDate,
+        endDate: new Date(),
+        metadata: {
+          supplementCount: validLogs.length,
+          qualitativeLogCount: 0,
+          quantitativeLogCount: 0,
+          significantChanges: []
+        }
+      };
+
+      const [summary] = await db
+        .insert(logSummaries)
+        .values(summaryData)
+        .returning();
+
+      // Create embedding for the summary
+      if (summary) {
+        await embeddingService.createSummaryEmbedding(summary.id, summaryContent);
+      }
+
+      logger.info(`Generated supplement pattern summary for user ${userId}`);
+      return summary?.id || null;
+
+    } catch (error) {
+      logger.error(`Error generating supplement pattern summary for user ${userId}:`, error);
+      return null;
     }
   }
 }
