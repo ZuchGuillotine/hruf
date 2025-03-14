@@ -1,4 +1,5 @@
-import { db } from "../../db";
+
+import { db } from "../index";
 import { sql } from "drizzle-orm";
 import { logSummaries } from "../schema";
 import logger from "../../server/utils/logger";
@@ -9,7 +10,7 @@ import logger from "../../server/utils/logger";
  * - Maintains backward compatibility with existing records
  * - Updates TypeScript types to match actual usage
  */
-export async function up() {
+async function main() {
   try {
     logger.info("Starting migration: Update log_summaries metadata schema");
 
@@ -91,6 +92,20 @@ export async function up() {
   }
 }
 
+// Execute the migration
+main()
+  .catch((error) => {
+    console.error('Migration failed:', error);
+    process.exit(1);
+  })
+  .finally(() => {
+    process.exit(0);
+  });
+
+export async function up() {
+  return main();
+}
+
 export async function down() {
   try {
     logger.info("Starting rollback: Update log_summaries metadata schema");
@@ -107,4 +122,4 @@ export async function down() {
     logger.error("Error during rollback:", error);
     throw error;
   }
-} 
+}
