@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-03-14T06-30-38-019Z",
+  "userId": "1",
+  "contextType": "query",
+  "messageCount": 2,
+  "systemPrompt": "You are an expert assistant specializing in supplement knowledge and health information. \nYour role is to provide accurate, evidence-based information about supplements, their effects, interactions, and best practices.\n\nWhen answering:\n1. Focus on providing factual, scientifically-backed information\n2. Specify when something is based on limited evidence or is controversial\n3. Avoid making definitive medical claims or prescribing supplements\n4. Acknowledge when you don't have enough information to give a complete answer\n5. Consider the user's personal health context if provided\n6. Think deeply about how supplements may interact with the user's current regimen and provide specific recommendations\n7. It is not necessary to advise the user to consult with a healthcare provider, the user is already receiving a disclaimer in static text on the page\n\nIf the user has shared their supplement tracking history, you may reference it to provide more personalized context.",
+  "userContext": {
+    "hasHealthStats": false,
+    "hasRecentSummaries": false,
+    "hasHistoricalSummaries": false,
+    "hasQualitativeObservations": false,
+    "hasSupplementLogs": false,
+    "hasDirectSupplementInfo": false
+  },
+  "query": "I'm sorry it looks like your repsones was cut off",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert assistant specializing in supplement knowledge and health information. \nYour role is to provide accurate, evidence-based information about supplements, their effects, interactions, and best practices.\n\nWhen answering:\n1. Focus on providing factual, scientifically-backed information\n2. Specify when something is based on limited evidence or is controversial\n3. Avoid making definitive medical claims or prescribing supplements\n4. Acknowledge when you don't have enough information to give a complete answer\n5. Consider the user's personal health context if provided\n6. Think deeply about how supplements may interact with the user's current regimen and provide specific recommendations\n7. It is not necessary to advise the user to consult with a healthcare provider, the user is already receiving a disclaimer in static text on the page\n\nIf the user has shared their supplement tracking history, you may reference it to provide more personalized context."
+    },
+    {
+      "role": "user",
+      "content": "\nUser Health Profile:\n\nWeight: 210 lbs\nHeight: 67 inches\nGender: male\nDate of Birth: Fri Feb 05 1988 00:00:00 GMT+0000 (Coordinated Universal Time)\nAverage Sleep: 8h 30m\nAllergies: apples\n\n\n\n\nRecent Supplement History (Last 7 Days):\n[3/14/2025] Creatine (5 mg): No effects recorded\n[3/14/2025] Vitamin B5 (1 mg): No effects recorded\n[3/14/2025] Boron Glycinate (5 mg): No effects recorded\n[3/14/2025] Zinc (10 mg): No effects recorded\n[3/14/2025] Bacopa (General) (1 mg): No effects recorded\n[3/14/2025] Borage Oil (General) (1 g): No effects recorded\n[3/13/2025] Creatine (5 mg): No effects recorded\n[3/13/2025] Borage Oil (General) (1 g): No effects recorded\n[3/13/2025] Vitamin B5 (1 mg): No effects recorded\n[3/13/2025] Zinc (10 mg): No effects recorded\n[3/13/2025] Bacopa (General) (1 mg): No effects recorded\n[3/13/2025] Boron Glycinate (5 mg): No effects recorded\n[3/10/2025] Vitamin B5 (1 mg): No effects recorded\n[3/10/2025] Creatine (5 mg): No effects recorded\n[3/10/2025] Boron Glycinate (5 mg): No effects recorded\n[3/10/2025] Bacopa (General) (1 mg): No effects recorded\n[3/10/2025] Zinc (10 mg): No effects recorded\n[3/10/2025] Borage Oil (General) (1 g): No effects recorded\n[3/9/2025] Creatine (5 mg): No effects recorded\n[3/9/2025] Boron Glycinate (5 mg): No effects recorded\n[3/9/2025] Bacopa (General) (1 mg): No effects recorded\n[3/9/2025] Borage Oil (General) (1 g): No effects recorded\n[3/9/2025] Zinc (10 mg): No effects recorded\n[3/9/2025] Vitamin B5 (1 mg): No effects recorded\n\n\nUser Query:\nI'm sorry it looks like your repsones was cut off\n\n"
+    }
+  ],
+  "tokenEstimates": {
+    "total": 635,
+    "byMessage": [
+      {
+        "role": "system",
+        "tokens": 243,
+        "preview": "You are an expert assistant specializing in supple..."
+      },
+      {
+        "role": "user",
+        "tokens": 392,
+        "preview": "\nUser Health Profile:\n\nWeight: 210 lbs\nHeight: 67 ..."
+      }
+    ]
+  }
+}
