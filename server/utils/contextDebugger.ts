@@ -1,106 +1,160 @@
-
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/03/2025 - 17:21:14
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/03/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/utils/contextDebugger.ts
 
-import fs from 'fs/promises';
+import { promises as fs } from 'fs';
 import path from 'path';
 import logger from './logger';
+import { safeDate } from './dateUtils';
+
+// Types for context debugging
+export interface ContextMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface UserContextFlags {
+  hasHealthStats: boolean;
+  hasRecentSummaries: boolean;
+  hasHistoricalSummaries: boolean;
+  hasQualitativeObservations: boolean;
+  hasSupplementLogs: boolean;
+  hasDirectSupplementInfo: boolean;
+}
+
+export interface TokenEstimate {
+  role: string;
+  tokens: number;
+  preview: string;
+}
+
+export interface DebugData {
+  timestamp: string;
+  userId: string;
+  contextType: 'qualitative' | 'query';
+  messageCount: number;
+  systemPrompt?: string;
+  userContext: UserContextFlags;
+  query?: string;
+  messages: ContextMessage[];
+  tokenEstimates: {
+    total: number;
+    byMessage: TokenEstimate[];
+  };
+}
 
 /**
- * Debugs LLM context by saving it to a file for inspection
- * @param userId User ID for tracking context by user
- * @param context The context object containing messages
- * @param type The type of context (qualitative or query)
+ * Checks if context debugging is enabled based on environment
  */
-export async function debugContext(userId: number | string, context: { messages: any[] }, type: 'qualitative' | 'query') {
+function isDebugEnabled(): boolean {
+  return process.env.NODE_ENV !== 'production' || process.env.ENABLE_CONTEXT_DEBUG === 'true';
+}
+
+/**
+ * Extracts user query from context messages
+ */
+function extractUserQuery(messages: ContextMessage[]): string | undefined {
+  const queryMessage = messages.find(m => m.content.includes('User Query:'));
+  return queryMessage?.content.split('User Query:')[1]?.trim();
+}
+
+/**
+ * Calculates token estimates for messages
+ */
+function calculateTokenEstimates(messages: ContextMessage[]) {
+  return {
+    total: messages.reduce((acc, msg) => acc + Math.ceil(msg.content.length / 4), 0),
+    byMessage: messages.map(msg => ({
+      role: msg.role,
+      tokens: Math.ceil(msg.content.length / 4),
+      preview: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '')
+    }))
+  };
+}
+
+/**
+ * Analyzes context messages for presence of different context types
+ */
+function analyzeUserContext(messages: ContextMessage[]): UserContextFlags {
+  const containsNonEmpty = (content: string, marker: string) => 
+    content.includes(marker) && !content.includes(`No ${marker.toLowerCase()} found`);
+
+  return {
+    hasHealthStats: messages.some(m => m.content.includes('User Context - Health Statistics')),
+    hasRecentSummaries: messages.some(m => containsNonEmpty(m.content, 'Recent Summaries')),
+    hasHistoricalSummaries: messages.some(m => containsNonEmpty(m.content, 'Historical Health Summaries')),
+    hasQualitativeObservations: messages.some(m => containsNonEmpty(m.content, 'Qualitative Observations')),
+    hasSupplementLogs: messages.some(m => containsNonEmpty(m.content, 'Supplement Logs')),
+    hasDirectSupplementInfo: messages.some(m => m.content.includes('Direct Supplement Information'))
+  };
+}
+
+/**
+ * Debug context data for LLM interactions
+ * @param userId - User ID for context association
+ * @param contextData - The context data being sent to the LLM
+ * @param contextType - Type of context being debugged
+ * @returns Debug data object or undefined if debugging is disabled
+ */
+export async function debugContext(
+  userId: string | number,
+  contextData: { messages: ContextMessage[] },
+  contextType: 'qualitative' | 'query'
+): Promise<DebugData | undefined> {
   try {
-    // Create debug directory if it doesn't exist
-    const debugDir = path.join(process.cwd(), 'debug_logs');
-    try {
-      await fs.mkdir(debugDir, { recursive: true });
-      logger.info(`Debug directory ensured at: ${debugDir}`);
-    } catch (mkdirError) {
-      logger.error(`Error creating debug directory: ${mkdirError.message}`);
-      // Try a fallback approach with absolute path
-      try {
-        const absolutePath = '/home/runner/workspace/debug_logs';
-        await fs.mkdir(absolutePath, { recursive: true });
-        logger.info(`Created debug directory at absolute path: ${absolutePath}`);
-      } catch (fallbackError) {
-        logger.error(`Fallback directory creation also failed: ${fallbackError.message}`);
-      }
+    if (!isDebugEnabled()) {
+      return;
     }
+
+    const timestamp = safeDate(new Date())?.toISOString().replace(/[:.]/g, '-') ?? 
+      new Date().toISOString().replace(/[:.]/g, '-');
     
-    // Create a log filename with timestamp and user ID
-    const timestamp = new Date().toISOString().replace(/:/g, '-');
-    const filename = `${type}_context_${userId}_${timestamp}.json`;
-    const filePath = path.join(debugDir, filename);
-    
-    // Log that we're debugging the context
-    logger.info(`Debugging ${type} context for user ${userId}`, {
-      userId,
-      contextType: type,
-      messageCount: context.messages.length,
-      timestamp: new Date().toISOString(),
-      filePath
-    });
-    
-    // Add debugging metadata
-    const contextWithDebug = {
-      ...context,
-      _debug: {
-        timestamp: new Date().toISOString(),
-        userId,
-        contextType: type,
-        messageCount: context.messages.length,
-        // Include the query if it's in the last message
-        query: context.messages.length > 0 ? 
-          context.messages[context.messages.length - 1].content.split('User Query:').pop()?.trim() : 
-          null
-      }
+    const debugData: DebugData = {
+      timestamp,
+      userId: String(userId),
+      contextType,
+      messageCount: contextData.messages.length,
+      systemPrompt: contextData.messages.find(m => m.role === 'system')?.content,
+      userContext: analyzeUserContext(contextData.messages),
+      query: extractUserQuery(contextData.messages),
+      messages: contextData.messages,
+      tokenEstimates: calculateTokenEstimates(contextData.messages)
     };
+
+    const debugDir = path.join(process.cwd(), 'debug_logs');
     
-    // Format the context for better readability
-    const formattedContext = JSON.stringify(contextWithDebug, null, 2);
-    
-    // Write to file with better error handling
-    try {
-      await fs.writeFile(filePath, formattedContext, 'utf8');
-      logger.info(`Successfully wrote context debug to: ${filePath}`);
-    } catch (writeError) {
-      logger.error(`Error writing debug file: ${writeError.message}`, {
-        error: writeError,
-        filePath
-      });
-      
-      // Try alternative approach with sync operations as fallback
-      try {
-        const fsSync = require('fs');
-        fsSync.writeFileSync(filePath, formattedContext, 'utf8');
-        logger.info(`Successfully wrote context debug using sync fallback: ${filePath}`);
-      } catch (syncError) {
-        logger.error(`Sync fallback also failed: ${syncError.message}`);
-      }
-    }
-    
-    // Additional logging to help debug
-    try {
-      const stats = await fs.stat(filePath);
-      logger.info(`File stats: exists=${stats.isFile()}, size=${stats.size}, permissions=${stats.mode.toString(8)}`);
-    } catch (statError) {
-      logger.error(`Could not get file stats: ${statError.message}`);
-    }
-    
-    return true;
-  } catch (error) {
-    // Log errors but don't fail the entire operation
-    logger.error('Error debugging context:', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      userId,
-      contextType: type
+    // Create directory if it doesn't exist
+    await fs.mkdir(debugDir, { recursive: true }).catch(error => {
+      logger.error('Error creating debug directory:', error);
+      throw error;
     });
+
+    const filename = `${contextType}_context_${String(userId)}_${timestamp}.json`;
+    const filepath = path.join(debugDir, filename);
+
+    await fs.writeFile(
+      filepath,
+      JSON.stringify(debugData, null, 2)
+    ).catch(error => {
+      logger.error('Error writing debug file:', error);
+      throw error;
+    });
+
+    logger.info(`Debug context written to ${filepath}`);
     
-    // Return false to indicate failure
-    return false;
+    return debugData;
+  } catch (error) {
+    logger.error('Error in context debugging:', error);
+    return undefined;
   }
 }

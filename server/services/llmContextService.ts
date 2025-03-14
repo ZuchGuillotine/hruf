@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/03/2025 - 16:10:58
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/03/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/services/llmContextService.ts
 
 import { SYSTEM_PROMPT } from "../openai";
@@ -7,7 +19,9 @@ import { healthStats, logSummaries } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { advancedSummaryService } from "./advancedSummaryService";
 import { summaryTaskManager } from "../cron/summaryManager";
+import { supplementLookupService } from "./supplementLookupService";
 import logger from "../utils/logger";
+import { debugContext } from '../utils/contextDebugger';
 
 /**
  * Constructs context for qualitative feedback chat interactions using our hybrid approach
@@ -46,6 +60,9 @@ Date of Birth: ${userHealthStats.dateOfBirth || 'Not provided'}
 Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.averageSleep / 60)}h ${userHealthStats.averageSleep % 60}m` : 'Not provided'}
 Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
+
+    // Get direct supplement context using the new service
+    const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
 
     // ENHANCEMENT: Increase the number of relevant summaries retrieved
     logger.info(`Retrieving relevant summaries with expanded search`);
@@ -143,7 +160,8 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     - Historical summaries: ${historicalSummaryContent ? 'Yes' : 'No'}
     - Qualitative logs: ${qualitativeLogContent ? 'Yes' : 'No'}
     - Quantitative logs: ${quantitativeLogContent ? 'Yes' : 'No'}
-    - Fallback summaries: ${supplementLogContent ? 'Yes' : 'No'}`);
+    - Fallback summaries: ${supplementLogContent ? 'Yes' : 'No'}
+    - Direct supplement context: ${directSupplementContext ? 'Yes' : 'No'}`);
 
     // Construct the final context message
     const messages: Message[] = [
@@ -151,6 +169,8 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       { role: "user" as const, content: `
 User Context - Health Statistics:
 ${healthStatsContext}
+
+${directSupplementContext ? `Direct Supplement Information:\n${directSupplementContext}\n` : ''}
 
 User Context - Recent Summaries (last 14 days):
 ${recentSummaryContent || 'No recent summaries available.'}
@@ -171,11 +191,12 @@ ${userQuery}
     
     logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
     
-    // Debug the context being sent to the LLM
-    const { debugContext } = await import('../utils/contextDebugger.js');
-    await debugContext(userId, { messages }, 'qualitative');
+    const context = { messages };
     
-    return { messages };
+    // Add debug logging if enabled
+    await debugContext(userId, context, 'qualitative');
+    
+    return context;
   } catch (error) {
     logger.error("Error constructing user context:", {
       userId,

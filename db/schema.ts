@@ -19,9 +19,9 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false),
   emailVerified: boolean("email_verified").default(false),
   verificationToken: text("verification_token"),
-  verificationTokenExpiry: timestamp("verification_token_expiry"),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  verificationTokenExpiry: timestamp("verification_token_expiry", { mode: 'date' }),
+  createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 // User health profile and statistics
@@ -30,11 +30,11 @@ export const healthStats = pgTable("health_stats", {
   weight: numeric("weight"),
   height: numeric("height"), // stored in centimeters
   gender: text("gender"),
-  dateOfBirth: date("date_of_birth"),
+  dateOfBirth: date("date_of_birth", { mode: 'date' }),
   averageSleep: integer("average_sleep"), // Stored in minutes
   profilePhotoUrl: text("profile_photo_url"),
   allergies: text("allergies"),
-  lastUpdated: timestamp("last_updated").default(sql`CURRENT_TIMESTAMP`),
+  lastUpdated: timestamp("last_updated", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 // Primary supplement tracking table
@@ -46,9 +46,9 @@ export const supplements = pgTable("supplements", {
   frequency: text("frequency").notNull(),
   notes: text("notes"),
   active: boolean("active").default(true),
-  startDate: timestamp("start_date").default(sql`CURRENT_TIMESTAMP`),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  startDate: timestamp("start_date", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 // Supplement tracking logs
@@ -56,7 +56,7 @@ export const supplementLogs = pgTable("supplement_logs", {
   id: serial("id").primaryKey(),
   supplementId: integer("supplement_id").references(() => supplements.id),
   userId: integer("user_id").references(() => users.id),
-  takenAt: timestamp("taken_at").default(sql`CURRENT_TIMESTAMP`),
+  takenAt: timestamp("taken_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   notes: text("notes"),
   effects: jsonb("effects").$type<{
     mood?: number;
@@ -64,8 +64,8 @@ export const supplementLogs = pgTable("supplement_logs", {
     sleep?: number;
     sideEffects?: string[];
   }>(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 // Reference table for supplement names and categories
@@ -214,16 +214,22 @@ export const logSummaries = pgTable("log_summaries", {
   userId: integer("user_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
   summaryType: text("summary_type").notNull(), // 'daily', 'weekly', etc.
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
+  startDate: timestamp("start_date", { mode: 'date' }).notNull(),
+  endDate: timestamp("end_date", { mode: 'date' }).notNull(),
   metadata: jsonb("metadata").$type<{
-    supplementCount?: number;
-    qualitativeLogCount?: number;
-    quantitativeLogCount?: number;
-    significantChanges?: string[];
-  }>().default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+    supplementCount: number;
+    qualitativeLogCount: number;
+    quantitativeLogCount: number;
+    significantChanges: string[];
+    dailySummaryCount?: number; // Only present for weekly summaries
+  }>().default({
+    supplementCount: 0,
+    qualitativeLogCount: 0,
+    quantitativeLogCount: 0,
+    significantChanges: []
+  }),
+  createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 // Add type definitions for the new tables

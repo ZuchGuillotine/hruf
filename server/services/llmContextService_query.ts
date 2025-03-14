@@ -1,12 +1,26 @@
-
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/03/2025 - 16:16:27
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/03/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/services/llmContextService_query.ts
 
 import { Message } from "@/lib/types";
 import { db } from "../../db";
-import { healthStats, supplementLogs, qualitativeLogs, logSummaries } from "../../db/schema";
-import { eq, count } from "drizzle-orm";
+import { healthStats, supplementLogs, qualitativeLogs, logSummaries, supplements } from "../../db/schema";
+import { eq, count, and, gte, desc } from "drizzle-orm";
 import { advancedSummaryService } from "./advancedSummaryService";
+import { summaryTaskManager } from "../cron/summaryManager";
+import { supplementLookupService } from "./supplementLookupService";
 import logger from "../utils/logger";
+import { debugContext } from '../utils/contextDebugger';
 
 /**
  * Check if the user has any logs or summaries in the database
@@ -74,15 +88,21 @@ export async function constructQueryContext(userId: number | null, userQuery: st
       logger.info('User not authenticated, returning basic context');
       return {
         messages: [
-          { role: "system", content: QUERY_SYSTEM_PROMPT },
-          { role: "user", content: userQuery }
+          { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
+          { role: "user" as const, content: userQuery }
         ]
       };
     }
 
     logger.info(`Building context for authenticated user ${userId}`);
     
-    // For authenticated users, use vector search to find relevant summaries and logs
+    // ENHANCEMENT: Trigger real-time summary here as well for consistency
+    try {
+      await summaryTaskManager.runRealtimeSummary(userId);
+      logger.info('Real-time summary triggered for query context');
+    } catch (summaryError) {
+      logger.warn(`Real-time summary failed for query context: ${summaryError}`);
+    }
     
     // Fetch user's health stats
     const userHealthStats = await db.query.healthStats.findFirst({
@@ -99,6 +119,9 @@ Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.av
 Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
+    // Get direct supplement context using the new service
+    const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery);
+    
     // Use vector search to retrieve the most relevant summaries and logs
     logger.info(`Retrieving relevant summaries for authenticated user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
     
@@ -118,118 +141,111 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       
       logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
       
-      // Log the actual content for debugging
-      if (relevantContent.length > 0) {
-        logger.info('First few relevant content items:', 
-          relevantContent.slice(0, 2).map(item => ({
-            type: item.type,
-            similarity: item.similarity,
-            id: item.id,
-            preview: item.content ? item.content.substring(0, 50) + '...' : 'No content'
-          }))
-        );
-      } else {
-        logger.info('No relevant content found by vector search');
+      // Format the relevant content
+      let contextContent = '';
+      
+      // Process summaries
+      const summaries = relevantContent.filter(item => item.type === 'summary');
+      if (summaries.length > 0) {
+        contextContent += "Recent Summary Information:\n";
+        summaries.forEach(summary => {
+          const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
+          contextContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
+        });
       }
-    } catch (searchError) {
-      logger.error(`Error during vector search:`, {
-        error: searchError instanceof Error ? searchError.message : String(searchError),
-        stack: searchError instanceof Error ? searchError.stack : undefined
-      });
-    }
-    
-    // Format the relevant content
-    let contextContent = '';
-    
-    // Process summaries
-    const summaries = relevantContent.filter(item => item.type === 'summary');
-    if (summaries.length > 0) {
-      contextContent += "Recent Summary Information:\n";
-      summaries.forEach(summary => {
-        const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
-        contextContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
-      });
-    }
-    
-    // Process qualitative logs
-    const qualitativeLogs = relevantContent.filter(item => item.type === 'qualitative_log');
-    if (qualitativeLogs.length > 0) {
-      contextContent += "Relevant User Observations:\n";
-      qualitativeLogs.forEach(log => {
-        let content = log.content;
-        
-        // Try to extract meaningful content from JSON if applicable
-        try {
-          const parsed = JSON.parse(log.content);
-          if (Array.isArray(parsed)) {
-            content = parsed
-              .filter(msg => msg.role === 'user')
-              .map(msg => msg.content)
-              .join(' | ');
-          }
-        } catch (e) {
-          // Not JSON, use as is
-        }
-        
-        contextContent += `[${new Date(log.loggedAt).toLocaleDateString()}] ${content}\n`;
-      });
-      contextContent += '\n';
-    }
-    
-    // Process quantitative logs
-    const quantitativeLogs = relevantContent.filter(item => item.type === 'quantitative_log');
-    if (quantitativeLogs.length > 0) {
-      contextContent += "Relevant Supplement Logs:\n";
-      quantitativeLogs.forEach(log => {
-        const effectsText = log.effects
-          ? Object.entries(log.effects)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join(', ')
-          : 'No effects recorded';
+      
+      // Process qualitative logs
+      const qualitativeLogs = relevantContent.filter(item => item.type === 'qualitative_log');
+      if (qualitativeLogs.length > 0) {
+        contextContent += "Relevant User Observations:\n";
+        qualitativeLogs.forEach(log => {
+          let content = log.content;
           
-        contextContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
-      });
-      contextContent += '\n';
-    }
-    
-    // If no relevant content was found, mention this
-    if (contextContent === '') {
-      contextContent = "No relevant supplement history found for this query.\n";
-    }
+          // Try to extract meaningful content from JSON if applicable
+          try {
+            const parsed = JSON.parse(log.content);
+            if (Array.isArray(parsed)) {
+              content = parsed
+                .filter(msg => msg.role === 'user')
+                .map(msg => msg.content)
+                .join(' | ');
+            }
+          } catch (e) {
+            // Not JSON, use as is
+          }
+          
+          contextContent += `[${new Date(log.loggedAt).toLocaleDateString()}] ${content}\n`;
+        });
+        contextContent += '\n';
+      }
+      
+      // Process quantitative logs
+      const quantitativeLogs = relevantContent.filter(item => item.type === 'quantitative_log');
+      if (quantitativeLogs.length > 0) {
+        contextContent += "Relevant Supplement Logs:\n";
+        quantitativeLogs.forEach(log => {
+          const effectsText = log.effects
+            ? Object.entries(log.effects)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ')
+            : 'No effects recorded';
+            
+          contextContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
+        });
+        contextContent += '\n';
+      }
+      
+      // If no relevant content was found, mention this
+      if (contextContent === '') {
+        contextContent = "No relevant supplement history found for this query.\n";
+      }
 
-    // Construct the final context message
-    const messages = [
-      { role: "system", content: QUERY_SYSTEM_PROMPT },
-      { role: "user", content: `
+      // Construct the final context message
+      const messages: Message[] = [
+        { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
+        { role: "user" as const, content: `
 User Health Profile:
 ${healthStatsContext}
+
+${directSupplementContext ? `Direct Supplement Information:\n${directSupplementContext}\n` : ''}
 
 ${contextContent}
 
 User Query:
 ${userQuery}
 ` }
-    ];
+      ];
 
-    logger.info(`Context built successfully for user ${userId}`);
-    
-    // Debug the context being sent to the LLM
-    // Import dynamically to maintain compatibility with ES modules
-    const { debugContext } = await import('../utils/contextDebugger.js');
-    await debugContext(userId, { messages }, 'query');
-    
-    return { messages };
+      logger.info(`Context built successfully for user ${userId}`);
+      
+      // Debug the context being sent to the LLM
+      const context = { messages };
+      
+      // Add debug logging if enabled
+      await debugContext(userId, context, 'query');
+      
+      return context;
+    } catch (error) {
+      logger.error(`Error constructing query context for user ${userId}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
+      // Fallback to basic context on error
+      return {
+        messages: [
+          { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
+          { role: "user" as const, content: userQuery }
+        ]
+      };
+    }
   } catch (error) {
-    logger.error(`Error constructing query context for user ${userId}:`, {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-
-    // Fallback to basic context on error
+    logger.error(`Error in constructQueryContext:`, error);
+    // Fallback to basic context
     return {
       messages: [
-        { role: "system", content: QUERY_SYSTEM_PROMPT },
-        { role: "user", content: userQuery }
+        { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
+        { role: "user" as const, content: userQuery }
       ]
     };
   }

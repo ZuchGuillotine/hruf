@@ -3,6 +3,26 @@
 
 ## Latest Status (March 20, 2025)
 
+### Type Safety Improvements Needed in Summary Services
+- Identified critical type safety issues in advancedSummaryService:
+  1. Date Handling:
+     - Null safety issues with `takenAt` and `loggedAt` fields
+     - Need proper null checks before Date object creation
+     - Affects both supplement and qualitative log processing
+  2. Database Query Results:
+     - Iterator and length property missing from NeonHttpQueryResult
+     - Affects user processing in daily and weekly summaries
+     - Need to implement proper type definitions for query results
+  3. Metadata Schema Issues:
+     - Property 'dailySummaryCount' not recognized in metadata type
+     - Mismatch between database schema and TypeScript types
+     - Need to update InsertLogSummary type definition
+  4. Proposed Solutions:
+     - Add proper null checking for date fields
+     - Update database query result types
+     - Align metadata schema with actual usage
+     - Consider database migration for consistent naming
+
 ### Streaming Response Fixes
 - Resolved issues with LLM chat streaming implementation:
   - Fixed premature termination of streaming responses
@@ -861,3 +881,155 @@ A persistent issue was encountered with the query interface not properly recogni
 - Type safety is critical for proper user identification
 - Excessive middleware and logging can obscure actual issues
 - Authentication should be verified at the service level, not just route level
+
+## Date Handling and Context Services
+
+### Current Issues
+1. **Date Handling Inconsistencies**
+   - Inconsistent handling of nullable dates across services
+   - Timezone-related issues in date comparisons
+   - Missing type safety in date operations
+   - Lack of standardized date formatting across the application
+
+2. **Context Service Date Issues**
+   - `llmContextService` and `llmContextService_query` have inconsistent date handling
+   - Date range queries may not properly account for UTC boundaries
+   - Summary date ranges need standardization for consistent retrieval
+
+### Implemented Solutions
+1. **Date Utils Module**
+   - Created centralized date handling utilities in `server/utils/dateUtils.ts`
+   - Added safe date parsing with proper error handling
+   - Implemented UTC-aware date boundary calculations
+   - Standardized date formatting options
+
+2. **Schema Improvements**
+   - Updated all timestamp fields with `{ mode: 'date' }` for proper typing
+   - Standardized use of `CURRENT_TIMESTAMP` defaults
+   - Made critical timestamp fields non-nullable
+   - Added proper type definitions for metadata date fields
+
+3. **Date Range Handling**
+   - Implemented consistent date range calculations for summaries
+   - Added validation for date ranges with configurable options
+   - Created SQL helpers for date range queries
+
+### Pending Tasks
+1. **Context Services Updates**
+   - Need to update `llmContextService` to use new date utilities
+   - Standardize date handling in summary retrieval
+   - Implement proper date range filtering for relevant logs
+
+2. **Migration Requirements**
+   - Create migration for updating existing date fields
+   - Ensure backward compatibility with existing data
+   - Add database-level validation for date fields
+
+3. **Testing Requirements**
+   - Add tests for date boundary cases
+   - Verify UTC handling across services
+   - Test date range calculations for summaries
+
+### Best Practices
+1. **Date Handling**
+   - Always use `safeDate()` for parsing date inputs
+   - Use `getUtcDayBoundary()` for date range calculations
+   - Apply `dateRangeSql()` for database queries
+   - Validate dates using `isValidDate()` before processing
+
+2. **Context Building**
+   - Use `getSummaryDateRange()` for consistent summary periods
+   - Handle null dates gracefully with proper defaults
+   - Include timezone information in log displays
+   - Use standardized date formatting for consistency
+
+## Context Debugging System
+
+### Context Debugger Features
+1. **Debug Output Generation**:
+   - Creates detailed JSON debug logs for LLM context analysis
+   - Separate logs for qualitative feedback and query contexts
+   - Timestamp-based unique filenames for easy tracking
+   - Environment-aware (development mode or explicit enable flag)
+
+2. **Context Analysis**:
+   - Tracks presence of key context components:
+     - Health statistics
+     - Recent and historical summaries
+     - Qualitative observations
+     - Supplement logs
+     - Direct supplement information
+   - Message count and system prompt extraction
+   - User query identification and extraction
+
+3. **Token Usage Analysis**:
+   - Total token count estimation
+   - Per-message token breakdowns
+   - Content previews for quick reference
+   - Role-based message categorization
+
+### Usage and Configuration
+1. **Environment Settings**:
+   - Automatically enabled in development
+   - Production usage requires `ENABLE_CONTEXT_DEBUG=true`
+   - Debug logs stored in `debug_logs` directory
+   - File naming: `{contextType}_context_{userId}_{timestamp}.json`
+
+2. **Debug Data Structure**:
+   ```javascript
+   {
+     timestamp: string,
+     userId: string,
+     contextType: 'qualitative' | 'query',
+     messageCount: number,
+     systemPrompt: string,
+     userContext: {
+       hasHealthStats: boolean,
+       hasRecentSummaries: boolean,
+       hasHistoricalSummaries: boolean,
+       hasQualitativeObservations: boolean,
+       hasSupplementLogs: boolean,
+       hasDirectSupplementInfo: boolean
+     },
+     query: string,
+     messages: Array<Message>,
+     tokenEstimates: {
+       total: number,
+       byMessage: Array<{
+         role: string,
+         tokens: number,
+         preview: string
+       }>
+     }
+   }
+   ```
+
+3. **Available Functions**:
+   - `debugContext`: Main debugging function for context analysis
+   - `writeContextToFile`: Legacy support function
+   - `analyzeTokenUsage`: Standalone token analysis helper
+
+4. **Integration Points**:
+   - Integrated with both qualitative and query context services
+   - Non-blocking operation (errors won't disrupt main functionality)
+   - Supports both authenticated and anonymous users
+   - Compatible with all context types
+
+### Best Practices
+1. **Debug Log Management**:
+   - Regularly clean up old debug logs
+   - Use for development and troubleshooting only
+   - Don't enable in production unless necessary
+   - Monitor disk space usage in debug directory
+
+2. **Context Analysis**:
+   - Use token estimates to optimize context size
+   - Monitor missing context components
+   - Track query extraction accuracy
+   - Verify system prompt consistency
+
+3. **Error Handling**:
+   - Debug operations never throw errors
+   - All errors are logged but don't affect main functionality
+   - Check logs for debugging issues
+   - Monitor file system permissions
