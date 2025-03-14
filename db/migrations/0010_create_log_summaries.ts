@@ -7,7 +7,7 @@ async function main() {
   try {
     logger.info("Starting migration: Create log_summaries table with metadata");
 
-    // Create the log_summaries table with all required fields
+    // Create the table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS log_summaries (
         id SERIAL PRIMARY KEY,
@@ -25,29 +25,38 @@ async function main() {
         ),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-      );
+      )
+    `);
 
-      -- Create an index on user_id and date range for faster queries
+    // Create index on user_id and date range
+    await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_log_summaries_user_date 
-      ON log_summaries(user_id, start_date, end_date);
+      ON log_summaries(user_id, start_date, end_date)
+    `);
 
-      -- Create an index on summary_type for filtering
+    // Create index on summary_type
+    await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_log_summaries_type
-      ON log_summaries(summary_type);
+      ON log_summaries(summary_type)
+    `);
 
-      -- Add trigger to automatically update updated_at
+    // Create timestamp update function
+    await db.execute(sql`
       CREATE OR REPLACE FUNCTION update_log_summaries_timestamp()
       RETURNS TRIGGER AS $$
       BEGIN
         NEW.updated_at = CURRENT_TIMESTAMP;
         RETURN NEW;
       END;
-      $$ language 'plpgsql';
+      $$ language 'plpgsql'
+    `);
 
+    // Create trigger
+    await db.execute(sql`
       CREATE OR REPLACE TRIGGER update_log_summaries_timestamp
         BEFORE UPDATE ON log_summaries
         FOR EACH ROW
-        EXECUTE FUNCTION update_log_summaries_timestamp();
+        EXECUTE FUNCTION update_log_summaries_timestamp()
     `);
 
     logger.info("Successfully completed migration: Create log_summaries table with metadata");
@@ -73,11 +82,22 @@ export async function up() {
 export async function down() {
   try {
     logger.info("Starting rollback: Drop log_summaries table");
+    
+    // Drop trigger first
     await db.execute(sql`
-      DROP TRIGGER IF EXISTS update_log_summaries_timestamp ON log_summaries;
-      DROP FUNCTION IF EXISTS update_log_summaries_timestamp();
-      DROP TABLE IF EXISTS log_summaries;
+      DROP TRIGGER IF EXISTS update_log_summaries_timestamp ON log_summaries
     `);
+
+    // Drop function
+    await db.execute(sql`
+      DROP FUNCTION IF EXISTS update_log_summaries_timestamp()
+    `);
+
+    // Drop table (will automatically drop indexes)
+    await db.execute(sql`
+      DROP TABLE IF EXISTS log_summaries
+    `);
+
     logger.info("Successfully completed rollback");
   } catch (error) {
     logger.error("Error during rollback:", error);
