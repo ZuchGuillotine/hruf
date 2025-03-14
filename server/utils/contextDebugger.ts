@@ -23,48 +23,22 @@ interface DebugData {
   messageCount: number;
   systemPrompt: string;
   userContext: string;
-  queryContent?: string;
-  qualitativeContent?: {
-    recentLogs: boolean;
-    historicalSummaries: boolean;
-    supplementData: boolean;
-    healthProfile: boolean;
-  };
   tokenEstimate: number;
 }
 
-function analyzeContext(messages: ContextMessage[], type: 'query' | 'qualitative'): Partial<DebugData> {
+function analyzeContext(messages: ContextMessage[], type: 'query' | 'qualitative') {
   const userMessage = messages.find(m => m.role === 'user')?.content || '';
-  const systemMessage = messages.find(m => m.role === 'system')?.content || '';
-
-  const baseAnalysis = {
-    systemPrompt: systemMessage,
-    messageCount: messages.length,
-    userContext: userMessage,
-    tokenEstimate: estimateTokens(messages)
-  };
-
-  if (type === 'qualitative') {
-    return {
-      ...baseAnalysis,
-      qualitativeContent: {
-        recentLogs: userMessage.includes('Recent Daily Summaries:'),
-        historicalSummaries: userMessage.includes('Historical Summaries:'),
-        supplementData: userMessage.includes('Supplement Data:'),
-        healthProfile: userMessage.includes('User Health Profile:')
-      }
-    };
-  }
 
   return {
-    ...baseAnalysis,
-    queryContent: userMessage
+    hasHealthStats: userMessage.includes('Health Stats:'),
+    hasSupplementLogs: userMessage.includes('Supplement Logs:'),
+    hasQualitativeObservations: type === 'qualitative' && userMessage.includes('Previous Observations:'),
+    hasRecentSummaries: type === 'qualitative' && userMessage.includes('Recent Summaries:')
   };
 }
 
 function estimateTokens(messages: ContextMessage[]): number {
-  const totalText = messages.reduce((acc, msg) => acc + msg.content.length, 0);
-  return Math.ceil(totalText / 4);
+  return messages.reduce((sum, msg) => sum + (msg.content?.length || 0) / 4, 0);
 }
 
 function saveDebugLog(userId: number, type: 'query' | 'qualitative', messages: ContextMessage[]) {
@@ -72,7 +46,6 @@ function saveDebugLog(userId: number, type: 'query' | 'qualitative', messages: C
     timestamp: new Date().toISOString(),
     userId,
     contextType: type,
-    ...analyzeContext(messages, type),
     messageCount: messages.length,
     systemPrompt: messages.find(m => m.role === 'system')?.content || '',
     userContext: messages.find(m => m.role === 'user')?.content || '',
@@ -92,8 +65,4 @@ function saveDebugLog(userId: number, type: 'query' | 'qualitative', messages: C
   );
 }
 
-const contextDebugger = {
-  saveDebugLog
-};
-
-export default contextDebugger;
+export { saveDebugLog as debugContext };
