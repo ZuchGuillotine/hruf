@@ -86,16 +86,15 @@ function calculateTokenEstimates(messages: ContextMessage[]) {
  * Analyzes context messages for presence of different context types
  */
 function analyzeUserContext(messages: ContextMessage[]): UserContextFlags {
-  const containsNonEmpty = (content: string, marker: string) => 
-    content.includes(marker) && !content.includes(`No ${marker.toLowerCase()} found`);
-
+  const userMessage = messages.find(m => m.role === 'user')?.content || '';
+  
   return {
-    hasHealthStats: messages.some(m => m.content.includes('User Context - Health Statistics')),
-    hasRecentSummaries: messages.some(m => containsNonEmpty(m.content, 'Recent Summaries')),
-    hasHistoricalSummaries: messages.some(m => containsNonEmpty(m.content, 'Historical Health Summaries')),
-    hasQualitativeObservations: messages.some(m => containsNonEmpty(m.content, 'Qualitative Observations')),
-    hasSupplementLogs: messages.some(m => containsNonEmpty(m.content, 'Supplement Logs')),
-    hasDirectSupplementInfo: messages.some(m => m.content.includes('Direct Supplement Information'))
+    hasHealthStats: userMessage.includes('User Health Profile') && userMessage.includes('Weight:'),
+    hasRecentSummaries: userMessage.includes('Recent Daily Summaries:') || userMessage.includes('Supplement Log Summary'),
+    hasHistoricalSummaries: userMessage.includes('Recent Supplement History') || userMessage.includes('Historical Health Summaries'),
+    hasQualitativeObservations: userMessage.includes('Qualitative Observations:') || userMessage.includes('Effects Recorded:'),
+    hasSupplementLogs: userMessage.includes('Supplements Taken:') || userMessage.includes('Recent Supplement History'),
+    hasDirectSupplementInfo: userMessage.includes('Direct Supplement Information')
   };
 }
 
