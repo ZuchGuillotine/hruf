@@ -195,9 +195,45 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         contextContent += '\n';
       }
       
-      // If no relevant content was found, mention this
+      // If no relevant content was found, fetch recent supplement logs as fallback
       if (contextContent === '') {
-        contextContent = "No relevant supplement history found for this query.\n";
+        logger.info('No relevant content found, fetching recent supplement logs as fallback');
+        
+        const recentDate = new Date();
+        recentDate.setDate(recentDate.getDate() - 7);
+        
+        const recentLogs = await db
+          .select({
+            name: supplements.name,
+            dosage: supplements.dosage,
+            takenAt: supplementLogs.takenAt,
+            effects: supplementLogs.effects,
+            notes: supplementLogs.notes
+          })
+          .from(supplementLogs)
+          .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
+          .where(
+            and(
+              eq(supplementLogs.userId, userId),
+              gte(supplementLogs.takenAt, recentDate)
+            )
+          )
+          .orderBy(desc(supplementLogs.takenAt));
+
+        if (recentLogs.length > 0) {
+          contextContent = "Recent Supplement History (Last 7 Days):\n";
+          recentLogs.forEach(log => {
+            const effectsText = log.effects
+              ? Object.entries(log.effects)
+                  .map(([key, value]) => `${key}: ${value}`)
+                  .join(', ')
+              : 'No effects recorded';
+              
+            contextContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
+          });
+        } else {
+          contextContent = "No supplement history found for this query.\n";
+        }
       }
 
       // Construct the final context message
