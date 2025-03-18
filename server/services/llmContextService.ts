@@ -4,7 +4,7 @@ import { db } from '../../db';
 import { eq, desc, and, notInArray } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 import { logSummaries, healthStats, qualitativeLogs } from '../../db/schema';
-import { summaryTaskManager } from './summaryTaskManager';
+import { summaryTaskManager } from '../cron/summaryManager';
 import { supplementLookupService } from './supplementLookupService';
 import { advancedSummaryService } from './advancedSummaryService';
 import { debugContext } from '../utils/contextDebugger';
