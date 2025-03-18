@@ -2,6 +2,14 @@
 # Changelog
 
 ## [March 2025]
+### Fixed (March 18, 2025 - Update 4)
+- Context Services:
+  - Added QUERY_SYSTEM_PROMPT to openai.ts
+  - Fixed openai client export configuration
+  - Updated logger to use ES Module syntax
+  - Implemented LRUCache for embedding service
+  - Enhanced error handling in context building
+
 ### Enhanced (March 18, 2025 - Update 3)
 - Context Building and Streaming:
   - Fixed streaming response handling in qualitative chat
