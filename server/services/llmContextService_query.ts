@@ -78,7 +78,7 @@ async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
 
 import { Message } from '../lib/types';
 import { QUERY_SYSTEM_PROMPT } from '../openai';
-import { db } from '../db';
+import { db } from '../../db';
 import logger from '../utils/logger';
 import { desc, eq, and, gte } from 'drizzle-orm';
 import { logSummaries, supplementLogs, supplements, healthStats } from '../db/schema';
