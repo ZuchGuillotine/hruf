@@ -6,8 +6,8 @@ import { openai } from '../openai';
 import logger from '../utils/logger';
 import { LRUCache } from 'lru-cache';
 import { db } from '../../db';
-import { logEmbeddings, summaryEmbeddings } from '../../db/schema';
-import { and, eq, sql } from 'drizzle-orm';
+import { logEmbeddings, summaryEmbeddings, logSummaries, qualitativeLogs, supplementLogs, supplements } from '../../db/schema';
+import { and, eq, sql, desc, notInArray, gte } from 'drizzle-orm';
 
 class EmbeddingService {
   // Constants
@@ -198,7 +198,7 @@ class EmbeddingService {
             summary_id, 
             NULL as log_id,
             NULL as log_type,
-            1 - (embedding <=> ${queryEmbedding}::vector(1536)) as similarity
+            1 - (embedding <=> ${sql.array(queryEmbedding)}::vector(1536)) as similarity
           FROM 
             summary_embeddings
           JOIN 
@@ -206,7 +206,7 @@ class EmbeddingService {
           WHERE 
             log_summaries.user_id = ${userId}
           ORDER BY 
-            embedding <=> ${queryEmbedding}::vector(1536)
+            embedding <=> ${sql.array(queryEmbedding)}::vector(1536)
           LIMIT ${limit}
         `);
 
