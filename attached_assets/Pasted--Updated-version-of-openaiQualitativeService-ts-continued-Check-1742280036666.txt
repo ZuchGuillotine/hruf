@@ -1,0 +1,101 @@
+// Updated version of openaiQualitativeService.ts (continued)
+
+        });
+        
+        // Check for errors
+        if (chunk.error) {
+          logger.error(`Error in chat stream chunk:`, {
+            requestId,
+            error: chunk.error,
+            timestamp: new Date().toISOString()
+          });
+          throw new Error(chunk.error);
+        }
+        
+        // If chunk has content, accumulate it
+        if (chunk.response) {
+          fullResponse += chunk.response;
+        }
+        
+        // Pass chunk to client
+        yield chunk;
+        isFirstChunk = false;
+      }
+      
+      // Save the conversation only if we have a valid userId and there was a response
+      if (userId && fullResponse.trim()) {
+        try {
+          // Save both the user query and the AI response
+          const conversation = JSON.stringify([
+            { role: 'user', content: userQuery },
+            { role: 'assistant', content: fullResponse }
+          ]);
+          
+          // Insert as qualitative log
+          await db
+            .insert(qualitativeLogs)
+            .values({
+              userId: typeof userId === 'string' ? parseInt(userId) : userId,
+              content: conversation,
+              type: 'chat', // Not 'query' - this is important!
+              tags: ['ai_conversation'],
+              metadata: {
+                savedAt: new Date().toISOString(),
+                model: MODELS.QUALITATIVE_CHAT
+              }
+            });
+            
+          logger.info(`Saved chat conversation to database:`, {
+            userId,
+            requestId,
+            responseLength: fullResponse.length,
+            timestamp: new Date().toISOString()
+          });
+        } catch (saveError) {
+          logger.error(`Failed to save chat conversation:`, {
+            userId,
+            requestId,
+            error: saveError instanceof Error ? saveError.message : String(saveError),
+            stack: saveError instanceof Error ? saveError.stack : undefined,
+            timestamp: new Date().toISOString()
+          });
+          // Continue anyway since the chat response was already sent
+        }
+      }
+      
+      logger.info(`Qualitative chat completed successfully:`, {
+        userId,
+        requestId,
+        responseLength: fullResponse.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (apiError) {
+      logger.error(`Error in OpenAI API call:`, {
+        userId,
+        requestId,
+        error: apiError instanceof Error ? apiError.message : String(apiError),
+        stack: apiError instanceof Error ? apiError.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Return error to client
+      yield { 
+        error: apiError instanceof Error ? apiError.message : "Error connecting to AI service", 
+        streaming: false 
+      };
+    }
+  } catch (error) {
+    logger.error('Error in qualitative chat service:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return friendly error message to client
+    yield { 
+      error: "I'm having trouble understanding right now. Please try again in a moment.", 
+      streaming: false 
+    };
+  }
+}
