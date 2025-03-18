@@ -9,7 +9,7 @@
     * - Date            : 13/03/2025
     * - Author          : 
     * - Modification    : 
-**/
+    **/
 // server/services/llmContextService_query.ts
 
 import { Message } from "@/lib/types";
@@ -61,26 +61,32 @@ async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
 }
 
 // Separate system prompt for general supplement queries
-export const QUERY_SYSTEM_PROMPT = `You are an expert assistant specializing in supplement knowledge and health information. 
-Your role is to provide accurate, evidence-based information about supplements, their effects, interactions, and best practices.
+//This import is moved to the updated function.
+//export const QUERY_SYSTEM_PROMPT = `You are an expert assistant specializing in supplement knowledge and health information. 
+//Your role is to provide accurate, evidence-based information about supplements, their effects, interactions, and best practices.
+//
+//When answering:
+//1. Focus on providing factual, scientifically-backed information
+//2. Specify when something is based on limited evidence or is controversial
+//3. Avoid making definitive medical claims or prescribing supplements
+//4. Acknowledge when you don't have enough information to give a complete answer
+//5. Consider the user's personal health context if provided
+//6. Think deeply about how supplements may interact with the user's current regimen and provide specific recommendations
+//7. It is not necessary to advise the user to consult with a healthcare provider, the user is already receiving a disclaimer in static text on the page
+//
+//If the user has shared their supplement tracking history, you may reference it to provide more personalized context.`;
 
-When answering:
-1. Focus on providing factual, scientifically-backed information
-2. Specify when something is based on limited evidence or is controversial
-3. Avoid making definitive medical claims or prescribing supplements
-4. Acknowledge when you don't have enough information to give a complete answer
-5. Consider the user's personal health context if provided
-6. Think deeply about how supplements may interact with the user's current regimen and provide specific recommendations
-7. It is not necessary to advise the user to consult with a healthcare provider, the user is already receiving a disclaimer in static text on the page
+import { Message } from '../lib/types';
+import { QUERY_SYSTEM_PROMPT } from '../openai';
+import { db } from '../db';
+import logger from '../utils/logger';
+import { desc, eq, and, gte } from 'drizzle-orm';
+import { logSummaries, supplementLogs, supplements, healthStats } from '../db/schema';
+import { debugContext } from '../utils/contextDebugger';
+import { summaryTaskManager } from './summaryTaskManager';
+import { supplementLookupService } from './supplementLookupService';
+import { advancedSummaryService } from './advancedSummaryService';
 
-If the user has shared their supplement tracking history, you may reference it to provide more personalized context.`;
-
-/**
- * Constructs context for general supplement queries using vector-based retrieval
- * @param userId User ID (null for non-authenticated users)
- * @param userQuery The user's query text
- * @returns Object containing constructed messages
- */
 export async function constructQueryContext(userId: number | null, userQuery: string): Promise<{ messages: Message[] }> {
   try {
     // If user is not authenticated, return basic context
@@ -94,9 +100,9 @@ export async function constructQueryContext(userId: number | null, userQuery: st
       };
     }
 
-    logger.info(`Building context for authenticated user ${userId}`);
+    logger.info(`Building query context for authenticated user ${userId}`);
 
-    // ENHANCEMENT: Trigger real-time summary here as well for consistency
+    // Trigger real-time summary for consistency
     try {
       await summaryTaskManager.runRealtimeSummary(userId);
       logger.info('Real-time summary triggered for query context');
@@ -119,11 +125,11 @@ Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.av
 Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
-    // Get direct supplement context using the new service
+    // Get direct supplement context
     const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery);
 
-    // First, get recent supplement pattern summaries directly
-    logger.info(`Getting recent supplement summaries for user ${userId}`);
+    // Build context content
+    let contextContent = '';
 
     try {
       // Get recent supplement pattern summaries
@@ -137,9 +143,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
           )
         )
         .orderBy(desc(logSummaries.createdAt))
-        .limit(2); // Get last two summaries for better context
-
-      let contextContent = '';
+        .limit(2);
 
       if (recentSummaries.length > 0) {
         contextContent += "Recent Supplement Patterns:\n";
@@ -149,7 +153,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         });
       }
 
-      // Also get daily summaries for the last 3 days
+      // Get daily summaries for the last 3 days
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
@@ -174,33 +178,43 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         });
       }
 
-      // Use vector search only for qualitative logs
-      logger.info(`Retrieving relevant qualitative logs for user ${userId}`);
-      const relevantContent = await advancedSummaryService.getRelevantSummaries(userId, userQuery, 5);
+      // Use vector search for relevant content
+      logger.info(`Retrieving relevant logs for user ${userId}`);
 
-      // Log what we found in detail
-      const contentTypes = {
-        summary: relevantContent.filter(item => item.type === 'summary').length,
-        qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
-        quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
-      };
+      // Try vector search with error handling
+      let relevantContent = [];
+      try {
+        relevantContent = await advancedSummaryService.getRelevantSummaries(userId, userQuery, 5);
 
-      logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
+        // Log what we found
+        const contentTypes = {
+          summary: relevantContent.filter(item => item.type === 'summary').length,
+          qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
+          quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+        };
 
-      // Format the relevant content
+        logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
+      } catch (vectorError) {
+        logger.error(`Vector search failed for query context, using fallback:`, vectorError);
+        // Use fallback method (continue with empty relevantContent array)
+      }
 
-      // Process summaries
+      // Process summaries from relevant content
       const summaries = relevantContent.filter(item => item.type === 'summary');
       if (summaries.length > 0) {
-        contextContent += "Recent Summary Information:\n";
+        contextContent += "Relevant Summary Information:\n";
         summaries.forEach(summary => {
           const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
           contextContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
         });
       }
 
-      // Process qualitative logs
-      const qualitativeLogs = relevantContent.filter(item => item.type === 'qualitative_log');
+      // Process qualitative logs - IMPORTANT: Only include non-query logs
+      const qualitativeLogs = relevantContent.filter(item => 
+        item.type === 'qualitative_log' && 
+        item.type !== 'query' // Explicitly filter out query logs
+      );
+
       if (qualitativeLogs.length > 0) {
         contextContent += "Relevant User Observations:\n";
         qualitativeLogs.forEach(log => {
@@ -263,7 +277,8 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
               gte(supplementLogs.takenAt, recentDate)
             )
           )
-          .orderBy(desc(supplementLogs.takenAt));
+          .orderBy(desc(supplementLogs.takenAt))
+          .limit(10);
 
         if (recentLogs.length > 0) {
           contextContent = "Recent Supplement History (Last 7 Days):\n";
@@ -280,11 +295,15 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
           contextContent = "No supplement history found for this query.\n";
         }
       }
+    } catch (contentError) {
+      logger.error(`Error building query context content:`, contentError);
+      contextContent = "Error retrieving supplement history. Proceeding with limited context.\n";
+    }
 
-      // Construct the final context message
-      const messages: Message[] = [
-        { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
-        { role: "user" as const, content: `
+    // Construct the final context message
+    const messages: Message[] = [
+      { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
+      { role: "user" as const, content: `
 User Health Profile:
 ${healthStatsContext}
 
@@ -295,33 +314,23 @@ ${contextContent}
 User Query:
 ${userQuery}
 ` }
-      ];
+    ];
 
-      logger.info(`Context built successfully for user ${userId}`);
+    logger.info(`Query context built successfully for user ${userId}`);
 
-      // Debug the context being sent to the LLM
-      const context = { messages };
+    // Debug the context being sent to the LLM
+    const context = { messages };
+    await debugContext(userId.toString(), context, 'query');
 
-      // Add debug logging if enabled
-      await debugContext(userId, context, 'query');
-
-      return context;
-    } catch (error) {
-      logger.error(`Error constructing query context for user ${userId}:`, {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-
-      // Fallback to basic context on error
-      return {
-        messages: [
-          { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
-          { role: "user" as const, content: userQuery }
-        ]
-      };
-    }
+    return context;
   } catch (error) {
-    logger.error(`Error in constructQueryContext:`, error);
+    logger.error(`Error in constructQueryContext:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: userId || 'anonymous',
+      timestamp: new Date().toISOString()
+    });
+
     // Fallback to basic context
     return {
       messages: [
