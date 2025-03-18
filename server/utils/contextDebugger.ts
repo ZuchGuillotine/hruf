@@ -1,19 +1,15 @@
 
-import fs from 'fs';
-import path from 'path';
-
-interface ContextMessage {
-  role: string;
-  content: string;
-}
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
+import { Message } from '@/lib/types';
 
 interface DebugData {
   timestamp: string;
-  userId: string | number;
+  userId: string;
   contextType: 'query' | 'qualitative';
   messageCount: number;
-  systemPrompt: string;
-  userContext: string;
+  systemPrompt: string | null;
+  userContext: string | null;
   tokenEstimate: number;
   contextComponents?: {
     hasHealthStats: boolean;
@@ -23,7 +19,41 @@ interface DebugData {
   };
 }
 
-function analyzeContext(messages: ContextMessage[]) {
+export async function debugContext(
+  userId: string,
+  context: { messages: Message[] },
+  type: 'query' | 'qualitative'
+) {
+  try {
+    const systemMsg = context.messages.find(m => m.role === 'system');
+    const userMsg = context.messages.find(m => m.role === 'user');
+
+    const debugData: DebugData = {
+      timestamp: new Date().toISOString(),
+      userId,
+      contextType: type,
+      messageCount: context.messages.length,
+      systemPrompt: systemMsg?.content || null,
+      userContext: userMsg?.content || null,
+      tokenEstimate: context.messages.reduce((sum, msg) => sum + (msg.content?.length || 0) / 4, 0),
+      contextComponents: analyzeContext(context.messages)
+    };
+
+    const filename = `${type}_context_${userId}_${debugData.timestamp.replace(/:/g, '-')}.json`;
+    const debugDir = join(process.cwd(), 'debug_logs');
+    
+    await writeFile(
+      join(debugDir, filename),
+      JSON.stringify(debugData, null, 2)
+    );
+
+    console.log(`Debug log created: ${filename}`);
+  } catch (error) {
+    console.error('Error creating debug log:', error);
+  }
+}
+
+function analyzeContext(messages: Message[]) {
   const userMessage = messages.find(m => m.role === 'user')?.content || '';
   
   return {
@@ -33,34 +63,3 @@ function analyzeContext(messages: ContextMessage[]) {
     hasRecentSummaries: userMessage.includes('Recent Summaries:')
   };
 }
-
-function estimateTokens(messages: ContextMessage[]): number {
-  return messages.reduce((sum, msg) => sum + (msg.content?.length || 0) / 4, 0);
-}
-
-function debugContext(userId: string | number, messages: ContextMessage[], type: 'query' | 'qualitative') {
-  const debugData: DebugData = {
-    timestamp: new Date().toISOString(),
-    userId,
-    contextType: type,
-    messageCount: messages.length,
-    systemPrompt: messages.find(m => m.role === 'system')?.content || '',
-    userContext: messages.find(m => m.role === 'user')?.content || '',
-    tokenEstimate: estimateTokens(messages),
-    contextComponents: analyzeContext(messages)
-  };
-
-  const fileName = `${type}_context_${userId}_${debugData.timestamp.replace(/:/g, '-')}.json`;
-  const debugDir = path.join(process.cwd(), 'debug_logs');
-
-  if (!fs.existsSync(debugDir)) {
-    fs.mkdirSync(debugDir, { recursive: true });
-  }
-
-  fs.writeFileSync(
-    path.join(debugDir, fileName),
-    JSON.stringify(debugData, null, 2)
-  );
-}
-
-export { debugContext };

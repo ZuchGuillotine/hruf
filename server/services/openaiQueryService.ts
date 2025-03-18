@@ -18,6 +18,10 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
 
     // Build context using the context service
     const context = await constructQueryContext(userId, userQuery);
+    
+    // Debug log the context
+    const { debugContext } = await import('../utils/contextDebugger');
+    await debugContext(userId?.toString() || 'anonymous', context, 'query');
 
     // Log processing details for debugging
     console.log('Processing query with OpenAI:', {
