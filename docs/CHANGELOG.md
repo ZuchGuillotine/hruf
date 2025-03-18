@@ -2,6 +2,15 @@
 # Changelog
 
 ## [March 2025]
+### Fixed (March 18, 2025 - Update 5)
+- Vector Search and Context Services:
+  - Fixed vector search casting error in similarity search
+  - Resolved "cannot cast type record to vector" error
+  - Enhanced context building reliability
+  - Improved token efficiency in queries
+  - Added comprehensive error recovery
+  - Enhanced streaming response stability
+
 ### Fixed (March 18, 2025 - Update 4)
 - Context Services:
   - Added QUERY_SYSTEM_PROMPT to openai.ts
