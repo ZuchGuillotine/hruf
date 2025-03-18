@@ -1,0 +1,221 @@
+// Updated version of findSimilarContent in embeddingService.ts
+
+async findSimilarContent(query: string, userId: number, limit: number = 5): Promise<any[]> {
+  try {
+    logger.info(`Finding similar content for user ${userId} with query: "${query.substring(0, 50)}..."`);
+    
+    // Generate embedding for the query
+    const queryEmbedding = await this.generateEmbedding(query);
+    logger.info(`Generated embedding for query with dimensions: ${queryEmbedding.length}`);
+
+    // First, try vector search with proper casting for similarity search
+    let similarContent = [];
+    
+    try {
+      // Query for similar summaries with proper type casting
+      const similarSummariesResult = await db.execute(sql`
+        SELECT 
+          summary_id, 
+          NULL as log_id,
+          NULL as log_type,
+          1 - (embedding <=> ${queryEmbedding}::vector(1536)) as similarity
+        FROM 
+          summary_embeddings
+        JOIN 
+          log_summaries ON summary_id = log_summaries.id
+        WHERE 
+          log_summaries.user_id = ${userId}
+        ORDER BY 
+          embedding <=> ${queryEmbedding}::vector(1536)
+        LIMIT ${limit}
+      `);
+
+      // Query for similar logs with proper type casting
+      const similarLogsResult = await db.execute(sql`
+        SELECT 
+          NULL as summary_id,
+          log_id, 
+          log_type,
+          1 - (embedding <=> ${queryEmbedding}::vector(1536)) as similarity
+        FROM 
+          log_embeddings
+        WHERE 
+          EXISTS (
+            SELECT 1 FROM qualitative_logs 
+            WHERE qualitative_logs.id = log_id AND qualitative_logs.user_id = ${userId}
+          )
+        ORDER BY 
+          embedding <=> ${queryEmbedding}::vector(1536)
+        LIMIT ${limit}
+      `);
+
+      // Process results - ensuring they're array-like
+      const summaries = Array.isArray(similarSummariesResult) 
+        ? similarSummariesResult 
+        : (similarSummariesResult.rows || []);
+      
+      const logs = Array.isArray(similarLogsResult)
+        ? similarLogsResult
+        : (similarLogsResult.rows || []);
+
+      // Combine and sort by similarity
+      similarContent = [...summaries, ...logs]
+        .sort((a, b) => (b.similarity - a.similarity))
+        .filter(item => item.similarity > this.SIMILARITY_THRESHOLD)
+        .slice(0, limit);
+        
+      logger.info(`Vector search successful: found ${similarContent.length} relevant items`);
+    } catch (vectorError) {
+      // Log the vector search error but continue with fallback
+      logger.error('Vector search failed, using fallback method:', {
+        error: vectorError instanceof Error ? vectorError.message : String(vectorError),
+        stack: vectorError instanceof Error ? vectorError.stack : undefined
+      });
+      
+      // Fall back to recent content if vector search fails
+      similarContent = await this.getFallbackContent(userId, limit);
+    }
+    
+    // Enrich content with actual data from database
+    return await this.enrichContentWithData(similarContent, userId);
+  } catch (error) {
+    logger.error('Error finding similar content:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    return [];
+  }
+}
+
+// New fallback method to get recent content when vector search fails
+private async getFallbackContent(userId: number, limit: number): Promise<any[]> {
+  try {
+    logger.info(`Using fallback content retrieval for user ${userId}`);
+    
+    // Get recent summaries
+    const recentSummaries = await db
+      .select({
+        id: logSummaries.id
+      })
+      .from(logSummaries)
+      .where(eq(logSummaries.userId, userId))
+      .orderBy(desc(logSummaries.createdAt))
+      .limit(limit);
+    
+    // Get recent qualitative logs (non-query type)
+    const recentLogs = await db
+      .select({
+        id: qualitativeLogs.id,
+        type: qualitativeLogs.type
+      })
+      .from(qualitativeLogs)
+      .where(
+        and(
+          eq(qualitativeLogs.userId, userId),
+          notInArray(qualitativeLogs.type, ['query'])
+        )
+      )
+      .orderBy(desc(qualitativeLogs.createdAt))
+      .limit(limit);
+    
+    // Format to match vector search results
+    const formattedSummaries = recentSummaries.map(summary => ({
+      summary_id: summary.id,
+      log_id: null,
+      log_type: null,
+      similarity: 0.8 // Default similarity for fallback content
+    }));
+    
+    const formattedLogs = recentLogs.map(log => ({
+      summary_id: null,
+      log_id: log.id,
+      log_type: 'qualitative',
+      similarity: 0.7 // Slightly lower default similarity than summaries
+    }));
+    
+    // Combine and return
+    return [...formattedSummaries, ...formattedLogs].slice(0, limit);
+  } catch (error) {
+    logger.error('Fallback content retrieval failed:', error);
+    return [];
+  }
+}
+
+// New helper to enrich content with actual data
+private async enrichContentWithData(contentItems: any[], userId: number): Promise<any[]> {
+  const result = [];
+  
+  for (const item of contentItems) {
+    try {
+      if (item.summary_id) {
+        // It's a summary
+        const [summary] = await db
+          .select()
+          .from(logSummaries)
+          .where(eq(logSummaries.id, item.summary_id))
+          .limit(1);
+          
+        if (summary) {
+          result.push({
+            ...summary,
+            similarity: item.similarity,
+            type: 'summary'
+          });
+        }
+      } else if (item.log_id) {
+        // It's a log
+        if (item.log_type === 'qualitative') {
+          const [log] = await db
+            .select()
+            .from(qualitativeLogs)
+            .where(eq(qualitativeLogs.id, item.log_id))
+            .limit(1);
+            
+          if (log) {
+            result.push({
+              ...log,
+              similarity: item.similarity,
+              type: 'qualitative_log'
+            });
+          }
+        } else {
+          // Quantitative log
+          const [log] = await db
+            .select({
+              id: supplementLogs.id,
+              userId: supplementLogs.userId,
+              takenAt: supplementLogs.takenAt,
+              notes: supplementLogs.notes,
+              effects: supplementLogs.effects,
+              name: supplements.name,
+              dosage: supplements.dosage,
+              frequency: supplements.frequency
+            })
+            .from(supplementLogs)
+            .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
+            .where(eq(supplementLogs.id, item.log_id))
+            .limit(1);
+            
+          if (log) {
+            result.push({
+              ...log,
+              similarity: item.similarity,
+              type: 'quantitative_log'
+            });
+          }
+        }
+      }
+    } catch (itemError) {
+      logger.error(`Error enriching content item:`, {
+        error: itemError instanceof Error ? itemError.message : String(itemError),
+        itemId: item.summary_id || item.log_id,
+        itemType: item.summary_id ? 'summary' : item.log_type
+      });
+      // Continue with other items
+    }
+  }
+  
+  return result;
+}
