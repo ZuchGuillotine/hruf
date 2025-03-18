@@ -10,7 +10,15 @@ interface DebugData {
   messageCount: number;
   systemPrompt: string | null;
   userContext: string | null;
-  tokenEstimate: number;
+  messages: Message[];
+  tokenEstimates: {
+    total: number;
+    byMessage: Array<{
+      role: string;
+      tokens: number;
+      preview: string;
+    }>;
+  };
   contextComponents?: {
     hasHealthStats: boolean;
     hasSupplementLogs: boolean;
@@ -35,7 +43,15 @@ export async function debugContext(
       messageCount: context.messages.length,
       systemPrompt: systemMsg?.content || null,
       userContext: userMsg?.content || null,
-      tokenEstimate: context.messages.reduce((sum, msg) => sum + (msg.content?.length || 0) / 4, 0),
+      messages: context.messages,
+      tokenEstimates: {
+        total: context.messages.reduce((sum, msg) => sum + (msg.content?.length || 0) / 4, 0),
+        byMessage: context.messages.map(msg => ({
+          role: msg.role,
+          tokens: (msg.content?.length || 0) / 4,
+          preview: msg.content?.substring(0, 100) || ''
+        }))
+      },
       contextComponents: analyzeContext(context.messages)
     };
 
