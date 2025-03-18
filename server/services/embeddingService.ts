@@ -2,6 +2,13 @@ import { LRUCache } from 'lru-cache';
 
 import { logger } from '../utils/logger';
 
+import { openai } from '../openai';
+import logger from '../utils/logger';
+import { LRUCache } from 'lru-cache';
+import { db } from '../../db';
+import { logEmbeddings, summaryEmbeddings } from '../../db/schema';
+import { and, eq, sql } from 'drizzle-orm';
+
 class EmbeddingService {
   // Constants
   private EMBEDDING_MODEL = "text-embedding-ada-002";
