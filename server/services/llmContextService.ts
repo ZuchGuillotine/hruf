@@ -1,36 +1,15 @@
-/**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 13/03/2025 - 16:10:58
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 13/03/2025
-    * - Author          : 
-    * - Modification    : 
-**/
-// server/services/llmContextService.ts
 
-import { SYSTEM_PROMPT } from "../openai";
-import { Message } from "@/lib/types";
-import { db } from "../../db";
-import { healthStats, logSummaries } from "../../db/schema";
-import { eq, desc, and } from "drizzle-orm";
-import { advancedSummaryService } from "./advancedSummaryService";
-import { summaryTaskManager } from "../cron/summaryManager";
-import { supplementLookupService } from "./supplementLookupService";
-import logger from "../utils/logger";
+import { SYSTEM_PROMPT } from '../openai';
+import { Message } from '../lib/types';
+import { db } from '../db';
+import { eq, desc, and, notInArray } from 'drizzle-orm';
+import { logger } from '../utils/logger';
+import { logSummaries, healthStats, qualitativeLogs } from '../db/schema';
+import { summaryTaskManager } from './summaryTaskManager';
+import { supplementLookupService } from './supplementLookupService';
+import { advancedSummaryService } from './advancedSummaryService';
 import { debugContext } from '../utils/contextDebugger';
-import { qualitativeLogs } from '../../db/schema';
 
-
-/**
- * Constructs context for qualitative feedback chat interactions using our hybrid approach
- * @param userId User ID
- * @param userQuery The user's query text
- * @returns Object containing constructed messages
- */
 export async function constructUserContext(userId: string, userQuery: string): Promise<{ messages: Message[] }> {
   try {
     const userIdNum = parseInt(userId);
@@ -63,41 +42,33 @@ Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.av
 Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
-    // Get direct supplement context using the new service
+    // Get direct supplement context using the service
     const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
 
-    // Get relevant qualitative chat logs
-    //const qualitativeLogs = await db
-    //  .select()
-    //  .from(qualitativeLogs)
-    //  .where(
-    //    and(
-    //      eq(qualitativeLogs.userId, userIdNum),
-    //      eq(qualitativeLogs.type, 'chat')
-    //    )
-    //  )
-    //  .orderBy(desc(qualitativeLogs.loggedAt))
-    //  .limit(5);
+    // Get relevant content with error handling and fallback
+    logger.info(`Retrieving relevant content with expanded search`);
+    let relevantContent = [];
+    
+    try {
+      relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 12);
+      
+      // Log what we found
+      const contentTypes = {
+        summary: relevantContent.filter(item => item.type === 'summary').length,
+        qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
+        quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+      };
 
-    //const qualitativeContext = qualitativeLogs.length > 0 
-    //  ? `Recent Qualitative Observations:\n${qualitativeLogs.map(log => {
-    //      const date = new Date(log.loggedAt).toLocaleDateString();
-    //      return `[${date}] ${log.content}`;
-    //    }).join('\n')}`
-    //  : '';
-
-    // ENHANCEMENT: Increase the number of relevant summaries retrieved
-    logger.info(`Retrieving relevant summaries with expanded search`);
-    const relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 12);
-
-    // Log what we found
-    const contentTypes = {
-      summary: relevantContent.filter(item => item.type === 'summary').length,
-      qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
-      quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
-    };
-
-    logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
+      logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
+    } catch (vectorError) {
+      logger.error(`Vector retrieval error, falling back to recent summaries:`, {
+        error: vectorError instanceof Error ? vectorError.message : String(vectorError),
+        stack: vectorError instanceof Error ? vectorError.stack : undefined
+      });
+      
+      // Fall back to direct database queries for recent content
+      relevantContent = await getFallbackRelevantContent(userIdNum);
+    }
 
     // Format the relevant content
     let recentSummaryContent = '';
@@ -124,33 +95,17 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       }
     });
 
-    // ENHANCEMENT: Add fallback to get recent summaries if vector search returns insufficient results
-    if (relevantContent.filter(item => item.type === 'summary').length < 3) {
-      logger.info('Insufficient vector search results, fetching recent logs as fallback');
-
-      // Get the most recent summaries regardless of relevance
-      const recentSummaries = await db
-        .select()
-        .from(logSummaries)
-        .where(eq(logSummaries.userId, userIdNum))
-        .orderBy(desc(logSummaries.createdAt))
-        .limit(5);
-
-      // Process recent summaries to add their content
-      for (const summary of recentSummaries) {
-        const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
-        supplementLogContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
-      }
-
-      logger.info(`Added ${recentSummaries.length} recent summaries as fallback context`);
-    }
-
-    // Process qualitative logs from similarity search results
-    const qualitativeLogs2 = relevantContent.filter(item => item.type === 'qualitative_log');
-    qualitativeLogs2.forEach(log => {
+    // Process qualitative logs - with proper filtering
+    const qualitativeLogs = relevantContent.filter(item => 
+      item.type === 'qualitative_log' && 
+      item.type !== 'query' // Explicitly exclude query logs
+    );
+    
+    qualitativeLogs.forEach(log => {
       let content = log.content;
 
       try {
+        // Attempt to parse as JSON format (chat messages)
         const parsed = JSON.parse(log.content);
         if (Array.isArray(parsed)) {
           content = parsed
@@ -176,7 +131,28 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       quantitativeLogContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
     });
 
-    // Debug logging enhancements
+    // FALLBACK: Add recent summaries if vector search returns insufficient results
+    if (relevantContent.filter(item => item.type === 'summary').length < 2) {
+      logger.info('Insufficient vector search results, fetching recent logs as fallback');
+
+      // Get the most recent summaries regardless of relevance
+      const recentSummaries = await db
+        .select()
+        .from(logSummaries)
+        .where(eq(logSummaries.userId, userIdNum))
+        .orderBy(desc(logSummaries.createdAt))
+        .limit(5);
+
+      // Process recent summaries to add their content
+      for (const summary of recentSummaries) {
+        const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
+        supplementLogContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
+      }
+
+      logger.info(`Added ${recentSummaries.length} recent summaries as fallback context`);
+    }
+
+    // Debug logging
     logger.info(`Context built with:
     - Recent summaries: ${recentSummaryContent ? 'Yes' : 'No'}
     - Historical summaries: ${historicalSummaryContent ? 'Yes' : 'No'}
@@ -216,7 +192,6 @@ ${userQuery}
     const context = { messages };
 
     // Debug log the context
-    const { debugContext } = await import('../utils/contextDebugger');
     await debugContext(userId, context, 'qualitative');
 
     return context;
@@ -237,7 +212,59 @@ ${userQuery}
   }
 }
 
-// Placeholder for debugQualitativeChat function.  Replace with actual implementation.
-async function debugQualitativeChat(userId: string, messages: Message[], debugInfo: any) {
-  logger.debug(`Qualitative Chat Debug: userId=${userId}, chatType=${debugInfo.chatType}, messagePreview=${debugInfo.messagePreview}, contextComponents=${debugInfo.contextComponents}, messages=${JSON.stringify(messages, null, 2)}`);
+// Helper function to get fallback content when vector search fails
+async function getFallbackRelevantContent(userId: number): Promise<any[]> {
+  try {
+    const result = [];
+    
+    // Get most recent daily summaries
+    const recentSummaries = await db
+      .select()
+      .from(logSummaries)
+      .where(
+        and(
+          eq(logSummaries.userId, userId),
+          eq(logSummaries.summaryType, 'daily')
+        )
+      )
+      .orderBy(desc(logSummaries.createdAt))
+      .limit(3);
+      
+    // Add as summary type
+    for (const summary of recentSummaries) {
+      result.push({
+        ...summary,
+        type: 'summary',
+        similarity: 0.8
+      });
+    }
+    
+    // Get recent qualitative logs (non-query)
+    const recentLogs = await db
+      .select()
+      .from(qualitativeLogs)
+      .where(
+        and(
+          eq(qualitativeLogs.userId, userId),
+          notInArray(qualitativeLogs.type, ['query'])
+        )
+      )
+      .orderBy(desc(qualitativeLogs.createdAt))
+      .limit(5);
+      
+    // Add as qualitative_log type
+    for (const log of recentLogs) {
+      result.push({
+        ...log,
+        type: 'qualitative_log',
+        similarity: 0.7
+      });
+    }
+    
+    logger.info(`Fallback content retrieval found ${result.length} items`);
+    return result;
+  } catch (error) {
+    logger.error(`Error in fallback content retrieval:`, error);
+    return [];
+  }
 }
