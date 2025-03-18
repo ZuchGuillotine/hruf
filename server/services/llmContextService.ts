@@ -1,7 +1,7 @@
 
 import { SYSTEM_PROMPT } from '../openai';
 import { Message } from '../lib/types';
-import { db } from '../db';
+import { db } from '../../db';
 import { eq, desc, and, notInArray } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 import { logSummaries, healthStats, qualitativeLogs } from '../db/schema';
