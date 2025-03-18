@@ -18,8 +18,8 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
 
     // Build context using the context service
     const context = await constructQueryContext(userId, userQuery);
-    
-    // Debug log the context
+
+    // Debug log the context only once before processing
     const { debugContext } = await import('../utils/contextDebugger');
     await debugContext(userId?.toString() || 'anonymous', context, 'query');
 
@@ -42,7 +42,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
       isAuthenticated: !!userId,
       timestamp: new Date().toISOString()
     });
-    
+
     const stream = await openai.chat.completions.create({
       model: MODELS.QUERY_CHAT,
       messages: context.messages,

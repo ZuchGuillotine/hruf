@@ -37,10 +37,13 @@ async function getUserDailyChatCount(userId: number): Promise<number> {
  */
 export async function chatWithAI(messages: Array<{ role: string; content: string }>, userId: number) {
   try {
+    //Added unique identifier to prevent duplicate logs
+    const uniqueIdentifier = crypto.randomUUID();
     console.log('Qualitative chat request:', {
       userId,
       messageCount: messages.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      uniqueIdentifier
     });
 
     const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -66,14 +69,15 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       model: QUALITATIVE_MODEL,
       modelName: QUALITATIVE_MODEL,
       userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      uniqueIdentifier
     });
 
     // Call OpenAI chat with the qualitative model
     // The second parameter ensures we're always using the correct model for this context
     // Enable streaming for real-time responses
     const fullStream = openAIChatWithAI(messages, QUALITATIVE_MODEL);
-    
+
     // Make sure we properly yield each chunk of the stream without interruption
     return fullStream;
   } catch (error) {
@@ -114,8 +118,11 @@ export async function qualitativeChatWithAI(userId: string, message: string) {
       { role: 'user', content: message }
     ];
 
+    //Added logging for qualitative chat
+    const response = await chatWithAI(formattedMessages, userIdNum);
+    console.log("Qualitative chat response:", {userId, response, timestamp: new Date().toISOString()})
     // Use the existing chatWithAI function with the formatted messages
-    return chatWithAI(formattedMessages, userIdNum);
+    return response;
   } catch (error) {
     console.error('Error in qualitative chat with AI service:', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -126,3 +133,5 @@ export async function qualitativeChatWithAI(userId: string, message: string) {
     throw error;
   }
 }
+
+import crypto from 'crypto';
