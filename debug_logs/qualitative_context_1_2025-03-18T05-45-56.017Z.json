@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-03-18T05:45:56.017Z",
+  "userId": "1",
+  "contextType": "qualitative",
+  "messageCount": 2,
+  "systemPrompt": "You are a friendly and insightful assistant designed to help users reflect on their supplement regimen and share qualitative feedback about their experiences. Your role is to engage the user with thoughtful follow-up questions and encourage detailed responses about how specific supplements are affecting their mood, energy, and overall well-being.",
+  "userContext": "Checking context retrieval",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a friendly and insightful assistant designed to help users reflect on their supplement regimen and share qualitative feedback about their experiences. Your role is to engage the user with thoughtful follow-up questions and encourage detailed responses about how specific supplements are affecting their mood, energy, and overall well-being."
+    },
+    {
+      "role": "user",
+      "content": "Checking context retrieval"
+    }
+  ],
+  "tokenEstimates": {
+    "total": 93.5,
+    "byMessage": [
+      {
+        "role": "system",
+        "tokens": 87,
+        "preview": "You are a friendly and insightful assistant designed to help users reflect on their supplement regim"
+      },
+      {
+        "role": "user",
+        "tokens": 6.5,
+        "preview": "Checking context retrieval"
+      }
+    ]
+  },
+  "contextComponents": {
+    "hasHealthStats": false,
+    "hasSupplementLogs": false,
+    "hasQualitativeObservations": false,
+    "hasRecentSummaries": false
+  }
+}
