@@ -215,15 +215,9 @@ ${userQuery}
 
     const context = { messages };
 
-    // Add debug logging if enabled
+    // Debug log the context
+    const { debugContext } = await import('../utils/contextDebugger');
     await debugContext(userId, context, 'qualitative');
-
-    // Added debugQualitativeChat function call.  This is a placeholder and needs a proper implementation.
-    await debugQualitativeChat(userId, messages, {
-      chatType: 'feedback',
-      messagePreview: userQuery.slice(0, 50),
-      contextComponents: ['healthStats', 'recentSummaries', 'supplementLogs']
-    });
 
     return context;
   } catch (error) {
