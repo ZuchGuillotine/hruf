@@ -1,0 +1,88 @@
+info: Building query context for authenticated user 1 {"timestamp":"2025-03-18T07:16:54.542Z"}
+info: Running real-time summary for user 1 {"timestamp":"2025-03-18T07:16:54.542Z"}
+info: Generating daily summary for user 1 on 2025-03-18 {"timestamp":"2025-03-18T07:16:54.542Z"}
+info: Created embedding for summary 27 {"timestamp":"2025-03-18T07:17:03.760Z"}
+info: Generated daily summary for user 1 on 2025-03-18 with ID 27 {"timestamp":"2025-03-18T07:17:03.760Z"}
+info: Generating daily summary for user 1 on 2025-03-17 {"timestamp":"2025-03-18T07:17:03.760Z"}
+info: No logs found for user 1 on 2025-03-17 {"timestamp":"2025-03-18T07:17:03.809Z"}
+info: Real-time summary completed for user 1: {"timestamp":"2025-03-18T07:17:03.809Z","todaySummaryId":27,"yesterdaySummaryId":null}
+info: Real-time summary triggered for query context {"timestamp":"2025-03-18T07:17:03.809Z"}
+info: Identified supplements in query: creatine {"timestamp":"2025-03-18T07:17:03.833Z"}
+info: Looking up logs for supplement "creatine" for user 1 {"timestamp":"2025-03-18T07:17:03.834Z"}
+info: Found 0 logs for supplement "creatine" {"timestamp":"2025-03-18T07:17:03.859Z"}
+info: Retrieving relevant logs for user 1 {"timestamp":"2025-03-18T07:17:03.908Z"}
+info: Finding similar content for user 1 with query: "Is there any vitamins or minerals I need to take a..." {"timestamp":"2025-03-18T07:17:03.908Z"}
+info: Generated embedding for query with dimensions: 1536 {"timestamp":"2025-03-18T07:17:04.385Z"}
+error: Vector search failed, using fallback method: {"error":"cannot cast type record to vector","stack":"NeonDbError: cannot cast type record to vector\n    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1554:77)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EmbeddingService.findSimilarContent (/home/runner/workspace/server/services/embeddingService.ts:196:40)\n    at async AdvancedSummaryService.getRelevantSummaries (/home/runner/workspace/server/services/advancedSummaryService.ts:550:30)\n    at async constructQueryContext (/home/runner/workspace/server/services/llmContextService_query.ts:187:27)\n    at async <anonymous> (/home/runner/workspace/server/routes/queryRoutes.ts:68:28)","timestamp":"2025-03-18T07:17:04.459Z"}
+info: Using fallback content retrieval for user 1 {"timestamp":"2025-03-18T07:17:04.460Z"}
+error: Fallback content retrieval failed: logSummaries is not defined {"stack":"ReferenceError: logSummaries is not defined\n    at EmbeddingService.getFallbackContent (/home/runner/workspace/server/services/embeddingService.ts:280:15)\n    at EmbeddingService.findSimilarContent (/home/runner/workspace/server/services/embeddingService.ts:256:37)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async AdvancedSummaryService.getRelevantSummaries (/home/runner/workspace/server/services/advancedSummaryService.ts:550:30)\n    at async constructQueryContext (/home/runner/workspace/server/services/llmContextService_query.ts:187:27)\n    at async <anonymous> (/home/runner/workspace/server/routes/queryRoutes.ts:68:28)","timestamp":"2025-03-18T07:17:04.460Z"}
+info: Retrieved 0 relevant items: {"qualitative_log":0,"quantitative_log":0,"summary":0,"timestamp":"2025-03-18T07:17:04.460Z"}
+info: Query context built successfully for user 1 {"timestamp":"2025-03-18T07:17:04.460Z"}
+Debug log created: query_context_1_2025-03-18T07-17-04.460Z.json
+Starting streaming response
+info: Building query context for authenticated user 1 {"timestamp":"2025-03-18T07:17:04.462Z"}
+info: Running real-time summary for user 1 {"timestamp":"2025-03-18T07:17:04.462Z"}
+info: Generating daily summary for user 1 on 2025-03-18 {"timestamp":"2025-03-18T07:17:04.462Z"}
+info: Created embedding for summary 28 {"timestamp":"2025-03-18T07:17:10.674Z"}
+info: Generated daily summary for user 1 on 2025-03-18 with ID 28 {"timestamp":"2025-03-18T07:17:10.674Z"}
+info: Generating daily summary for user 1 on 2025-03-17 {"timestamp":"2025-03-18T07:17:10.674Z"}
+info: No logs found for user 1 on 2025-03-17 {"timestamp":"2025-03-18T07:17:10.721Z"}
+info: Real-time summary completed for user 1: {"timestamp":"2025-03-18T07:17:10.721Z","todaySummaryId":28,"yesterdaySummaryId":null}
+info: Real-time summary triggered for query context {"timestamp":"2025-03-18T07:17:10.721Z"}
+info: Identified supplements in query: creatine, vitamin b, zinc {"timestamp":"2025-03-18T07:17:10.746Z"}
+info: Looking up logs for supplement "creatine" for user 1 {"timestamp":"2025-03-18T07:17:10.746Z"}
+info: Found 0 logs for supplement "creatine" {"timestamp":"2025-03-18T07:17:10.771Z"}
+info: Looking up logs for supplement "vitamin b" for user 1 {"timestamp":"2025-03-18T07:17:10.771Z"}
+info: Found 0 logs for supplement "vitamin b" {"timestamp":"2025-03-18T07:17:10.794Z"}
+info: Looking up logs for supplement "zinc" for user 1 {"timestamp":"2025-03-18T07:17:10.794Z"}
+info: Found 0 logs for supplement "zinc" {"timestamp":"2025-03-18T07:17:10.818Z"}
+info: Retrieving relevant logs for user 1 {"timestamp":"2025-03-18T07:17:10.870Z"}
+info: Finding similar content for user 1 with query: "
+User Health Profile:
+
+Weight: 210 lbs
+Height: 67 ..." {"timestamp":"2025-03-18T07:17:10.870Z"}
+info: Generated embedding for query with dimensions: 1536 {"timestamp":"2025-03-18T07:17:11.109Z"}
+error: Vector search failed, using fallback method: {"error":"cannot cast type record to vector","stack":"NeonDbError: cannot cast type record to vector\n    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1554:77)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async EmbeddingService.findSimilarContent (/home/runner/workspace/server/services/embeddingService.ts:196:40)\n    at async AdvancedSummaryService.getRelevantSummaries (/home/runner/workspace/server/services/advancedSummaryService.ts:550:30)\n    at async constructQueryContext (/home/runner/workspace/server/services/llmContextService_query.ts:187:27)\n    at async queryWithAI (/home/runner/workspace/server/services/openaiQueryService.ts:12:21)\n    at async <anonymous> (/home/runner/workspace/server/routes/queryRoutes.ts:85:26)","timestamp":"2025-03-18T07:17:11.183Z"}
+info: Using fallback content retrieval for user 1 {"timestamp":"2025-03-18T07:17:11.183Z"}
+error: Fallback content retrieval failed: logSummaries is not defined {"stack":"ReferenceError: logSummaries is not defined\n    at EmbeddingService.getFallbackContent (/home/runner/workspace/server/services/embeddingService.ts:280:15)\n    at EmbeddingService.findSimilarContent (/home/runner/workspace/server/services/embeddingService.ts:256:37)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async AdvancedSummaryService.getRelevantSummaries (/home/runner/workspace/server/services/advancedSummaryService.ts:550:30)\n    at async constructQueryContext (/home/runner/workspace/server/services/llmContextService_query.ts:187:27)\n    at async queryWithAI (/home/runner/workspace/server/services/openaiQueryService.ts:12:21)\n    at async <anonymous> (/home/runner/workspace/server/routes/queryRoutes.ts:85:26)","timestamp":"2025-03-18T07:17:11.183Z"}
+info: Retrieved 0 relevant items: {"qualitative_log":0,"quantitative_log":0,"summary":0,"timestamp":"2025-03-18T07:17:11.183Z"}
+info: Query context built successfully for user 1 {"timestamp":"2025-03-18T07:17:11.183Z"}
+Debug log created: query_context_1_2025-03-18T07-17-11.183Z.json
+Debug log created: query_context_1_2025-03-18T07-17-11.185Z.json
+Processing query with OpenAI: {
+  requestId: 'query_1742282231186_hef12eossx',
+  userId: '1',
+  userIdType: 'string',
+  messageCount: 2,
+  isAuthenticated: true,
+  model: 'o3-mini-2025-01-31',
+  timestamp: '2025-03-18T07:17:11.186Z'
+}
+Using query chat model: {
+  requestId: 'query_1742282231186_hef12eossx',
+  model: 'o3-mini-2025-01-31',
+  modelName: 'o3-mini',
+  isAuthenticated: true,
+  timestamp: '2025-03-18T07:17:11.186Z'
+}
+OpenAI stream error: {
+  requestId: 'query_1742282231186_hef12eossx',
+  error: "400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+  stack: "Error: 400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\n" +
+    '    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:72:14)\n' +
+    '    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)\n' +
+    '    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async queryWithAI (/home/runner/workspace/server/services/openaiQueryService.ts:36:22)\n' +
+    '    at async <anonymous> (/home/runner/workspace/server/routes/queryRoutes.ts:85:26)',
+  userId: '1',
+  timestamp: '2025-03-18T07:17:11.339Z'
+}
+Processing stream chunk: {
+  hasContent: false,
+  contentLength: undefined,
+  isStreaming: false,
+  timestamp: '2025-03-18T07:17:11.340Z'
+}
+Error in stream generation: 400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.
