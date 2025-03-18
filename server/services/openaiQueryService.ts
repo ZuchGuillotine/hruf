@@ -13,12 +13,18 @@ const openai = new OpenAI({
 
 export async function* queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
   try {
+    // Get the last user message which contains the query
+    const userQuery = messages[messages.length - 1].content;
+
+    // Build context using the context service
+    const context = await constructQueryContext(userId, userQuery);
+
     // Log processing details for debugging
     console.log('Processing query with OpenAI:', {
       userId,
       userIdType: typeof userId,
       userIdValue: userId,
-      messageCount: messages.length,
+      messageCount: context.messages.length,
       isAuthenticated: !!userId,
       model: MODELS.QUERY_CHAT,
       timestamp: new Date().toISOString()
@@ -35,10 +41,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
     
     const stream = await openai.chat.completions.create({
       model: MODELS.QUERY_CHAT,
-      messages: messages.map(msg => ({
-        role: msg.role as "user" | "assistant" | "system",
-        content: msg.content
-      })),
+      messages: context.messages,
       max_completion_tokens: 1000,
       stream: true
     });
