@@ -1,3 +1,34 @@
+
+# Changelog
+
+## [March 2025]
+### Enhanced (March 18, 2025 - Update 3)
+- Context Building and Streaming:
+  - Fixed streaming response handling in qualitative chat
+  - Enhanced error handling in OpenAI service
+  - Improved token usage tracking
+  - Enhanced event stream parsing
+  - Fixed client-side message replacement issues
+
+### Identified (March 18, 2025 - Update 2)
+- Context Building Issues:
+  - Vector search casting error in similarity search ("cannot cast type record to vector")
+  - Incomplete context propagation to UI (partial population observed in debug logs)
+  - EventSource connection instability resulting in event errors in the client
+  - Missing health stats and qualitative observations in context components
+- Debug System Performance:
+  - Successfully tracking context components
+  - Capturing vector search errors
+  - Logging streaming connection issues
+  - Monitoring authentication state
+
+### Enhanced (March 18, 2025)
+- Troubleshooting Efforts:  
+  - Reviewed debug logs, hybrid systems document, and previous code changes
+  - Identified vector search casting errors, incomplete context population, and EventSource connection issues
+  - Further investigation and solutions in progress
+
+
 # Changelog
 
 ## [March 2025]
