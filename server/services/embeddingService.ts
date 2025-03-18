@@ -1,32 +1,4 @@
-/**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 13/03/2025 - 15:29:10
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 13/03/2025
-    * - Author          : 
-    * - Modification    : 
-**/
-// server/services/embeddingService.ts
 
-import { OpenAI } from "openai";
-import logger from "../utils/logger";
-import { db } from "../../db";
-import { logEmbeddings, summaryEmbeddings, logSummaries } from "../../db/schema";
-import { eq, sql, and } from "drizzle-orm";
-import { LRUCache } from "lru-cache";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'mock-key-for-testing'
-});
-
-/**
- * Service for generating and managing embeddings for vector search
- */
 class EmbeddingService {
   // Constants
   private EMBEDDING_MODEL = "text-embedding-ada-002";
@@ -197,180 +169,224 @@ class EmbeddingService {
       throw error;
     }
   }
-  
-  /**
-   * Find similar summaries and logs for a query
-   * @param query User query text
-   * @param userId User ID
-   * @param limit Maximum number of results to return
-   * @returns Array of relevant summaries and logs
-   */
+
   async findSimilarContent(query: string, userId: number, limit: number = 5): Promise<any[]> {
     try {
       logger.info(`Finding similar content for user ${userId} with query: "${query.substring(0, 50)}..."`);
+      
+      // Generate embedding for the query
       const queryEmbedding = await this.generateEmbedding(query);
-
       logger.info(`Generated embedding for query with dimensions: ${queryEmbedding.length}`);
 
-      // Query for similar summaries
-      const similarSummariesResult = await db.execute(sql`
-        SELECT 
-          s.id, 
-          s.content, 
-          s.summary_type,
-          s.start_date,
-          s.end_date, 
-          1 - (se.embedding <=> ${queryEmbedding}::vector(1536)) as similarity
-        FROM 
-          summary_embeddings se
-        JOIN 
-          log_summaries s ON se.summary_id = s.id
-        WHERE 
-          s.user_id = ${userId}
-        ORDER BY 
-          se.embedding <=> ${queryEmbedding}::vector(1536)
-        LIMIT ${limit}
-      `);
+      // First, try vector search with proper casting for similarity search
+      let similarContent = [];
+      
+      try {
+        // Query for similar summaries with proper type casting
+        const similarSummariesResult = await db.execute(sql`
+          SELECT 
+            summary_id, 
+            NULL as log_id,
+            NULL as log_type,
+            1 - (embedding <=> ${queryEmbedding}::vector(1536)) as similarity
+          FROM 
+            summary_embeddings
+          JOIN 
+            log_summaries ON summary_id = log_summaries.id
+          WHERE 
+            log_summaries.user_id = ${userId}
+          ORDER BY 
+            embedding <=> ${queryEmbedding}::vector(1536)
+          LIMIT ${limit}
+        `);
 
-      const similarSummaries = Array.isArray(similarSummariesResult) 
-        ? similarSummariesResult 
-        : similarSummariesResult.rows || [];
+        // Query for similar logs with proper type casting
+        const similarLogsResult = await db.execute(sql`
+          SELECT 
+            NULL as summary_id,
+            log_id, 
+            log_type,
+            1 - (embedding <=> ${queryEmbedding}::vector(1536)) as similarity
+          FROM 
+            log_embeddings
+          WHERE 
+            EXISTS (
+              SELECT 1 FROM qualitative_logs 
+              WHERE qualitative_logs.id = log_id AND qualitative_logs.user_id = ${userId}
+            )
+          ORDER BY 
+            embedding <=> ${queryEmbedding}::vector(1536)
+          LIMIT ${limit}
+        `);
 
-      logger.info(`Found ${similarSummaries.length} similar summaries with similarities: ${
-        similarSummaries.map(s => (s.similarity as number).toFixed(3)).join(', ')
-      }`);
+        // Process results - ensuring they're array-like
+        const summaries = Array.isArray(similarSummariesResult) 
+          ? similarSummariesResult 
+          : (similarSummariesResult.rows || []);
+        
+        const logs = Array.isArray(similarLogsResult)
+          ? similarLogsResult
+          : (similarLogsResult.rows || []);
 
-      // Query for similar logs
-      const similarLogsResult = await db.execute(sql`
-        SELECT 
-          le.log_id, 
-          le.log_type,
-          1 - (le.embedding <=> ${queryEmbedding}::vector) as similarity
-        FROM 
-          log_embeddings le
-        JOIN 
-          qualitative_logs ql ON le.log_id = ql.id AND le.log_type = 'qualitative'
-        WHERE 
-          ql.user_id = ${userId}
-        ORDER BY 
-          le.embedding <=> ${queryEmbedding}::vector
-        LIMIT ${limit}
-      `);
-
-      const similarLogs = Array.isArray(similarLogsResult) 
-        ? similarLogsResult 
-        : similarLogsResult.rows || [];
-
-      logger.info(`Found ${similarLogs.length} similar logs`);
-
-      // Combine and sort results by similarity
-      const combinedResults = [
-        ...similarSummaries,
-        ...similarLogs
-      ].sort((a, b) => b.similarity - a.similarity)
-       .filter(item => item.similarity > this.SIMILARITY_THRESHOLD)
-       .slice(0, limit);
-
-      logger.info(`Combined results: ${combinedResults.length} items with similarities above ${this.SIMILARITY_THRESHOLD}`);
-
-      return combinedResults;
+        // Combine and sort by similarity
+        similarContent = [...summaries, ...logs]
+          .sort((a, b) => (b.similarity - a.similarity))
+          .filter(item => item.similarity > this.SIMILARITY_THRESHOLD)
+          .slice(0, limit);
+          
+        logger.info(`Vector search successful: found ${similarContent.length} relevant items`);
+      } catch (vectorError) {
+        // Log the vector search error but continue with fallback
+        logger.error('Vector search failed, using fallback method:', {
+          error: vectorError instanceof Error ? vectorError.message : String(vectorError),
+          stack: vectorError instanceof Error ? vectorError.stack : undefined
+        });
+        
+        // Fall back to recent content if vector search fails
+        similarContent = await this.getFallbackContent(userId, limit);
+      }
+      
+      // Enrich content with actual data from database
+      return await this.enrichContentWithData(similarContent, userId);
     } catch (error) {
-      logger.error('Error finding similar content:', error);
+      logger.error('Error finding similar content:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        userId,
+        timestamp: new Date().toISOString()
+      });
       return [];
     }
   }
 
-  /**
-   * Process a batch of logs to create embeddings
-   * Used for backfilling embeddings for existing content
-   */
-  async processLogBatch(logIds: number[], logType: 'qualitative' | 'quantitative'): Promise<void> {
+  // New fallback method to get recent content when vector search fails
+  private async getFallbackContent(userId: number, limit: number): Promise<any[]> {
     try {
-      for (const logId of logIds) {
-        // Check if embedding already exists
-        const existingEmbedding = await db
-          .select()
-          .from(logEmbeddings)
-          .where(eq(logEmbeddings.logId, logId))
-          .limit(1);
+      logger.info(`Using fallback content retrieval for user ${userId}`);
+      
+      // Get recent summaries
+      const recentSummaries = await db
+        .select({
+          id: logSummaries.id
+        })
+        .from(logSummaries)
+        .where(eq(logSummaries.userId, userId))
+        .orderBy(desc(logSummaries.createdAt))
+        .limit(limit);
+      
+      // Get recent qualitative logs (non-query type)
+      const recentLogs = await db
+        .select({
+          id: qualitativeLogs.id,
+          type: qualitativeLogs.type
+        })
+        .from(qualitativeLogs)
+        .where(
+          and(
+            eq(qualitativeLogs.userId, userId),
+            notInArray(qualitativeLogs.type, ['query'])
+          )
+        )
+        .orderBy(desc(qualitativeLogs.createdAt))
+        .limit(limit);
+      
+      // Format to match vector search results
+      const formattedSummaries = recentSummaries.map(summary => ({
+        summary_id: summary.id,
+        log_id: null,
+        log_type: null,
+        similarity: 0.8 // Default similarity for fallback content
+      }));
+      
+      const formattedLogs = recentLogs.map(log => ({
+        summary_id: null,
+        log_id: log.id,
+        log_type: 'qualitative',
+        similarity: 0.7 // Slightly lower default similarity than summaries
+      }));
+      
+      // Combine and return
+      return [...formattedSummaries, ...formattedLogs].slice(0, limit);
+    } catch (error) {
+      logger.error('Fallback content retrieval failed:', error);
+      return [];
+    }
+  }
 
-        if (existingEmbedding.length > 0) {
-          continue; // Skip if embedding already exists
-        }
-
-        let content = '';
-        if (logType === 'qualitative') {
-          const [log] = await db.execute(sql`
-            SELECT content FROM qualitative_logs WHERE id = ${logId}
-          `);
-          content = log?.content || '';
-        } else {
-          // For quantitative logs, extract relevant information
-          const [log] = await db.execute(sql`
-            SELECT 
-              s.name, 
-              sl.taken_at, 
-              sl.notes,
-              sl.effects
-            FROM 
-              supplement_logs sl
-            JOIN
-              supplements s ON sl.supplement_id = s.id
-            WHERE 
-              sl.id = ${logId}
-          `);
-
-          if (log) {
-            content = `Supplement: ${log.name}, Date: ${new Date(log.taken_at).toISOString()}, Notes: ${log.notes || 'None'}, Effects: ${JSON.stringify(log.effects) || 'None'}`;
+  // New helper to enrich content with actual data
+  private async enrichContentWithData(contentItems: any[], userId: number): Promise<any[]> {
+    const result = [];
+    
+    for (const item of contentItems) {
+      try {
+        if (item.summary_id) {
+          // It's a summary
+          const [summary] = await db
+            .select()
+            .from(logSummaries)
+            .where(eq(logSummaries.id, item.summary_id))
+            .limit(1);
+            
+          if (summary) {
+            result.push({
+              ...summary,
+              similarity: item.similarity,
+              type: 'summary'
+            });
+          }
+        } else if (item.log_id) {
+          // It's a log
+          if (item.log_type === 'qualitative') {
+            const [log] = await db
+              .select()
+              .from(qualitativeLogs)
+              .where(eq(qualitativeLogs.id, item.log_id))
+              .limit(1);
+              
+            if (log) {
+              result.push({
+                ...log,
+                similarity: item.similarity,
+                type: 'qualitative_log'
+              });
+            }
+          } else {
+            // Quantitative log
+            const [log] = await db
+              .select({
+                id: supplementLogs.id,
+                userId: supplementLogs.userId,
+                takenAt: supplementLogs.takenAt,
+                notes: supplementLogs.notes,
+                effects: supplementLogs.effects,
+                name: supplements.name,
+                dosage: supplements.dosage,
+                frequency: supplements.frequency
+              })
+              .from(supplementLogs)
+              .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
+              .where(eq(supplementLogs.id, item.log_id))
+              .limit(1);
+              
+            if (log) {
+              result.push({
+                ...log,
+                similarity: item.similarity,
+                type: 'quantitative_log'
+              });
+            }
           }
         }
-
-        if (content) {
-          await this.createLogEmbedding(logId, content, logType);
-        }
+      } catch (itemError) {
+        logger.error(`Error enriching content item:`, {
+          error: itemError instanceof Error ? itemError.message : String(itemError),
+          itemId: item.summary_id || item.log_id,
+          itemType: item.summary_id ? 'summary' : item.log_type
+        });
+        // Continue with other items
       }
-    } catch (error) {
-      logger.error(`Failed to process log batch:`, error);
-      throw error;
     }
-  }
-
-  /**
-   * Process a batch of summaries to create embeddings
-   */
-  async processSummaryBatch(summaryIds: number[]): Promise<void> {
-    try {
-      for (const summaryId of summaryIds) {
-        // Check if embedding already exists
-        const existingEmbedding = await db
-          .select()
-          .from(summaryEmbeddings)
-          .where(eq(summaryEmbeddings.summaryId, summaryId))
-          .limit(1);
-
-        if (existingEmbedding.length > 0) {
-          continue; // Skip if embedding already exists
-        }
-
-        const [summary] = await db
-          .select()
-          .from(logSummaries)
-          .where(eq(logSummaries.id, summaryId))
-          .limit(1);
-
-        if (summary) {
-          await this.createSummaryEmbedding(summaryId, summary.content);
-        }
-      }
-    } catch (error) {
-      logger.error(`Failed to process summary batch:`, error);
-      throw error;
-    }
+    
+    return result;
   }
 }
-
-// Export a singleton instance
-export const embeddingService = new EmbeddingService();
-export default {
-  initialize: async () => embeddingService.initialize(),
-};
