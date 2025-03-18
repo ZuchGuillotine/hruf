@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,106 +16,106 @@ type Message = {
 export default function LLMChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Added isLoading state
-  const [streamingResponse, setStreamingResponse] = useState(''); // Added streamingResponse state
-  const { chat } = useLLM(); // Removed unnecessary isLoading from useLLM
+  const [isLoading, setIsLoading] = useState(false);
+  const [streamingResponse, setStreamingResponse] = useState('');
+  const { chat } = useLLM();
   const { toast } = useToast();
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
     const userMessage: Message = {
       role: 'user',
       content: input.trim(),
     };
 
-    // Add user message to the chat
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setStreamingResponse(''); // Reset streaming content
+    setStreamingResponse('');
+    setIsLoading(true);
 
     try {
-      // Add a placeholder assistant message that will be updated during streaming
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
-      // Call the fetchResponse function with just the user message
-      await fetchResponse(userMessage.content);
+      const encodedMessage = encodeURIComponent(userMessage.content);
+      const eventSource = new EventSource(`/api/chat?message=${encodedMessage}`);
+      eventSourceRef.current = eventSource;
 
-    } catch (error: any) {
-      console.error('Chat Error:', error);
-      let errorMessage = 'Failed to get response from AI';
-      try {
-        const parsed = JSON.parse(error.message);
-        errorMessage = parsed.error || parsed.message || errorMessage;
-      } catch (e) {
-        errorMessage = error.message || errorMessage;
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: errorMessage,
-      });
-
-      // Remove the empty assistant message on error
-      setMessages((prev) => prev.slice(0, -1));
-    }
-  };
-
-  const fetchResponse = async (userMessage: string) => {
-    setIsLoading(true);
-    try {
-      const eventSource = new EventSource(`/api/chat?message=${encodeURIComponent(userMessage)}`);
-
-      // Set a timeout to handle potential connection issues
-      const timeoutId = setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         console.error('Response timeout');
-        eventSource.close();
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
         setIsLoading(false);
 
-        // Add error message if no response was received
-        if (streamingResponse === '') {
+        if (!streamingResponse) {
           setMessages((prev) => [
-            ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+            ...prev.slice(0, prev.length - 1),
             { role: 'assistant', content: "I'm sorry, there was a timeout while generating a response. Please try again." }
           ]);
+          setStreamingResponse('');
         }
-      }, 30000); // 30 second timeout
+      }, 30000);
 
-      // Initialize accumulated response
       let fullResponse = '';
 
       eventSource.onmessage = (event) => {
-        console.log('Received SSE chunk:', event.data);
-
         try {
           const data = JSON.parse(event.data);
-          console.log('Parsed SSE data:', data);
+          
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
 
           if (data.error) {
-            // Handle error from server
             console.error('Server returned error:', data.error);
             eventSource.close();
-            clearTimeout(timeoutId);
+            eventSourceRef.current = null;
             setIsLoading(false);
 
-            // Update the placeholder message with error
             setMessages((prev) => [
-              ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+              ...prev.slice(0, prev.length - 1),
               { role: 'assistant', content: "I'm sorry, there was an error generating a response. Please try again." }
             ]);
-
-            // Clear streaming state
             setStreamingResponse('');
           } else if (data.streaming === false) {
-            // End of streaming - use the accumulated response if available
             eventSource.close();
-            clearTimeout(timeoutId);
+            eventSourceRef.current = null;
             setIsLoading(false);
 
-            // Only finalize if we have content
-            if (fullResponse.length > 0) {
-              // Use full accumulated response
+            if (fullResponse) {
               setMessages((prev) => [
                 ...prev.slice(0, prev.length - 1),
                 { role: 'assistant', content: fullResponse }
@@ -125,20 +126,12 @@ export default function LLMChat() {
                 { role: 'assistant', content: "I don't have a response for that." }
               ]);
             }
-
-            // Clear streaming state
+            
             setStreamingResponse('');
           } else {
-            // Track the chunk's response content
             const newContent = data.response || '';
-
-            // Accumulate the full response (for completion)
             fullResponse += newContent;
-
-            // Update streaming response state (for UI)
             setStreamingResponse((prev) => prev + newContent);
-
-            // Update the last message with the current accumulated response
             setMessages((prev) => [
               ...prev.slice(0, prev.length - 1),
               { role: 'assistant', content: fullResponse }
@@ -151,18 +144,25 @@ export default function LLMChat() {
 
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
-        eventSource.close();
-        clearTimeout(timeoutId);
+        
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+        
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         setIsLoading(false);
 
-        // Only show error if we didn't receive any content
-        if (fullResponse.trim() === '') {
+        if (!fullResponse) {
           setMessages((prev) => [
             ...prev.slice(0, prev.length - 1),
             { role: 'assistant', content: "I apologize, but there was an error connecting to the AI service. Please try again." }
           ]);
         } else {
-          // If we received partial content, keep it
           setMessages((prev) => [
             ...prev.slice(0, prev.length - 1),
             { role: 'assistant', content: fullResponse }
@@ -170,15 +170,20 @@ export default function LLMChat() {
         }
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
       setIsLoading(false);
 
-      // Handle general errors
       setMessages((prev) => [
-        ...prev.slice(0, prev.length - 1), // Remove the placeholder message
+        ...prev.slice(0, prev.length - 1),
         { role: 'assistant', content: "I'm sorry, an unexpected error occurred. Please try again." }
       ]);
+      
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'Something went wrong',
+      });
     }
   };
 
@@ -234,6 +239,7 @@ export default function LLMChat() {
               </CardContent>
             </Card>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
