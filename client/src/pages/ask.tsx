@@ -13,9 +13,21 @@ export default function AskPage() {
   const [inputValue, setInputValue] = useState("");
   const { sendQuery, messages, isLoading, error, resetChat } = useQuery();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    // Scroll to bottom of chat when messages change
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+  
+  useEffect(() => {
     if (chatContainerRef.current) {
       const container = chatContainerRef.current;
       container.scrollTop = container.scrollHeight;
@@ -26,8 +38,21 @@ export default function AskPage() {
     e.preventDefault();
     if (inputValue.trim() === "" || isLoading) return;
     
-    await sendQuery(inputValue);
-    setInputValue("");
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    try {
+      await sendQuery(inputValue);
+      setInputValue("");
+    } catch (error) {
+      console.error('Query submission error:', error);
+    }
   };
   
   const { user } = useUser();
@@ -47,7 +72,6 @@ export default function AskPage() {
             </p>
           </div>
           
-          {/* Chat Messages Container */}
           <div 
             ref={chatContainerRef}
             className="border rounded-lg p-4 mb-4 h-[60vh] overflow-y-auto bg-gray-50 dark:bg-gray-900"
@@ -77,13 +101,14 @@ export default function AskPage() {
                     </p>
                     <div className="whitespace-pre-wrap">
                       {message.content}
+                      {isLoading && index === messages.length - 1 && message.role === "assistant" && "▋"}
                     </div>
                   </div>
                 )
               ))
             )}
             
-            {isLoading && (
+            {isLoading && messages.length === 0 && (
               <div className="flex justify-center items-center py-4">
                 <Spinner className="h-6 w-6 text-green-600" />
                 <span className="ml-2 text-gray-600 dark:text-gray-400">Thinking...</span>
@@ -98,7 +123,6 @@ export default function AskPage() {
             )}
           </div>
           
-          {/* Input Form */}
           <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2">
             <Textarea
               value={inputValue}
