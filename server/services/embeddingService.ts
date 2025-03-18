@@ -277,7 +277,11 @@ class EmbeddingService {
       // Get recent summaries
       const recentSummaries = await db
         .select({
-          id: logSummaries.id
+          id: logSummaries.id,
+          content: logSummaries.content,
+          summaryType: logSummaries.summaryType,
+          startDate: logSummaries.startDate,
+          endDate: logSummaries.endDate
         })
         .from(logSummaries)
         .where(eq(logSummaries.userId, userId))
