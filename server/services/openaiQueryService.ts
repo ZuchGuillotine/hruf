@@ -3,7 +3,7 @@ import { openai, MODELS } from '../openai';
 import { db } from '../../db';
 import { qualitativeLogs, queryChats } from '../../db/schema';
 import { constructQueryContext } from './llmContextService_query';
-import { debugContext } from '../utils/debugContext';
+import { debugContext } from '../utils/contextDebugger';
 
 export async function* queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
   try {
