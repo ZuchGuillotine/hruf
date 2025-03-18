@@ -220,7 +220,7 @@ class EmbeddingService {
           s.summary_type,
           s.start_date,
           s.end_date, 
-          1 - (se.embedding <=> ${queryEmbedding}::vector) as similarity
+          1 - (se.embedding <=> ${queryEmbedding}::vector(1536)) as similarity
         FROM 
           summary_embeddings se
         JOIN 
@@ -228,7 +228,7 @@ class EmbeddingService {
         WHERE 
           s.user_id = ${userId}
         ORDER BY 
-          se.embedding <=> ${queryEmbedding}::vector
+          se.embedding <=> ${queryEmbedding}::vector(1536)
         LIMIT ${limit}
       `);
 
