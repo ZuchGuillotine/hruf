@@ -1,5 +1,7 @@
 import { LRUCache } from 'lru-cache';
 
+import { logger } from '../utils/logger';
+
 class EmbeddingService {
   // Constants
   private EMBEDDING_MODEL = "text-embedding-ada-002";
