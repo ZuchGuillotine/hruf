@@ -1,4 +1,3 @@
-
 import { debugContext } from '../utils/contextDebugger';
 import { chatWithAI, MODELS } from '../openai';
 import logger from '../utils/logger';
@@ -10,7 +9,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
   try {
     // Build context using the context service
     const context = await constructUserContext(userId?.toString() || 'anonymous', userQuery);
-    
+
     // Debug log the context
     await debugContext(userId?.toString() || 'anonymous', context, 'qualitative');
 
@@ -23,7 +22,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
 
     // Create a unique request ID to track this request
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    
+
     // Log the API call
     logger.info(`Making OpenAI API call for qualitative chat:`, {
       userId,
@@ -36,11 +35,11 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
     try {
       // Call OpenAI chat with the qualitative model
       const chatStream = chatWithAI(context.messages, MODELS.QUALITATIVE_CHAT);
-      
+
       // Track full response for saving
       let fullResponse = '';
       let isFirstChunk = true;
-      
+
       // Process each chunk
       for await (const chunk of chatStream) {
         logger.debug(`Processing chat chunk:`, {
@@ -51,8 +50,9 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
           timestamp: new Date().toISOString()
         });
 
+        // Check for errors
         if (chunk.error) {
-          logger.error(`Error in chat stream:`, {
+          logger.error(`Error in chat stream chunk:`, {
             requestId,
             error: chunk.error,
             timestamp: new Date().toISOString()
@@ -61,30 +61,47 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
           return;
         }
 
+        // If chunk has content, accumulate it
         if (chunk.response) {
           fullResponse += chunk.response;
           yield { response: chunk.response, streaming: true };
-          isFirstChunk = false;
         }
+
+        isFirstChunk = false;
       }
 
-      // Save the complete interaction to the database
-      if (userId && fullResponse) {
-        try {
-          await db.insert(qualitativeLogs).values({
-            userId: typeof userId === 'string' ? parseInt(userId, 10) : userId,
-            userQuery,
-            aiResponse: fullResponse,
-            timestamp: new Date(),
-            requestId
-          });
+      // Signal end of streaming
+      yield { response: '', streaming: false };
 
-          logger.info(`Saved qualitative chat log:`, {
-            requestId,
-            userId,
-            responseLength: fullResponse.length,
-            timestamp: new Date().toISOString()
-          });
+      // Save the conversation only if we have a valid userId and there was a response
+      if (userId && fullResponse.trim()) {
+        try {
+          const conversationData = [
+            { role: 'user' as const, content: userQuery },
+            { role: 'assistant' as const, content: fullResponse }
+          ];
+
+          // Insert as qualitative log
+          const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+          if (isNaN(userIdNum)) {
+            throw new Error('Invalid user ID format');
+          }
+
+          await db
+            .insert(qualitativeLogs)
+            .values({
+              userId: userIdNum,
+              content: JSON.stringify(conversationData),
+              type: 'chat',
+              tags: ['ai_conversation'],
+              metadata: {
+                savedAt: new Date().toISOString(),
+                model: MODELS.QUALITATIVE_CHAT,
+                requestId,
+                messageCount: conversationData.length,
+                totalLength: fullResponse.length
+              }
+            });
         } catch (dbError) {
           logger.error(`Failed to save chat log:`, {
             requestId,
@@ -94,9 +111,6 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
         }
       }
 
-      // Send final chunk
-      yield { response: '', streaming: false };
-      
     } catch (streamError) {
       logger.error(`Stream processing error:`, {
         requestId,
