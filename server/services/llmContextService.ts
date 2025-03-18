@@ -67,24 +67,24 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
 
     // Get relevant qualitative chat logs
-    const qualitativeLogs = await db
-      .select()
-      .from(qualitativeLogs)
-      .where(
-        and(
-          eq(qualitativeLogs.userId, userIdNum),
-          eq(qualitativeLogs.type, 'chat')
-        )
-      )
-      .orderBy(desc(qualitativeLogs.loggedAt))
-      .limit(5);
+    //const qualitativeLogs = await db
+    //  .select()
+    //  .from(qualitativeLogs)
+    //  .where(
+    //    and(
+    //      eq(qualitativeLogs.userId, userIdNum),
+    //      eq(qualitativeLogs.type, 'chat')
+    //    )
+    //  )
+    //  .orderBy(desc(qualitativeLogs.loggedAt))
+    //  .limit(5);
 
-    const qualitativeContext = qualitativeLogs.length > 0 
-      ? `Recent Qualitative Observations:\n${qualitativeLogs.map(log => {
-          const date = new Date(log.loggedAt).toLocaleDateString();
-          return `[${date}] ${log.content}`;
-        }).join('\n')}`
-      : '';
+    //const qualitativeContext = qualitativeLogs.length > 0 
+    //  ? `Recent Qualitative Observations:\n${qualitativeLogs.map(log => {
+    //      const date = new Date(log.loggedAt).toLocaleDateString();
+    //      return `[${date}] ${log.content}`;
+    //    }).join('\n')}`
+    //  : '';
 
     // ENHANCEMENT: Increase the number of relevant summaries retrieved
     logger.info(`Retrieving relevant summaries with expanded search`);
@@ -145,11 +145,11 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       logger.info(`Added ${recentSummaries.length} recent summaries as fallback context`);
     }
 
-    // Process qualitative logs
-    relevantContent.filter(item => item.type === 'qualitative_log').forEach(log => {
+    // Process qualitative logs from similarity search results
+    const qualitativeLogs2 = relevantContent.filter(item => item.type === 'qualitative_log');
+    qualitativeLogs2.forEach(log => {
       let content = log.content;
 
-      // Try to extract meaningful content from JSON if applicable
       try {
         const parsed = JSON.parse(log.content);
         if (Array.isArray(parsed)) {
