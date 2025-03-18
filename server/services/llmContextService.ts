@@ -1,10 +1,9 @@
-
 import { SYSTEM_PROMPT } from '../openai';
 import { Message } from '../lib/types';
 import { db } from '../../db';
 import { eq, desc, and, notInArray } from 'drizzle-orm';
 import { logger } from '../utils/logger';
-import { logSummaries, healthStats, qualitativeLogs } from '../db/schema';
+import { logSummaries, healthStats, qualitativeLogs } from '../../db/schema';
 import { summaryTaskManager } from './summaryTaskManager';
 import { supplementLookupService } from './supplementLookupService';
 import { advancedSummaryService } from './advancedSummaryService';
@@ -48,10 +47,10 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     // Get relevant content with error handling and fallback
     logger.info(`Retrieving relevant content with expanded search`);
     let relevantContent = [];
-    
+
     try {
       relevantContent = await advancedSummaryService.getRelevantSummaries(userIdNum, userQuery, 12);
-      
+
       // Log what we found
       const contentTypes = {
         summary: relevantContent.filter(item => item.type === 'summary').length,
@@ -65,7 +64,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         error: vectorError instanceof Error ? vectorError.message : String(vectorError),
         stack: vectorError instanceof Error ? vectorError.stack : undefined
       });
-      
+
       // Fall back to direct database queries for recent content
       relevantContent = await getFallbackRelevantContent(userIdNum);
     }
@@ -100,7 +99,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       item.type === 'qualitative_log' && 
       item.type !== 'query' // Explicitly exclude query logs
     );
-    
+
     qualitativeLogs.forEach(log => {
       let content = log.content;
 
@@ -216,7 +215,7 @@ ${userQuery}
 async function getFallbackRelevantContent(userId: number): Promise<any[]> {
   try {
     const result = [];
-    
+
     // Get most recent daily summaries
     const recentSummaries = await db
       .select()
@@ -229,7 +228,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
       )
       .orderBy(desc(logSummaries.createdAt))
       .limit(3);
-      
+
     // Add as summary type
     for (const summary of recentSummaries) {
       result.push({
@@ -238,7 +237,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
         similarity: 0.8
       });
     }
-    
+
     // Get recent qualitative logs (non-query)
     const recentLogs = await db
       .select()
@@ -251,7 +250,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
       )
       .orderBy(desc(qualitativeLogs.createdAt))
       .limit(5);
-      
+
     // Add as qualitative_log type
     for (const log of recentLogs) {
       result.push({
@@ -260,7 +259,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
         similarity: 0.7
       });
     }
-    
+
     logger.info(`Fallback content retrieval found ${result.length} items`);
     return result;
   } catch (error) {
