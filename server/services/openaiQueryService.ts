@@ -1,4 +1,3 @@
-
 import { openai, MODELS } from '../openai';
 import { db } from '../../db';
 import { qualitativeLogs, queryChats } from '../../db/schema';
@@ -13,7 +12,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
     await debugContext(userId || 'anonymous', context, 'query');
 
     const requestId = `query_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    
+
     console.log('Processing query with OpenAI:', {
       requestId,
       userId,
@@ -36,7 +35,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
       const stream = await openai.chat.completions.create({
         model: MODELS.QUERY_CHAT,
         messages: context.messages,
-        max_tokens: 1000,
+        max_completion_tokens: 1000,
         stream: true
       });
 
@@ -72,7 +71,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
               model: MODELS.QUERY_CHAT
             }
           });
-          
+
           console.log('Saved query chat:', {
             requestId,
             userId,
@@ -105,7 +104,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
         userId,
         timestamp: new Date().toISOString()
       });
-      
+
       yield { 
         error: streamError instanceof Error ? streamError.message : "Error connecting to AI service", 
         streaming: false 
@@ -118,7 +117,7 @@ export async function* queryWithAI(messages: Array<{ role: string; content: stri
       userId,
       timestamp: new Date().toISOString()
     });
-    
+
     yield { 
       error: "I'm having trouble understanding your question right now. Please try again in a moment.",
       streaming: false 
