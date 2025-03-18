@@ -81,7 +81,7 @@ import { QUERY_SYSTEM_PROMPT } from '../openai';
 import { db } from '../../db';
 import logger from '../utils/logger';
 import { desc, eq, and, gte } from 'drizzle-orm';
-import { logSummaries, supplementLogs, supplements, healthStats } from '../db/schema';
+import { logSummaries, supplementLogs, supplements, healthStats } from '../../db/schema';
 import { debugContext } from '../utils/contextDebugger';
 import { summaryTaskManager } from './summaryTaskManager';
 import { supplementLookupService } from './supplementLookupService';
