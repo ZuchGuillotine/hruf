@@ -1,14 +1,13 @@
-
 class EmbeddingService {
   // Constants
   private EMBEDDING_MODEL = "text-embedding-ada-002";
   private EMBEDDING_DIMENSIONS = 1536;
   private BATCH_SIZE = 5; // Number of items to process in a batch
   private SIMILARITY_THRESHOLD = 0.75; // Cosine similarity threshold
-  
+
   // LRU Cache for embeddings
   private embeddingCache: LRUCache<string, number[]>;
-  
+
   constructor() {
     // Initialize cache with TTL of 1 day and max size of 500 entries
     this.embeddingCache = new LRUCache({
@@ -16,7 +15,7 @@ class EmbeddingService {
       ttl: 1000 * 60 * 60 * 24, // 24 hours
       allowStale: false
     });
-    
+
     logger.info('Embedding service initialized with LRU cache');
   }
 
@@ -28,16 +27,16 @@ class EmbeddingService {
   async initialize(testQuery?: string): Promise<boolean> {
     try {
       logger.info('Initializing EmbeddingService...');
-      
+
       // Verify OpenAI connectivity with a test embedding
       const testText = testQuery || "Test embedding service initialization";
       const testEmbedding = await this.generateEmbedding(testText);
-      
+
       if (!testEmbedding || testEmbedding.length !== this.EMBEDDING_DIMENSIONS) {
         logger.error('Test embedding generation failed: incorrect dimensions');
         return false;
       }
-      
+
       logger.info('EmbeddingService initialized successfully');
       return true;
     } catch (error) {
@@ -53,7 +52,7 @@ class EmbeddingService {
     try {
       // Create a cache key - use a hash of the text to avoid key size issues
       const cacheKey = this.hashText(text);
-      
+
       // Check cache first
       const cachedEmbedding = this.embeddingCache.get(cacheKey);
       if (cachedEmbedding) {
@@ -63,22 +62,22 @@ class EmbeddingService {
         });
         return cachedEmbedding;
       }
-      
+
       // Not in cache, generate embedding
       logger.debug('Cache miss, generating embedding', {
         textLength: text.length
       });
-      
+
       const response = await openai.embeddings.create({
         model: this.EMBEDDING_MODEL,
         input: text
       });
-      
+
       const embedding = response.data[0].embedding;
-      
+
       // Store in cache
       this.embeddingCache.set(cacheKey, embedding);
-      
+
       return embedding;
     } catch (error) {
       logger.error('Error generating embedding:', {
@@ -88,7 +87,7 @@ class EmbeddingService {
       throw error;
     }
   }
-  
+
   /**
    * Generate a simple hash of text for cache keys
    */
@@ -118,20 +117,20 @@ class EmbeddingService {
           )
         )
         .limit(1);
-        
+
       if (existingEmbedding.length > 0) {
         logger.debug(`Embedding already exists for ${logType} log ${logId}`);
         return;
       }
-      
+
       const embedding = await this.generateEmbedding(content);
-      
+
       await db.insert(logEmbeddings).values({
         logId,
         logType,
         embedding
       });
-      
+
       logger.info(`Created embedding for ${logType} log ${logId}`);
     } catch (error) {
       logger.error(`Failed to create embedding for ${logType} log ${logId}:`, error);
@@ -150,19 +149,19 @@ class EmbeddingService {
         .from(summaryEmbeddings)
         .where(eq(summaryEmbeddings.summaryId, summaryId))
         .limit(1);
-        
+
       if (existingEmbedding.length > 0) {
         logger.debug(`Embedding already exists for summary ${summaryId}`);
         return;
       }
-      
+
       const embedding = await this.generateEmbedding(content);
-      
+
       await db.insert(summaryEmbeddings).values({
         summaryId,
         embedding
       });
-      
+
       logger.info(`Created embedding for summary ${summaryId}`);
     } catch (error) {
       logger.error(`Failed to create embedding for summary ${summaryId}:`, error);
@@ -173,14 +172,14 @@ class EmbeddingService {
   async findSimilarContent(query: string, userId: number, limit: number = 5): Promise<any[]> {
     try {
       logger.info(`Finding similar content for user ${userId} with query: "${query.substring(0, 50)}..."`);
-      
+
       // Generate embedding for the query
       const queryEmbedding = await this.generateEmbedding(query);
       logger.info(`Generated embedding for query with dimensions: ${queryEmbedding.length}`);
 
       // First, try vector search with proper casting for similarity search
       let similarContent = [];
-      
+
       try {
         // Query for similar summaries with proper type casting
         const similarSummariesResult = await db.execute(sql`
@@ -223,7 +222,7 @@ class EmbeddingService {
         const summaries = Array.isArray(similarSummariesResult) 
           ? similarSummariesResult 
           : (similarSummariesResult.rows || []);
-        
+
         const logs = Array.isArray(similarLogsResult)
           ? similarLogsResult
           : (similarLogsResult.rows || []);
@@ -233,7 +232,7 @@ class EmbeddingService {
           .sort((a, b) => (b.similarity - a.similarity))
           .filter(item => item.similarity > this.SIMILARITY_THRESHOLD)
           .slice(0, limit);
-          
+
         logger.info(`Vector search successful: found ${similarContent.length} relevant items`);
       } catch (vectorError) {
         // Log the vector search error but continue with fallback
@@ -241,11 +240,11 @@ class EmbeddingService {
           error: vectorError instanceof Error ? vectorError.message : String(vectorError),
           stack: vectorError instanceof Error ? vectorError.stack : undefined
         });
-        
+
         // Fall back to recent content if vector search fails
         similarContent = await this.getFallbackContent(userId, limit);
       }
-      
+
       // Enrich content with actual data from database
       return await this.enrichContentWithData(similarContent, userId);
     } catch (error) {
@@ -263,7 +262,7 @@ class EmbeddingService {
   private async getFallbackContent(userId: number, limit: number): Promise<any[]> {
     try {
       logger.info(`Using fallback content retrieval for user ${userId}`);
-      
+
       // Get recent summaries
       const recentSummaries = await db
         .select({
@@ -273,7 +272,7 @@ class EmbeddingService {
         .where(eq(logSummaries.userId, userId))
         .orderBy(desc(logSummaries.createdAt))
         .limit(limit);
-      
+
       // Get recent qualitative logs (non-query type)
       const recentLogs = await db
         .select({
@@ -289,7 +288,7 @@ class EmbeddingService {
         )
         .orderBy(desc(qualitativeLogs.createdAt))
         .limit(limit);
-      
+
       // Format to match vector search results
       const formattedSummaries = recentSummaries.map(summary => ({
         summary_id: summary.id,
@@ -297,14 +296,14 @@ class EmbeddingService {
         log_type: null,
         similarity: 0.8 // Default similarity for fallback content
       }));
-      
+
       const formattedLogs = recentLogs.map(log => ({
         summary_id: null,
         log_id: log.id,
         log_type: 'qualitative',
         similarity: 0.7 // Slightly lower default similarity than summaries
       }));
-      
+
       // Combine and return
       return [...formattedSummaries, ...formattedLogs].slice(0, limit);
     } catch (error) {
@@ -316,7 +315,7 @@ class EmbeddingService {
   // New helper to enrich content with actual data
   private async enrichContentWithData(contentItems: any[], userId: number): Promise<any[]> {
     const result = [];
-    
+
     for (const item of contentItems) {
       try {
         if (item.summary_id) {
@@ -326,7 +325,7 @@ class EmbeddingService {
             .from(logSummaries)
             .where(eq(logSummaries.id, item.summary_id))
             .limit(1);
-            
+
           if (summary) {
             result.push({
               ...summary,
@@ -342,7 +341,7 @@ class EmbeddingService {
               .from(qualitativeLogs)
               .where(eq(qualitativeLogs.id, item.log_id))
               .limit(1);
-              
+
             if (log) {
               result.push({
                 ...log,
@@ -367,7 +366,7 @@ class EmbeddingService {
               .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
               .where(eq(supplementLogs.id, item.log_id))
               .limit(1);
-              
+
             if (log) {
               result.push({
                 ...log,
@@ -386,7 +385,11 @@ class EmbeddingService {
         // Continue with other items
       }
     }
-    
+
     return result;
   }
 }
+
+const embeddingService = new EmbeddingService();
+export { embeddingService, EmbeddingService as initialize };
+export default embeddingService;

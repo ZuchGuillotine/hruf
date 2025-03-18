@@ -3,7 +3,7 @@
 import OpenAI from "openai";
 import { db } from "../../db";
 import { logSummaries, qualitativeLogs, supplementLogs, supplements, InsertLogSummary } from "../../db/schema";
-import { embeddingService } from "./embeddingService";
+import embeddingService from "./embeddingService";
 import { eq, and, between, sql, gte, desc } from "drizzle-orm";
 import logger from "../utils/logger";
 
