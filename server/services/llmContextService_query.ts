@@ -83,7 +83,7 @@ import logger from '../utils/logger';
 import { desc, eq, and, gte } from 'drizzle-orm';
 import { logSummaries, supplementLogs, supplements, healthStats } from '../../db/schema';
 import { debugContext } from '../utils/contextDebugger';
-import { summaryTaskManager } from './summaryTaskManager';
+import { summaryTaskManager } from '../cron/summaryManager';
 import { supplementLookupService } from './supplementLookupService';
 import { advancedSummaryService } from './advancedSummaryService';
 
