@@ -122,7 +122,7 @@ export function setupAuth(app: Express) {
     ? `https://stacktracker.io/auth/google/callback`
     : process.env.REPL_SLUG && process.env.REPL_OWNER
       ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
-      : `https://${process.env.REPLIT_HOSTNAME}/auth/google/callback`;
+      : `http://0.0.0.0:5000/auth/google/callback`;
 
   console.log('Initializing Google OAuth with:', {
     callbackUrl: CALLBACK_URL,
