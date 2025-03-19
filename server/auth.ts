@@ -323,9 +323,20 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          // Ensure client-side routing handles the redirect properly
-          res.redirect('/dashboard');
-          
+          // Send HTML that will redirect using client-side routing
+          res.send(`
+            <html>
+              <head>
+                <script>
+                  window.location.replace('/dashboard');
+                </script>
+              </head>
+              <body>
+                Redirecting to dashboard...
+              </body>
+            </html>
+          `);
+
           console.log('Google OAuth authentication successful:', {
             userId: user.id,
             email: user.email,
