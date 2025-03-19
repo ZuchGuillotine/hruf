@@ -122,7 +122,7 @@ export function setupAuth(app: Express) {
     ? `https://stacktracker.io/auth/google/callback`
     : process.env.REPL_SLUG && process.env.REPL_OWNER
       ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
-      : `https://${process.env.REPLIT_HOSTNAME || '0.0.0.0:5000'}/auth/google/callback`;
+      : `https://${process.env.REPLIT_HOSTNAME}/auth/google/callback`;
 
   console.log('Initializing Google OAuth with:', {
     callbackUrl: CALLBACK_URL,
@@ -323,8 +323,15 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          // Redirect to dashboard with success message
-          res.redirect('/dashboard?login=success');
+          // Ensure client-side routing handles the redirect properly
+          res.redirect('/dashboard');
+          
+          console.log('Google OAuth authentication successful:', {
+            userId: user.id,
+            email: user.email,
+            redirectUrl: '/dashboard',
+            timestamp: new Date().toISOString()
+          });
         });
       })(req, res, next);
     }
