@@ -42,7 +42,7 @@ declare global {
   }
 }
 
-// Get the most appropriate callback URL based on environment
+// Update the getCallbackURL function to handle casing properly
 const getCallbackURL = (app: Express) => {
   const isProd = app.get("env") === "production";
   const customDomain = process.env.CUSTOM_DOMAIN;

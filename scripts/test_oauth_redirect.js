@@ -1,4 +1,3 @@
-
 /**
  * This script simulates an OAuth redirect to test session and callback handling
  * Run with: node scripts/test_oauth_redirect.js
@@ -41,12 +40,12 @@ passport.deserializeUser((obj, done) => {
 });
 
 // Get the environment variables
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID_TEST || process.env.GOOGLE_CLIENT_ID_PROD;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET_TEST || process.env.GOOGLE_CLIENT_SECRET_PROD;
-const REPL_SLUG = process.env.REPL_SLUG;
-const REPL_OWNER = process.env.REPL_OWNER;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID_TEST;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET_TEST;
+const REPL_SLUG = process.env.REPL_SLUG?.toLowerCase();
+const REPL_OWNER = process.env.REPL_OWNER; // Keep original casing
 
-// Determine callback URL
+// Determine callback URL - match Google Console exactly
 const CALLBACK_URL = REPL_SLUG && REPL_OWNER
   ? `https://${REPL_SLUG}.${REPL_OWNER}.repl.co/test/callback`
   : 'http://localhost:3001/test/callback';
@@ -56,7 +55,9 @@ console.log('Test server configuration:', {
   hasClientId: !!GOOGLE_CLIENT_ID,
   hasClientSecret: !!GOOGLE_CLIENT_SECRET,
   replSlug: REPL_SLUG,
-  replOwner: REPL_OWNER
+  replOwner: REPL_OWNER,
+  fullUrl: `https://${REPL_SLUG}.${REPL_OWNER}.repl.co`,
+  timestamp: new Date().toISOString()
 });
 
 // Google strategy
@@ -69,7 +70,8 @@ passport.use(new GoogleStrategy({
   console.log('Google profile received:', {
     id: profile.id,
     displayName: profile.displayName,
-    emails: profile.emails
+    emails: profile.emails,
+    timestamp: new Date().toISOString()
   });
   return done(null, {
     id: profile.id,
@@ -85,21 +87,30 @@ app.get('/test', (req, res) => {
   res.send(`
     <h1>OAuth Test</h1>
     <p>Testing Google OAuth flow</p>
+    <p>Callback URL: ${CALLBACK_URL}</p>
     <a href="/test/auth">Login with Google</a>
   `);
 });
 
-app.get('/test/auth', passport.authenticate('google', {
-  scope: ['profile', 'email'],
-  prompt: 'select_account'
-}));
+app.get('/test/auth', (req, res, next) => {
+  console.log('Starting OAuth flow:', {
+    headers: req.headers,
+    timestamp: new Date().toISOString()
+  });
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+  })(req, res, next);
+});
 
 app.get('/test/callback', 
   (req, res, next) => {
     console.log('Callback received:', { 
       query: req.query,
       session: req.session,
-      sessionId: req.sessionID
+      sessionId: req.sessionID,
+      headers: req.headers,
+      timestamp: new Date().toISOString()
     });
     next();
   },
@@ -108,7 +119,8 @@ app.get('/test/callback',
     console.log('Authentication successful:', { 
       user: req.user,
       session: req.session,
-      isAuthenticated: req.isAuthenticated()
+      isAuthenticated: req.isAuthenticated(),
+      timestamp: new Date().toISOString()
     });
     res.send(`
       <h1>Authentication Successful</h1>
@@ -124,13 +136,14 @@ app.get('/test/profile', (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/test');
   }
-  
+
   console.log('Profile request:', {
     isAuthenticated: req.isAuthenticated(),
     user: req.user,
-    session: req.session
+    session: req.session,
+    timestamp: new Date().toISOString()
   });
-  
+
   res.send(`
     <h1>Profile</h1>
     <p>ID: ${req.user.id}</p>
