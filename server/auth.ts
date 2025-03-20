@@ -42,6 +42,22 @@ declare global {
   }
 }
 
+// Get the most appropriate callback URL based on environment
+const getCallbackURL = (app: Express) => {
+  const isProd = app.get("env") === "production";
+  const customDomain = process.env.CUSTOM_DOMAIN;
+
+  if (isProd && customDomain) {
+    return `https://${customDomain}/auth/google/callback`;
+  }
+
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    return `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER.toLowerCase()}.repl.co/auth/google/callback`;
+  }
+
+  return `http://0.0.0.0:5000/auth/google/callback`;
+};
+
 export function setupAuth(app: Express) {
   // Initialize Passport authentication
   app.use(passport.initialize());
@@ -108,42 +124,33 @@ export function setupAuth(app: Express) {
     )
   );
 
-  // Google OAuth Strategy
-  const GOOGLE_CLIENT_ID = app.get("env") === "production"
-    ? process.env.GOOGLE_CLIENT_ID_PROD
-    : process.env.GOOGLE_CLIENT_ID_TEST;
+  // Google OAuth Strategy Configuration
+  const isProd = app.get("env") === "production";
+  const GOOGLE_CLIENT_ID = isProd ? process.env.GOOGLE_CLIENT_ID_PROD : process.env.GOOGLE_CLIENT_ID_TEST;
+  const GOOGLE_CLIENT_SECRET = isProd ? process.env.GOOGLE_CLIENT_SECRET_PROD : process.env.GOOGLE_CLIENT_SECRET_TEST;
+  const CALLBACK_URL = getCallbackURL(app);
 
-  const GOOGLE_CLIENT_SECRET = app.get("env") === "production"
-    ? process.env.GOOGLE_CLIENT_SECRET_PROD
-    : process.env.GOOGLE_CLIENT_SECRET_TEST;
-
-  // Get the most appropriate callback URL based on environment
-  const CALLBACK_URL = app.get("env") === "production"
-    ? `https://stacktracker.io/auth/google/callback`
-    : process.env.REPL_SLUG && process.env.REPL_OWNER
-      ? `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER.toLowerCase()}.repl.co/auth/google/callback`
-      : `http://0.0.0.0:5000/auth/google/callback`;
-
-  console.log('Initializing Google OAuth with:', {
-    callbackUrl: CALLBACK_URL,
+  // Enhanced logging for OAuth configuration
+  console.log('Google OAuth Configuration:', {
     environment: app.get("env"),
+    callbackUrl: CALLBACK_URL,
+    isProd,
     hasClientId: !!GOOGLE_CLIENT_ID,
     hasClientSecret: !!GOOGLE_CLIENT_SECRET,
-    clientIdTest: !!process.env.GOOGLE_CLIENT_ID_TEST,
-    clientIdProd: !!process.env.GOOGLE_CLIENT_ID_PROD,
-    clientSecretTest: !!process.env.GOOGLE_CLIENT_SECRET_TEST,
-    clientSecretProd: !!process.env.GOOGLE_CLIENT_SECRET_PROD,
-    replSlug: process.env.REPL_SLUG,
-    replOwner: process.env.REPL_OWNER,
-    appUrl: process.env.APP_URL,
     timestamp: new Date().toISOString()
   });
+
+  // Validate OAuth configuration
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    console.error('Missing Google OAuth credentials for ' + (isProd ? 'production' : 'development') + ' environment');
+    throw new Error('Google OAuth credentials not properly configured');
+  }
 
   passport.use(
     new GoogleStrategy(
       {
-        clientID: GOOGLE_CLIENT_ID!,
-        clientSecret: GOOGLE_CLIENT_SECRET!,
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL: CALLBACK_URL,
         userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
       },
@@ -206,51 +213,36 @@ export function setupAuth(app: Express) {
     )
   );
 
-  // Google OAuth routes
+  // Google OAuth routes with enhanced error handling
   app.get('/auth/google',
     (req, res, next) => {
-      // Check if Google credentials are properly configured
-      if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-        console.error('Google OAuth credentials missing:', {
-          hasClientId: !!GOOGLE_CLIENT_ID,
-          hasClientSecret: !!GOOGLE_CLIENT_SECRET,
+      const configErrors = [];
+      if (!GOOGLE_CLIENT_ID) configErrors.push('Client ID');
+      if (!GOOGLE_CLIENT_SECRET) configErrors.push('Client Secret');
+
+      if (configErrors.length > 0) {
+        console.error('Google OAuth configuration error:', {
+          missing: configErrors,
+          environment: isProd ? 'production' : 'development',
           timestamp: new Date().toISOString()
         });
-        return res.status(500).send('OAuth configuration error. Please check server logs.');
+        return res.status(500).send(`OAuth configuration error: Missing ${configErrors.join(', ')}`);
       }
 
       console.log('Starting Google OAuth flow:', {
         callbackUrl: CALLBACK_URL,
-        environment: app.get("env"),
-        clientIdExists: !!GOOGLE_CLIENT_ID,
-        clientSecretExists: !!GOOGLE_CLIENT_SECRET,
-        timestamp: new Date().toISOString(),
-        repl: {
-          slug: process.env.REPL_SLUG,
-          owner: process.env.REPL_OWNER,
-          id: process.env.REPL_ID
-        }
+        environment: isProd ? 'production' : 'development',
+        timestamp: new Date().toISOString()
       });
       next();
     },
-    (req, res, next) => {
-      try {
-        passport.authenticate('google', { 
-          scope: ['profile', 'email'],
-          prompt: 'select_account',
-          accessType: 'offline',
-          // Add state parameter for CSRF protection
-          state: Math.random().toString(36).substring(2, 15)
-        })(req, res, next);
-      } catch (error) {
-        console.error('Google OAuth authentication error:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
-        return res.redirect('/login?error=google_auth_error');
-      }
-    }
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      prompt: 'select_account',
+      accessType: 'offline',
+      // Add state parameter for CSRF protection
+      state: Math.random().toString(36).substring(2, 15)
+    })
   );
 
   app.get('/auth/google/callback',
@@ -280,12 +272,12 @@ export function setupAuth(app: Express) {
         });
         return res.redirect('/login?error=' + encodeURIComponent(String(req.query.error)));
       }
-      
+
       if (!req.query.code) {
         console.error('Google OAuth callback missing code parameter');
         return res.redirect('/login?error=missing_auth_code');
       }
-      
+
       next();
     },
     (req, res, next) => {
