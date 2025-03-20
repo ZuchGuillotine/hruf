@@ -46,16 +46,30 @@ declare global {
 const getCallbackURL = (app: Express) => {
   const isProd = app.get("env") === "production";
   const customDomain = process.env.CUSTOM_DOMAIN;
+  let callbackURL;
 
+  // Determine callback URL based on environment
   if (isProd && customDomain) {
-    return `https://${customDomain}/auth/google/callback`;
+    callbackURL = `https://${customDomain}/auth/google/callback`;
+  } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    // For Replit development environment
+    callbackURL = `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER.toLowerCase()}.repl.co/auth/google/callback`;
+  } else {
+    // Local development fallback
+    callbackURL = `http://0.0.0.0:5000/auth/google/callback`;
   }
 
-  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    return `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER.toLowerCase()}.repl.co/auth/google/callback`;
-  }
+  // Log the callback URL determination process
+  console.log('Callback URL Determination:', {
+    isProd,
+    customDomain,
+    replSlug: process.env.REPL_SLUG,
+    replOwner: process.env.REPL_OWNER,
+    resultingURL: callbackURL,
+    timestamp: new Date().toISOString()
+  });
 
-  return `http://0.0.0.0:5000/auth/google/callback`;
+  return callbackURL;
 };
 
 export function setupAuth(app: Express) {
@@ -65,6 +79,7 @@ export function setupAuth(app: Express) {
 
   // User serialization for session storage
   passport.serializeUser((user: Express.User, done) => {
+    console.log('Serializing user:', { userId: user.id, timestamp: new Date().toISOString() });
     done(null, user.id);
   });
 
@@ -78,51 +93,21 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (!user) {
+        console.log('User not found during deserialization:', { id, timestamp: new Date().toISOString() });
         return done(null, false);
       }
 
+      console.log('User deserialized:', { userId: user.id, timestamp: new Date().toISOString() });
       done(null, user);
     } catch (err) {
+      console.error('Deserialization error:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
       done(err);
     }
   });
-
-  // Local authentication strategy
-  passport.use(
-    new LocalStrategy(
-      {
-        usernameField: "email",
-        passwordField: "password",
-      },
-      async (emailOrUsername, password, done) => {
-        try {
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(
-              or(
-                eq(users.email, emailOrUsername),
-                eq(users.username, emailOrUsername)
-              )
-            )
-            .limit(1);
-
-          if (!user) {
-            return done(null, false, { message: "Invalid credentials." });
-          }
-
-          const isMatch = await crypto.compare(password, user.password);
-          if (!isMatch) {
-            return done(null, false, { message: "Invalid credentials." });
-          }
-
-          return done(null, user);
-        } catch (err) {
-          return done(err);
-        }
-      }
-    )
-  );
 
   // Google OAuth Strategy Configuration
   const isProd = app.get("env") === "production";
@@ -137,13 +122,26 @@ export function setupAuth(app: Express) {
     isProd,
     hasClientId: !!GOOGLE_CLIENT_ID,
     hasClientSecret: !!GOOGLE_CLIENT_SECRET,
+    envVars: {
+      hasReplSlug: !!process.env.REPL_SLUG,
+      hasReplOwner: !!process.env.REPL_OWNER,
+      hasCustomDomain: !!process.env.CUSTOM_DOMAIN
+    },
     timestamp: new Date().toISOString()
   });
 
   // Validate OAuth configuration
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-    console.error('Missing Google OAuth credentials for ' + (isProd ? 'production' : 'development') + ' environment');
-    throw new Error('Google OAuth credentials not properly configured');
+    const error = new Error('Google OAuth credentials not properly configured');
+    console.error('Missing Google OAuth credentials:', {
+      environment: isProd ? 'production' : 'development',
+      missingClientId: !GOOGLE_CLIENT_ID,
+      missingClientSecret: !GOOGLE_CLIENT_SECRET,
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    throw error;
   }
 
   passport.use(
@@ -213,34 +211,38 @@ export function setupAuth(app: Express) {
     )
   );
 
-  // Google OAuth routes with enhanced error handling
+  // Google OAuth routes with enhanced error handling and logging
   app.get('/auth/google',
     (req, res, next) => {
       const configErrors = [];
       if (!GOOGLE_CLIENT_ID) configErrors.push('Client ID');
       if (!GOOGLE_CLIENT_SECRET) configErrors.push('Client Secret');
 
+      console.log('OAuth Initiation Request:', {
+        path: req.path,
+        headers: {
+          host: req.headers.host,
+          referer: req.headers.referer
+        },
+        timestamp: new Date().toISOString()
+      });
+
       if (configErrors.length > 0) {
+        const error = `OAuth configuration error: Missing ${configErrors.join(', ')}`;
         console.error('Google OAuth configuration error:', {
           missing: configErrors,
           environment: isProd ? 'production' : 'development',
           timestamp: new Date().toISOString()
         });
-        return res.status(500).send(`OAuth configuration error: Missing ${configErrors.join(', ')}`);
+        return res.status(500).send(error);
       }
 
-      console.log('Starting Google OAuth flow:', {
-        callbackUrl: CALLBACK_URL,
-        environment: isProd ? 'production' : 'development',
-        timestamp: new Date().toISOString()
-      });
       next();
     },
     passport.authenticate('google', {
       scope: ['profile', 'email'],
       prompt: 'select_account',
       accessType: 'offline',
-      // Add state parameter for CSRF protection
       state: Math.random().toString(36).substring(2, 15)
     })
   );
@@ -328,13 +330,6 @@ export function setupAuth(app: Express) {
               </body>
             </html>
           `);
-
-          console.log('Google OAuth authentication successful:', {
-            userId: user.id,
-            email: user.email,
-            redirectUrl: '/dashboard',
-            timestamp: new Date().toISOString()
-          });
         });
       })(req, res, next);
     }
