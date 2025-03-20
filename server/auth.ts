@@ -52,8 +52,10 @@ const getCallbackURL = (app: Express) => {
   if (isProd && customDomain) {
     callbackURL = `https://${customDomain}/auth/google/callback`;
   } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    // For Replit development environment
-    callbackURL = `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER.toLowerCase()}.repl.co/auth/google/callback`;
+    // For Replit development environment - match exact casing from Google Console
+    const replSlug = process.env.REPL_SLUG.toLowerCase();
+    const replOwner = process.env.REPL_OWNER; // Keep original casing
+    callbackURL = `https://${replSlug}.${replOwner}.repl.co/auth/google/callback`;
   } else {
     // Local development fallback
     callbackURL = `http://0.0.0.0:5000/auth/google/callback`;
@@ -66,6 +68,10 @@ const getCallbackURL = (app: Express) => {
     replSlug: process.env.REPL_SLUG,
     replOwner: process.env.REPL_OWNER,
     resultingURL: callbackURL,
+    authorizedURLs: [
+      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/test/callback`,
+      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
+    ],
     timestamp: new Date().toISOString()
   });
 
