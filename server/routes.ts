@@ -14,7 +14,8 @@ import {
   supplementReference,
   qualitativeLogs,
   researchDocuments,
-  logSummaries
+  logSummaries,
+  labResults
 } from "@db/schema";
 import { eq, and, ilike, sql, desc, notInArray, between } from "drizzle-orm";
 import { supplementService } from "./services/supplements";

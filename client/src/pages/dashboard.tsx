@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Scale, Moon, FileText } from "lucide-react";
+import { LineChart, Scale, Moon, FileIcon } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Dashboard() {
@@ -96,7 +96,7 @@ export default function Dashboard() {
               <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Labs</CardTitle>
-                  <FileText className="h-4 w-4 text-white/70" />
+                  <FileIcon className="h-4 w-4 text-white/70" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">Upload Results</div>
