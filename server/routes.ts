@@ -1203,7 +1203,68 @@ export function registerRoutes(app: Express): Server {
   // Setup summary routes
   setupSummaryRoutes(app);
 
-  app.get('/api/health-check', healthCheck);
+  // Lab results endpoints
+app.get('/api/labs', requireAuth, async (req, res) => {
+  try {
+    const results = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.userId, req.user!.id))
+      .orderBy(desc(labResults.uploadedAt));
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching lab results:', error);
+    res.status(500).json({ error: 'Failed to fetch lab results' });
+  }
+});
+
+app.post('/api/labs', requireAuth, async (req, res) => {
+  try {
+    const { fileName, fileType, fileUrl, notes } = req.body;
+    const [result] = await db
+      .insert(labResults)
+      .values({
+        userId: req.user!.id,
+        fileName,
+        fileType,
+        fileUrl,
+        notes,
+        metadata: { size: req.body.size || 0 }
+      })
+      .returning();
+
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Error uploading lab result:', error);
+    res.status(500).json({ error: 'Failed to upload lab result' });
+  }
+});
+
+app.delete('/api/labs/:id', requireAuth, async (req, res) => {
+  try {
+    const [result] = await db
+      .delete(labResults)
+      .where(
+        and(
+          eq(labResults.id, parseInt(req.params.id)),
+          eq(labResults.userId, req.user!.id)
+        )
+      )
+      .returning();
+
+    if (!result) {
+      return res.status(404).json({ error: 'Lab result not found' });
+    }
+
+    res.json({ message: 'Lab result deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting lab result:', error);
+    res.status(500).json({ error: 'Failed to delete lab result' });
+  }
+});
+
+app.get('/api/health-check', healthCheck);
   
   // Add the ChatGPT endpoint
   app.post('/api/chat', async (req, res) => {
