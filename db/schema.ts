@@ -127,7 +127,25 @@ export const selectSupplementReferenceSchema = createSelectSchema(supplementRefe
 export const insertQualitativeLogSchema = createInsertSchema(qualitativeLogs);
 export const selectQualitativeLogSchema = createSelectSchema(qualitativeLogs);
 
+// Lab results storage
+export const labResults = pgTable("lab_results", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  fileUrl: text("file_url").notNull(),
+  uploadedAt: timestamp("uploaded_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  notes: text("notes"),
+  metadata: jsonb("metadata").$type<{
+    size: number;
+    lastViewed?: string;
+    tags?: string[];
+  }>(),
+});
+
 // TypeScript type definitions for database operations
+export type InsertLabResult = typeof labResults.$inferInsert;
+export type SelectLabResult = typeof labResults.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertHealthStats = typeof healthStats.$inferInsert;
