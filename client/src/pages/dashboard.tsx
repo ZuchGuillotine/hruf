@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Scale, Moon } from "lucide-react";
+import { LineChart, Scale, Moon, FileText } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Dashboard() {
