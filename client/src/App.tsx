@@ -21,6 +21,8 @@ import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SubscriptionPage from "@/pages/subscription-page";
+import Research from "./pages/research";
+import Labs from "./pages/labs";
 
 /**
  * AdminRoute Component
@@ -127,6 +129,7 @@ function AppRouter() {
       <Route path="/supplement-history" component={SupplementHistory} />
       <Route path="/research" component={React.lazy(() => import("@/pages/research"))} />
       <Route path="/research/:slug" component={React.lazy(() => import("@/pages/research/[slug]"))} />
+      <Route path="/labs" component={Labs} />
       <Route path="/" component={Dashboard} />
       {/* Admin routes with lazy loading for better performance */}
       <Route path="/admin" component={(props) => {
