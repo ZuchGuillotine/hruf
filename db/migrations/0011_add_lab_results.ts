@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 async function main() {
   console.log('Starting lab_results table migration...');
   try {
+    // Create table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS lab_results (
         id SERIAL PRIMARY KEY,
@@ -16,8 +17,11 @@ async function main() {
         notes TEXT,
         metadata JSONB DEFAULT '{"size": 0}'::jsonb NOT NULL
       );
+    `);
 
-      CREATE INDEX idx_lab_results_user_id ON lab_results(user_id);
+    // Create index
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_lab_results_user_id ON lab_results(user_id);
     `);
     
     console.log('Lab results migration completed successfully');
@@ -31,7 +35,6 @@ main()
   .catch(console.error)
   .finally(() => process.exit());
 
-// Export up/down functions for compatibility
 export async function up(db: any) {
   await main();
 }
