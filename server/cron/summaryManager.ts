@@ -1,6 +1,9 @@
 // server/cron/summaryManager.ts
 
 import { advancedSummaryService } from '../services/advancedSummaryService';
+import { labSummaryService } from '../services/labSummaryService';
+import cron from 'node-cron';
+import { sql } from 'drizzle-orm';
 import logger from '../utils/logger';
 
 /**
@@ -9,6 +12,7 @@ import logger from '../utils/logger';
 class SummaryTaskManager {
   private dailyInterval: NodeJS.Timeout | null = null;
   private weeklyInterval: NodeJS.Timeout | null = null;
+  private labProcessingTask: cron.ScheduledTask | null = null;
 
   /**
    * Start the daily summary task
@@ -155,6 +159,60 @@ class SummaryTaskManager {
   /**
    * Stop all scheduled tasks
    */
+  /**
+   * Start lab results processing task
+   * @param hour Hour of the day to run the task (0-23)
+   */
+  startLabProcessingTask(hour: number = 2): void {
+    const cronExpression = `0 0 ${hour} * * *`; // Run at the specified hour every day
+    
+    logger.info(`Scheduling lab processing task to run at ${hour}:00 AM daily`);
+    
+    this.labProcessingTask = cron.schedule(cronExpression, async () => {
+      try {
+        logger.info('Running scheduled lab processing task');
+        await this.processUnprocessedLabResults();
+      } catch (error) {
+        logger.error('Error in scheduled lab processing task:', error);
+      }
+    });
+  }
+
+  /**
+   * Process all lab results that haven't been summarized yet
+   */
+  async processUnprocessedLabResults(): Promise<void> {
+    try {
+      // Find all lab results without a summary
+      const unprocessedLabs = await db
+        .select()
+        .from(labResults)
+        .where(
+          sql`metadata->>'summary' IS NULL OR metadata->>'summary' = ''`
+        );
+      
+      logger.info(`Found ${unprocessedLabs.length} unprocessed lab results`);
+      
+      // Process each unprocessed lab
+      for (const lab of unprocessedLabs) {
+        try {
+          await labSummaryService.summarizeLabResult(lab.id);
+          logger.info(`Processed lab result ${lab.id}`);
+          
+          // Add a small delay to avoid API rate limits
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          logger.error(`Error processing lab result ${lab.id}:`, error);
+          // Continue with the next lab
+        }
+      }
+      
+      logger.info('Completed processing of unprocessed lab results');
+    } catch (error) {
+      logger.error('Error in processing unprocessed lab results:', error);
+    }
+  }
+
   stopAllTasks(): void {
     if (this.dailyInterval) {
       clearInterval(this.dailyInterval);
@@ -164,6 +222,12 @@ class SummaryTaskManager {
     if (this.weeklyInterval) {
       clearInterval(this.weeklyInterval);
       this.weeklyInterval = null;
+    }
+
+    if (this.labProcessingTask) {
+      this.labProcessingTask.stop();
+      this.labProcessingTask = null;
+      logger.info('Lab processing task stopped');
     }
 
     logger.info('All summary tasks stopped');
