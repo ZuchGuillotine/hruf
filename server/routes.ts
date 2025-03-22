@@ -45,19 +45,15 @@ export function registerRoutes(app: Express): Server {
   // Ensure JSON parsing middleware is applied globally
   app.use(express.json());
 
-  // Setup file upload middleware
-  import fileUpload from 'express-fileupload';
-  app.use(fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
-    debug: true,
-
-  }));
-
   // Mount Stripe routes with explicit path
   app.use('/api/stripe', stripeRouter);
 
   // Mount supplements router
   app.use('/api/supplements', supplementsRouter);
+
+  // Mount lab results router
+  import labsRouter from './routes/labs';
+  app.use('/api/labs', requireAuth, labsRouter);
 
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
