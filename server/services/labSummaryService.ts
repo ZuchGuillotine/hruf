@@ -8,7 +8,7 @@ import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
-import * as pdf from "pdf-parse/lib";
+import pdf from "pdf-parse";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
