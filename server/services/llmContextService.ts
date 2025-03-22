@@ -8,6 +8,7 @@ import { summaryTaskManager } from '../cron/summaryManager';
 import { supplementLookupService } from './supplementLookupService';
 import { advancedSummaryService } from './advancedSummaryService';
 import { debugContext } from '../utils/contextDebugger';
+import { labSummaryService } from './labSummaryService';
 
 export async function constructUserContext(userId: string, userQuery: string): Promise<{ messages: Message[] }> {
   try {
@@ -160,6 +161,23 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     - Fallback summaries: ${supplementLogContent ? 'Yes' : 'No'}
     - Direct supplement context: ${directSupplementContext ? 'Yes' : 'No'}`);
 
+        // Get lab results summaries
+    let labResultsContext = '';
+    try {
+      const relevantLabResults = await labSummaryService.findRelevantLabResults(parseInt(userId), userQuery, 3);
+
+      if (relevantLabResults.length > 0) {
+        labResultsContext = "User's Lab Test Results:\n";
+        for (const lab of relevantLabResults) {
+          const labDate = new Date(lab.uploadedAt).toLocaleDateString();
+          labResultsContext += `[${labDate}] ${lab.fileName}: ${lab.metadata?.summary || "No summary available"}\n\n`;
+        }
+      }
+    } catch (labError) {
+      logger.warn(`Failed to fetch lab results for context: ${labError}`);
+      // Continue without lab results
+    }
+
     // Construct the final context message
     const messages: Message[] = [
       { role: "system" as const, content: SYSTEM_PROMPT },
@@ -168,6 +186,8 @@ User Context - Health Statistics:
 ${healthStatsContext}
 
 ${directSupplementContext ? `Direct Supplement Information:\n${directSupplementContext}\n` : ''}
+
+${labResultsContext ? `User Context - Lab Results:\n${labResultsContext}\n` : ''}
 
 User Context - Recent Summaries (last 14 days):
 ${recentSummaryContent || 'No recent summaries available.'}
