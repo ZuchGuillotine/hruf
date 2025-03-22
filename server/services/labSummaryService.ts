@@ -1,10 +1,9 @@
-
 // server/services/labSummaryService.ts
 import OpenAI from "openai";
 import { db } from "../../db";
 import { labResults } from "../../db/schema";
+import { and, eq, desc } from "drizzle-orm";
 import embeddingService from "./embeddingService";
-import { eq, desc } from "drizzle-orm";
 import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
@@ -19,18 +18,19 @@ const openai = new OpenAI({
 class LabSummaryService {
   // Constants for summarization
   private SUMMARY_MODEL = "gpt-4o-mini";
-  private MAX_TOKEN_LIMIT = 16000;
+  private MAX_TOKEN_LIMIT = 16000; // Conservative token limit for input context
+  private MAX_LABS_PER_REQUEST = 50; // Maximum number of labs to summarize in one request
 
   // System prompt for lab result summarization
   private LAB_SUMMARY_PROMPT = `
   You are a medical assistant helping to summarize lab results. Focus on:
-  
+
   1. Highlighting key measurements and their values
   2. Noting any abnormal values (high or low) and their significance
   3. Identifying trends if multiple lab results are provided
   4. Extracting the test date and type of lab (blood work, urine analysis, etc.)
   5. Being concise yet comprehensive about important health markers
-  
+
   Format the summary in a clear, structured way that prioritizes the most clinically significant findings.
   Do NOT attempt to diagnose conditions or prescribe treatments based on these results.
   `;
@@ -56,7 +56,7 @@ class LabSummaryService {
 
       // Get the file path
       const filePath = path.join(process.cwd(), labResult.fileUrl);
-      
+
       // Check if file exists
       if (!fs.existsSync(filePath)) {
         logger.error(`Lab result file not found at path: ${filePath}`);
@@ -66,16 +66,16 @@ class LabSummaryService {
       // Extract text content based on file type
       const fileBuffer = fs.readFileSync(filePath);
       const fileType = await fileTypeFromBuffer(fileBuffer);
-      
+
       let textContent = "";
-      
+
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         // Extract text from PDF
         const pdfData = await pdf(fileBuffer);
         textContent = pdfData.text;
       } else if (
-        labResult.fileType.startsWith('image/') || 
+        labResult.fileType.startsWith('image/') ||
         (fileType && fileType.mime && fileType.mime.startsWith('image/'))
       ) {
         // For images, we need a different approach
@@ -83,7 +83,7 @@ class LabSummaryService {
         textContent = `Image lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
         This is an image file that may contain lab results. The file type is ${labResult.fileType}.`;
       } else if (
-        labResult.fileType === 'application/msword' || 
+        labResult.fileType === 'application/msword' ||
         labResult.fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ) {
         // For Word documents, use basic metadata for now
@@ -118,7 +118,7 @@ class LabSummaryService {
       });
 
       const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
-      
+
       // Update lab result with summary in metadata
       await db
         .update(labResults)
@@ -173,7 +173,7 @@ class LabSummaryService {
         } else {
           // Generate summary if not already available
           const summary = await this.summarizeLabResult(labResult.id);
-          
+
           if (summary) {
             summaries.push({
               id: labResult.id,
@@ -201,26 +201,26 @@ class LabSummaryService {
    */
   async findRelevantLabResults(userId: number, query: string, limit: number = 3): Promise<any[]> {
     try {
-      // Use embedding service to find similar content if available
-      try {
-        const similarLabs = await embeddingService.findSimilarLabContent(userId, query, limit);
-        if (similarLabs && similarLabs.length > 0) {
-          return similarLabs;
-        }
-      } catch (vectorError) {
-        logger.warn(`Vector search for lab results failed, falling back to recency: ${vectorError}`);
-        // Fall back to recency-based retrieval
-      }
+      // Get recent lab results, sorted by date
+      const recentLabs = await db
+        .select()
+        .from(labResults)
+        .where(
+          and(
+            eq(labResults.userId, userId)
+          )
+        )
+        .orderBy(desc(labResults.uploadedAt))
+        .limit(limit);
 
-      // Fallback to getting most recent lab results
-      return await this.getUserLabSummaries(userId, limit);
+      return recentLabs;
     } catch (error) {
-      logger.error(`Error finding relevant lab results for user ${userId}:`, error);
+      logger.error('Error finding relevant lab results:', error);
       return [];
     }
   }
 }
 
-// Export a singleton instance
+// Export singleton instance
 export const labSummaryService = new LabSummaryService();
 export default labSummaryService;
