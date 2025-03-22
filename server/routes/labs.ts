@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import fileUpload from 'express-fileupload';
 import path from 'path';
 import fs from 'fs';
+import { labSummaryService } from '../services/labSummaryService';
 
 const router = express.Router();
 
@@ -77,6 +78,23 @@ router.post('/', async (req, res) => {
       fileUrl: fileUrl,
       userId: req.user!.id
     });
+
+    // Trigger background summarization
+    try {
+      // Don't await summarization to avoid delaying response
+      labSummaryService.summarizeLabResult(result.id)
+        .then(() => {
+          console.log(`Background summary generation completed for lab ID ${result.id}`);
+        })
+        .catch(summaryError => {
+          console.error(`Background summary generation failed for lab ID ${result.id}:`, summaryError);
+        });
+        
+      console.log('Background summary generation started for lab ID:', result.id);
+    } catch (summaryError) {
+      // Log but don't fail the upload if summarization fails
+      console.error('Failed to initiate lab summarization:', summaryError);
+    }
 
     res.json(result);
   } catch (error) {
