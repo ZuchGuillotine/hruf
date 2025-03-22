@@ -1,9 +1,8 @@
-
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Upload, File, Check } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export default function LabUpload() {
   const [files, setFiles] = useState<File[]>([]);
@@ -26,7 +25,7 @@ export default function LabUpload() {
   const handleUpload = async () => {
     try {
       setUploading(true);
-      
+
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
@@ -71,7 +70,7 @@ export default function LabUpload() {
         <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
         <p className="mt-2">Drag & drop lab files here, or click to select</p>
       </div>
-      
+
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file) => (
