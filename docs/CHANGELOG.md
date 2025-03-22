@@ -1,6 +1,12 @@
 
 ## [Unreleased]
 ### Added (March 22, 2025)
+- Fixed lab results upload functionality:
+  - Corrected use-toast import path in lab-upload component
+  - Enhanced file upload error handling
+  - Added proper file type validation
+  - Improved upload success feedback
+  - Fixed file display in UI
 - Enhanced debug logging system for context operations
 - Implemented fallback mechanisms for failed vector searches
 - Added comprehensive error tracking for context building
