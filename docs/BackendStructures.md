@@ -2,6 +2,34 @@
 
 ## Service Initialization
 
+### Enhanced Service Architecture
+
+#### Context Building System
+- Service: llmContextService.ts and llmContextService_query.ts
+  - Purpose: Builds intelligent context for different interaction types
+  - Features:
+    - Vector-based semantic search integration
+    - Lab results context incorporation
+    - Token usage optimization
+    - Authentication-aware context building
+    - Comprehensive debug logging
+    - Proper error recovery mechanisms
+    - Real-time context validation
+    - Streaming response support
+    - Enhanced fallback mechanisms
+
+#### Lab Results Integration  
+- Service: labSummaryService.ts
+  - Purpose: Processes and summarizes lab results
+  - Features:
+    - Intelligent analysis of lab data
+    - Vector embedding generation
+    - Context integration capabilities
+    - Scheduled processing tasks
+    - Error handling and validation
+    - Token-efficient summarization
+    - Metadata enrichment
+
 ### Service Startup Architecture
 - Class: ServiceInitializer (in server/services/serviceInitializer.ts)
   - Purpose: Provides orderly initialization of all dependent services
