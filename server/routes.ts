@@ -5,6 +5,7 @@ import { chatWithAI } from "./openai";
 import { queryWithAI } from "./services/openaiQueryService";
 import { qualitativeChatWithAI } from "./services/llmService";
 import { db } from "@db";
+import labsRouter from './routes/labs';
 import {
   supplements,
   healthStats,
@@ -60,9 +61,6 @@ export function registerRoutes(app: Express): Server {
     }
     next();
   };
-
-  // Import and mount routers after middleware definition
-  import labsRouter from './routes/labs';
 
   // Mount routes
   app.use('/api/stripe', stripeRouter);
