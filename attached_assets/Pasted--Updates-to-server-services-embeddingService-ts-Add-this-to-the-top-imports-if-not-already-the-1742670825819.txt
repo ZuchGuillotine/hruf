@@ -1,0 +1,103 @@
+// Updates to server/services/embeddingService.ts
+
+// Add this to the top imports if not already there
+import { labResults } from '../../db/schema';
+
+// Add this new class to the EmbeddingService class
+/**
+ * Create an embedding for a lab result summary
+ */
+async createLabEmbedding(labId: number, content: string): Promise<void> {
+  try {
+    // Generate embedding for the lab summary
+    const embedding = await this.generateEmbedding(content);
+
+    // Update the lab result with the embedding
+    await db.update(labResults)
+      .set({
+        metadata: {
+          ...(await db.select().from(labResults).where(eq(labResults.id, labId)).limit(1))[0]?.metadata,
+          embedding
+        }
+      })
+      .where(eq(labResults.id, labId));
+
+    logger.info(`Created embedding for lab result ${labId}`);
+  } catch (error) {
+    logger.error(`Failed to create embedding for lab result ${labId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Find lab results similar to the query
+ */
+async findSimilarLabContent(userId: number, query: string, limit: number = 3): Promise<any[]> {
+  try {
+    // Generate embedding for the query
+    const queryEmbedding = await this.generateEmbedding(query);
+
+    // First try vector search if metadata has embeddings
+    const userLabResults = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.userId, userId));
+
+    // Filter lab results that have embeddings
+    const labsWithEmbeddings = userLabResults.filter(
+      lab => lab.metadata && lab.metadata.embedding
+    );
+
+    if (labsWithEmbeddings.length > 0) {
+      // Calculate similarity scores
+      const scoredLabs = labsWithEmbeddings.map(lab => {
+        // Calculate cosine similarity
+        const similarity = this.calculateCosineSimilarity(
+          queryEmbedding,
+          lab.metadata.embedding
+        );
+        
+        return {
+          ...lab,
+          similarity
+        };
+      });
+
+      // Sort by similarity and take top results
+      return scoredLabs
+        .sort((a, b) => b.similarity - a.similarity)
+        .filter(lab => lab.similarity > this.SIMILARITY_THRESHOLD)
+        .slice(0, limit);
+    }
+
+    // If no embeddings found, return empty array
+    return [];
+  } catch (error) {
+    logger.error(`Error finding similar lab content:`, error);
+    return [];
+  }
+}
+
+/**
+ * Calculate cosine similarity between two vectors
+ */
+private calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  
+  normA = Math.sqrt(normA);
+  normB = Math.sqrt(normB);
+  
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+  
+  return dotProduct / (normA * normB);
+}
