@@ -125,6 +125,9 @@ class ServiceInitializer {
       // Start weekly summary task to run on Sunday at 2 AM
       summaryTaskManager.startWeeklySummaryTask(0, 2);
 
+      // Start lab processing task to run at 3 AM
+      summaryTaskManager.startLabProcessingTask(3);
+
       logger.info('Scheduled tasks started successfully');
     } catch (error) {
       logger.error('Failed to start scheduled tasks:', error);
