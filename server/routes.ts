@@ -46,10 +46,14 @@ export function registerRoutes(app: Express): Server {
   app.use(express.json());
 
   // Setup file upload middleware
-  import fileUpload from 'express-fileupload';
-  app.use(fileUpload({
+  import fileUploadPkg from 'express-fileupload';
+  app.use(fileUploadPkg({
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
-    debug: true
+    debug: true,
+    useTempFiles: true,
+    tempFileDir: '/tmp/',
+    safeFileNames: true,
+    preserveExtension: true
   }));
 
   // Mount Stripe routes with explicit path
