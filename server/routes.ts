@@ -61,30 +61,14 @@ export function registerRoutes(app: Express): Server {
     next();
   };
 
-  // Import and mount routers
+  // Import and mount routers after middleware definition
   import labsRouter from './routes/labs';
-  
-  // Mount Stripe routes with explicit path
+
+  // Mount routes
   app.use('/api/stripe', stripeRouter);
-
-  // Mount supplements router
   app.use('/api/supplements', supplementsRouter);
-
-  // Mount lab results router
   app.use('/api/labs', requireAuth, labsRouter);
-    if (!req.isAuthenticated()) {
-      console.log('Authentication check failed:', {
-        session: req.session,
-        user: req.user,
-        timestamp: new Date().toISOString()
-      });
-      return res.status(401).json({
-        error: "Authentication required",
-        redirect: "/login"
-      });
-    }
-    next();
-  };
+
 
   // Middleware to check admin role
   const requireAdmin = (req: Request, res: Response, next: Function) => {
