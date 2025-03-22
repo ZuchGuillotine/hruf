@@ -45,6 +45,13 @@ export function registerRoutes(app: Express): Server {
   // Ensure JSON parsing middleware is applied globally
   app.use(express.json());
 
+  // Setup file upload middleware
+  import fileUpload from 'express-fileupload';
+  app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    debug: true
+  }));
+
   // Mount Stripe routes with explicit path
   app.use('/api/stripe', stripeRouter);
 
@@ -1205,68 +1212,68 @@ export function registerRoutes(app: Express): Server {
   setupSummaryRoutes(app);
 
   // Lab results endpoints
-app.get('/api/labs', requireAuth, async (req, res) => {
-  try {
-    const results = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.userId, req.user!.id))
-      .orderBy(desc(labResults.uploadedAt));
+  app.get('/api/labs', requireAuth, async (req, res) => {
+    try {
+      const results = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.userId, req.user!.id))
+        .orderBy(desc(labResults.uploadedAt));
 
-    res.json(results);
-  } catch (error) {
-    console.error('Error fetching lab results:', error);
-    res.status(500).json({ error: 'Failed to fetch lab results' });
-  }
-});
-
-app.post('/api/labs', requireAuth, async (req, res) => {
-  try {
-    const { fileName, fileType, fileUrl, notes } = req.body;
-    const [result] = await db
-      .insert(labResults)
-      .values({
-        userId: req.user!.id,
-        fileName,
-        fileType,
-        fileUrl,
-        notes,
-        metadata: { size: req.body.size || 0 }
-      })
-      .returning();
-
-    res.status(201).json(result);
-  } catch (error) {
-    console.error('Error uploading lab result:', error);
-    res.status(500).json({ error: 'Failed to upload lab result' });
-  }
-});
-
-app.delete('/api/labs/:id', requireAuth, async (req, res) => {
-  try {
-    const [result] = await db
-      .delete(labResults)
-      .where(
-        and(
-          eq(labResults.id, parseInt(req.params.id)),
-          eq(labResults.userId, req.user!.id)
-        )
-      )
-      .returning();
-
-    if (!result) {
-      return res.status(404).json({ error: 'Lab result not found' });
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching lab results:', error);
+      res.status(500).json({ error: 'Failed to fetch lab results' });
     }
+  });
 
-    res.json({ message: 'Lab result deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting lab result:', error);
-    res.status(500).json({ error: 'Failed to delete lab result' });
-  }
-});
+  app.post('/api/labs', requireAuth, async (req, res) => {
+    try {
+      if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).send('No files were uploaded.');
+      }
 
-app.get('/api/health-check', healthCheck);
-  
+      let sampleFile = req.files.sampleFile;
+      let uploadPath = __dirname + '/uploads/' + sampleFile.name;
+
+      // Use the mv() method to place the file somewhere on your server
+      sampleFile.mv(uploadPath, function (err) {
+        if (err)
+          return res.status(500).send(err);
+
+        res.send('File uploaded!');
+      });
+    } catch (error) {
+      console.error('Error uploading lab result:', error);
+      res.status(500).json({ error: 'Failed to upload lab result' });
+    }
+  });
+
+  app.delete('/api/labs/:id', requireAuth, async (req, res) => {
+    try {
+      const [result] = await db
+        .delete(labResults)
+        .where(
+          and(
+            eq(labResults.id, parseInt(req.params.id)),
+            eq(labResults.userId, req.user!.id)
+          )
+        )
+        .returning();
+
+      if (!result) {
+        return res.status(404).json({ error: 'Lab result not found' });
+      }
+
+      res.json({ message: 'Lab result deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting lab result:', error);
+      res.status(500).json({ error: 'Failed to delete lab result' });
+    }
+  });
+
+  app.get('/api/health-check', healthCheck);
+
   // Add the ChatGPT endpoint
   app.post('/api/chat', async (req, res) => {
     try {
@@ -1298,7 +1305,7 @@ app.get('/api/health-check', healthCheck);
       try {
         // Use the LLM service to generate a response with streaming
         const stream = await qualitativeChatWithAI(userId.toString(), message);
-        
+
         // Track if we've written any chunks to detect empty responses
         let chunksWritten = 0;
 
@@ -1306,7 +1313,7 @@ app.get('/api/health-check', healthCheck);
         for await (const chunk of stream) {
           // Send chunk to client
           res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-          
+
           // Count valid chunks for monitoring
           if (chunk.response) {
             chunksWritten++;
@@ -1319,7 +1326,7 @@ app.get('/api/health-check', healthCheck);
         }
 
         console.log(`Chat stream completed: ${chunksWritten} chunks written`);
-        
+
         // End the stream
         res.end();
       } catch (error) {
@@ -1338,7 +1345,7 @@ app.get('/api/health-check', healthCheck);
         message: error.message,
         stack: error.stack
       } : error);
-      
+
       // If headers are already sent, we need to send the error as an event
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ 
