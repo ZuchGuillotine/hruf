@@ -45,6 +45,25 @@ export function registerRoutes(app: Express): Server {
   // Ensure JSON parsing middleware is applied globally
   app.use(express.json());
 
+  // Middleware to check authentication
+  const requireAuth = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      console.log('Authentication check failed:', {
+        session: req.session,
+        user: req.user,
+        timestamp: new Date().toISOString()
+      });
+      return res.status(401).json({
+        error: "Authentication required",
+        redirect: "/login"
+      });
+    }
+    next();
+  };
+
+  // Import and mount routers
+  import labsRouter from './routes/labs';
+  
   // Mount Stripe routes with explicit path
   app.use('/api/stripe', stripeRouter);
 
@@ -52,11 +71,7 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/supplements', supplementsRouter);
 
   // Mount lab results router
-  import labsRouter from './routes/labs';
   app.use('/api/labs', requireAuth, labsRouter);
-
-  // Middleware to check authentication
-  const requireAuth = (req: Request, res: Response, next: Function) => {
     if (!req.isAuthenticated()) {
       console.log('Authentication check failed:', {
         session: req.session,
