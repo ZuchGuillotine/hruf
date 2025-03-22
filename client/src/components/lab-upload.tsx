@@ -2,10 +2,12 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { Upload, File } from "lucide-react";
+import { Upload, File, Check } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 export default function LabUpload() {
   const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -22,49 +24,75 @@ export default function LabUpload() {
   });
 
   const handleUpload = async () => {
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('files', file);
-    });
-
     try {
-      const response = await fetch('/api/labs/upload', {
-        method: 'POST',
-        body: formData
-      });
-      if (response.ok) {
-        setFiles([]);
+      setUploading(true);
+      
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/labs', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed for ${file.name}`);
+        }
       }
+
+      setFiles([]);
+      toast({
+        title: "Success",
+        description: "Lab results uploaded successfully",
+        duration: 3000
+      });
     } catch (error) {
       console.error('Upload failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload lab results",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
     <div className="space-y-4">
-      <div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer ${
-          isDragActive ? 'border-green-500 bg-green-50' : 'border-gray-300'
-        }`}
+      <div 
+        {...getRootProps()} 
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
+          ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}
       >
         <input {...getInputProps()} />
-        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-2">Drag & drop files here, or click to select files</p>
-        <p className="text-sm text-gray-500">Supports PDF, DOC, DOCX, and images</p>
+        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+        <p className="mt-2">Drag & drop lab files here, or click to select</p>
       </div>
-
+      
       {files.length > 0 && (
         <div className="space-y-2">
-          <h3 className="font-semibold">Selected Files:</h3>
-          {files.map((file, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
+          {files.map((file) => (
+            <div key={file.name} className="flex items-center gap-2 text-sm">
               <File className="h-4 w-4" />
               <span>{file.name}</span>
             </div>
           ))}
-          <Button onClick={handleUpload} className="w-full">
-            Upload {files.length} file{files.length !== 1 ? 's' : ''}
+          <Button 
+            onClick={handleUpload} 
+            disabled={uploading}
+            className="w-full"
+          >
+            {uploading ? (
+              <span>Uploading...</span>
+            ) : (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Upload {files.length} file{files.length > 1 ? 's' : ''}
+              </>
+            )}
           </Button>
         </div>
       )}

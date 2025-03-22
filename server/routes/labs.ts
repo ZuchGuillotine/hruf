@@ -4,16 +4,19 @@ import { db } from '@db';
 import { labResults } from '@db/schema';
 import { eq } from 'drizzle-orm';
 import fileUpload from 'express-fileupload';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 
-// Configure file upload middleware for this router
+// Configure file upload middleware
 router.use(fileUpload({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   useTempFiles: true,
   tempFileDir: '/tmp/',
   safeFileNames: true,
-  preserveExtension: true
+  preserveExtension: true,
+  debug: true // Enable debug logs
 }));
 
 // Get all lab results for a user
@@ -34,13 +37,27 @@ router.get('/', async (req, res) => {
 // Upload new lab result
 router.post('/', async (req, res) => {
   try {
-    if (!req.files || !req.files.file) {
+    if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const file = req.files.file as fileUpload.UploadedFile;
-    const fileUrl = `/uploads/${file.name}`; // You'll need to implement actual file storage
+    const uploadDir = path.join(process.cwd(), 'uploads');
     
+    // Ensure upload directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = path.join(uploadDir, fileName);
+
+    // Move file to uploads directory
+    await file.mv(filePath);
+    
+    const fileUrl = `/uploads/${fileName}`;
+
+    // Save file info to database
     const [result] = await db
       .insert(labResults)
       .values({
@@ -55,6 +72,12 @@ router.post('/', async (req, res) => {
       })
       .returning();
 
+    console.log('Lab result saved:', {
+      fileName: file.name,
+      fileUrl: fileUrl,
+      userId: req.user!.id
+    });
+
     res.json(result);
   } catch (error) {
     console.error('Error uploading lab result:', error);
@@ -67,11 +90,19 @@ router.delete('/:id', async (req, res) => {
   try {
     const [result] = await db
       .delete(labResults)
-      .where(eq(labResults.id, parseInt(req.params.id)))
+      .where(
+        eq(labResults.id, parseInt(req.params.id))
+      )
       .returning();
 
     if (!result) {
       return res.status(404).json({ error: 'Lab result not found' });
+    }
+
+    // Delete file from uploads directory
+    const filePath = path.join(process.cwd(), result.fileUrl);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
 
     res.json({ message: 'Lab result deleted successfully' });
