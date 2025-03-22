@@ -8,7 +8,8 @@ import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
-import pdf from "pdf-parse";
+import * as pdfParse from "pdf-parse/lib/pdf-parse.js";
+const pdf = (buffer: Buffer) => pdfParse(buffer, { max: 0 }); // Disable test file loading
 
 // Initialize OpenAI client
 const openai = new OpenAI({
