@@ -1,4 +1,25 @@
 
+## [Unreleased]
+### Added (March 22, 2025)
+- Enhanced debug logging system for context operations
+- Implemented fallback mechanisms for failed vector searches
+- Added comprehensive error tracking for context building
+- Enhanced token usage monitoring and optimization
+
+### Fixed
+- Improved vector search error handling
+- Enhanced streaming response stability
+- Added better authentication state tracking
+- Improved context component verification
+
+### Known Issues
+- Context save operations incomplete
+- Retrieval operations returning partial data
+- Vector search casting errors ongoing
+- Streaming stability improvements needed
+
+
+
 # Changelog
 
 ## [March 2025]
