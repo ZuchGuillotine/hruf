@@ -56,6 +56,7 @@
   - qualitativeLogs: Chat interactions and AI responses
   - supplementReference: Autocomplete and search functionality
   - query_chats: General query chat interactions
+  - labResults: User's uploaded lab test results and reports
 
 
 ### Data Flow
@@ -195,6 +196,13 @@
     - Timestamps
     - User ID (if authenticated)
 
+- labResults:
+    - File path and URL
+    - Upload date
+    - File metadata (size, type)
+    - User ID
+    - Notes and tags
+
 
 #### Reference Tables
 - supplementReference:
@@ -320,6 +328,26 @@ POST /api/summaries/realtime
 
 ## Data Flow Architecture
 
+### Lab Results File Handling
+1. File Upload Flow:
+   - Client sends multipart form data
+   - Server processes via express-fileupload middleware
+   - Files stored in uploads directory with timestamp-prefixed names
+   - Metadata stored in labResults table
+   - Success/failure feedback sent to client
+
+2. File Access Control:
+   - Authentication required for all operations
+   - User-specific access restrictions
+   - Proper file cleanup on deletion
+   - Secure file storage path handling
+
+3. Error Handling:
+   - File size validation (50MB limit)
+   - File type checking
+   - Storage capacity verification
+   - Comprehensive error reporting
+
 ### Authentication Data Flow
 1. Client Request:
    - Session cookie included
@@ -377,6 +405,25 @@ POST /api/summaries/realtime
 
 
 API Routes (from routes.ts)
+#### Lab Results Routes
+GET /api/labs
+- Retrieves all lab results for authenticated user
+- Returns array of lab result objects with metadata
+- Requires authentication
+
+POST /api/labs
+- Uploads new lab result file
+- Handles file upload with 50MB size limit
+- Stores file in uploads directory
+- Creates database entry with metadata
+- Requires authentication
+
+DELETE /api/labs/:id
+- Deletes specific lab result by ID
+- Removes both database entry and physical file
+- Requires authentication
+- Verifies user ownership before deletion
+
 #### AI Query Routes
 POST /api/query
 - Handles general supplement information queries
