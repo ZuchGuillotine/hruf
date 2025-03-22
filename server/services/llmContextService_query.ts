@@ -21,6 +21,8 @@ import { summaryTaskManager } from "../cron/summaryManager";
 import { supplementLookupService } from "./supplementLookupService";
 import logger from "../utils/logger";
 import { debugContext } from '../utils/contextDebugger';
+import { labSummaryService } from './labSummaryService'; // Added import
+
 
 /**
  * Check if the user has any logs or summaries in the database
@@ -60,21 +62,6 @@ async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
   }
 }
 
-// Separate system prompt for general supplement queries
-//This import is moved to the updated function.
-//export const QUERY_SYSTEM_PROMPT = `You are an expert assistant specializing in supplement knowledge and health information. 
-//Your role is to provide accurate, evidence-based information about supplements, their effects, interactions, and best practices.
-//
-//When answering:
-//1. Focus on providing factual, scientifically-backed information
-//2. Specify when something is based on limited evidence or is controversial
-//3. Avoid making definitive medical claims or prescribing supplements
-//4. Acknowledge when you don't have enough information to give a complete answer
-//5. Consider the user's personal health context if provided
-//6. Think deeply about how supplements may interact with the user's current regimen and provide specific recommendations
-//7. It is not necessary to advise the user to consult with a healthcare provider, the user is already receiving a disclaimer in static text on the page
-//
-//If the user has shared their supplement tracking history, you may reference it to provide more personalized context.`;
 
 import { Message } from '../lib/types';
 import { QUERY_SYSTEM_PROMPT } from '../openai';
@@ -86,6 +73,8 @@ import { debugContext } from '../utils/contextDebugger';
 import { summaryTaskManager } from '../cron/summaryManager';
 import { supplementLookupService } from './supplementLookupService';
 import { advancedSummaryService } from './advancedSummaryService';
+import { healthStatsService } from './healthStatsService'; // Added import
+
 
 export async function constructQueryContext(userId: number | null, userQuery: string): Promise<{ messages: Message[] }> {
   try {
@@ -126,7 +115,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 ` : 'No health stats data available.';
 
     // Get direct supplement context
-    const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery);
+    const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery); //Fixed userId parameter
 
     // Build context content
     let contextContent = '';
@@ -300,6 +289,26 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       contextContent = "Error retrieving supplement history. Proceeding with limited context.\n";
     }
 
+    // Get lab results context
+    let labResultsContext = '';
+    if (userId) {
+      try {
+        const relevantLabResults = await labSummaryService.findRelevantLabResults(userId, userQuery, 2);
+
+        if (relevantLabResults.length > 0) {
+          labResultsContext = "Recent Lab Test Results:\n";
+
+          for (const lab of relevantLabResults) {
+            const labDate = new Date(lab.uploadedAt).toLocaleDateString();
+            labResultsContext += `[${labDate}] ${lab.fileName}: ${lab.metadata?.summary || "No summary available"}\n\n`;
+          }
+        }
+      } catch (labError) {
+        logger.warn(`Failed to fetch lab results for query context: ${labError}`);
+        // Continue without lab results
+      }
+    }
+
     // Construct the final context message
     const messages: Message[] = [
       { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
@@ -308,6 +317,8 @@ User Health Profile:
 ${healthStatsContext}
 
 ${directSupplementContext ? `Direct Supplement Information:\n${directSupplementContext}\n` : ''}
+
+${labResultsContext ? `Lab Test Results:\n${labResultsContext}\n` : ''}
 
 ${contextContent}
 
