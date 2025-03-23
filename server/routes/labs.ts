@@ -10,14 +10,18 @@ import { labSummaryService } from '../services/labSummaryService';
 
 const router = express.Router();
 
-// Configure file upload middleware
+// Configure file upload middleware with more permissive settings
 router.use(fileUpload({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   useTempFiles: true,
   tempFileDir: '/tmp/',
   safeFileNames: true,
   preserveExtension: true,
-  debug: true // Enable debug logs
+  debug: true, // Enable debug logs
+  createParentPath: true,
+  parseNested: true,
+  useTempFiles: true,
+  abortOnLimit: true
 }));
 
 // Get all lab results for a user
