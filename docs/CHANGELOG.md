@@ -1,5 +1,12 @@
 
 ## [Unreleased]
+### Known Issues (March 23, 2025)
+- Lab Results PDF Parsing:
+  - PDF parser looking for test file at incorrect path './test/data/05-versions-space.pdf'
+  - Multiple attempts to fix file path handling unsuccessful
+  - Issue persists despite changes to file path construction
+  - Need to investigate pdf-parse package configuration
+
 ### Added (March 22, 2025)
 - Enhanced Context Services Architecture:
   - Improved context building reliability and efficiency
