@@ -193,18 +193,29 @@ class SummaryTaskManager {
       
       logger.info(`Found ${unprocessedLabs.length} unprocessed lab results`);
       
+      const failures: number[] = [];
+      
       // Process each unprocessed lab
       for (const lab of unprocessedLabs) {
         try {
-          await labSummaryService.summarizeLabResult(lab.id);
-          logger.info(`Processed lab result ${lab.id}`);
+          const summary = await labSummaryService.summarizeLabResult(lab.id);
+          if (summary) {
+            logger.info(`Successfully processed lab result ${lab.id}`);
+          } else {
+            failures.push(lab.id);
+            logger.error(`Failed to generate summary for lab ${lab.id}`);
+          }
           
           // Add a small delay to avoid API rate limits
           await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
+          failures.push(lab.id);
           logger.error(`Error processing lab result ${lab.id}:`, error);
-          // Continue with the next lab
         }
+      }
+
+      if (failures.length > 0) {
+        logger.error(`Failed to process ${failures.length} labs: ${failures.join(', ')}`);
       }
       
       logger.info('Completed processing of unprocessed lab results');
