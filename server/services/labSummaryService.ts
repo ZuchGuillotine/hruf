@@ -69,9 +69,9 @@ class LabSummaryService {
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         try {
-          // Parse PDF to text
-          const pdfParser = require('pdf-parse');
-          const pdfData = await pdfParser(fileBuffer);
+          // Parse PDF to text using dynamic import
+          const { default: pdfParse } = await import('pdf-parse');
+          const pdfData = await pdfParse(fileBuffer);
           textContent = pdfData.text;
           
           // Generate summary using OpenAI
