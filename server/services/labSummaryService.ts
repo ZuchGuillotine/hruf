@@ -8,9 +8,6 @@ import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
-import * as pdfParse from "pdf-parse/lib/pdf-parse.js";
-const pdf = (buffer: Buffer) => pdfParse(buffer, { max: 0 }); // Disable test file loading
-
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -72,9 +69,20 @@ class LabSummaryService {
 
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
-        // Extract text from PDF
-        const pdfData = await pdf(fileBuffer);
-        textContent = pdfData.text;
+        // Send PDF directly to API
+        const completion = await openai.chat.completions.create({
+          model: this.SUMMARY_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: this.LAB_SUMMARY_PROMPT
+            }
+          ],
+          file: fileBuffer,
+          max_tokens: 1000
+        });
+        
+        return completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
       } else if (
         labResult.fileType.startsWith('image/') ||
         (fileType && fileType.mime && fileType.mime.startsWith('image/'))
