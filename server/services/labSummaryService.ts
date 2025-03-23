@@ -68,20 +68,33 @@ class LabSummaryService {
 
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
-        // Send PDF directly to API
-        const completion = await openai.chat.completions.create({
-          model: this.SUMMARY_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: this.LAB_SUMMARY_PROMPT
-            }
-          ],
-          file: fileBuffer,
-          max_tokens: 1000
-        });
-        
-        return completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
+        try {
+          // Parse PDF to text
+          const pdfParser = require('pdf-parse');
+          const pdfData = await pdfParser(fileBuffer);
+          textContent = pdfData.text;
+          
+          // Generate summary using OpenAI
+          const completion = await openai.chat.completions.create({
+            model: this.SUMMARY_MODEL,
+            messages: [
+              {
+                role: "system",
+                content: this.LAB_SUMMARY_PROMPT
+              },
+              {
+                role: "user",
+                content: `Here is a lab result to summarize:\n\n${textContent}`
+              }
+            ],
+            max_tokens: 1000
+          });
+          
+          return completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
+        } catch (error) {
+          logger.error(`Error parsing PDF: ${error}`);
+          return null;
+        }
       } else if (
         labResult.fileType.startsWith('image/') ||
         (fileType && fileType.mime && fileType.mime.startsWith('image/'))
