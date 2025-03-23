@@ -71,9 +71,11 @@ class LabSummaryService {
         try {
           // Parse PDF to text using dynamic import
           const { default: pdfParse } = await import('pdf-parse');
-          const filePath = path.join(process.cwd(), 'workspace', labResult.fileUrl);
-          const fileBuffer = fs.readFileSync(filePath);
-          const pdfData = await pdfParse(fileBuffer, {});
+          const filePath = path.join(process.cwd(), labResult.fileUrl.replace(/^\//, ''));
+          const dataBuffer = fs.readFileSync(filePath);
+          const pdfData = await pdfParse(dataBuffer, {
+            pagerender: function(pageData) { return pageData.getTextContent(); }
+          });
           textContent = pdfData.text;
           
           // Generate summary using OpenAI
