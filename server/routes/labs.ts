@@ -10,8 +10,8 @@ import { labSummaryService } from '../services/labSummaryService';
 
 const router = express.Router();
 
-// Configure file upload middleware with more permissive settings
-router.use(fileUpload({
+// Configure file upload middleware
+const uploadMiddleware = fileUpload({
   limits: { fileSize: 50 * 1024 * 1024 },
   useTempFiles: true,
   tempFileDir: '/tmp/',
@@ -20,9 +20,8 @@ router.use(fileUpload({
   debug: true,
   createParentPath: true,
   parseNested: true,
-  abortOnLimit: true,
-  uriDecoding: true
-}));
+  abortOnLimit: true
+});
 
 // Get all lab results for a user
 router.get('/', async (req, res) => {
@@ -40,7 +39,7 @@ router.get('/', async (req, res) => {
 });
 
 // Upload new lab result
-router.post('/', async (req, res) => {
+router.post('/', uploadMiddleware, async (req, res) => {
   try {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: 'No file uploaded' });

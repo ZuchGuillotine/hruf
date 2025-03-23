@@ -33,9 +33,7 @@ export default function LabUpload() {
         const response = await fetch('/api/labs', {
           method: 'POST',
           body: formData,
-          headers: {
-            'Accept': 'application/json',
-          }
+          credentials: 'include'
         });
 
         if (!response.ok) {
