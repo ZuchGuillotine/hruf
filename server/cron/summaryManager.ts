@@ -213,6 +213,15 @@ class SummaryTaskManager {
     }
   }
 
+  startLabProcessingTask(hour: number = 3): void {
+    const cronSchedule = `0 0 ${hour} * * *`; // Run at specified hour daily
+    this.labProcessingTask = cron.schedule(cronSchedule, async () => {
+      logger.info('Starting scheduled lab results processing');
+      await this.processUnprocessedLabResults();
+    });
+    logger.info(`Lab processing task scheduled for ${hour}:00 AM daily`);
+  }
+
   stopAllTasks(): void {
     if (this.dailyInterval) {
       clearInterval(this.dailyInterval);
@@ -222,6 +231,11 @@ class SummaryTaskManager {
     if (this.weeklyInterval) {
       clearInterval(this.weeklyInterval);
       this.weeklyInterval = null;
+    }
+
+    if (this.labProcessingTask) {
+      this.labProcessingTask.stop();
+      this.labProcessingTask = null;
     }
 
     if (this.labProcessingTask) {
