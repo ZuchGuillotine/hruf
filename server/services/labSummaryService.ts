@@ -69,8 +69,10 @@ class LabSummaryService {
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         try {
-          // Parse PDF to text using dynamic import
+          // Parse PDF to text using dynamic import and absolute file path
           const { default: pdfParse } = await import('pdf-parse');
+          const filePath = path.join(process.cwd(), labResult.fileUrl);
+          const fileBuffer = fs.readFileSync(filePath);
           const pdfData = await pdfParse(fileBuffer);
           textContent = pdfData.text;
           
