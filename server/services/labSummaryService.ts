@@ -30,7 +30,6 @@ class LabSummaryService {
   5. Being concise yet comprehensive about important health markers
 
   Format the summary in a clear, structured way that prioritizes the most clinically significant findings.
-  Do NOT attempt to diagnose conditions or prescribe treatments based on these results.
   `;
 
   /**
