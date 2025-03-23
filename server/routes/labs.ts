@@ -12,16 +12,16 @@ const router = express.Router();
 
 // Configure file upload middleware with more permissive settings
 router.use(fileUpload({
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024 },
   useTempFiles: true,
   tempFileDir: '/tmp/',
   safeFileNames: true,
   preserveExtension: true,
-  debug: true, // Enable debug logs
+  debug: true,
   createParentPath: true,
   parseNested: true,
-  useTempFiles: true,
-  abortOnLimit: true
+  abortOnLimit: true,
+  uriDecoding: true
 }));
 
 // Get all lab results for a user
