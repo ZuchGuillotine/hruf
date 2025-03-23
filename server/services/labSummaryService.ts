@@ -69,11 +69,11 @@ class LabSummaryService {
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         try {
-          // Parse PDF to text using dynamic import and absolute file path
+          // Parse PDF to text using dynamic import
           const { default: pdfParse } = await import('pdf-parse');
-          const filePath = path.join(process.cwd(), labResult.fileUrl);
+          const filePath = path.join(process.cwd(), 'workspace', labResult.fileUrl);
           const fileBuffer = fs.readFileSync(filePath);
-          const pdfData = await pdfParse(fileBuffer);
+          const pdfData = await pdfParse(fileBuffer, {});
           textContent = pdfData.text;
           
           // Generate summary using OpenAI
