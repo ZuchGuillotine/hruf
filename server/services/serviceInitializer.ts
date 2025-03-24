@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import embeddingService from './embeddingService';
 // Pre-load pdf-parse to ensure it's initialized properly
-require('pdf-parse');
+import pdfParse from 'pdf-parse';
 import { advancedSummaryService } from './advancedSummaryService';
 import { summaryTaskManager } from '../cron/summaryManager';
 import { labSummaryService } from './labSummaryService';
