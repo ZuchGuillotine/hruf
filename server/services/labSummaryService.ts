@@ -69,12 +69,15 @@ class LabSummaryService {
       // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         try {
-          // Parse PDF to text using dynamic import
-          const { default: pdfParse } = await import('pdf-parse');
-          
           // Remove leading slash and 'uploads' from fileUrl to avoid double path
           const fileName = labResult.fileUrl.replace(/^\/uploads\//, '');
           const filePath = path.join(process.cwd(), 'uploads', fileName);
+
+          // Read file buffer first
+          const dataBuffer = fs.readFileSync(filePath);
+          
+          // Initialize PDF parser with the buffer
+          const pdfParse = (await import('pdf-parse')).default;
           
           // Verify file exists and is accessible
           if (!fs.existsSync(filePath)) {
