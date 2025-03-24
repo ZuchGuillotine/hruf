@@ -72,9 +72,10 @@ class LabSummaryService {
           // Parse PDF to text using dynamic import
           const { default: pdfParse } = await import('pdf-parse');
           
-          // Ensure clean file path
-          const safePath = labResult.fileUrl.replace(/^\/+/, '');
-          const filePath = path.join(process.cwd(), safePath);
+          // Use full file path from upload
+          const filePath = labResult.fileUrl.startsWith('/') 
+            ? path.join(process.cwd(), labResult.fileUrl)
+            : labResult.fileUrl;
           
           // Verify file exists and is accessible
           if (!fs.existsSync(filePath)) {
