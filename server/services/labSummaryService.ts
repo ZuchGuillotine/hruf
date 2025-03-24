@@ -74,7 +74,8 @@ class LabSummaryService {
           const pdfData = await pdfParse(fileBuffer, {
             max: 0, // No page limit
             pagerender: () => Promise.resolve(''), // Skip rendering
-            version: 'v2.0.0' // Use latest version
+            version: 'v2.0.0', // Use latest version
+            disablePdfTestWarning: true // Skip test file check
           });
 
           textContent = pdfData.text;
