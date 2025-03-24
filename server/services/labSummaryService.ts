@@ -72,8 +72,9 @@ class LabSummaryService {
           // Parse PDF to text using dynamic import
           const { default: pdfParse } = await import('pdf-parse');
           
-          // Construct absolute file path relative to workspace root
-          const filePath = path.join(process.cwd(), 'uploads', path.basename(labResult.fileUrl));
+          // Remove leading slash and 'uploads' from fileUrl to avoid double path
+          const fileName = labResult.fileUrl.replace(/^\/uploads\//, '');
+          const filePath = path.join(process.cwd(), 'uploads', fileName);
           
           // Verify file exists and is accessible
           if (!fs.existsSync(filePath)) {
@@ -106,7 +107,14 @@ class LabSummaryService {
           
           return completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
         } catch (error) {
-          logger.error(`Error parsing PDF: ${error}`);
+          logger.error('Error parsing PDF:', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            filePath,
+            fileName: labResult.fileName,
+            fileUrl: labResult.fileUrl,
+            timestamp: new Date().toISOString()
+          });
           return null;
         }
       } else if (
