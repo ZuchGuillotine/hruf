@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
       .select()
       .from(labResults)
       .where(eq(labResults.userId, req.user!.id))
-      .orderBy(desc(labResults.uploadedAt));
+      .orderBy(labResults.uploadedAt, "desc");
 
     logger.info(`Retrieved ${results.length} lab results for user ${req.user!.id}`);
     res.json(results);
