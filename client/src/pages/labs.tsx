@@ -1,4 +1,3 @@
-
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import LabUpload from "@/components/lab-upload";
@@ -46,7 +45,8 @@ export default function Labs() {
       });
 
       if (response.ok) {
-        await fetchLabFiles(); // Refresh the list
+        // Update state locally instead of re-fetching
+        setLabFiles(prev => prev.filter(file => file.id !== id));
       } else {
         console.error('Failed to delete lab file');
       }
