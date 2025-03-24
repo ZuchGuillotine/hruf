@@ -1,4 +1,3 @@
-// server/services/labSummaryService.ts
 import OpenAI from "openai";
 import { db } from "../../db";
 import { labResults } from "../../db/schema";
@@ -8,6 +7,7 @@ import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
+
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -16,10 +16,9 @@ const openai = new OpenAI({
 class LabSummaryService {
   // Constants for summarization
   private SUMMARY_MODEL = "gpt-4o-mini";
-  private MAX_TOKEN_LIMIT = 16000; // Conservative token limit for input context
-  private MAX_LABS_PER_REQUEST = 50; // Maximum number of labs to summarize in one request
+  private MAX_TOKEN_LIMIT = 16000;
+  private MAX_LABS_PER_REQUEST = 50;
 
-  // System prompt for lab result summarization
   private LAB_SUMMARY_PROMPT = `
   You are a medical assistant helping to summarize lab results. Focus on:
 
@@ -32,14 +31,8 @@ class LabSummaryService {
   Format the summary in a clear, structured way that prioritizes the most clinically significant findings.
   `;
 
-  /**
-   * Summarizes a lab result file
-   * @param labResultId ID of the lab result to summarize
-   * @returns The summary content or null if unsuccessful
-   */
   async summarizeLabResult(labResultId: number): Promise<string | null> {
     try {
-      // Fetch lab result from database
       const [labResult] = await db
         .select()
         .from(labResults)
@@ -51,63 +44,48 @@ class LabSummaryService {
         return null;
       }
 
-      // Get the file path
-      const filePath = path.join(process.cwd(), labResult.fileUrl);
+      // Clean up the file URL to get the correct path
+      const fileName = labResult.fileUrl.replace(/^\/uploads\//, '');
+      const filePath = path.join(process.cwd(), 'uploads', fileName);
 
-      // Check if file exists
+      // Verify file exists and is accessible
       if (!fs.existsSync(filePath)) {
         logger.error(`Lab result file not found at path: ${filePath}`);
         return null;
       }
 
-      // Extract text content based on file type
+      // Read file buffer once and reuse
       const fileBuffer = fs.readFileSync(filePath);
       const fileType = await fileTypeFromBuffer(fileBuffer);
 
       let textContent = "";
 
-      // Process different file types
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         try {
-          // Remove leading slash and 'uploads' from fileUrl to avoid double path
-          const fileName = labResult.fileUrl.replace(/^\/uploads\//, '');
-          const filePath = path.join(process.cwd(), 'uploads', fileName);
-          
-          // Verify file exists and is accessible
-          if (!fs.existsSync(filePath)) {
-            logger.error(`PDF file not found at path: ${filePath}`);
-            return null;
-          }
+          // Dynamically import pdf-parse
+          const pdfParse = await import('pdf-parse').then(module => module.default);
 
-          // Read file buffer and parse PDF
-          const dataBuffer = fs.readFileSync(filePath);
-          const pdfParse = (await import('pdf-parse')).default;
-          const pdfData = await pdfParse(dataBuffer, {
-            max: 0,
+          logger.info(`Processing PDF file: ${filePath}`, {
+            fileSize: fileBuffer.length,
+            fileName: labResult.fileName
+          });
+
+          // Parse PDF directly from buffer with options
+          const pdfData = await pdfParse(fileBuffer, {
+            max: 0, // No page limit
             pagerender: () => Promise.resolve(''), // Skip rendering
             version: 'v2.0.0' // Use latest version
           });
+
           textContent = pdfData.text;
-          
-          logger.info(`Successfully parsed PDF for lab result ${labResultId}`);
-          
-          // Generate summary using OpenAI
-          const completion = await openai.chat.completions.create({
-            model: this.SUMMARY_MODEL,
-            messages: [
-              {
-                role: "system",
-                content: this.LAB_SUMMARY_PROMPT
-              },
-              {
-                role: "user",
-                content: `Here is a lab result to summarize:\n\n${textContent}`
-              }
-            ],
-            max_tokens: 1000
+
+          if (!textContent || textContent.trim().length === 0) {
+            throw new Error('PDF parsing produced empty text content');
+          }
+
+          logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
+            textLength: textContent.length
           });
-          
-          return completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
         } catch (error) {
           logger.error('Error parsing PDF:', {
             error: error instanceof Error ? error.message : String(error),
@@ -117,36 +95,29 @@ class LabSummaryService {
             fileUrl: labResult.fileUrl,
             timestamp: new Date().toISOString()
           });
-          return null;
+
+          // Fallback to basic metadata
+          textContent = `Lab result file: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
+          File type: PDF. This is a PDF document that could not be parsed. Notes: ${labResult.notes || "No notes provided"}`;
         }
-      } else if (
-        labResult.fileType.startsWith('image/') ||
-        (fileType && fileType.mime && fileType.mime.startsWith('image/'))
-      ) {
-        // For images, we need a different approach
-        // For now, just use the file name and basic metadata
+      } else if (labResult.fileType.startsWith('image/') || (fileType && fileType.mime && fileType.mime.startsWith('image/'))) {
         textContent = `Image lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
         This is an image file that may contain lab results. The file type is ${labResult.fileType}.`;
       } else if (
         labResult.fileType === 'application/msword' ||
         labResult.fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ) {
-        // For Word documents, use basic metadata for now
-        // In a production environment, you'd want to use a library to extract text from .doc/.docx
         textContent = `Document lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
         This is a document file that contains lab results. The file type is ${labResult.fileType}.`;
       } else {
-        // For other file types, use metadata
         textContent = `Lab result file: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
         File type: ${labResult.fileType}. Notes: ${labResult.notes || "No notes provided"}`;
       }
 
-      // If we have notes, add them to the content
       if (labResult.notes) {
         textContent += `\n\nUser notes: ${labResult.notes}`;
       }
 
-      // Generate summary using OpenAI
       const completion = await openai.chat.completions.create({
         model: this.SUMMARY_MODEL,
         messages: [
@@ -164,7 +135,6 @@ class LabSummaryService {
 
       const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
 
-      // Update lab result with summary in metadata
       await db
         .update(labResults)
         .set({
@@ -176,27 +146,23 @@ class LabSummaryService {
         })
         .where(eq(labResults.id, labResultId));
 
-      // Create embedding for the summary to enable similarity search
       await embeddingService.createLabEmbedding(labResultId, summaryContent);
 
       logger.info(`Generated summary for lab result ${labResultId}`);
       return summaryContent;
 
     } catch (error) {
-      logger.error(`Error summarizing lab result ${labResultId}:`, error);
+      logger.error(`Error summarizing lab result ${labResultId}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      });
       return null;
     }
   }
 
-  /**
-   * Get summaries for all lab results of a user
-   * @param userId User ID
-   * @param limit Maximum number of summaries to return
-   * @returns Array of lab result summaries
-   */
   async getUserLabSummaries(userId: number, limit: number = 5): Promise<any[]> {
     try {
-      // Fetch recent lab results for the user
       const userLabResults = await db
         .select()
         .from(labResults)
@@ -207,7 +173,6 @@ class LabSummaryService {
       const summaries = [];
 
       for (const labResult of userLabResults) {
-        // Check if we already have a summary
         if (labResult.metadata && labResult.metadata.summary) {
           summaries.push({
             id: labResult.id,
@@ -216,9 +181,7 @@ class LabSummaryService {
             summary: labResult.metadata.summary
           });
         } else {
-          // Generate summary if not already available
           const summary = await this.summarizeLabResult(labResult.id);
-
           if (summary) {
             summaries.push({
               id: labResult.id,
@@ -237,16 +200,8 @@ class LabSummaryService {
     }
   }
 
-  /**
-   * Find lab results relevant to a user query
-   * @param userId User ID
-   * @param query User query
-   * @param limit Maximum number of results to return
-   * @returns Array of relevant lab results with summaries
-   */
   async findRelevantLabResults(userId: number, query: string, limit: number = 3): Promise<any[]> {
     try {
-      // Get recent lab results, sorted by date
       const recentLabs = await db
         .select()
         .from(labResults)
@@ -258,6 +213,18 @@ class LabSummaryService {
         .orderBy(desc(labResults.uploadedAt))
         .limit(limit);
 
+      for (const lab of recentLabs) {
+        if (!lab.metadata?.summary) {
+          this.summarizeLabResult(lab.id)
+            .then(() => {
+              logger.info(`Background summary generated for lab ${lab.id}`);
+            })
+            .catch(error => {
+              logger.error(`Error generating background summary for lab ${lab.id}:`, error);
+            });
+        }
+      }
+
       return recentLabs;
     } catch (error) {
       logger.error('Error finding relevant lab results:', error);
@@ -266,6 +233,5 @@ class LabSummaryService {
   }
 }
 
-// Export singleton instance
 export const labSummaryService = new LabSummaryService();
 export default labSummaryService;
