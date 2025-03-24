@@ -4,7 +4,7 @@ import Footer from "@/components/footer";
 import LabUpload from "@/components/lab-upload";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { File, FileText, Download } from "lucide-react";
+import { File, FileText, Download, Trash2 } from "lucide-react";
 
 interface LabFile {
   id: number;
@@ -64,34 +64,6 @@ export default function Labs() {
         <div className="bg-[#1b4332] rounded-lg p-6">
           <h2 className="text-3xl font-bold text-white mb-6">Lab Results</h2>
           <LabUpload onUploadSuccess={fetchLabFiles} />
-          <div className="mt-6 space-y-4">
-            {labFiles.map((file) => (
-              <div key={file.id} className="bg-white p-4 rounded-lg flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">{file.fileName}</h3>
-                  <p className="text-sm text-gray-600">
-                    Uploaded on {new Date(file.uploadedAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <a
-                    href={file.fileUrl}
-                    download
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Download
-                  </a>
-                  <button
-                    onClick={() => handleDelete(file.id)}
-                    disabled={isDeleting === file.id}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-                  >
-                    {isDeleting === file.id ? 'Deleting...' : 'Delete'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="bg-[#1b4332] rounded-lg p-6">
@@ -119,8 +91,9 @@ export default function Labs() {
                     <button
                       onClick={() => handleDelete(file.id)}
                       disabled={isDeleting === file.id}
-                      className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+                      className="flex items-center gap-2 text-sm text-white/90 hover:text-white disabled:opacity-50"
                     >
+                      <Trash2 className="h-4 w-4" />
                       {isDeleting === file.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
