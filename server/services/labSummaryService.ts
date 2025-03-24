@@ -81,8 +81,11 @@ class LabSummaryService {
 
           // Read file buffer and parse PDF
           const dataBuffer = fs.readFileSync(filePath);
-          const pdfParse = (await import('pdf-parse')).default;
-          const pdfData = await pdfParse(dataBuffer);
+          const pdfParse = require('pdf-parse');
+          const pdfData = await pdfParse(dataBuffer, {
+            // Disable the test file loading
+            max: 0
+          });
           textContent = pdfData.text;
           
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`);
