@@ -81,12 +81,6 @@ class LabSummaryService {
             return null;
           }
           
-          // Read file as buffer
-          const dataBuffer = fs.readFileSync(filePath);
-            logger.error(`PDF file not found at path: ${filePath}`);
-            return null;
-          }
-          
           // Read and parse PDF
           const dataBuffer = fs.readFileSync(filePath);
           const pdfData = await pdfParse(dataBuffer);
