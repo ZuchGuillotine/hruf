@@ -1,0 +1,127 @@
+import express from 'express';
+import { db } from '@db';
+import { labResults } from '@db/schema';
+import { eq } from 'drizzle-orm';
+import fileUpload from 'express-fileupload';
+import path from 'path';
+import fs from 'fs';
+import { labSummaryService } from '../services/labSummaryService';
+import logger from '../utils/logger';
+
+const router = express.Router();
+
+// Configure file upload middleware
+const uploadMiddleware = fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 },
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+  safeFileNames: true,
+  preserveExtension: true,
+  debug: true,
+  createParentPath: true,
+  parseNested: true,
+  abortOnLimit: true
+});
+
+// Get all lab results for a user
+router.get('/', async (req, res) => {
+  try {
+    const results = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.userId, req.user!.id))
+      .orderBy(labResults.uploadedAt);
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching lab results:', error);
+    res.status(500).json({ error: 'Failed to fetch lab results' });
+  }
+});
+
+// Upload new lab result
+router.post('/', uploadMiddleware, async (req, res) => {
+  try {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const file = req.files.file as fileUpload.UploadedFile;
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    
+    // Ensure upload directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const filePath = path.join(uploadDir, fileName);
+
+    // Move file to uploads directory
+    await file.mv(filePath);
+    
+    // Use relative path for fileUrl to ensure consistent access across services
+    const fileUrl = `/uploads/${fileName}`;
+
+    // Save file info to database
+    const [result] = await db
+      .insert(labResults)
+      .values({
+        userId: req.user!.id,
+        fileName: file.name,
+        fileType: file.mimetype,
+        fileUrl: fileUrl,
+        metadata: {
+          size: file.size,
+          lastViewed: new Date().toISOString(),
+          originalFilePath: filePath // Store the full path for easier troubleshooting
+        }
+      })
+      .returning();
+
+    logger.info('Lab result saved:', {
+      fileName: file.name,
+      fileUrl: fileUrl,
+      userId: req.user!.id
+    });
+
+    // Trigger background summarization
+    try {
+      // Don't await summarization to avoid delaying response
+      labSummaryService.summarizeLabResult(result.id)
+        .then((summary) => {
+          if (summary) {
+            logger.info(`Background summary generation completed for lab ID ${result.id}`);
+          } else {
+            logger.warn(`Background summary generation completed but returned null for lab ID ${result.id}`);
+          }
+        })
+        .catch(summaryError => {
+          logger.error(`Background summary generation failed for lab ID ${result.id}:`, summaryError);
+        });
+        
+      logger.info('Background summary generation started for lab ID:', result.id);
+    } catch (summaryError) {
+      // Log but don't fail the upload if summarization fails
+      logger.error('Failed to initiate lab summarization:', summaryError);
+    }
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Error uploading lab result:', error);
+    res.status(500).json({ error: 'Failed to upload lab result' });
+  }
+});
+
+// Delete lab result
+router.delete('/:id', async (req, res) => {
+  try {
+    const [result] = await db
+      .delete(labResults)
+      .where(
+        eq(labResults.id, parseInt(req.params.id))
+      )
+      .returning();
+
+    if (!result) {
+      return res.status(404).json({ error: 'Lab result not found' });
+    }
