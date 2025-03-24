@@ -107,14 +107,23 @@ export default function Labs() {
                   <p className="text-xs text-white/70">
                     Uploaded: {new Date(file.uploadedAt).toLocaleDateString()}
                   </p>
-                  <a
-                    href={file.fileUrl}
-                    download
-                    className="flex items-center gap-2 text-sm text-white/90 hover:text-white mt-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download
-                  </a>
+                  <div className="flex items-center gap-4 mt-2">
+                    <a
+                      href={file.fileUrl}
+                      download
+                      className="flex items-center gap-2 text-sm text-white/90 hover:text-white"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </a>
+                    <button
+                      onClick={() => handleDelete(file.id)}
+                      disabled={isDeleting === file.id}
+                      className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+                    >
+                      {isDeleting === file.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
