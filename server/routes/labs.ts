@@ -7,6 +7,7 @@ import fileUpload from 'express-fileupload';
 import path from 'path';
 import fs from 'fs';
 import { labSummaryService } from '../services/labSummaryService';
+import logger from '../utils/logger';
 
 const router = express.Router();
 
@@ -30,10 +31,16 @@ router.get('/', async (req, res) => {
       .select()
       .from(labResults)
       .where(eq(labResults.userId, req.user!.id))
-      .orderBy(labResults.uploadedAt);
+      .orderBy(desc(labResults.uploadedAt));
+
+    logger.info(`Retrieved ${results.length} lab results for user ${req.user!.id}`);
     res.json(results);
   } catch (error) {
-    console.error('Error fetching lab results:', error);
+    logger.error('Error fetching lab results:', {
+      userId: req.user!.id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({ error: 'Failed to fetch lab results' });
   }
 });
@@ -51,84 +58,144 @@ router.post('/', uploadMiddleware, async (req, res) => {
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
+      logger.info(`Created uploads directory at ${uploadDir}`);
     }
 
     const fileName = `${Date.now()}-${file.name}`;
     const filePath = path.join(uploadDir, fileName);
+    const relativeUrl = `/uploads/${fileName}`;
 
     // Move file to uploads directory
     await file.mv(filePath);
+    logger.info(`File moved to ${filePath}`);
     
-    const fileUrl = `/uploads/${fileName}`;
-
-    // Save file info to database
+    // Save file info to database with enhanced metadata
     const [result] = await db
       .insert(labResults)
       .values({
         userId: req.user!.id,
         fileName: file.name,
         fileType: file.mimetype,
-        fileUrl: fileUrl,
+        fileUrl: relativeUrl,
         metadata: {
           size: file.size,
-          lastViewed: new Date().toISOString()
+          lastViewed: new Date().toISOString(),
+          originalName: file.name,
+          absolutePath: filePath,
+          relativePath: relativeUrl,
+          uploadTimestamp: Date.now(),
+          mimeType: file.mimetype,
+          md5: file.md5
         }
       })
       .returning();
 
-    console.log('Lab result saved:', {
+    logger.info('Lab result saved:', {
+      labId: result.id,
       fileName: file.name,
-      fileUrl: fileUrl,
-      userId: req.user!.id
+      fileUrl: relativeUrl,
+      userId: req.user!.id,
+      fileSize: file.size
     });
 
     // Trigger background summarization
     try {
-      // Don't await summarization to avoid delaying response
       labSummaryService.summarizeLabResult(result.id)
-        .then(() => {
-          console.log(`Background summary generation completed for lab ID ${result.id}`);
+        .then((summary) => {
+          if (summary) {
+            logger.info(`Background summary generation completed for lab ID ${result.id}`);
+          } else {
+            logger.warn(`Background summary generation completed but returned null for lab ID ${result.id}`);
+          }
         })
         .catch(summaryError => {
-          console.error(`Background summary generation failed for lab ID ${result.id}:`, summaryError);
+          logger.error('Background summary generation failed:', {
+            labId: result.id,
+            error: summaryError instanceof Error ? summaryError.message : String(summaryError),
+            stack: summaryError instanceof Error ? summaryError.stack : undefined
+          });
         });
         
-      console.log('Background summary generation started for lab ID:', result.id);
+      logger.info('Background summary generation started for lab ID:', result.id);
     } catch (summaryError) {
-      // Log but don't fail the upload if summarization fails
-      console.error('Failed to initiate lab summarization:', summaryError);
+      logger.error('Failed to initiate lab summarization:', {
+        labId: result.id,
+        error: summaryError instanceof Error ? summaryError.message : String(summaryError),
+        stack: summaryError instanceof Error ? summaryError.stack : undefined
+      });
     }
 
     res.json(result);
   } catch (error) {
-    console.error('Error uploading lab result:', error);
+    logger.error('Error uploading lab result:', {
+      userId: req.user!.id,
+      fileName: req.files?.file ? (req.files.file as fileUpload.UploadedFile).name : 'unknown',
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({ error: 'Failed to upload lab result' });
   }
 });
 
 // Delete lab result
 router.delete('/:id', async (req, res) => {
+  const labId = parseInt(req.params.id);
+  
   try {
-    const [result] = await db
-      .delete(labResults)
-      .where(
-        eq(labResults.id, parseInt(req.params.id))
-      )
-      .returning();
+    // First fetch the record to get file path
+    const [labRecord] = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.id, labId))
+      .limit(1);
 
-    if (!result) {
+    if (!labRecord) {
+      logger.warn(`Attempted to delete non-existent lab result: ${labId}`);
       return res.status(404).json({ error: 'Lab result not found' });
     }
 
-    // Delete file from uploads directory
-    const filePath = path.join(process.cwd(), result.fileUrl);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete database record
+    await db
+      .delete(labResults)
+      .where(eq(labResults.id, labId));
+
+    // Delete physical file if it exists
+    try {
+      const filePath = path.join(process.cwd(), labRecord.fileUrl);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        logger.info(`Deleted lab result file:`, {
+          labId,
+          filePath,
+          fileName: labRecord.fileName
+        });
+      } else {
+        logger.warn(`Lab result file not found during deletion:`, {
+          labId,
+          filePath,
+          fileName: labRecord.fileName
+        });
+      }
+    } catch (fileError) {
+      logger.error('Error deleting lab result file:', {
+        labId,
+        error: fileError instanceof Error ? fileError.message : String(fileError),
+        stack: fileError instanceof Error ? fileError.stack : undefined
+      });
     }
 
-    res.json({ message: 'Lab result deleted successfully' });
+    res.json({ 
+      message: 'Lab result deleted successfully',
+      labId,
+      fileName: labRecord.fileName
+    });
   } catch (error) {
-    console.error('Error deleting lab result:', error);
+    logger.error('Error deleting lab result:', {
+      labId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({ error: 'Failed to delete lab result' });
   }
 });
