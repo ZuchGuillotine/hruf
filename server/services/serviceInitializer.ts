@@ -1,8 +1,7 @@
+
 import path from 'path';
 import fs from 'fs';
 import embeddingService from './embeddingService';
-// Pre-load pdf-parse to ensure it's initialized properly
-import pdfParse from 'pdf-parse';
 import { advancedSummaryService } from './advancedSummaryService';
 import { summaryTaskManager } from '../cron/summaryManager';
 import { labSummaryService } from './labSummaryService';
@@ -110,6 +109,19 @@ class ServiceInitializer {
         // Verify directory permissions
         fs.accessSync(uploadsDir, fs.constants.R_OK | fs.constants.W_OK);
         logger.info('Uploads directory verified with correct permissions');
+        
+        // Pre-load required modules for lab processing to avoid initialization issues
+        logger.info('Preloading PDF processing modules...');
+        try {
+          // Dynamically import pdf-parse to ensure it's loaded correctly
+          import('pdf-parse').then(() => {
+            logger.info('PDF processing module loaded successfully');
+          }).catch(err => {
+            logger.warn('PDF processing module preload warning (non-fatal):', err);
+          });
+        } catch (moduleError) {
+          logger.warn('Module preloading warning (non-fatal):', moduleError);
+        }
       } catch (error) {
         logger.error('Failed to setup uploads directory:', error);
         throw error; // This is critical enough to fail startup
@@ -121,7 +133,6 @@ class ServiceInitializer {
       // Continue even if lab services fail to initialize
     }
   }
-
 
   /**
    * Start scheduled tasks for summarization
