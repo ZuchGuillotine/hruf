@@ -72,21 +72,16 @@ class LabSummaryService {
           // Remove leading slash and 'uploads' from fileUrl to avoid double path
           const fileName = labResult.fileUrl.replace(/^\/uploads\//, '');
           const filePath = path.join(process.cwd(), 'uploads', fileName);
-
-          // Read file buffer first
-          const dataBuffer = fs.readFileSync(filePath);
-          
-          // Initialize PDF parser with the buffer
-          const pdfParse = (await import('pdf-parse')).default;
           
           // Verify file exists and is accessible
           if (!fs.existsSync(filePath)) {
             logger.error(`PDF file not found at path: ${filePath}`);
             return null;
           }
-          
-          // Read and parse PDF
+
+          // Read file buffer and parse PDF
           const dataBuffer = fs.readFileSync(filePath);
+          const pdfParse = (await import('pdf-parse')).default;
           const pdfData = await pdfParse(dataBuffer);
           textContent = pdfData.text;
           
