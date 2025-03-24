@@ -72,13 +72,17 @@ class LabSummaryService {
           // Parse PDF to text using dynamic import
           const { default: pdfParse } = await import('pdf-parse');
           
-          // Use full file path from upload
-          const filePath = labResult.fileUrl.startsWith('/') 
-            ? path.join(process.cwd(), labResult.fileUrl)
-            : labResult.fileUrl;
+          // Construct absolute file path relative to workspace root
+          const filePath = path.join(process.cwd(), 'uploads', path.basename(labResult.fileUrl));
           
           // Verify file exists and is accessible
           if (!fs.existsSync(filePath)) {
+            logger.error(`PDF file not found at path: ${filePath}`);
+            return null;
+          }
+          
+          // Read file as buffer
+          const dataBuffer = fs.readFileSync(filePath);
             logger.error(`PDF file not found at path: ${filePath}`);
             return null;
           }
