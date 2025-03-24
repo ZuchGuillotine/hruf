@@ -99,9 +99,18 @@ class ServiceInitializer {
 
       // Ensure uploads directory exists
       const uploadsDir = path.join(process.cwd(), 'uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-        logger.info('Created uploads directory');
+      try {
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+          logger.info('Created uploads directory at:', uploadsDir);
+        }
+        
+        // Verify directory permissions
+        fs.accessSync(uploadsDir, fs.constants.R_OK | fs.constants.W_OK);
+        logger.info('Uploads directory verified with correct permissions');
+      } catch (error) {
+        logger.error('Failed to setup uploads directory:', error);
+        throw error; // This is critical enough to fail startup
       }
 
       logger.info('Lab results services initialized successfully');

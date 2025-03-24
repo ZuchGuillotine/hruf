@@ -71,12 +71,23 @@ class LabSummaryService {
         try {
           // Parse PDF to text using dynamic import
           const { default: pdfParse } = await import('pdf-parse');
-          const filePath = path.join(process.cwd(), labResult.fileUrl.replace(/^\//, ''));
+          
+          // Ensure clean file path
+          const safePath = labResult.fileUrl.replace(/^\/+/, '');
+          const filePath = path.join(process.cwd(), safePath);
+          
+          // Verify file exists and is accessible
+          if (!fs.existsSync(filePath)) {
+            logger.error(`PDF file not found at path: ${filePath}`);
+            return null;
+          }
+          
+          // Read and parse PDF
           const dataBuffer = fs.readFileSync(filePath);
-          const pdfData = await pdfParse(dataBuffer, {
-            pagerender: function(pageData) { return pageData.getTextContent(); }
-          });
+          const pdfData = await pdfParse(dataBuffer);
           textContent = pdfData.text;
+          
+          logger.info(`Successfully parsed PDF for lab result ${labResultId}`);
           
           // Generate summary using OpenAI
           const completion = await openai.chat.completions.create({
