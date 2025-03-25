@@ -78,6 +78,18 @@ class LabSummaryService {
             throw new Error('PDF parsing produced empty text content');
           }
 
+          // Store parsed text in metadata
+          await db
+            .update(labResults)
+            .set({
+              metadata: {
+                ...labResult.metadata,
+                parsedText: textContent,
+                parseDate: new Date().toISOString()
+              }
+            })
+            .where(eq(labResults.id, labResultId));
+
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
             textLength: textContent.length
           });
