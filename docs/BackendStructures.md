@@ -22,6 +22,13 @@
 - Service: labSummaryService.ts
   - Purpose: Processes and summarizes lab results
   - Features:
+    - Robust PDF parsing with version-specific configuration
+    - Proper error handling and recovery
+    - Comprehensive metadata storage
+    - File buffer optimization
+    - Enhanced logging system
+    - Successful file type verification
+    - Token-efficient summarization
     - Intelligent analysis of lab data
     - Vector embedding generation
     - Context integration capabilities
