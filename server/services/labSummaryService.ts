@@ -69,9 +69,6 @@ class LabSummaryService {
             fileSize: fileBuffer.length,
             fileName: labResult.fileName
           });
-
-          // Initialize pdf-parse with proper version info
-          const pdfParse = (await import('pdf-parse')).default;
           
           // Parse PDF directly from buffer
           const pdfData = await pdfParse(fileBuffer, {
