@@ -71,7 +71,16 @@ class LabSummaryService {
           });
 
           // Parse PDF directly from buffer with options
-          const pdfData = await pdfParse(fileBuffer, { max: 0 });
+          const pdfData = await pdfParse(fileBuffer, { 
+            max: 0,
+            pagerender: render_page
+          });
+
+          function render_page(pageData) {
+            return pageData.getTextContent().then(function(textContent) {
+              return textContent.items.map(item => item.str).join(' ');
+            });
+          }
           textContent = pdfData.text;
 
           if (!textContent || textContent.trim().length === 0) {
