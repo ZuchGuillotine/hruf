@@ -70,17 +70,15 @@ class LabSummaryService {
             fileName: labResult.fileName
           });
 
-          // Parse PDF directly from buffer with options
-          const pdfData = await pdfParse(fileBuffer, { 
+          // Initialize pdf-parse with proper version info
+          const pdfParse = (await import('pdf-parse')).default;
+          
+          // Parse PDF directly from buffer
+          const pdfData = await pdfParse(fileBuffer, {
             max: 0,
-            pagerender: render_page
+            version: 'v1.10.100' // Force specific PDF.js version
           });
-
-          function render_page(pageData) {
-            return pageData.getTextContent().then(function(textContent) {
-              return textContent.items.map(item => item.str).join(' ');
-            });
-          }
+          
           textContent = pdfData.text;
 
           if (!textContent || textContent.trim().length === 0) {
