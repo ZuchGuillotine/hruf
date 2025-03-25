@@ -8,12 +8,12 @@ export function ValueProposition() {
       description: "Track your supplements and their effects with our intelligent system"
     },
     {
-      title: "AI-Powered Insights",
-      description: "Get personalized recommendations based on your supplement stack"
+      title: "Individualize Intelligent Insights",
+      description: "Get personalized recommendations that improve over time based on your supplement stack and health history"
     },
     {
-      title: "Health Progress Analytics",
-      description: "Visualize your health journey with detailed analytics and trends"
+      title: "Optimize Your Health Journey",
+      description: "Learn how your supplements impact your health with detailed analytics and trends"
     },
     
   ];
