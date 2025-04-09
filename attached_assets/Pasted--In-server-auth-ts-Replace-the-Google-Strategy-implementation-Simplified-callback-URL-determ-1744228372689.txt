@@ -1,0 +1,73 @@
+// In server/auth.ts - Replace the Google Strategy implementation
+
+// Simplified callback URL determination
+const getCallbackURL = () => {
+  const baseUrl = process.env.BASE_URL || 
+                 (process.env.REPL_SLUG && process.env.REPL_OWNER 
+                  ? `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER}.repl.co` 
+                  : 'http://localhost:5000');
+  
+  return `${baseUrl}/auth/google/callback`;
+};
+
+// Enhanced Google Strategy
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      callbackURL: getCallbackURL(),
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log('Google OAuth callback received:', {
+          profileId: profile.id,
+          email: profile.emails?.[0]?.value,
+        });
+
+        if (!profile.emails || !profile.emails[0]?.value) {
+          return done(new Error('No email found in Google profile'), null);
+        }
+
+        const email = profile.emails[0].value;
+        
+        // Find existing user
+        let [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        // If user doesn't exist, create new user
+        if (!user) {
+          console.log('Creating new user from Google OAuth:', email);
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email: email,
+              username: profile.displayName?.replace(/\s+/g, '_').toLowerCase() || email.split('@')[0],
+              name: profile.displayName || null,
+              emailVerified: true, // Google has already verified the email
+              password: crypto.randomBytes(32).toString('hex'), // Generate random password
+              trialEndsAt: new Date(Date.now() + 14 * DAY_IN_MS), // 14-day trial
+              profilePhotoUrl: profile.photos?.[0]?.value || null,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+            .returning();
+          
+          user = newUser;
+        }
+
+        return done(null, user);
+      } catch (error) {
+        console.error('Google auth error:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        return done(error as Error);
+      }
+    }
+  )
+);
