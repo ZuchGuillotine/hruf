@@ -4,42 +4,95 @@ import { type Express } from "express";
 import { users } from "@db/schema";
 import { db } from "@db";
 import { eq } from "drizzle-orm";
+import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+import { insertUserSchema } from "@db/schema";
+import { or } from "drizzle-orm";
+
+// Constants
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+// Simplified callback URL determination
+const getCallbackURL = () => {
+  const baseUrl = process.env.BASE_URL || 
+                 (process.env.REPL_SLUG && process.env.REPL_OWNER 
+                  ? `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER}.repl.co` 
+                  : 'http://0.0.0.0:5000');
+
+  return `${baseUrl}/auth/google/callback`;
+};
+
+const scryptAsync = promisify(scrypt);
+const crypto = {
+  hash: async (password: string) => {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  },
+  compare: async (suppliedPassword: string, storedPassword: string) => {
+    const [hashedPassword, salt] = storedPassword.split(".");
+    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
+    const suppliedPasswordBuf = (await scryptAsync(
+      suppliedPassword,
+      salt,
+      64
+    )) as Buffer;
+    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
+  },
+  randomBytes: randomBytes,
+};
+
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      username: string;
+      email: string;
+      name?: string | null;
+      phoneNumber?: string | null;
+      isPro?: boolean | null;
+      isAdmin?: boolean | null;
+    }
+  }
+}
+
 
 // Get the environment-specific callback URL
-const getCallbackURL = (app: Express) => {
-  const isProd = app.get("env") === "production";
-  const customDomain = process.env.CUSTOM_DOMAIN;
-  let callbackURL;
+//const getCallbackURL = (app: Express) => {
+//  const isProd = app.get("env") === "production";
+//  const customDomain = process.env.CUSTOM_DOMAIN;
+//  let callbackURL;
 
   // Determine callback URL based on environment
-  if (isProd && customDomain) {
-    callbackURL = `https://${customDomain}/auth/google/callback`;
-  } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+//  if (isProd && customDomain) {
+//    callbackURL = `https://${customDomain}/auth/google/callback`;
+//  } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     // For Replit development environment - match exact casing from Google Console
-    const replSlug = process.env.REPL_SLUG.toLowerCase();
-    const replOwner = process.env.REPL_OWNER; // Keep original casing
-    callbackURL = `https://${replSlug}.${replOwner}.repl.co/auth/google/callback`;
-  } else {
+//    const replSlug = process.env.REPL_SLUG.toLowerCase();
+//    const replOwner = process.env.REPL_OWNER; // Keep original casing
+//    callbackURL = `https://${replSlug}.${replOwner}.repl.co/auth/google/callback`;
+//  } else {
     // Local development fallback
-    callbackURL = `http://0.0.0.0:5000/auth/google/callback`;
-  }
+//    callbackURL = `http://0.0.0.0:5000/auth/google/callback`;
+//  }
 
   // Log the callback URL determination process
-  console.log('Callback URL Determination:', {
-    isProd,
-    customDomain,
-    replSlug: process.env.REPL_SLUG,
-    replOwner: process.env.REPL_OWNER,
-    resultingURL: callbackURL,
-    authorizedURLs: [
-      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/test/callback`,
-      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
-    ],
-    timestamp: new Date().toISOString()
-  });
+//  console.log('Callback URL Determination:', {
+//    isProd,
+//    customDomain,
+//    replSlug: process.env.REPL_SLUG,
+//    replOwner: process.env.REPL_OWNER,
+//    resultingURL: callbackURL,
+//    authorizedURLs: [
+//      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/test/callback`,
+//      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
+//    ],
+//    timestamp: new Date().toISOString()
+//  });
 
-  return callbackURL;
-};
+//  return callbackURL;
+//};
 
 export function setupAuth(app: Express) {
   // Initialize Passport authentication
@@ -81,7 +134,8 @@ export function setupAuth(app: Express) {
   const isProd = app.get("env") === "production";
   const GOOGLE_CLIENT_ID = isProd ? process.env.GOOGLE_CLIENT_ID_PROD : process.env.GOOGLE_CLIENT_ID_TEST;
   const GOOGLE_CLIENT_SECRET = isProd ? process.env.GOOGLE_CLIENT_SECRET_PROD : process.env.GOOGLE_CLIENT_SECRET_TEST;
-  const CALLBACK_URL = getCallbackURL(app);
+  //const CALLBACK_URL = getCallbackURL(app);
+  const CALLBACK_URL = getCallbackURL();
 
   // Enhanced logging for OAuth configuration
   console.log('Google OAuth Configuration:', {
@@ -93,7 +147,8 @@ export function setupAuth(app: Express) {
     envVars: {
       hasReplSlug: !!process.env.REPL_SLUG,
       hasReplOwner: !!process.env.REPL_OWNER,
-      hasCustomDomain: !!process.env.CUSTOM_DOMAIN
+      hasCustomDomain: !!process.env.CUSTOM_DOMAIN,
+      hasBaseUrl: !!process.env.BASE_URL
     },
     timestamp: new Date().toISOString()
   });
@@ -113,41 +168,82 @@ export function setupAuth(app: Express) {
   }
 
   passport.use(
-    new GoogleStrategy(
-      {
-        clientID: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: CALLBACK_URL,
-        userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          console.log('Google OAuth callback received:', {
+  new GoogleStrategy(
+    {
+      clientID: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      callbackURL: getCallbackURL(),
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log('Google OAuth callback received:', {
+          profileId: profile.id,
+          email: profile.emails?.[0]?.value,
+          timestamp: new Date().toISOString()
+        });
+
+        if (!profile.emails || !profile.emails[0]?.value) {
+          console.error('OAuth Error: No email found in Google profile', {
             profileId: profile.id,
+            timestamp: new Date().toISOString()
+          });
+          return done(new Error('No email found in Google profile'), null);
+        }
+
+        const email = profile.emails[0].value;
+
+        // Find existing user
+        let [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        // If user doesn't exist, create new user
+        if (!user) {
+          console.log('Creating new user from Google OAuth:', {
+            email,
             displayName: profile.displayName,
-            email: profile.emails?.[0]?.value,
-            emailVerified: profile.emails?.[0]?.verified,
-            provider: profile.provider,
             timestamp: new Date().toISOString()
           });
 
-          // Create or update user logic here
-          return done(null, {
-            id: 1, // Temporary ID for testing
-            email: profile.emails![0].value,
-            name: profile.displayName
-          });
-        } catch (error) {
-          console.error('Google auth error:', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              email: email,
+              username: profile.displayName?.replace(/\s+/g, '_').toLowerCase() || email.split('@')[0],
+              name: profile.displayName || null,
+              emailVerified: true, // Google has already verified the email
+              password: crypto.randomBytes(32).toString('hex'), // Generate random password
+              trialEndsAt: new Date(Date.now() + 14 * DAY_IN_MS), // 14-day trial
+              profilePhotoUrl: profile.photos?.[0]?.value || null,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+            .returning();
+
+          user = newUser;
+
+          console.log('New user created successfully:', {
+            userId: user.id,
+            email: user.email,
             timestamp: new Date().toISOString()
           });
-          return done(error as Error);
         }
+
+        return done(null, user);
+      } catch (error) {
+        console.error('Google auth error:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        return done(error as Error);
       }
-    )
-  );
+    }
+  )
+);
 
   // Add enhanced logging for initial authentication request
   app.get('/auth/google',
@@ -397,44 +493,6 @@ export function setupAuth(app: Express) {
       } : null,
     });
   });
-}
-import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
-import { insertUserSchema } from "@db/schema";
-import { or } from "drizzle-orm";
-
-const scryptAsync = promisify(scrypt);
-const crypto = {
-  hash: async (password: string) => {
-    const salt = randomBytes(16).toString("hex");
-    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-    return `${buf.toString("hex")}.${salt}`;
-  },
-  compare: async (suppliedPassword: string, storedPassword: string) => {
-    const [hashedPassword, salt] = storedPassword.split(".");
-    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedPasswordBuf = (await scryptAsync(
-      suppliedPassword,
-      salt,
-      64
-    )) as Buffer;
-    return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
-  },
-};
-
-declare global {
-  namespace Express {
-    interface User {
-      id: number;
-      username: string;
-      email: string;
-      name?: string | null;
-      phoneNumber?: string | null;
-      isPro?: boolean | null;
-      isAdmin?: boolean | null;
-    }
-  }
 }
 
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
