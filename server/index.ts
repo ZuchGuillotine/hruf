@@ -12,6 +12,7 @@ import setupSummaryRoutes from './routes/summaryRoutes';
 import { setAuthInfo } from './middleware/authMiddleware';
 import session from 'express-session';
 import createMemoryStore from "memorystore";
+import crypto from "crypto";
 import { serviceInitializer } from './services/serviceInitializer';
 
 const app = express();
@@ -27,24 +28,52 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
-// Session configuration
+// Enhanced session configuration
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const MemoryStore = createMemoryStore(session);
+
+// Ensure session secret is properly set and logged
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret || sessionSecret.length < 32) {
+  console.warn('WARNING: Session secret is missing or too short. Using a fallback for development only.', {
+    secretLength: sessionSecret?.length || 0,
+    environment: app.get('env'),
+    timestamp: new Date().toISOString()
+  });
+}
+
 const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: sessionSecret || crypto.randomBytes(32).toString('hex'),
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false, // Don't create sessions until something is stored
   store: new MemoryStore({
-    checkPeriod: 86400000
+    checkPeriod: DAY_IN_MS, // Prune expired sessions every 24 hours
+    ttl: DAY_IN_MS // Session TTL (time to live)
   }),
   cookie: {
-    secure: app.get('env') === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
+    secure: app.get('env') === 'production', // HTTPS only in production
+    httpOnly: true, // Prevent JavaScript access to cookies
+    maxAge: DAY_IN_MS,
+    sameSite: app.get('env') === 'production' ? 'none' : 'lax', // Allow cross-site requests in production with HTTPS
     path: '/'
   },
-  name: 'stacktracker.sid'
+  name: 'stacktracker.sid' // Custom name to avoid default "connect.sid"
 };
+
+// Apply secure cookies only with HTTPS in production
+if (app.get('env') === 'production' && sessionConfig.cookie.sameSite === 'none') {
+  sessionConfig.cookie.secure = true; // Must be secure if sameSite is none
+}
+
+// Log session configuration (excluding secret)
+console.log('Session configuration:', {
+  environment: app.get('env'),
+  secureCookies: sessionConfig.cookie.secure,
+  sameSite: sessionConfig.cookie.sameSite,
+  cookieMaxAge: sessionConfig.cookie.maxAge,
+  sessionTTL: sessionConfig.store.ttl,
+  timestamp: new Date().toISOString()
+});
 
 console.log('Session configuration:', {
   secure: app.get('env') === 'production',
