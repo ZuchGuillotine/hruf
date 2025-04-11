@@ -198,6 +198,8 @@ export default function AuthPage() {
                     />
                   </div>
 
+                  {/* Google OAuth separator and button temporarily disabled */}
+                  {/* 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <Separator className="w-full" />
@@ -220,6 +222,7 @@ export default function AuthPage() {
                     </svg>
                     Continue with Google
                   </Button>
+                  */}
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
                   <Button
