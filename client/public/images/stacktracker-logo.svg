@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <rect width="500" height="500" fill="#f8f3e3" />
+  <g transform="translate(125, 50) scale(0.5)">
+    <!-- Upper rectangular base -->
+    <rect x="10" y="10" width="480" height="40" rx="20" ry="20" fill="#0b4e43" stroke="#0b4e43" stroke-width="5"/>
+    
+    <!-- Hourglass outline -->
+    <path d="M40,50 C150,150 150,350 40,450 L460,450 C350,350 350,150 460,50 Z" fill="none" stroke="#0b4e43" stroke-width="20"/>
+    
+    <!-- DNA helix structure in the middle -->
+    <path d="M250,50 Q290,150 250,250 Q210,350 250,450" fill="none" stroke="#0a6c7d" stroke-width="15"/>
+    <path d="M250,50 Q210,150 250,250 Q290,350 250,450" fill="none" stroke="#0a6c7d" stroke-width="15"/>
+    
+    <!-- DNA base pairs - colorful segments -->
+    <rect x="210" y="100" width="80" height="15" fill="#e63946"/>
+    <rect x="210" y="130" width="80" height="15" fill="#f1c40f"/>
+    <rect x="210" y="160" width="80" height="15" fill="#2ecc71"/>
+    <rect x="210" y="190" width="80" height="15" fill="#f1c40f"/>
+    
+    <rect x="210" y="250" width="80" height="15" fill="#e63946"/>
+    <rect x="210" y="280" width="80" height="15" fill="#2ecc71"/>
+    <rect x="210" y="310" width="80" height="15" fill="#f1c40f"/>
+    <rect x="210" y="340" width="80" height="15" fill="#e63946"/>
+    
+    <!-- Digital pixels at the bottom to represent data -->
+    <rect x="290" y="380" width="15" height="15" fill="#f1c40f"/>
+    <rect x="310" y="380" width="15" height="15" fill="#f1c40f"/>
+    <rect x="330" y="400" width="15" height="15" fill="#2ecc71"/>
+    <rect x="310" y="400" width="15" height="15" fill="#2ecc71"/>
+    <rect x="350" y="380" width="15" height="15" fill="#2ecc71"/>
+    <rect x="350" y="400" width="15" height="15" fill="#2ecc71"/>
+    
+    <!-- Lower rectangular base -->
+    <rect x="10" y="450" width="480" height="40" rx="20" ry="20" fill="#0b4e43" stroke="#0b4e43" stroke-width="5"/>
+  </g>
+</svg>
