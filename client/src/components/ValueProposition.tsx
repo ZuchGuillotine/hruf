@@ -15,7 +15,10 @@ export function ValueProposition() {
       title: "Optimize Your Health Journey",
       description: "Learn how your supplements impact your health with detailed analytics and trends"
     },
-    
+    {
+      title: "Upload Labs & Bloodwork to See Your Supplement's Impact",
+      description: "Learn how your supplements are moving your biomarkers and important health metrics"
+    },
   ];
 
   return (
