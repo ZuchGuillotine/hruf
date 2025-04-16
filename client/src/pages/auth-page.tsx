@@ -154,7 +154,7 @@ export default function AuthPage() {
           <div className="flex justify-center">
             <Card className="auth-card w-full max-w-[380px] shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
               <CardHeader className="text-center">
-                <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
+                <CardTitle>{isLogin ? "Login" : "Start for Free"}</CardTitle>
                 <CardDescription>
                   {isLogin
                     ? "Sign in to your account using your email or username"
