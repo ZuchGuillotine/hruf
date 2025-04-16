@@ -112,7 +112,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating Account...' : 'Start for Free'}
+              {isLoading ? 'Creating Account...' : 'Sign Up'}
             </Button>
           </form>
         </CardContent>
