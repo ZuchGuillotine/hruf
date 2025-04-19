@@ -116,10 +116,28 @@ export default function LLMChat() {
             setIsLoading(false);
 
             if (fullResponse) {
-              setMessages((prev) => [
-                ...prev.slice(0, prev.length - 1),
+              const updatedMessages = [
+                ...messages.slice(0, messages.length - 1),
                 { role: 'assistant', content: fullResponse }
-              ]);
+              ];
+              setMessages(updatedMessages);
+              
+              // Automatically save the chat
+              try {
+                await fetch('/api/chat/save', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    content: JSON.stringify(updatedMessages),
+                    type: 'chat',
+                    tags: ['ai_conversation'],
+                  }),
+                });
+              } catch (saveError) {
+                console.error('Failed to auto-save chat:', saveError);
+              }
             } else {
               setMessages((prev) => [
                 ...prev.slice(0, prev.length - 1),
