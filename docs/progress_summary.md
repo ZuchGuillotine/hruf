@@ -1,4 +1,16 @@
 
+## Latest Status (April 19, 2025)
+
+### Health Statistics Enhancement
+- Successfully implemented ethnicity tracking:
+  - Added ethnicity field to health_stats table
+  - Created migration for database schema update
+  - Implemented frontend dropdown selection
+  - Added privacy-conscious "prefer not to answer" option
+  - Enhanced UI with consistent styling
+  - Verified successful data persistence
+  - Maintained existing health stats functionality
+
 ## Latest Status (March 25, 2025)
 
 ### Lab Results PDF Parsing Issue - RESOLVED

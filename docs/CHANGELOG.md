@@ -1,5 +1,14 @@
 
 ## [Unreleased]
+### Added (April 19, 2025)
+- Enhanced Health Information Collection:
+  - Added ethnicity field to health statistics collection
+  - Implemented dropdown selection for ethnicity data
+  - Added "prefer not to answer" option for privacy
+  - Enhanced schema with proper migrations
+  - Verified proper database updates
+  - Styled consistently with existing form elements
+
 ### Fixed (March 25, 2025)
 - Lab Results PDF Parsing:
   - Resolved PDF parsing issues in labSummaryService.ts
