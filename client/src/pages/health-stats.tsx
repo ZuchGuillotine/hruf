@@ -18,6 +18,7 @@ type HealthStatsFormData = {
   weight?: number;
   height?: number;
   gender?: string;
+  ethnicity?: string;
   dateOfBirth?: string;
   averageSleep?: number;
   profilePhotoUrl?: string;
@@ -147,6 +148,22 @@ export default function HealthStatsPage() {
                         </select>
                       </div>
                       <div>
+                        <Label className="text-white/70">Ethnicity</Label>
+                        <select {...form.register('ethnicity')} className="w-full p-2 rounded-md bg-white text-black">
+                          <option value="">Select ethnicity...</option>
+                          <option value="african">African</option>
+                          <option value="asian">Asian</option>
+                          <option value="caucasian">Caucasian</option>
+                          <option value="hispanic">Hispanic</option>
+                          <option value="middle_eastern">Middle Eastern</option>
+                          <option value="native_american">Native American</option>
+                          <option value="pacific_islander">Pacific Islander</option>
+                          <option value="mixed">Mixed</option>
+                          <option value="other">Other</option>
+                          <option value="prefer not to answer">Prefer not to answer</option>
+                        </select>
+                      </div>
+                      <div>
                         <Label className="text-white/70">Date of Birth</Label>
                         <Input
                           type="date"
@@ -212,6 +229,10 @@ export default function HealthStatsPage() {
                       <div>
                         <Label className="text-white/70">Gender</Label>
                         <p className="text-white">{healthStats?.gender || 'Not set'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-white/70">Ethnicity</Label>
+                        <p className="text-white">{healthStats?.ethnicity || 'Not set'}</p>
                       </div>
                       <div>
                         <Label className="text-white/70">Date of Birth</Label>
