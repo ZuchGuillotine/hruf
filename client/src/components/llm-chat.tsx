@@ -245,17 +245,11 @@ export default function LLMChat() {
 
       <div className="mt-4 flex flex-col gap-2">
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
+          <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Tell me about your mood, energy, or other supplement responses ..."
-            className="bg-white/10 text-white placeholder:text-white/60 min-h-[40px] resize-none overflow-hidden"
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = `${target.scrollHeight}px`;
-            }}
-            rows={1}
+            className="bg-white/10 text-white placeholder:text-white/60"
             disabled={isLoading}
           />
           <Button
