@@ -146,12 +146,14 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-start">
-          <div className="mb-8 lg:mb-0">
-            <ValueProposition />
-          </div>
+        <div className={`lg:grid ${isLogin ? '' : 'lg:grid-cols-2'} lg:gap-12 items-start`}>
+          {!isLogin && (
+            <div className="mb-8 lg:mb-0">
+              <ValueProposition />
+            </div>
+          )}
 
-          <div className="flex justify-center">
+          <div className={`flex justify-center ${isLogin ? 'lg:mx-auto' : ''}`}>
             <Card className="auth-card w-full max-w-[380px] shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
               <CardHeader className="text-center">
                 <CardTitle>{isLogin ? "Login" : "Start for Free"}</CardTitle>
