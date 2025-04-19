@@ -134,8 +134,65 @@ export default function AuthPage() {
       <LandingHeader />
       <BackgroundWords className="absolute inset-0 z-0" />
 
-      <div className="flex-grow container mx-auto px-4 py-8 relative z-50">
-        <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl mx-auto">
+      <div className="flex-grow container mx-auto px-4 py-8 relative z-50 flex flex-col items-center">
+        {isLogin && (
+          <div className="w-full max-w-[380px] mb-8">
+            <Card className="auth-card shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <CardTitle>Login</CardTitle>
+                <CardDescription>
+                  Sign in to your account using your email or username
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email or Username
+                    </label>
+                    <Input
+                      id="email"
+                      type="text"
+                      {...registerField("email")}
+                      placeholder="Enter your email or username"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </label>
+                    <Input
+                      id="password"
+                      type="password"
+                      {...registerField("password")}
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Sign In
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setIsLogin(!isLogin)}
+                  >
+                    Don't have an account? Sign up
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
+        )}
+
+        <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl mx-auto w-full">
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
               Optimize Your Supplement Stack
@@ -146,7 +203,8 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        <div className="flex-grow flex flex-col lg:grid lg:grid-cols-2 lg:gap-12 items-start">
+        {!isLogin && (
+          <div className="flex-grow flex flex-col lg:grid lg:grid-cols-2 lg:gap-12 items-start w-full">
           {!isLogin && (
             <div className="mb-8 lg:mb-0">
               <ValueProposition />
@@ -250,7 +308,7 @@ export default function AuthPage() {
               </form>
             </Card>
           </div>
-        </div>
+        )}
       </div>
       <Footer className="relative z-50" />
     </div>
