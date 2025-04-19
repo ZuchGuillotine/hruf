@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLLM } from '@/hooks/use-llm';
@@ -245,11 +245,11 @@ export default function LLMChat() {
 
       <div className="mt-4 flex flex-col gap-2">
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
+          <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Tell me about your mood, energy, or other supplement responses ..."
-            className="bg-white/10 text-white placeholder:text-white/60"
+            className="bg-white/10 text-white placeholder:text-white/60 min-h-[100px] resize-y"
             disabled={isLoading}
           />
           <Button
