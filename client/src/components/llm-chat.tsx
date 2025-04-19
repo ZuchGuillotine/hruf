@@ -264,15 +264,6 @@ export default function LLMChat() {
             )}
           </Button>
         </form>
-
-        {messages.length > 0 && (
-          <Button
-            onClick={handleSaveChat}
-            className="bg-white text-[#1b4332] hover:bg-white/90"
-          >
-            Save Chat
-          </Button>
-        )}
       </div>
     </div>
   );
