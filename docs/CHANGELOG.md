@@ -1,5 +1,17 @@
 
 ## [Unreleased]
+### Fixed (April 19, 2025)
+- OpenGraph Image Integration:
+  - Fixed incorrect image paths in meta tags
+  - Removed 'public' from production URL paths
+  - Updated Twitter card image paths
+  - Fixed OpenGraph image content type issues
+  - Corrected image path to use Logoplustext.jpg
+  - Enhanced social media preview compatibility
+
+
+
+## [Unreleased]
 ### Added (April 19, 2025)
 - Enhanced Health Information Collection:
   - Added ethnicity field to health statistics collection
