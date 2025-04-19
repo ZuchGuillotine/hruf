@@ -45,6 +45,17 @@ export default function Dashboard() {
           <SupplementList />
         </div>
 
+        {/* Labs Upload Card */}
+        <Link href="/labs">
+          <div className="bg-[#1b4332] rounded-lg p-6 hover:bg-[#1b4332]/90 transition-colors">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold text-white">Labs</h2>
+              <FileIcon className="h-6 w-6 text-white/70" />
+            </div>
+            <p className="text-sm text-white/70 mt-2">Upload and manage your lab results and reports</p>
+          </div>
+        </Link>
+
         {/* Health Statistics Overview */}
         <div className="bg-[#1b4332] rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
@@ -80,19 +91,6 @@ export default function Dashboard() {
                 <p className="text-xs text-white/70">Monitor your sleep patterns</p>
               </CardContent>
             </Card>
-
-            <Link href="/labs">
-              <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Labs</CardTitle>
-                  <FileIcon className="h-4 w-4 text-white/70" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">Upload Results</div>
-                  <p className="text-xs text-white/70">Manage lab results and reports</p>
-                </CardContent>
-              </Card>
-            </Link>
           </div>
         </div>
       </main>
