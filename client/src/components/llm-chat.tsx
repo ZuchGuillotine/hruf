@@ -123,8 +123,9 @@ export default function LLMChat() {
               setMessages(updatedMessages);
               
               // Automatically save the chat
-              try {
-                await fetch('/api/chat/save', {
+              (async () => {
+                try {
+                  await fetch('/api/chat/save', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -135,9 +136,10 @@ export default function LLMChat() {
                     tags: ['ai_conversation'],
                   }),
                 });
-              } catch (saveError) {
-                console.error('Failed to auto-save chat:', saveError);
-              }
+                } catch (saveError) {
+                  console.error('Failed to auto-save chat:', saveError);
+                }
+              })();
             } else {
               setMessages((prev) => [
                 ...prev.slice(0, prev.length - 1),
