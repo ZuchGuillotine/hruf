@@ -93,6 +93,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
               userId: userIdNum,
               content: JSON.stringify(conversationData),
               type: 'chat',
+              loggedAt: new Date(),
               tags: ['ai_conversation'],
               metadata: {
                 savedAt: new Date().toISOString(),

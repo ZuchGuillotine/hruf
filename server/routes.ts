@@ -350,8 +350,12 @@ export function registerRoutes(app: Express): Server {
   // Add endpoint to retrieve chat history
   app.get("/api/chat/history", requireAuth, async (req, res) => {
     try {
+      const userTimezone = req.query.timezone as string || 'UTC';
       const history = await db
-        .select()
+        .select({
+          ...qualitativeLogs,
+          loggedAt: sql`timezone(${userTimezone}, ${qualitativeLogs.loggedAt})`
+        })
         .from(qualitativeLogs)
         .where(
           and(
