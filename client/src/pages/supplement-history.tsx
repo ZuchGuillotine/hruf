@@ -45,14 +45,34 @@ export default function SupplementHistory() {
     queryKey: ['supplement-logs', format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       try {
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        console.log('Fetching logs for date:', dateStr);
+        // Convert selected date to user's timezone at midnight
+        const userDate = new Date(selectedDate);
+        userDate.setHours(0, 0, 0, 0);
+        
+        // Format date in YYYY-MM-DD while preserving timezone
+        const dateStr = format(userDate, 'yyyy-MM-dd');
+        console.log('Fetching logs for date:', dateStr, 'Local timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
         const response = await fetch(`/api/supplement-logs/${dateStr}`);
         if (!response.ok) {
           throw new Error(await response.text());
         }
         const data = await response.json();
+
+        // Process timestamps to local time
+        if (data.supplements) {
+          data.supplements = data.supplements.map(log => ({
+            ...log,
+            takenAt: new Date(log.takenAt).toISOString()
+          }));
+        }
+        
+        if (data.qualitativeLogs) {
+          data.qualitativeLogs = data.qualitativeLogs.map(log => ({
+            ...log,
+            loggedAt: new Date(log.loggedAt).toISOString()
+          }));
+        }
 
         console.log('Fetched logs:', data);
         return data;
