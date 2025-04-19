@@ -134,8 +134,8 @@ export default function AuthPage() {
       <LandingHeader />
       <BackgroundWords className="absolute inset-0 z-0" />
 
-      <div className="flex-grow container mx-auto px-4 py-8 relative z-50">
-        <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl mx-auto">
+      <div className="flex-grow container mx-auto px-4 py-8 relative z-50 flex flex-col items-center">
+        <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl w-full">
           <CardContent className="p-8 text-center">
             <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
               Optimize Your Supplement Stack
