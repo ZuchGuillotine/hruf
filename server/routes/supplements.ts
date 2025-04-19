@@ -34,11 +34,11 @@ router.get('/streak', requireAuth, async (req, res) => {
         )
       );
 
-    // Count consecutive days
+    // Count consecutive days, handling timezone correctly
     const streakDays = logs.reduce((streak, log) => {
       if (!log.takenAt) return streak;
-      const logDate = new Date(log.takenAt).toDateString();
-      const today = new Date().toDateString();
+      const logDate = new Date(log.takenAt).toLocaleDateString('en-CA'); // Use toLocaleDateString to get date in consistent format regardless of timezone.
+      const today = new Date().toLocaleDateString('en-CA');
       return logDate === today ? streak + 1 : streak;
     }, 0);
 
