@@ -79,7 +79,7 @@ export default function AskPage() {
             {messages.length === 0 ? (
               <div className="text-center py-12">
                 <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
-                  Welcome to the Supplement Query Assistant
+                  Welcome to the StackTracker Assistant
                 </h3>
                 <p className="text-gray-500 dark:text-gray-500 max-w-md mx-auto">
                   Ask any questions about supplements, their effects, or how they might interact with your current regimen.
