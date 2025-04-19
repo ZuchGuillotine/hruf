@@ -153,8 +153,8 @@ export default function AuthPage() {
             </div>
           )}
 
-          <div className={`flex justify-center ${isLogin ? 'col-span-2 lg:mx-auto' : ''}`}>
-            <Card className="auth-card w-full max-w-[380px] shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
+          <div className={`flex justify-center w-full ${isLogin ? 'col-span-2 lg:mx-auto' : ''}`}>
+            <Card className="auth-card w-[90%] max-w-[380px] mx-auto shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
               <CardHeader className="text-center">
                 <CardTitle>{isLogin ? "Login" : "Start for Free"}</CardTitle>
                 <CardDescription>
