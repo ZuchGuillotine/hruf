@@ -1,4 +1,3 @@
-
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -14,6 +13,7 @@ import session from 'express-session';
 import createMemoryStore from "memorystore";
 import crypto from "crypto";
 import { serviceInitializer } from './services/serviceInitializer';
+import path from "path";
 
 const app = express();
 
@@ -131,6 +131,10 @@ app.use('/api', (err: any, _req: Request, res: Response, _next: NextFunction) =>
   });
 });
 
+
+// Serve static files (images)
+app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
+
 // Setup Vite last
 if (app.get("env") === "development") {
   await setupVite(app, server);
@@ -144,7 +148,7 @@ async function initializeAndStart() {
     // Initialize our services
     await serviceInitializer.initializeServices();
     console.log('Services initialized successfully');
-    
+
     // Start server with improved error handling and retries
     await startServer();
   } catch (error) {
@@ -186,7 +190,7 @@ async function startServer() {
     server.listen(port, "0.0.0.0", () => {
       log(`Server started successfully on port ${port}`);
     });
-    
+
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
     process.on('SIGINT', handleShutdown);
@@ -203,17 +207,17 @@ async function startServer() {
 // Graceful shutdown function
 async function handleShutdown() {
   console.log('Received shutdown signal, closing server...');
-  
+
   try {
     // Shutdown services gracefully
     await serviceInitializer.shutdownServices();
-    
+
     // Close server connections
     server.close(() => {
       console.log('Server closed');
       process.exit(0);
     });
-    
+
     // Force shutdown after timeout
     setTimeout(() => {
       console.error('Forced shutdown due to timeout');
