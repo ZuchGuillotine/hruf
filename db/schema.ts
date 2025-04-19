@@ -30,6 +30,7 @@ export const healthStats = pgTable("health_stats", {
   weight: numeric("weight"),
   height: numeric("height"), // stored in centimeters
   gender: text("gender"),
+  ethnicity: text("ethnicity"),
   dateOfBirth: date("date_of_birth", { mode: 'date' }),
   averageSleep: integer("average_sleep"), // Stored in minutes
   profilePhotoUrl: text("profile_photo_url"),
