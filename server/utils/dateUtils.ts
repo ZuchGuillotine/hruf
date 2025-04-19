@@ -53,13 +53,16 @@ export function formatDate(date: Date | null, format: 'local' | 'iso' | 'time' =
  * @returns Date object set to start or end of UTC day
  */
 export function getUtcDayBoundary(date: Date, boundary: 'start' | 'end'): Date {
-  const utcDate = new Date(date);
-  
-  if (boundary === 'start') {
-    utcDate.setUTCHours(0, 0, 0, 0);
-  } else {
-    utcDate.setUTCHours(23, 59, 59, 999);
-  }
+  // Convert to UTC date first
+  const utcDate = new Date(Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    boundary === 'start' ? 0 : 23,
+    boundary === 'start' ? 0 : 59,
+    boundary === 'start' ? 0 : 59,
+    boundary === 'start' ? 0 : 999
+  ));
   
   return utcDate;
 }
