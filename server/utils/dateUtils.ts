@@ -52,21 +52,15 @@ export function formatDate(date: Date | null, format: 'local' | 'iso' | 'time' =
  * @param boundary Start or end of day
  * @returns Date object set to start or end of UTC day
  */
-export function getUtcDayBoundary(date: Date, boundary: 'start' | 'end', timezone: string = 'UTC'): Date {
-  // Get the date components in the specified timezone
-  const userDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+export function getUtcDayBoundary(date: Date, boundary: 'start' | 'end'): Date {
+  const utcDate = new Date(date);
   
-  // Create UTC timestamp for the user's midnight
-  const utcDate = new Date(Date.UTC(
-    userDate.getFullYear(),
-    userDate.getMonth(),
-    userDate.getDate(),
-    boundary === 'start' ? 0 : 23,
-    boundary === 'start' ? 0 : 59,
-    boundary === 'start' ? 0 : 59,
-    boundary === 'start' ? 0 : 999
-  ));
-
+  if (boundary === 'start') {
+    utcDate.setUTCHours(0, 0, 0, 0);
+  } else {
+    utcDate.setUTCHours(23, 59, 59, 999);
+  }
+  
   return utcDate;
 }
 
