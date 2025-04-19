@@ -48,9 +48,12 @@ export default function Header() {
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
-                StackTracker
-              </h1>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <img src="/images/header-logo.png" alt="StackTracker" className="w-6 h-6" />
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  StackTracker
+                </h1>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <Link href="/">
