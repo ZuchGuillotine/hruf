@@ -115,13 +115,13 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
       (queryChatsCount[0]?.count || 0);
 
     // Check if the user has reached their daily limit
-    const hasReachedLimit = isOnTrial && totalCount >= DAILY_FREE_LIMIT;
+    const hasReachedLimit = !!isOnTrial && totalCount >= DAILY_FREE_LIMIT;
 
     return {
       hasReachedLimit,
       currentCount: totalCount,
-      isPro,
-      isOnTrial,
+      isPro: !!isPro,
+      isOnTrial: !!isOnTrial,
     };
   } catch (error) {
     logger.error(`Error checking user LLM limit:`, {
