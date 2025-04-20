@@ -144,8 +144,7 @@ router.post('/start-free-trial', async (req, res) => {
     // Update user with trial information
     await db.update(users)
       .set({ 
-        trialEndsAt: trialEndDate.toISOString(),
-        trialStartedAt: new Date().toISOString()
+        trialEndsAt: trialEndDate
       })
       .where(eq(users.id, userId));
     
@@ -178,9 +177,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2023-10-16',
-    });
+    // Using Stripe instance defined at the top of the file
 
     const event = stripe.webhooks.constructEvent(req.body, sig!, endpointSecret!);
 

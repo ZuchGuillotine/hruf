@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import AboutPage from "@/pages/about";
 import AskPage from "@/pages/ask";  
 import AuthPage from "@/pages/auth-page";
+import LandingPage from "@/pages/landing-page";
 import Dashboard from "@/pages/dashboard";
 import ProfilePage from "@/pages/profile";
 import HealthStatsPage from "@/pages/health-stats";
