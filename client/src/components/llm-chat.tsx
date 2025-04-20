@@ -241,6 +241,9 @@ export default function LLMChat() {
 
   return (
     <div className="flex flex-col h-full">
+      {limitReached && (
+        <LimitReachedNotification onClose={resetLimitReached} />
+      )}
       <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
           {messages.map((message, index) => (

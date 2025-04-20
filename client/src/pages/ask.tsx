@@ -8,10 +8,11 @@ import Header from "@/components/header";
 import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
 import { Spinner } from "@/components/ui/spinner";
+import LimitReachedNotification from "@/components/ui/LimitReachedNotification";
 
 export default function AskPage() {
   const [inputValue, setInputValue] = useState("");
-  const { sendQuery, messages, isLoading, error, resetChat } = useQuery();
+  const { sendQuery, messages, isLoading, error, resetChat, limitReached, resetLimitReached } = useQuery();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,6 +64,9 @@ export default function AskPage() {
       
       <main className="flex-grow bg-white dark:bg-gray-950 p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
+          {limitReached && (
+            <LimitReachedNotification onClose={resetLimitReached} />
+          )}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Ask About Supplements
