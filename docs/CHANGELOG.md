@@ -1,5 +1,15 @@
 
 ## [Unreleased]
+
+### Fixed (April 20, 2025)
+- Profile Completion Supplement Logs:
+  - Implemented direct supplement logs count endpoint
+  - Fixed profile completion card functionality
+  - Enhanced user progress tracking
+  - Added proper authentication checks
+  - Improved error handling for count queries
+
+
 ### Fixed (April 19, 2025)
 - OpenGraph Image Integration:
   - Fixed incorrect image paths in meta tags
