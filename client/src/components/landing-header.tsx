@@ -73,10 +73,12 @@ export default function LandingHeader() {
             Blog
           </a>
           {!user && (
-            <Button variant="ghost" asChild>
-              <a href="/?login=true" className="text-foreground hover:text-foreground/80 transition-colors">
-                Log in
-              </a>
+            <Button 
+              variant="ghost" 
+              onClick={() => window.location.href = '/auth?login=true'}
+              className="text-foreground hover:text-foreground/80 transition-colors"
+            >
+              Log in
             </Button>
           )}
         </nav>
