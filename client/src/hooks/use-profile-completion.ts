@@ -37,10 +37,10 @@ export function useProfileCompletion() {
       completed: !!(healthStats?.allergies && healthStats.allergies.length > 0),
     },
     {
-      id: "photo",
-      label: "Profile Photo",
-      description: "Add a profile photo",
-      completed: !!healthStats?.profilePhotoUrl,
+      id: "supplement-logs",
+      label: "Log your supplements",
+      description: "Log at least one supplement",
+      completed: !!(healthStats?.supplementLogCount && healthStats.supplementLogCount > 0),
     },
   ];
 
