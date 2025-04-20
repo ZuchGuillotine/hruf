@@ -40,7 +40,10 @@ export function useProfileCompletion() {
       id: "supplement-logs",
       label: "Log your supplements",
       description: "Log at least one supplement",
-      completed: !!(healthStats?.supplementLogCount && healthStats.supplementLogCount > 0),
+      completed: useQuery<number>({
+        queryKey: ["/api/supplement-logs/count"],
+        enabled: !!user,
+      }).data > 0,
     },
   ];
 

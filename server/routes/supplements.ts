@@ -57,3 +57,22 @@ router.get('/streak', requireAuth, async (req, res) => {
 });
 
 export default router;
+// Get count of user's supplement logs
+router.get('/count', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const [result] = await db
+      .select({ count: sql`count(*)::int` })
+      .from(supplementLogs)
+      .where(eq(supplementLogs.userId, userId));
+
+    res.json(result?.count || 0);
+  } catch (error) {
+    console.error('Error counting supplement logs:', error);
+    res.status(500).json({ error: 'Failed to count supplement logs' });
+  }
+});
