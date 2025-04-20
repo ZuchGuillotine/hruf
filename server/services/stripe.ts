@@ -27,7 +27,7 @@ export const stripeService = {
         price: priceId,
         quantity: 1,
       }],
-      success_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/profile`,
       subscription_data: {
         trial_period_days: isTrialEligible ? 14 : undefined,

@@ -448,7 +448,7 @@ export function setupAuth(app: Express) {
             phoneNumber: user.phoneNumber,
             isPro: user.isPro,
           },
-          redirectUrl: "/dashboard" // Add explicit redirect URL
+          redirectUrl: "/" // Add explicit redirect URL
         });
       });
     })(req, res, next);

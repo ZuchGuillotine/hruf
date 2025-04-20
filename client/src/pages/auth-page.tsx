@@ -56,7 +56,7 @@ export default function AuthPage() {
         const loginResponse = await login(data);
         // Server handles redirect now, but as a fallback:
         if (!loginResponse.redirectUrl) {
-          setLocation('/dashboard');
+          setLocation('/');
         }
       } else {
         console.log('Starting registration process');

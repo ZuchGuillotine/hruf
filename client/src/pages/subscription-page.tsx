@@ -13,7 +13,7 @@ export default function SubscriptionPage() {
 
   // Prevent accessing this page directly if already subscribed
   if (user?.isPro) {
-    setLocation('/dashboard');
+    setLocation('/');
     return null;
   }
 
@@ -92,7 +92,7 @@ export default function SubscriptionPage() {
               className="w-full bg-green-600 hover:bg-green-700"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {loading ? "Processing..." : "Start 14-Day Free Trial"}
+              {loading ? "Processing..." : "Start 28-Day Free Trial"}
             </Button>
 
             <div className="relative">

@@ -60,7 +60,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
       }
 
       console.log('Trial started successfully, redirecting to dashboard');
-      setLocation('/dashboard');
+      setLocation('/');
     } catch (error) {
       console.error('Failed to start trial:', error);
     } finally {
@@ -105,7 +105,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
             className="w-full bg-green-600 hover:bg-green-700 mb-4"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {loading ? "Starting Trial..." : "Start 14-Day Free Trial"}
+            {loading ? "Starting Trial..." : "Start 28-Day Free Trial"}
           </Button>
         )}
 
