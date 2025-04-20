@@ -8,6 +8,32 @@ import { checkUserLLMLimit } from '../utils/userLimits';
 
 export async function* qualitativeChatWithAI(userId: string | number | undefined, userQuery: string) {
   try {
+    // Convert userId to number for consistent handling
+    const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : (userId as number);
+
+    // Check user limits if we have a valid user ID
+    if (!isNaN(userIdNum)) {
+      const limitStatus = await checkUserLLMLimit(userIdNum);
+      
+      // If user has reached their limit and is on trial, inform them
+      if (limitStatus.hasReachedLimit && limitStatus.isOnTrial) {
+        logger.info('User reached daily chat limit:', {
+          userId: userIdNum,
+          currentCount: limitStatus.currentCount,
+          isPro: limitStatus.isPro,
+          isOnTrial: limitStatus.isOnTrial,
+          timestamp: new Date().toISOString()
+        });
+        
+        yield {
+          error: 'You have reached your daily limit of 10 AI interactions. Please upgrade to continue using this feature.',
+          limitReached: true,
+          streaming: false
+        };
+        return;
+      }
+    }
+
     // Build context using the context service
     const context = await constructUserContext(userId?.toString() || 'anonymous', userQuery);
 

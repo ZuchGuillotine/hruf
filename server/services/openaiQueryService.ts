@@ -3,11 +3,36 @@ import { db } from '../../db';
 import { qualitativeLogs, queryChats } from '../../db/schema';
 import { constructQueryContext } from './llmContextService_query';
 import { debugContext } from '../utils/contextDebugger';
+import { checkUserLLMLimit } from '../utils/userLimits';
 
 export async function* queryWithAI(messages: Array<{ role: string; content: string }>, userId: string | null) {
   try {
     const userQuery = messages[messages.length - 1].content;
     const userIdNum = userId ? parseInt(userId) : null;
+    
+    // Check user limits if we have a valid user ID
+    if (userIdNum !== null) {
+      const limitStatus = await checkUserLLMLimit(userIdNum);
+      
+      // If user has reached their limit and is on trial, inform them
+      if (limitStatus.hasReachedLimit && limitStatus.isOnTrial) {
+        console.log('User reached daily query limit:', {
+          userId: userIdNum,
+          currentCount: limitStatus.currentCount,
+          isPro: limitStatus.isPro,
+          isOnTrial: limitStatus.isOnTrial,
+          timestamp: new Date().toISOString()
+        });
+        
+        yield {
+          error: 'You have reached your daily limit of 10 AI interactions. Please upgrade to continue using this feature.',
+          limitReached: true,
+          streaming: false
+        };
+        return;
+      }
+    }
+    
     const context = await constructQueryContext(userIdNum, userQuery);
     await debugContext(userId || 'anonymous', context, 'query');
 

@@ -1,15 +1,25 @@
 import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
+export interface ChatResponse {
+  response?: string;
+  error?: string;
+  limitReached?: boolean;
+  streaming?: boolean;
+}
+
 export function useLLM() {
+  const [limitReached, setLimitReached] = useState(false);
+
   const chatMutation = useMutation<
     { response: string },
     Error,
-    { messages: Message[]; onStream?: (chunk: string) => void }
+    { messages: Message[]; onStream?: (chunk: string, data?: ChatResponse) => void }
   >({
     mutationFn: async ({ messages, onStream }) => {
       const response = await fetch("/api/chat", {
@@ -45,12 +55,21 @@ export function useLLM() {
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 try {
-                  const data = JSON.parse(line.slice(6));
+                  const data: ChatResponse = JSON.parse(line.slice(6));
                   console.log('Parsed SSE data:', data);
+
+                  // Check if the user has reached their daily limit
+                  if (data.limitReached) {
+                    setLimitReached(true);
+                    onStream?.('', data); // Pass empty response chunk but include the full data
+                    return { response: '' };
+                  }
 
                   if (data.response) {
                     fullResponse += data.response;
-                    onStream?.(data.response);
+                    onStream?.(data.response, data);
+                  } else if (data.error) {
+                    onStream?.('', data);
                   }
                 } catch (e) {
                   console.error('Error parsing SSE data:', e);
@@ -76,5 +95,7 @@ export function useLLM() {
   return {
     chat: chatMutation.mutateAsync,
     isLoading: chatMutation.isPending,
+    limitReached,
+    resetLimitReached: () => setLimitReached(false)
   };
 }
