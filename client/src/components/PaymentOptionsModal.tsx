@@ -22,11 +22,9 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
           
           <div className="space-y-3">
             {/* Monthly subscription option */}
-            <a
-              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE" 
-              className="block w-full"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              onClick={() => handleSubscribe(false)}
+              className="w-full bg-green-700 hover:bg-green-800"
             >
               <Button className="w-full bg-green-700 hover:bg-green-800">
                 Monthly - $21.99
