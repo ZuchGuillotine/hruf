@@ -51,20 +51,10 @@ router.post('/create-checkout-session', async (req, res) => {
       ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
       : `${req.protocol}://${req.get('host')}`;
 
-    // Generate a unique one-time token for this checkout session
-    const checkoutToken = crypto.randomBytes(32).toString('hex');
-    
-    // Store token in database temporarily
-    await db.update(users)
-      .set({ 
-        authToken: checkoutToken,
-        authTokenExpiry: new Date(Date.now() + 30 * 60 * 1000) // 30 minute expiry
-      })
-      .where(eq(users.id, userId));
-    
-    console.log('Created auth token for checkout:', {
+    // Use the session cookie approach instead of database tokens
+    // This is simpler and doesn't require schema changes
+    console.log('Creating checkout session with user ID:', {
       userId,
-      tokenCreated: true,
       timestamp: new Date().toISOString()
     });
     
@@ -77,8 +67,8 @@ router.post('/create-checkout-session', async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}&setup_complete=true&auth_token=${checkoutToken}`,
-      cancel_url: `${baseUrl}/profile?auth_token=${checkoutToken}`,
+      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}&setup_complete=true`,
+      cancel_url: `${baseUrl}/profile`,
       client_reference_id: userId.toString(),
       allow_promotion_codes: true,
       billing_address_collection: 'required',

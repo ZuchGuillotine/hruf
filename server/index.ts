@@ -14,6 +14,7 @@ import { setupAuth } from './auth';
 import setupQueryRoutes from './routes/queryRoutes';
 import setupSummaryRoutes from './routes/summaryRoutes';
 import { setAuthInfo } from './middleware/authMiddleware';
+import { handleStripeRedirects } from './middleware/stripeAuthMiddleware';
 import session from 'express-session';
 import createMemoryStore from "memorystore";
 import crypto from "crypto";
@@ -90,6 +91,7 @@ console.log('Session configuration:', {
 // Core middleware setup - order is important
 app.use(session(sessionConfig));
 setupAuth(app);
+app.use(handleStripeRedirects); // Handle authentication for Stripe redirects
 app.use(setAuthInfo);
 
 // API middleware
