@@ -6,6 +6,7 @@ type RequestResult = {
   user?: SelectUser;
   message?: string;
   requiresVerification?: boolean;
+  redirectUrl?: string;
 } | {
   ok: false;
   message: string;

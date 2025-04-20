@@ -20,10 +20,8 @@
       const data = await response.json();
       setUser(data.user);
       
-      // Handle redirection
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-      }
+      // Don't redirect here - let the calling component handle redirection
+      // This prevents conflicts in navigation logic
       
       return data;
     } catch (error: any) {

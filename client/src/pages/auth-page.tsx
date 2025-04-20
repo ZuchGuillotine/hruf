@@ -53,16 +53,24 @@ export default function AuthPage() {
   const onSubmit = async (data: FormData) => {
     try {
       if (isLogin) {
+        console.log('Starting login process');
         const loginResponse = await login(data);
-        // Server handles redirect now, but as a fallback:
-        if (!loginResponse.redirectUrl) {
+        console.log('Login successful, response:', loginResponse);
+        
+        // Handle redirection - this is critical for existing users
+        if (loginResponse.ok && 'redirectUrl' in loginResponse && loginResponse.redirectUrl) {
+          console.log('Redirecting to:', loginResponse.redirectUrl);
+          // Use direct window location for consistent redirection behavior
+          window.location.href = loginResponse.redirectUrl;
+        } else {
+          console.log('No redirect URL provided, defaulting to dashboard');
           setLocation('/');
         }
       } else {
         console.log('Starting registration process');
         const response = await register(data);
 
-        if (response.requiresVerification) {
+        if (response.ok && 'requiresVerification' in response && response.requiresVerification) {
           setVerificationSent(true);
         } else {
           console.log('Registration successful, redirecting to subscription page');
