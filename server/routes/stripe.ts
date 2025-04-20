@@ -67,7 +67,7 @@ router.post('/create-checkout-session', async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}&setup_complete=true`,
+      success_url: `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}&setup_complete=true`,
       cancel_url: `${baseUrl}/profile`,
       client_reference_id: userId.toString(),
       allow_promotion_codes: true,
@@ -107,7 +107,7 @@ router.get('/subscription-success', async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (session.payment_status === 'paid') {
       await stripeService.handleSubscriptionUpdated(session.subscription as any);
-      return res.redirect('/dashboard');
+      return res.redirect('/');
     }
 
     res.status(400).json({ error: 'Payment not completed' });
