@@ -82,28 +82,30 @@ export default function LandingPage() {
 
       <main className="flex-grow container mx-auto px-4 py-12 relative z-10">
         {/* Hero Section */}
-        <Card className="text-center mb-16 max-w-4xl mx-auto bg-white/95 backdrop-blur-sm border-2 border-[#1b4332]/10">
-          <CardContent className="p-12">
+        <Card className="text-center mb-8 max-w-4xl mx-auto bg-white/95 backdrop-blur-sm border-2 border-[#1b4332]/10">
+          <CardContent className="p-8">
             <h1 className="text-5xl font-bold text-[#1b4332] mb-6">
               Optimize Your Supplement Stack
             </h1>
-            <p className="text-xl text-gray-700 mb-8">
+            <p className="text-xl text-gray-700">
               Track, analyze, and optimize your supplement regimen with AI-powered insights
             </p>
-            <Button 
-              size="lg" 
-              className="bg-[#2d6a4f] hover:bg-[#1b4332] text-white"
-              onClick={() => {
-                const trialElement = document.getElementById('try-free');
-                if (trialElement) {
-                  trialElement.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-            >
-              Start 28-Day Free Trial <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
           </CardContent>
         </Card>
+        <div className="text-center mb-16">
+          <Button 
+            size="lg" 
+            className="bg-[#2d6a4f] hover:bg-[#1b4332] text-white"
+            onClick={() => {
+              const trialElement = document.getElementById('try-free');
+              if (trialElement) {
+                trialElement.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
+            Start 28-Day Free Trial <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
 
         {/* Value Proposition Section */}
         <div className="mb-20">
