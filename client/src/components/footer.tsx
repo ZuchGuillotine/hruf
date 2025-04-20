@@ -1,8 +1,13 @@
 import { Link } from "wouter";
+import React from "react";
 
-export default function Footer() {
+interface FooterProps {
+  className?: string;
+}
+
+export default function Footer({ className = '' }: FooterProps) {
   return (
-    <footer className="bg-[#1b4332] text-white py-8 mt-auto">
+    <footer className={`bg-[#1b4332] text-white py-8 mt-auto ${className}`}>
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div>

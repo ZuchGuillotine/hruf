@@ -27,7 +27,11 @@ const phrases = [
   "Is there an optimal ratio of EPA to DHA in fish oil supplements?"
 ];
 
-export const BackgroundWords: React.FC = () => {
+interface BackgroundWordsProps {
+  className?: string;
+}
+
+export const BackgroundWords: React.FC<BackgroundWordsProps> = ({ className = '' }) => {
   const createRows = () => {
     // Create more rows to cover the entire page height
     const numRows = 12; // Increased number of rows
@@ -46,7 +50,7 @@ export const BackgroundWords: React.FC = () => {
   };
 
   return (
-    <div className="background-words-container">
+    <div className={`background-words-container ${className}`}>
       {createRows().map((row, rowIndex) => {
         const direction = rowIndex % 2 === 0 ? 'right-to-left' : 'left-to-right';
         const size = rowIndex % 3 === 0 ? 'large' : rowIndex % 3 === 1 ? 'medium' : 'small';

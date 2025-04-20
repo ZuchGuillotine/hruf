@@ -154,9 +154,17 @@ router.post('/start-free-trial', async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
+    // Get user data to return with the response
+    const [updatedUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    
     res.json({ 
       success: true,
-      trialEndsAt: trialEndDate.toISOString()
+      trialEndsAt: trialEndDate.toISOString(),
+      user: updatedUser
     });
   } catch (error: any) {
     console.error('Error starting free trial:', {

@@ -111,12 +111,14 @@ function AppRouter() {
     );
   }
 
-  // Show auth page for non-authenticated users attempting to access protected routes
+  // Show landing page or auth page for non-authenticated users
   if (!user) {
     return (
       <Switch>
         <Route path="/subscription" component={SubscriptionPage} />
-        <Route component={AuthPage} />
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/" component={LandingPage} />
+        <Route component={LandingPage} />
       </Switch>
     );
   }
