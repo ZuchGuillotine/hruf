@@ -43,7 +43,8 @@ export function useProfileCompletion() {
       completed: useQuery<number>({
         queryKey: ["/api/supplements/count"],
         enabled: !!user,
-      }).data > 0 || false,
+        staleTime: 300000, // Cache for 5 minutes
+      }).data > 0,
     },
   ];
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from '../../db';
 import { supplements, supplementLogs } from '../../db/schema';
-import { eq, and, gte } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
 
 const router = express.Router();
 
@@ -66,14 +66,11 @@ router.get('/count', requireAuth, async (req, res) => {
     }
 
     const result = await db
-      .select({ count: sql`COUNT(*)` })
+      .select({ count: sql`count(*)::int` })
       .from(supplementLogs)
-      .where(eq(supplementLogs.userId, userId))
-      .execute();
+      .where(eq(supplementLogs.userId, userId));
 
-    const count = result[0]?.count || 0;
-
-    res.json(result?.count || 0);
+    res.json(result[0]?.count || 0);
   } catch (error) {
     console.error('Error counting supplement logs:', error);
     res.status(500).json({ error: 'Failed to count supplement logs' });
