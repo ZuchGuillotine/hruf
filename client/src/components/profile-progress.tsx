@@ -11,7 +11,7 @@ export function ProfileProgress() {
   const { steps, completionPercentage, isLoading } = useProfileCompletion();
   const [dismissed, setDismissed] = useState(false);
 
-  if (isLoading || dismissed) return null;
+  if (isLoading || dismissed || completionPercentage === 100) return null;
 
   return (
     <Card className="bg-[#1b4332] text-white relative">
