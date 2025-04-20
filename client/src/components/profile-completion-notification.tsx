@@ -1,4 +1,3 @@
-
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
@@ -24,23 +23,23 @@ export function ProfileCompletionNotification() {
 
   return (
     <AlertDialog defaultOpen>
-      <AlertDialogContent className="bg-orange-50 border-orange-200">
+      <AlertDialogContent className="bg-red-50 border-red-200">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-orange-900">Complete Your Profile</AlertDialogTitle>
-          <AlertDialogDescription className="text-orange-800">
+          <AlertDialogTitle className="text-red-900">Complete Your Profile</AlertDialogTitle>
+          <AlertDialogDescription className="text-red-800">
             Take a moment to complete your profile to get the most out of Stack Tracker. You're currently at {completionPercentage}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel 
             onClick={() => setDismissed(true)}
-            className="text-orange-700 hover:text-orange-800 hover:bg-orange-100"
+            className="text-red-700 hover:text-red-800 hover:bg-red-100"
           >
             Skip for now
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => setLocation("/profile")}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
+            className="bg-pink-600 hover:bg-pink-700 text-white"
           >
             Complete Profile
           </AlertDialogAction>
