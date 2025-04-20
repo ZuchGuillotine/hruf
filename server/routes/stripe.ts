@@ -145,9 +145,9 @@ router.post('/start-free-trial', async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-    // Set trial end date to 14 days from now
+    // Set trial end date to 28 days from now
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 14);
+    trialEndDate.setDate(trialEndDate.getDate() + 28);
     
     // Update user with trial information
     await db.update(users)

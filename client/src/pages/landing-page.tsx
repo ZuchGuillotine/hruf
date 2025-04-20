@@ -99,7 +99,7 @@ export default function LandingPage() {
               }
             }}
           >
-            Start 14-Day Free Trial <ChevronRight className="ml-2 h-4 w-4" />
+            Start 28-Day Free Trial <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
 
@@ -109,30 +109,30 @@ export default function LandingPage() {
         </div>
 
         {/* Pricing Cards Section */}
-        <div className="mb-24">
+        <div className="mb-24 px-4 sm:px-6">
           <h2 className="text-3xl font-bold text-center text-[#1b4332] mb-12">Simple, Transparent Pricing</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
             {/* Free Trial Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4">
                 <CardTitle className="text-2xl">Free Trial</CardTitle>
                 <CardDescription>Try all features risk-free</CardDescription>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-4xl font-bold text-[#1b4332] mb-4">14 Days</p>
-                <p className="text-sm text-gray-500 mb-6">No credit card required</p>
-                <ul className="space-y-3 text-left mb-8">
+              <CardContent className="text-center px-3 sm:px-6">
+                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">28 Days</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">No credit card required</p>
+                <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>Full access to all features</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>AI-powered supplement analysis</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>Health tracking dashboard</span>
                   </li>
                 </ul>
@@ -156,20 +156,20 @@ export default function LandingPage() {
                 <CardTitle className="text-2xl">Monthly</CardTitle>
                 <CardDescription>Flexible month-to-month plan</CardDescription>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-4xl font-bold text-[#1b4332] mb-4">$21.99</p>
-                <p className="text-sm text-gray-500 mb-6">per month</p>
-                <ul className="space-y-3 text-left mb-8">
+              <CardContent className="text-center px-3 sm:px-6">
+                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$21.99</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per month</p>
+                <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>All features included</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>Priority support</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>Cancel anytime</span>
                   </li>
                 </ul>
@@ -190,20 +190,20 @@ export default function LandingPage() {
                 <CardTitle className="text-2xl">Annual</CardTitle>
                 <CardDescription>Save 30% with yearly billing</CardDescription>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-4xl font-bold text-[#1b4332] mb-4">$184.71</p>
-                <p className="text-sm text-gray-500 mb-6">per year (save $78.99)</p>
-                <ul className="space-y-3 text-left mb-8">
+              <CardContent className="text-center px-3 sm:px-6">
+                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$184.71</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per year (save $78.99)</p>
+                <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>All features included</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>VIP priority support</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
                     <span>Lock in current pricing</span>
                   </li>
                 </ul>
@@ -218,10 +218,10 @@ export default function LandingPage() {
         </div>
 
         {/* Free Trial Signup Form */}
-        <div id="free-trial-signup" className="max-w-md mx-auto mb-16">
+        <div id="free-trial-signup" className="max-w-md mx-auto mb-16 px-4 sm:px-6">
           <Card className="shadow-lg">
             <CardHeader className="text-center">
-              <CardTitle id="try-free">Try StackTracker Free for 14 Days</CardTitle>
+              <CardTitle id="try-free">Try StackTracker Free for 28 Days</CardTitle>
               <CardDescription>
                 No credit card required. Get full access instantly.
               </CardDescription>
