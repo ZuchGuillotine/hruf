@@ -25,8 +25,8 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
     setLoading(true);
     try {
       const priceId = isYearly 
-        ? process.env.STRIPE_YEARLY_PRICE_ID 
-        : process.env.STRIPE_MONTHLY_PRICE_ID;
+        ? import.meta.env.STRIPE_YEARLY_PRICE_ID || 'prod_RpdfGxB4L6Rut7'
+        : import.meta.env.STRIPE_MONTHLY_PRICE_ID || 'prod_RtcuCvjOY9gHvm';
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -50,7 +50,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
   const handleStartTrial = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/user/start-trial', {
+      const response = await fetch('/api/stripe/start-free-trial', {
         method: 'POST',
         credentials: 'include'
       });
