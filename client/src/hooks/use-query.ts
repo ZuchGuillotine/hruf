@@ -3,6 +3,9 @@ import { Message } from "@/lib/types";
 
 export interface QueryResult {
   response: string;
+  error?: string;
+  limitReached?: boolean;
+  streaming?: boolean;
 }
 
 export function useQuery() {
@@ -10,6 +13,7 @@ export function useQuery() {
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [result, setResult] = useState<QueryResult | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const sendQuery = async (query: string, onStream?: (chunk: string) => void) => {
     try {
@@ -63,7 +67,27 @@ export function useQuery() {
                   const data = JSON.parse(line.slice(6));
                   console.log('Parsed SSE data:', data);
 
-                  if (data.response) {
+                  // Check if the user has reached their daily limit
+                  if (data.limitReached) {
+                    setLimitReached(true);
+                    
+                    // Update the last message with the error about limit
+                    setMessages((prev) => {
+                      const newMessages = [...prev];
+                      // Remove the last message (assistant placeholder)
+                      return newMessages.slice(0, -1);
+                    });
+                    
+                    // Set the result with error info
+                    setResult({
+                      response: "",
+                      error: data.error || "Daily limit reached",
+                      limitReached: true
+                    });
+                    
+                    // End the streaming since we've reached the limit
+                    break;
+                  } else if (data.response) {
                     fullResponse += data.response;
                     onStream?.(data.response);
 
@@ -93,9 +117,20 @@ export function useQuery() {
 
       // Handle non-streaming response for backward compatibility
       const data = await response.json();
-      const assistantMessage: Message = { role: "assistant", content: data.response };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setResult(data);
+      
+      // Check if the user has reached their daily limit
+      if (data.limitReached) {
+        setLimitReached(true);
+        setResult({
+          response: "",
+          error: data.error || "Daily limit reached",
+          limitReached: true
+        });
+      } else {
+        const assistantMessage: Message = { role: "assistant", content: data.response };
+        setMessages((prev) => [...prev, assistantMessage]);
+        setResult(data);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -126,6 +161,10 @@ export function useQuery() {
     }
   };
 
+  const resetLimitReached = () => {
+    setLimitReached(false);
+  };
+
   return {
     sendQuery,
     resetChat,
@@ -134,5 +173,7 @@ export function useQuery() {
     result,
     isLoading,
     error,
+    limitReached,
+    resetLimitReached
   };
 }

@@ -4,9 +4,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useLLM } from '@/hooks/use-llm';
+import { useLLM, ChatResponse } from '@/hooks/use-llm';
 import { Loader2, SendHorizontal, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import LimitReachedNotification from '@/components/ui/LimitReachedNotification';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -18,7 +19,7 @@ export default function LLMChat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingResponse, setStreamingResponse] = useState('');
-  const { chat } = useLLM();
+  const { chat, limitReached, resetLimitReached } = useLLM();
   const { toast } = useToast();
   const eventSourceRef = useRef<EventSource | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
