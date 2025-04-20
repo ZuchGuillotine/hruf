@@ -210,7 +210,7 @@ export function setupAuth(app: Express) {
           });
 
           const trialEndDate = new Date();
-          trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+          trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
 
           const [newUser] = await db
             .insert(users)
@@ -321,7 +321,7 @@ export function setupAuth(app: Express) {
     },
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-      res.redirect('/dashboard');
+      res.redirect('/');
     }
   );
   // Local auth routes 
@@ -359,7 +359,7 @@ export function setupAuth(app: Express) {
       const hashedPassword = await crypto.hash(password);
 
       const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+      trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
 
       // Create user
       const [newUser] = await db

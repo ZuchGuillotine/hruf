@@ -58,9 +58,9 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
                     throw new Error('Failed to start free trial');
                   }
                   
-                  // Close modal and redirect to dashboard
+                  // Close modal and redirect to dashboard (at root path)
                   onClose();
-                  window.location.href = '/dashboard';
+                  window.location.href = '/';
                 } catch (error) {
                   console.error('Free trial error:', error);
                   // You could show an error message here
@@ -68,7 +68,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
               }}
             >
               <Button className="w-full" variant="link">
-                Start 14-Day Free Trial
+                Start 28-Day Free Trial
               </Button>
             </a>
           </div>

@@ -50,7 +50,7 @@ export default function LandingPage() {
       });
       
       // Redirect to dashboard after trial is started
-      setLocation('/dashboard');
+      setLocation('/');
       
     } catch (error: any) {
       console.error('Free trial signup error:', error);
