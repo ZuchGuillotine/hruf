@@ -87,7 +87,7 @@ export function AccountInfo() {
 
   return (
     <Card className="mb-6">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between py-3">
         <h3 className="text-lg font-semibold">Account Status</h3>
         <div className={`px-2 py-1 rounded-full text-sm ${
           user?.isPro ? 'bg-green-100 text-green-800' : 'bg-gray-100'
@@ -95,8 +95,8 @@ export function AccountInfo() {
           {user?.isPro ? 'Pro' : 'Free Trial'}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
+      <CardContent className="space-y-2 pt-0">
+        <div className="space-y-1">
           {!user?.isPro && user?.trialEndsAt && (
             <>
               <div className="flex items-center gap-2 text-sm">
