@@ -89,17 +89,32 @@ export function AccountInfo() {
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between py-3">
         <h3 className="text-lg font-semibold">Account Status</h3>
-        <div className={`px-2 py-1 rounded-full text-sm ${
-          user?.isPro ? 'bg-green-100 text-green-800' : 'bg-gray-100'
-        }`}>
-          {user?.isPro ? 'Pro' : 'Free Trial'}
-        </div>
+        {!user?.isPro && user?.trialEndsAt && (
+          <div className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+            Free Trial
+          </div>
+        )}
+        {user?.isPro && (
+          <div className="px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
+            Pro
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-2 pt-0">
         <div className="space-y-1">
           {!user?.isPro && user?.trialEndsAt && (
             <>
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarIcon className="w-4 h-4 text-orange-500" />
+                  <span className="font-medium">
+                    {getRemainingDays(user.trialEndsAt)} days remaining in trial
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Upgrade now to keep access to all features
+                </p>
+              </div>
                 <CalendarIcon className="w-4 h-4 text-orange-500" />
                 <span className="font-medium">
                   {getRemainingDays(user.trialEndsAt)} days remaining in trial
