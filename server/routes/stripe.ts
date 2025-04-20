@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -50,6 +51,23 @@ router.post('/create-checkout-session', async (req, res) => {
       ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
       : `${req.protocol}://${req.get('host')}`;
 
+    // Generate a unique one-time token for this checkout session
+    const checkoutToken = crypto.randomBytes(32).toString('hex');
+    
+    // Store token in database temporarily
+    await db.update(users)
+      .set({ 
+        authToken: checkoutToken,
+        authTokenExpiry: new Date(Date.now() + 30 * 60 * 1000) // 30 minute expiry
+      })
+      .where(eq(users.id, userId));
+    
+    console.log('Created auth token for checkout:', {
+      userId,
+      tokenCreated: true,
+      timestamp: new Date().toISOString()
+    });
+    
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -59,8 +77,8 @@ router.post('/create-checkout-session', async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}&setup_complete=true`,
-      cancel_url: `${baseUrl}/profile`,
+      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}&setup_complete=true&auth_token=${checkoutToken}`,
+      cancel_url: `${baseUrl}/profile?auth_token=${checkoutToken}`,
       client_reference_id: userId.toString(),
       allow_promotion_codes: true,
       billing_address_collection: 'required',
