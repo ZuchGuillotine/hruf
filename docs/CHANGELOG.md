@@ -1,6 +1,15 @@
 
 ## [Unreleased]
 
+### Added (April 20, 2025)
+- Streamlined Authentication and Payment Flow:
+  - Implemented free trial signup with just email (no credit card required)
+  - Extended free trial period from 14 to 28 days across all components
+  - Added pricing information directly on landing page
+  - Enhanced authentication persistence during Stripe checkout
+  - Fixed redirection issues after authentication and payment
+  - Updated environment variable handling for Stripe integration
+
 ### Fixed (April 20, 2025)
 - Profile Completion Supplement Logs:
   - Implemented direct supplement logs count endpoint
