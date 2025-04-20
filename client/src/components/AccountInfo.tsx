@@ -115,11 +115,6 @@ export function AccountInfo() {
                   Upgrade now to keep access to all features
                 </p>
               </div>
-                <CalendarIcon className="w-4 h-4 text-orange-500" />
-                <span className="font-medium">
-                  {getRemainingDays(user.trialEndsAt)} days remaining in trial
-                </span>
-              </div>
 
               {/* Trial Extension Reward */}
               {streakDays > 0 && (
