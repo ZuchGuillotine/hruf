@@ -108,7 +108,7 @@ export default function Header() {
             <Link href="/profile">
               <DropdownMenuItem className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>Profile Settings</span>
               </DropdownMenuItem>
             </Link>
             <Link href="/health-stats">
