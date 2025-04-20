@@ -65,10 +65,13 @@ router.get('/count', requireAuth, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const [result] = await db
-      .select({ count: sql`count(*)::int` })
+    const result = await db
+      .select({ count: sql`COUNT(*)` })
       .from(supplementLogs)
-      .where(eq(supplementLogs.userId, userId));
+      .where(eq(supplementLogs.userId, userId))
+      .execute();
+
+    const count = result[0]?.count || 0;
 
     res.json(result?.count || 0);
   } catch (error) {
