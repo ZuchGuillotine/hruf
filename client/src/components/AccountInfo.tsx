@@ -102,17 +102,21 @@ export function AccountInfo() {
       </CardHeader>
       <CardContent className="space-y-2 pt-0">
         <div className="space-y-1">
-          {!user?.isPro && user?.trialEndsAt && (
+          {!user?.isPro && (
             <>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-sm">
                   <CalendarIcon className="w-4 h-4 text-orange-500" />
                   <span className="font-medium">
-                    {getRemainingDays(user.trialEndsAt)} days remaining in trial
+                    {user?.trialEndsAt ? 
+                      `${getRemainingDays(user.trialEndsAt)} days remaining in trial` : 
+                      'Trial not started'}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Upgrade now to keep access to all features
+                  {user?.trialEndsAt ? 
+                    'Upgrade now to keep access to all features' :
+                    'Start your trial to access all features'}
                 </p>
               </div>
 

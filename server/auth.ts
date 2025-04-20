@@ -53,6 +53,7 @@ declare global {
       phoneNumber?: string | null;
       isPro?: boolean | null;
       isAdmin?: boolean | null;
+      trialEndsAt?: Date | null;
     }
   }
 }
@@ -208,6 +209,9 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
+          const trialEndDate = new Date();
+          trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+
           const [newUser] = await db
             .insert(users)
             .values({
@@ -216,7 +220,7 @@ export function setupAuth(app: Express) {
               name: profile.displayName || null,
               emailVerified: true, // Google has already verified the email
               password: crypto.randomBytes(32).toString('hex'), // Generate random password
-              trialEndsAt: new Date(Date.now() + 14 * DAY_IN_MS), // 14-day trial
+              trialEndsAt: trialEndDate, // 14-day trial
               profilePhotoUrl: profile.photos?.[0]?.value || null,
               createdAt: new Date(),
               updatedAt: new Date()
@@ -354,12 +358,16 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await crypto.hash(password);
 
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+
       // Create user
       const [newUser] = await db
         .insert(users)
         .values({
           ...result.data,
           password: hashedPassword,
+          trialEndsAt: trialEndDate,
         })
         .returning();
 
