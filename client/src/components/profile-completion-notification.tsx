@@ -1,5 +1,5 @@
 
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { useState } from "react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
 import {
@@ -16,7 +16,7 @@ import {
 export function ProfileCompletionNotification() {
   const [dismissed, setDismissed] = useState(false);
   const { completionPercentage } = useProfileCompletion();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   if (completionPercentage === 100 || dismissed) {
     return null;
@@ -40,7 +40,7 @@ export function ProfileCompletionNotification() {
             Skip for now
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => navigate("/profile")}
+            onClick={() => setLocation("/profile")}
             className="bg-orange-600 hover:bg-orange-700 text-white"
           >
             Complete Profile
