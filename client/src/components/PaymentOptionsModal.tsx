@@ -23,25 +23,22 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
           <div className="space-y-3">
             {/* Monthly subscription option */}
             <Button
-              onClick={() => handleSubscribe(false)}
+              onClick={() => handleSubscribe('prod_RtcuCvjOY9gHvm')}
               className="w-full bg-green-700 hover:bg-green-800"
+              disabled={loading}
             >
-              <Button className="w-full bg-green-700 hover:bg-green-800">
-                Monthly - $21.99
-              </Button>
-            </a>
+              {loading ? 'Processing...' : 'Monthly - $21.99'}
+            </Button>
             
             {/* Yearly subscription option with savings highlight */}
-            <a 
-              href="https://buy.stripe.com/eVa6rr9kw6GD9e8aEE"
-              className="block w-full" 
-              target="_blank"
-              rel="noopener noreferrer"
+            <Button
+              onClick={() => handleSubscribe('prod_RpdfGxB4L6Rut7')}
+              className="w-full"
+              variant="outline"
+              disabled={loading}
             >
-              <Button className="w-full" variant="outline">
-                Yearly - $184.72 (Save 30%)
-              </Button>
-            </a>
+              {loading ? 'Processing...' : 'Yearly - $184.72 (Save 30%)'}
+            </Button>
             
             {/* Free trial option */}
             <a 

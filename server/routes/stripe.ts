@@ -44,6 +44,10 @@ router.post('/create-checkout-session', async (req, res) => {
       apiVersion: '2023-10-16',
     });
 
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      : `${req.protocol}://${req.get('host')}`;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -53,9 +57,12 @@ router.post('/create-checkout-session', async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.protocol}://${req.get('host')}/subscription`,
+      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}&setup_complete=true`,
+      cancel_url: `${baseUrl}/profile`,
       client_reference_id: userId.toString(),
+      allow_promotion_codes: true,
+      billing_address_collection: 'required',
+      customer_email: req.user?.email,
     });
 
     console.log('Checkout session created:', {
@@ -76,6 +83,27 @@ router.post('/create-checkout-session', async (req, res) => {
       error: 'Failed to create checkout session',
       message: error.message 
     });
+  }
+});
+
+
+router.get('/subscription-success', async (req, res) => {
+  try {
+    const sessionId = req.query.session_id as string;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'No session ID provided' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status === 'paid') {
+      await stripeService.handleSubscriptionUpdated(session.subscription as any);
+      return res.redirect('/dashboard');
+    }
+
+    res.status(400).json({ error: 'Payment not completed' });
+  } catch (error) {
+    console.error('Error handling subscription success:', error);
+    res.status(500).json({ error: 'Failed to process subscription' });
   }
 });
 
