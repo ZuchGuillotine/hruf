@@ -28,8 +28,7 @@ export function ProfileCompletionNotification() {
         <AlertDialogHeader>
           <AlertDialogTitle className="text-orange-900">Complete Your Profile</AlertDialogTitle>
           <AlertDialogDescription className="text-orange-800">
-            Take a moment to complete your profile to get the most out of Stack Tracker.
-            This will help us provide more personalized recommendations.
+            Take a moment to complete your profile to get the most out of Stack Tracker. You're currently at {completionPercentage}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
