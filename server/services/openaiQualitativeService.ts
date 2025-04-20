@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import { constructUserContext } from './llmContextService';
 import { db } from '../../db';
 import { qualitativeLogs } from '../../db/schema';
+import { checkUserLLMLimit } from '../utils/userLimits';
 
 export async function* qualitativeChatWithAI(userId: string | number | undefined, userQuery: string) {
   try {
