@@ -14,12 +14,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale, Moon, FileIcon } from "lucide-react";
 import { Link } from "wouter";
+import { ProfileCompletionNotification } from "@/components/profile-completion-notification";
 
 export default function Dashboard() {
   const [showSupplementForm, setShowSupplementForm] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
+      <ProfileCompletionNotification />
       <Header />
       <main className="container mx-auto px-4 py-6 space-y-6 flex-grow">
         {/* AI Assistant Section */}
