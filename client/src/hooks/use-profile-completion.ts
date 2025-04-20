@@ -38,7 +38,7 @@ export function useProfileCompletion() {
     },
     {
       id: "supplement-logs",
-      label: "Log your first supplements",
+      label: "Log Your First Supplements",
       description: "Log at least one supplement",
       completed: useQuery<number>({
         queryKey: ["/api/supplements/count"],
