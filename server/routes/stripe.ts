@@ -1,8 +1,12 @@
 import express from 'express';
 import { stripeService } from '../services/stripe';
 import Stripe from 'stripe';
+import { db } from '@db';
+import { users } from '@db/schema';
+import { eq } from 'drizzle-orm';
 
 const router = express.Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Ensure JSON parsing middleware is applied
 router.use(express.json());
@@ -40,10 +44,8 @@ router.post('/create-checkout-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid product ID' });
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2023-10-16',
-    });
-
+    // Using Stripe instance defined at the top of the file
+    
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
       : `${req.protocol}://${req.get('host')}`;
@@ -118,6 +120,56 @@ router.post('/extend-trial', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to extend trial period' });
+  }
+});
+
+// Endpoint to start free trial without requiring payment info
+router.post('/start-free-trial', async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    console.log('Starting free trial for user:', {
+      userId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Set trial end date to 14 days from now
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 14);
+    
+    // Update user with trial information
+    await db.update(users)
+      .set({ 
+        trialEndsAt: trialEndDate.toISOString(),
+        trialStartedAt: new Date().toISOString()
+      })
+      .where(eq(users.id, userId));
+    
+    console.log('Free trial started successfully', {
+      userId,
+      trialEndsAt: trialEndDate.toISOString(),
+      timestamp: new Date().toISOString()
+    });
+    
+    res.json({ 
+      success: true,
+      trialEndsAt: trialEndDate.toISOString()
+    });
+  } catch (error: any) {
+    console.error('Error starting free trial:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(500).json({ 
+      error: 'Failed to start free trial',
+      message: error.message 
+    });
   }
 });
 
