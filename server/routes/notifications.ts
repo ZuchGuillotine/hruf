@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../../db';
 import { users } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { sendSupplementFeedbackNotification } from '../services/pushNotificationService';
+import { sendUserNotification, sendSupplementFeedbackNotification } from '../services/pushNotificationService';
 import logger from '../utils/logger';
 
 const router = express.Router();

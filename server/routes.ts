@@ -1270,6 +1270,12 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Create routes for push notifications
+  app.use('/api/push', pushRouter);
+  
+  // Create routes for notification settings
+  app.use('/api/notifications', notificationsRouter);
+
   app.get('/api/health-check', healthCheck);
 
   // Add the ChatGPT endpoint
