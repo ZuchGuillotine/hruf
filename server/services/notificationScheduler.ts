@@ -134,7 +134,7 @@ const scheduleDailyReminders = (hour: number = 10, minute: number = 0): cron.Sch
           );
           
           // If they've already taken supplements today, skip
-          if (takenToday.length > 0 && parseInt(takenToday[0].count, 10) > 0) {
+          if (takenToday.rowCount > 0 && parseInt(String(takenToday.rows[0].count), 10) > 0) {
             continue;
           }
           

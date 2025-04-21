@@ -61,12 +61,16 @@ export const subscribeToPushNotifications = async (): Promise<PushSubscription |
 
   try {
     // Register service worker if not already registered
-    let serviceWorkerRegistration = await navigator.serviceWorker.ready;
-    if (!serviceWorkerRegistration) {
-      serviceWorkerRegistration = await registerServiceWorker();
-      if (!serviceWorkerRegistration) {
+    let serviceWorkerRegistration: ServiceWorkerRegistration;
+    try {
+      serviceWorkerRegistration = await navigator.serviceWorker.ready;
+    } catch (error) {
+      // If no service worker is ready, register one
+      const registration = await registerServiceWorker();
+      if (!registration) {
         return null;
       }
+      serviceWorkerRegistration = registration;
     }
 
     // Get the server's public key for VAPID
