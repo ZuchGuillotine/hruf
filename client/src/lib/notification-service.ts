@@ -1,53 +1,97 @@
-// Check if the browser supports push notifications
+/**
+ * Service for handling browser push notification subscriptions
+ * and permission requests
+ */
+
+// Function to convert ArrayBuffer to base64 string
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+// Check if push notifications are supported by the browser
 export const isPushNotificationSupported = () => {
   return 'serviceWorker' in navigator && 'PushManager' in window;
 };
 
-// Request permission to show notifications
-export const requestNotificationPermission = async (): Promise<NotificationPermission> => {
+// Ask for notification permission
+export const askNotificationPermission = async (): Promise<boolean> => {
   if (!isPushNotificationSupported()) {
-    throw new Error('Push notifications are not supported by this browser');
+    console.log('Push notifications not supported');
+    return false;
   }
 
-  return await Notification.requestPermission();
+  try {
+    const permissionResult = await Notification.requestPermission();
+    return permissionResult === 'granted';
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    return false;
+  }
 };
 
-// Register the service worker
-export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration> => {
+// Get current notification permission status
+export const getNotificationPermissionStatus = (): NotificationPermission => {
+  return Notification.permission;
+};
+
+// Register the service worker for push notifications
+export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
   if (!isPushNotificationSupported()) {
-    throw new Error('Service workers are not supported by this browser');
+    return null;
   }
 
-  const registration = await navigator.serviceWorker.register('/service-worker.js');
-  return registration;
+  try {
+    return await navigator.serviceWorker.register('/service-worker.js');
+  } catch (error) {
+    console.error('Error registering service worker:', error);
+    return null;
+  }
 };
 
 // Subscribe to push notifications
 export const subscribeToPushNotifications = async (): Promise<PushSubscription | null> => {
+  if (!isPushNotificationSupported()) {
+    return null;
+  }
+
   try {
-    // Request notification permission
-    const permission = await requestNotificationPermission();
-    if (permission !== 'granted') {
-      throw new Error('Notification permission denied');
+    // Register service worker if not already registered
+    let serviceWorkerRegistration = await navigator.serviceWorker.ready;
+    if (!serviceWorkerRegistration) {
+      serviceWorkerRegistration = await registerServiceWorker();
+      if (!serviceWorkerRegistration) {
+        return null;
+      }
     }
 
-    // Register service worker
-    const registration = await registerServiceWorker();
+    // Get the server's public key for VAPID
+    const response = await fetch('/api/push/vapid-public-key');
+    if (!response.ok) {
+      console.error('Failed to get public key');
+      return null;
+    }
 
-    // Get push subscription
-    const existingSubscription = await registration.pushManager.getSubscription();
+    const { publicKey } = await response.json();
+
+    // Unsubscribe from any existing subscription
+    const existingSubscription = await serviceWorkerRegistration.pushManager.getSubscription();
     if (existingSubscription) {
-      return existingSubscription;
+      await existingSubscription.unsubscribe();
     }
 
-    // Create new subscription
-    const subscription = await registration.pushManager.subscribe({
+    // Create a new subscription
+    const subscription = await serviceWorkerRegistration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 
-        'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
-      ),
+      applicationServerKey: publicKey
     });
+
+    // Send the subscription to the server
+    await sendSubscriptionToServer(subscription);
 
     return subscription;
   } catch (error) {
@@ -56,124 +100,100 @@ export const subscribeToPushNotifications = async (): Promise<PushSubscription |
   }
 };
 
-// Save subscription to backend
-export const saveSubscription = async (subscription: PushSubscription): Promise<boolean> => {
-  try {
-    const response = await fetch('/api/push/subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-          auth: arrayBufferToBase64(subscription.getKey('auth')),
-        },
-      }),
-      credentials: 'include',
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('Error saving push subscription:', error);
-    return false;
-  }
-};
-
 // Unsubscribe from push notifications
 export const unsubscribeFromPushNotifications = async (): Promise<boolean> => {
+  if (!isPushNotificationSupported()) {
+    return false;
+  }
+
   try {
-    if (!isPushNotificationSupported()) {
-      return false;
-    }
+    const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+    const subscription = await serviceWorkerRegistration.pushManager.getSubscription();
 
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration) {
-      return false;
-    }
-
-    const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      return false;
-    }
-
-    // Unsubscribe locally
-    const success = await subscription.unsubscribe();
-    
-    if (success) {
-      // Notify backend
+    if (subscription) {
+      // Send unsubscribe request to server first
       await fetch('/api/push/unsubscribe', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          endpoint: subscription.endpoint,
+          endpoint: subscription.endpoint
         }),
-        credentials: 'include',
+        credentials: 'include'
       });
+
+      // Then unsubscribe locally
+      const result = await subscription.unsubscribe();
+      return result;
     }
 
-    return success;
+    return true; // Already unsubscribed
   } catch (error) {
     console.error('Error unsubscribing from push notifications:', error);
     return false;
   }
 };
 
-// Update user notification preferences
-export const updateNotificationPreferences = async (enabled: boolean): Promise<boolean> => {
+// Send the push subscription to the server
+export const sendSubscriptionToServer = async (subscription: PushSubscription): Promise<boolean> => {
   try {
-    const response = await fetch('/api/profile', {
+    const keys = subscription.getKey ? {
+      p256dh: subscription.getKey('p256dh') ? arrayBufferToBase64(subscription.getKey('p256dh')!) : '',
+      auth: subscription.getKey('auth') ? arrayBufferToBase64(subscription.getKey('auth')!) : ''
+    } : undefined;
+
+    const response = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        pushNotificationsEnabled: enabled,
+        endpoint: subscription.endpoint,
+        keys
       }),
-      credentials: 'include',
+      credentials: 'include'
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to update notification preferences');
-    }
-
-    return true;
+    return response.ok;
   } catch (error) {
-    console.error('Error updating notification preferences:', error);
+    console.error('Error sending subscription to server:', error);
     return false;
   }
 };
 
-// Helper to convert URL-safe base64 to Uint8Array
-export const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+// Check if user has an active subscription
+export const checkExistingSubscription = async (): Promise<PushSubscription | null> => {
+  if (!isPushNotificationSupported()) {
+    return null;
   }
-  
-  return outputArray;
+
+  try {
+    const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+    return await serviceWorkerRegistration.pushManager.getSubscription();
+  } catch (error) {
+    console.error('Error checking existing subscription:', error);
+    return null;
+  }
 };
 
-// Helper to convert ArrayBuffer to base64
-export const arrayBufferToBase64 = (buffer: ArrayBuffer | null): string => {
-  if (!buffer) {
-    throw new Error('No buffer provided');
+// Update user notification settings on the server
+export const updateNotificationSettings = async (enabled: boolean): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/notifications/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        enabled
+      }),
+      credentials: 'include'
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Error updating notification settings:', error);
+    return false;
   }
-  
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
 };

@@ -1,162 +1,199 @@
+import webpush from 'web-push';
 import { db } from '../../db';
 import { pushSubscriptions, users } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
-import { SelectPushSubscription } from '../../db/schema';
-import webpush from 'web-push';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
+import { eq } from 'drizzle-orm';
+import logger from '../utils/logger';
 
 // Configure web-push with VAPID keys
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:support@stacktracker.com';
 
-if (!vapidPublicKey || !vapidPrivateKey) {
-  console.warn('VAPID keys are not set. Push notifications will not work correctly.');
-} else {
+// Initialize web-push with VAPID keys if available
+if (vapidPublicKey && vapidPrivateKey) {
   webpush.setVapidDetails(
-    'mailto:' + (process.env.CONTACT_EMAIL || 'webmaster@healthtrac.app'),
+    vapidSubject,
     vapidPublicKey,
     vapidPrivateKey
   );
-}
-
-export interface NotificationPayload {
-  title: string;
-  message: string;
-  url?: string;
-  tag?: string;
-  requireInteraction?: boolean;
-  actions?: Array<{
-    action: string;
-    title: string;
-  }>;
+} else {
+  logger.warn('VAPID keys not set. Push notifications will not work.');
 }
 
 /**
- * Send push notification to a specific user
+ * Get the VAPID public key for client-side subscription
  */
-export async function sendPushNotification(
-  userId: number,
-  payload: NotificationPayload
-): Promise<boolean> {
+export const getVapidPublicKey = (): string | null => {
+  return vapidPublicKey || null;
+};
+
+/**
+ * Send a push notification to a specific subscription
+ */
+export const sendPushNotification = async (
+  subscription: webpush.PushSubscription,
+  payload: any
+): Promise<boolean> => {
   try {
-    // First check if the user has enabled push notifications
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId));
-
-    if (!user || !user.pushNotificationsEnabled) {
-      console.log(`Push notifications not enabled for user ${userId}`);
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      logger.error('VAPID keys not set. Cannot send push notification.');
       return false;
     }
 
-    // Get all subscriptions for the user
-    const subscriptions = await db
-      .select()
-      .from(pushSubscriptions)
-      .where(eq(pushSubscriptions.userId, userId));
-
-    if (subscriptions.length === 0) {
-      console.log(`No push subscriptions found for user ${userId}`);
-      return false;
-    }
-
-    let success = false;
-    // Send notification to all subscriptions
-    for (const subscription of subscriptions) {
+    const result = await webpush.sendNotification(
+      subscription,
+      JSON.stringify(payload)
+    );
+    
+    logger.info('Push notification sent successfully', { 
+      statusCode: result.statusCode,
+      endpoint: subscription.endpoint 
+    });
+    
+    return true;
+  } catch (error: any) {
+    // Check if subscription is expired or invalid
+    if (error.statusCode === 404 || error.statusCode === 410) {
+      logger.warn('Subscription is no longer valid, removing', { 
+        endpoint: subscription.endpoint,
+        statusCode: error.statusCode 
+      });
+      
       try {
-        await sendNotificationToSubscription(subscription, payload);
-        success = true;
-      } catch (error) {
-        console.error(`Error sending push notification to subscription ${subscription.id}:`, error);
-        
-        // Check if subscription is expired or invalid
-        if (
-          error instanceof Error && 
-          (error.message.includes('410') || error.message.includes('404'))
-        ) {
-          // Remove invalid subscription
-          await db
-            .delete(pushSubscriptions)
-            .where(eq(pushSubscriptions.id, subscription.id));
-          
-          console.log(`Removed invalid subscription ${subscription.id}`);
-        }
+        // Remove invalid subscription from database
+        await db.delete(pushSubscriptions)
+          .where(eq(pushSubscriptions.endpoint, subscription.endpoint));
+      } catch (dbError) {
+        logger.error('Error removing invalid subscription', { error: dbError });
       }
+    } else {
+      logger.error('Error sending push notification', { 
+        error: error.message,
+        stack: error.stack,
+        statusCode: error.statusCode 
+      });
     }
-
-    return success;
-  } catch (error) {
-    console.error('Error sending push notification:', error);
+    
     return false;
   }
-}
+};
 
 /**
- * Send notification to a specific subscription
+ * Send a notification to a specific user
  */
-async function sendNotificationToSubscription(
-  subscription: SelectPushSubscription,
-  payload: NotificationPayload
-): Promise<void> {
-  const pushSubscription = {
-    endpoint: subscription.endpoint,
-    keys: {
-      p256dh: subscription.p256dh,
-      auth: subscription.auth,
-    },
-  };
-
-  const data = JSON.stringify({
-    title: payload.title,
-    message: payload.message,
-    url: payload.url,
-    tag: payload.tag || 'default',
-    requireInteraction: payload.requireInteraction || false,
-    actions: payload.actions || [],
-  });
-
-  // Send the notification
-  await webpush.sendNotification(pushSubscription, data);
-}
-
-/**
- * Send feedback prompt notification to multiple users
- */
-export async function sendSupplementFeedbackNotification(
-  userIds: number[]
-): Promise<{success: number, failed: number}> {
-  let success = 0;
-  let failed = 0;
-
-  for (const userId of userIds) {
-    const result = await sendPushNotification(userId, {
-      title: 'Supplement Feedback',
-      message: 'How are your supplements working for you today? Tap to provide feedback.',
-      url: '/supplement-history',
-      tag: 'supplement-feedback',
-      requireInteraction: true,
-      actions: [
-        {
-          action: 'feedback',
-          title: 'Give Feedback'
-        },
-        {
-          action: 'later',
-          title: 'Remind Me Later'
-        }
-      ]
-    });
-
-    if (result) {
-      success++;
-    } else {
-      failed++;
+export const sendUserNotification = async (
+  userId: number,
+  title: string,
+  message: string,
+  options: {
+    tag?: string;
+    url?: string;
+    requireInteraction?: boolean;
+    actions?: Array<{ action: string; title: string }>;
+  } = {}
+): Promise<boolean> => {
+  try {
+    // Check if user has push notifications enabled
+    const userResults = await db.select({ pushNotificationsEnabled: users.pushNotificationsEnabled })
+      .from(users)
+      .where(eq(users.id, userId));
+      
+    if (!userResults.length || !userResults[0].pushNotificationsEnabled) {
+      logger.info('User has push notifications disabled', { userId });
+      return false;
     }
+    
+    // Get all subscriptions for the user
+    const subscriptions = await db.select()
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, userId));
+      
+    if (!subscriptions.length) {
+      logger.info('User has no push subscriptions', { userId });
+      return false;
+    }
+    
+    // Prepare notification payload
+    const payload = {
+      title,
+      message,
+      tag: options.tag || 'default',
+      url: options.url || '/',
+      requireInteraction: options.requireInteraction || false,
+      actions: options.actions || [],
+      timestamp: new Date().toISOString()
+    };
+    
+    // Send notification to all user's subscriptions
+    const results = await Promise.all(
+      subscriptions.map(sub => {
+        const subscription: webpush.PushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth
+          }
+        };
+        
+        return sendPushNotification(subscription, payload);
+      })
+    );
+    
+    // Return true if at least one notification was sent successfully
+    return results.some(result => result);
+  } catch (error) {
+    logger.error('Error sending user notification', { 
+      error,
+      userId 
+    });
+    
+    return false;
   }
+};
 
-  return { success, failed };
-}
+/**
+ * Send a supplement feedback notification to a user
+ */
+export const sendSupplementFeedbackNotification = async (
+  userId: number,
+  supplementNames: string[]
+): Promise<boolean> => {
+  try {
+    // Format supplement names for the message
+    let supplementText: string;
+    if (supplementNames.length === 0) {
+      supplementText = 'your supplements';
+    } else if (supplementNames.length === 1) {
+      supplementText = supplementNames[0];
+    } else if (supplementNames.length === 2) {
+      supplementText = `${supplementNames[0]} and ${supplementNames[1]}`;
+    } else {
+      const lastSupplement = supplementNames.pop();
+      supplementText = `${supplementNames.join(', ')}, and ${lastSupplement}`;
+    }
+    
+    const title = 'Supplement Feedback Reminder';
+    const message = `How are you feeling after taking ${supplementText}? Tap to log your experience.`;
+    
+    // Add action buttons for quick feedback
+    const actions = [
+      { action: 'feedback', title: 'Give Feedback' },
+      { action: 'later', title: 'Remind Later' }
+    ];
+    
+    return await sendUserNotification(userId, title, message, {
+      tag: 'supplement-feedback',
+      url: '/supplement-history',
+      requireInteraction: true,
+      actions
+    });
+  } catch (error) {
+    logger.error('Error sending supplement feedback notification', { 
+      error,
+      userId,
+      supplementNames
+    });
+    
+    return false;
+  }
+};
