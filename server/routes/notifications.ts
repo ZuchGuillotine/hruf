@@ -2,151 +2,130 @@ import express from 'express';
 import { db } from '../../db';
 import { users } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { pushNotificationService } from '../services/pushNotificationService';
+import { sendSupplementFeedbackNotification } from '../services/pushNotificationService';
 import logger from '../utils/logger';
 
 const router = express.Router();
 
 /**
- * Send a test notification to the current user
+ * Update notification settings for the authenticated user
+ * Enables or disables push notifications
+ */
+router.post('/settings', async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Get user ID from session
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid user session' });
+    }
+    
+    // Validate request data
+    const { enabled } = req.body;
+    
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'Enabled parameter must be a boolean' });
+    }
+    
+    // Update user settings
+    await db.update(users)
+      .set({ 
+        pushNotificationsEnabled: enabled,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+      
+    logger.info('User notification settings updated', { 
+      userId,
+      pushNotificationsEnabled: enabled
+    });
+    
+    res.json({ 
+      success: true,
+      message: `Push notifications ${enabled ? 'enabled' : 'disabled'} successfully` 
+    });
+  } catch (error) {
+    logger.error('Error updating notification settings', { error });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Get current notification settings
+ * Returns the user's notification preferences
+ */
+router.get('/settings', async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Get user ID from session
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid user session' });
+    }
+    
+    // Get user's notification settings
+    const userSettings = await db.select({ 
+      pushNotificationsEnabled: users.pushNotificationsEnabled 
+    })
+    .from(users)
+    .where(eq(users.id, userId));
+    
+    if (userSettings.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ 
+      pushNotificationsEnabled: userSettings[0].pushNotificationsEnabled
+    });
+  } catch (error) {
+    logger.error('Error retrieving notification settings', { error });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Test endpoint to send a notification to the authenticated user
+ * This is for testing push notification functionality
  */
 router.post('/test', async (req, res) => {
-  if (!req.isAuthenticated || !req.isAuthenticated()) {
-    return res.status(401).json({
-      error: 'Not authenticated'
-    });
-  }
-  
   try {
-    const userId = (req.user as any).id;
+    // Check if user is authenticated
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
     
-    // Check if user has notifications enabled
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    
-    if (!user || !user.pushNotificationsEnabled) {
-      return res.status(400).json({
-        error: 'Push notifications are not enabled for this user'
-      });
+    // Get user ID from session
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid user session' });
     }
     
     // Send a test notification
-    const result = await pushNotificationService.sendNotificationToUser(
-      userId,
-      'Test Notification',
-      'This is a test notification from StackTracker',
-      {
-        tag: 'test-notification'
-      }
-    );
+    const supplementNames = req.body.supplementNames || ['Test Supplement'];
+    const success = await sendSupplementFeedbackNotification(userId, supplementNames);
     
-    return res.json({
-      success: result.success,
-      sent: result.sent,
-      failed: result.failed
-    });
-  } catch (error) {
-    logger.error('Error sending test notification:', error);
-    return res.status(500).json({
-      error: 'Failed to send test notification'
-    });
-  }
-});
-
-/**
- * Send a supplement feedback reminder notification to the current user
- */
-router.post('/supplement-feedback-reminder', async (req, res) => {
-  if (!req.isAuthenticated || !req.isAuthenticated()) {
-    return res.status(401).json({
-      error: 'Not authenticated'
-    });
-  }
-  
-  try {
-    const userId = (req.user as any).id;
-    
-    // Check if user has notifications enabled
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    
-    if (!user || !user.pushNotificationsEnabled) {
-      return res.status(400).json({
-        error: 'Push notifications are not enabled for this user'
+    if (success) {
+      res.json({ 
+        success: true, 
+        message: 'Test notification sent successfully' 
+      });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        message: 'Failed to send test notification. Notifications may be disabled for this user or no subscriptions exist.'
       });
     }
-    
-    // Send a supplement feedback reminder notification
-    const result = await pushNotificationService.sendSupplementFeedbackReminder(userId);
-    
-    return res.json({
-      success: result.success
-    });
   } catch (error) {
-    logger.error('Error sending supplement feedback reminder:', error);
-    return res.status(500).json({
-      error: 'Failed to send supplement feedback reminder'
-    });
-  }
-});
-
-/**
- * Send a broadcast notification to all users (admin only)
- */
-router.post('/broadcast', async (req, res) => {
-  if (!req.isAuthenticated || !req.isAuthenticated()) {
-    return res.status(401).json({
-      error: 'Not authenticated'
-    });
-  }
-  
-  try {
-    const userId = (req.user as any).id;
-    
-    // Check if user is an admin
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    
-    if (!user || !user.isAdmin) {
-      return res.status(403).json({
-        error: 'Not authorized to send broadcast notifications'
-      });
-    }
-    
-    const { title, message, options } = req.body;
-    
-    if (!title || !message) {
-      return res.status(400).json({
-        error: 'Title and message are required'
-      });
-    }
-    
-    // Send broadcast notification
-    const result = await pushNotificationService.sendBroadcastNotification(
-      title,
-      message,
-      options
-    );
-    
-    return res.json({
-      success: result.success,
-      sent: result.sent,
-      failed: result.failed
-    });
-  } catch (error) {
-    logger.error('Error sending broadcast notification:', error);
-    return res.status(500).json({
-      error: 'Failed to send broadcast notification'
-    });
+    logger.error('Error sending test notification', { error });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
