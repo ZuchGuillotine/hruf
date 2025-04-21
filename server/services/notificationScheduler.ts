@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { db } from '../../db';
 import { supplementLogs, users, supplements } from '../../db/schema';
-import { eq, and, gte, lt } from 'drizzle-orm';
+import { eq, and, gte, lt, sql } from 'drizzle-orm';
 import { sendSupplementFeedbackNotification } from './pushNotificationService';
 import logger from '../utils/logger';
 
