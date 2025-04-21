@@ -34,6 +34,8 @@ import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
 import stripeRouter from './routes/stripe';  // Import Stripe routes
+import pushRouter from './routes/push';  // Import Push notification routes
+import notificationsRouter from './routes/notifications';  // Import Notifications routes
 import setupSummaryRoutes from './routes/summaryRoutes'; // Import summary routes
 import { generateResearch, getResearch, updateResearch, deleteResearch, getResearchBySlug } from './controllers/researchController';
 import { getFoodSensitivity, updateFoodSensitivity } from './controllers/foodSensitivityController';
@@ -66,6 +68,8 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/stripe', stripeRouter);
   app.use('/api/supplements', supplementsRouter);
   app.use('/api/labs', requireAuth, labsRouter);
+  app.use('/api/push', pushRouter);
+  app.use('/api/notifications', notificationsRouter);
 
 
   // Middleware to check admin role
