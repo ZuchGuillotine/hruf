@@ -127,12 +127,12 @@ const scheduleDailyReminders = (hour: number = 10, minute: number = 0): cron.Sch
       for (const user of usersWithNotifications) {
         try {
           // Check if the user has taken any supplements today
-          const takenToday = await db.select({ count: db.fn.count() })
+          const takenToday = await db.select({ count: db.$func.count() })
             .from(supplementLogs)
             .where(
               and(
                 eq(supplementLogs.userId, user.id),
-                gte(supplementLogs.timestamp, startOfDay)
+                gte(supplementLogs.takenAt, startOfDay)
               )
             );
           
