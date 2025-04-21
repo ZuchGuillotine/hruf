@@ -6,6 +6,7 @@ import { advancedSummaryService } from './advancedSummaryService';
 import { summaryTaskManager } from '../cron/summaryManager';
 import { labSummaryService } from './labSummaryService';
 import logger from '../utils/logger';
+import { startAllNotificationSchedules, stopAllNotificationSchedules } from './notificationScheduler';
 
 /**
  * Initializes all services required for the hybrid context approach
@@ -135,7 +136,7 @@ class ServiceInitializer {
   }
 
   /**
-   * Start scheduled tasks for summarization
+   * Start scheduled tasks for summarization and notifications
    */
   private startScheduledTasks(): void {
     try {
@@ -149,6 +150,9 @@ class ServiceInitializer {
 
       // Start lab processing task to run daily at 3 AM
       summaryTaskManager.startLabProcessingTask(3);
+
+      // Start push notification schedules
+      startAllNotificationSchedules();
 
       logger.info('Scheduled tasks started successfully');
     } catch (error) {
@@ -167,6 +171,9 @@ class ServiceInitializer {
 
       // Stop all scheduled tasks
       summaryTaskManager.stopAllTasks();
+      
+      // Stop notification schedules
+      stopAllNotificationSchedules();
 
       logger.info('Services shut down successfully');
     } catch (error) {
