@@ -133,42 +133,50 @@ function AppRouter() {
       <Route path="/research" component={React.lazy(() => import("@/pages/research"))} />
       <Route path="/research/:slug" component={React.lazy(() => import("@/pages/research/[slug]"))} />
       <Route path="/labs" component={Labs} />
-      <Route path="/" component={Dashboard} />
-      {/* Admin routes with lazy loading for better performance */}
-      <Route path="/admin" component={(props) => {
-        const AdminDashboard = React.lazy(() => import("@/pages/admin"));
-        return (
-          <AdminRoute 
-            component={() => (
-              <ErrorBoundary>
-                <React.Suspense fallback={<div>Loading...</div>}>
-                  <AdminDashboard />
-                </React.Suspense>
-              </ErrorBoundary>
-            )} 
-            {...props} 
-          />
-        );
-      }} />
-      <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
-      <Route path="/admin/blog" component={(props) => {
-        const AdminBlog = React.lazy(() => import("@/pages/admin/blog"));
-        return (
-          <AdminRoute 
-            component={() => (
-              <ErrorBoundary>
-                <React.Suspense fallback={<div>Loading...</div>}>
-                  <AdminBlog />
-                </React.Suspense>
-              </ErrorBoundary>
-            )} 
-            {...props} 
-          />
-        );
-      }} />
-      <Route path="/learn" component={LearnPage} />
-      <Route path="/learn/:slug" component={BlogPostPage} />
-      <Route component={NotFound} />
+      {isLoading ? (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      ) : (
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          {/* Admin routes with lazy loading for better performance */}
+          <Route path="/admin" component={(props) => {
+            const AdminDashboard = React.lazy(() => import("@/pages/admin"));
+            return (
+              <AdminRoute 
+                component={() => (
+                  <ErrorBoundary>
+                    <React.Suspense fallback={<div>Loading...</div>}>
+                      <AdminDashboard />
+                    </React.Suspense>
+                  </ErrorBoundary>
+                )} 
+                {...props} 
+              />
+            );
+          }} />
+          <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
+          <Route path="/admin/blog" component={(props) => {
+            const AdminBlog = React.lazy(() => import("@/pages/admin/blog"));
+            return (
+              <AdminRoute 
+                component={() => (
+                  <ErrorBoundary>
+                    <React.Suspense fallback={<div>Loading...</div>}>
+                      <AdminBlog />
+                    </React.Suspense>
+                  </ErrorBoundary>
+                )} 
+                {...props} 
+              />
+            );
+          }} />
+          <Route path="/learn" component={LearnPage} />
+          <Route path="/learn/:slug" component={BlogPostPage} />
+          <Route component={NotFound} />
+        </Switch>
+      )}
     </Switch>
   );
 }

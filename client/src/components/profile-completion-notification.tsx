@@ -1,3 +1,4 @@
+
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
@@ -14,10 +15,11 @@ import {
 
 export function ProfileCompletionNotification() {
   const [dismissed, setDismissed] = useState(false);
-  const { completionPercentage } = useProfileCompletion();
+  const { completionPercentage, isLoading } = useProfileCompletion();
   const [, setLocation] = useLocation();
 
-  if (completionPercentage === 100 || dismissed) {
+  // Don't render anything while loading or if dismissed/complete
+  if (isLoading || dismissed || completionPercentage === 100) {
     return null;
   }
 
