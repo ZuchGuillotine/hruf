@@ -1,4 +1,3 @@
-
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
@@ -15,11 +14,10 @@ import {
 
 export function ProfileCompletionNotification() {
   const [dismissed, setDismissed] = useState(false);
-  const { completionPercentage, isLoading } = useProfileCompletion();
+  const { completionPercentage } = useProfileCompletion();
   const [, setLocation] = useLocation();
 
-  // Don't render anything while loading or if dismissed/complete
-  if (isLoading || dismissed || completionPercentage === 100) {
+  if (completionPercentage === 100 || dismissed) {
     return null;
   }
 
@@ -29,7 +27,7 @@ export function ProfileCompletionNotification() {
         <AlertDialogHeader>
           <AlertDialogTitle className="text-red-900">Complete Your Profile</AlertDialogTitle>
           <AlertDialogDescription className="text-red-800">
-            Take a moment to complete your profile to get the most out of Stack Tracker. You're currently at {completionPercentage}% complete. Completing your profile helps us provide more personalized insights.
+            Take a moment to complete your profile to get the most out of Stack Tracker. You're currently at {completionPercentage}% complete. Adding your lab results helps us provide more personalized insights.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
