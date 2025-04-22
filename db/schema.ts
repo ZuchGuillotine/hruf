@@ -20,7 +20,6 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: timestamp("verification_token_expiry", { mode: 'date' }),
-  pushNotificationsEnabled: boolean("push_notifications_enabled").default(false),
   createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -259,17 +258,3 @@ export type InsertSummaryEmbedding = typeof summaryEmbeddings.$inferInsert;
 export type SelectSummaryEmbedding = typeof summaryEmbeddings.$inferSelect;
 export type InsertLogSummary = typeof logSummaries.$inferInsert;
 export type SelectLogSummary = typeof logSummaries.$inferSelect;
-
-// Push notification subscriptions table
-export const pushSubscriptions = pgTable("push_subscriptions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  endpoint: text("endpoint").notNull(),
-  p256dh: text("p256dh").notNull(),
-  auth: text("auth").notNull(),
-  createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
-
-export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
-export type SelectPushSubscription = typeof pushSubscriptions.$inferSelect;

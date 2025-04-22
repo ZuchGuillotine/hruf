@@ -5,14 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Bell } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import Header from "@/components/header";
 import { ProfileProgress } from "@/components/profile-progress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { isPushNotificationSupported, subscribeToPushNotifications, unsubscribeFromPushNotifications } from "@/lib/notification-service";
 
 type ProfileFormData = {
   email: string;
@@ -20,7 +18,6 @@ type ProfileFormData = {
   name?: string;
   username: string;
   isPro?: boolean;
-  pushNotificationsEnabled?: boolean;
 };
 
 async function updateProfile(data: ProfileFormData) {
@@ -33,7 +30,6 @@ async function updateProfile(data: ProfileFormData) {
       name: data.name || null,
       username: data.username,
       isPro: data.isPro || false,
-      pushNotificationsEnabled: data.pushNotificationsEnabled || false,
     }),
     credentials: 'include',
   });
@@ -51,12 +47,6 @@ export default function ProfilePage() {
   const { user, isLoading } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [notificationsSupported, setNotificationsSupported] = useState(false);
-  
-  useEffect(() => {
-    // Check if push notifications are supported by this browser
-    setNotificationsSupported(isPushNotificationSupported());
-  }, []);
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
@@ -65,53 +55,8 @@ export default function ProfilePage() {
       name: user?.name || "",
       username: user?.username || "",
       isPro: user?.isPro || false,
-      pushNotificationsEnabled: user?.pushNotificationsEnabled || false,
     },
   });
-  
-  // Handle notification permission and subscription
-  const handleNotificationToggle = async (checked: boolean) => {
-    try {
-      if (checked) {
-        // Request notification permission and subscribe
-        const subscription = await subscribeToPushNotifications();
-        
-        if (subscription) {
-          // Update form value
-          form.setValue("pushNotificationsEnabled", true);
-          
-          toast({
-            title: "Notifications Enabled",
-            description: "You will now receive supplement routine feedback notifications.",
-          });
-        } else {
-          form.setValue("pushNotificationsEnabled", false);
-          toast({
-            variant: "destructive",
-            title: "Notification Permission Denied",
-            description: "Please enable notifications in your browser settings to receive supplement feedback.",
-          });
-        }
-      } else {
-        // Unsubscribe from notifications
-        await unsubscribeFromPushNotifications();
-        form.setValue("pushNotificationsEnabled", false);
-        
-        toast({
-          title: "Notifications Disabled",
-          description: "You will no longer receive supplement routine feedback notifications.",
-        });
-      }
-    } catch (error) {
-      console.error("Error toggling notifications:", error);
-      form.setValue("pushNotificationsEnabled", false);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update notification settings. Please try again.",
-      });
-    }
-  };
 
   const mutation = useMutation({
     mutationFn: updateProfile,
@@ -203,23 +148,6 @@ export default function ProfilePage() {
                     />
                     <Label htmlFor="pro">Pro Account</Label>
                   </div>
-                  
-                  {notificationsSupported && (
-                    <div className="flex items-center justify-between p-4 bg-[#2d6a4f] rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Bell className="h-5 w-5 text-white" />
-                        <div>
-                          <h4 className="text-sm font-medium">Push Notifications</h4>
-                          <p className="text-xs text-gray-200">Receive feedback prompts for your supplement routines</p>
-                        </div>
-                      </div>
-                      <Switch
-                        id="notifications"
-                        checked={form.watch("pushNotificationsEnabled")}
-                        onCheckedChange={handleNotificationToggle}
-                      />
-                    </div>
-                  )}
 
                   <Button
                     type="submit"
