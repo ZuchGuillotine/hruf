@@ -58,13 +58,11 @@ export default function AuthPage() {
         console.log('Login successful, response:', loginResponse);
         
         // Handle redirection - this is critical for existing users
-        if (loginResponse.ok && 'redirectUrl' in loginResponse && loginResponse.redirectUrl) {
-          console.log('Redirecting to:', loginResponse.redirectUrl);
-          // Use direct window location for consistent redirection behavior
-          window.location.href = loginResponse.redirectUrl;
-        } else {
-          console.log('No redirect URL provided, defaulting to dashboard');
-          setLocation('/');
+        if (loginResponse.ok) {
+          // Wait briefly for auth state to be established
+          await new Promise(resolve => setTimeout(resolve, 100));
+          // Use direct navigation to ensure clean state
+          window.location.href = loginResponse.redirectUrl || '/';
         }
       } else {
         console.log('Starting registration process');

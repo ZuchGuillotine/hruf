@@ -58,8 +58,17 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
  * 3. Protected routes (require authentication)
  */
 function AppRouter() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading: authLoading } = useUser();
   const [location] = useLocation();
+
+  // Show full-screen loader while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   // Show loading spinner while checking authentication status
   if (isLoading) {
