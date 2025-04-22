@@ -71,7 +71,7 @@ function AppRouter() {
   }
 
   // Show loading spinner while checking authentication status
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
