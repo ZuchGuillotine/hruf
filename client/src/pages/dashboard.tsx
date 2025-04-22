@@ -63,8 +63,8 @@ export default function Dashboard() {
             <Link href="/labs">
               <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
-                  <FileIcon className="h-4 w-4 text-white/70" />
+                  <CardTitle className="text-2xl font-bold">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
+                  <img src="/images/microscope.png" alt="Lab Analysis" className="h-8 w-8 text-white/70" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">Upload a picture, pdf, or doc</div>
