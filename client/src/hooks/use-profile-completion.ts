@@ -47,14 +47,19 @@ export function useProfileCompletion() {
       }).data > 0,
     },
     {
-      id: "lab-results",
+      id: "lab-results", 
       label: "Upload Lab Results",
       description: "Upload your first blood test or lab results",
-      completed: useQuery<number>({
-        queryKey: ["/api/labs/count"],
+      completed: useQuery<{count: number}>({
+        queryKey: ["labs-count"],
+        queryFn: async () => {
+          const response = await fetch('/api/labs');
+          const data = await response.json();
+          return { count: data.length };
+        },
         enabled: !!user,
         staleTime: 300000,
-      }).data > 0,
+      }).data?.count > 0 || false,
     },
   ];
 
