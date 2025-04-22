@@ -64,7 +64,7 @@ export default function Dashboard() {
               <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
-                  <img src="/images/blood-est-results.jpeg" alt="Lab Analysis" className="h-20 w-20 object-cover text-white/70" />
+                  <img src="/images/blood-est-results.jpeg" alt="Lab Analysis" className="h-24 w-24 object-cover text-white/70" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm font-medium">Upload a picture, pdf, or doc</div>
