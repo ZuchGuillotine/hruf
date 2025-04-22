@@ -50,7 +50,7 @@ export default function Dashboard() {
         {/* Labs Upload Card */}
         <div className="bg-[#1b4332] rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-white">Labs</h2>
+            <h2 className="text-3xl font-bold text-white">Bloodwork and Tests</h2>
             <Link href="/labs">
               <Button
                 className="bg-white text-[#1b4332] hover:bg-white/90"
@@ -63,12 +63,11 @@ export default function Dashboard() {
             <Link href="/labs">
               <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Lab Results</CardTitle>
+                  <CardTitle className="text-sm font-medium">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
                   <FileIcon className="h-4 w-4 text-white/70" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">Upload Results</div>
-                  <p className="text-xs text-white/70">Manage lab results and reports</p>
+                  <div className="text-2xl font-bold">Upload a picture, pdf, or doc</div>
                 </CardContent>
               </Card>
             </Link>
