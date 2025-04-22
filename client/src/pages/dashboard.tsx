@@ -62,11 +62,11 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/labs">
               <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
-                <CardHeader className="flex flex-row items-center justify-between pb-1">
-                  <CardTitle className="text-sm font-medium pr-8">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between py-3">
+                  <CardTitle className="text-sm font-medium pr-8 mb-2">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
                   <img src="/images/blood-est-results.jpeg" alt="Lab Analysis" className="h-24 w-24 object-cover text-white/70" />
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 pb-3">
                   <div className="text-sm font-medium flex items-center">Upload a picture, pdf, or doc <ArrowRight className="h-4 w-4 ml-1" /></div>
                 </CardContent>
               </Card>
