@@ -3,7 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, X } from "lucide-react";
+import { CheckCircle2, Circle, X, Upload } from "lucide-react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
 import { Button } from "@/components/ui/button";
 

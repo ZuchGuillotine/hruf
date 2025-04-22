@@ -46,6 +46,16 @@ export function useProfileCompletion() {
         staleTime: 300000, // Cache for 5 minutes
       }).data > 0,
     },
+    {
+      id: "lab-results",
+      label: "Upload Lab Results",
+      description: "Upload your first blood test or lab results",
+      completed: useQuery<number>({
+        queryKey: ["/api/labs/count"],
+        enabled: !!user,
+        staleTime: 300000,
+      }).data > 0,
+    },
   ];
 
   const completedSteps = steps.filter(step => step.completed).length;
