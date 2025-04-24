@@ -113,6 +113,12 @@ class LabSummaryService {
         }
       } else if (labResult.fileType.startsWith('image/') || (fileType && fileType.mime && fileType.mime.startsWith('image/'))) {
         try {
+          logger.info(`Starting OCR processing for lab result ${labResultId}`, {
+            fileName: labResult.fileName,
+            fileType: labResult.fileType,
+            fileSize: fileBuffer.length
+          });
+
           const { createWorker } = await import('tesseract.js');
           const worker = await createWorker();
           
@@ -122,11 +128,22 @@ class LabSummaryService {
           const { data: { text } } = await worker.recognize(fileBuffer);
           await worker.terminate();
 
+          logger.info(`OCR processing completed for lab result ${labResultId}`, {
+            textLength: text ? text.length : 0,
+            hasContent: !!text
+          });
+
           if (!text || text.trim().length === 0) {
             throw new Error('OCR produced empty text content');
           }
 
           textContent = text;
+          
+          // Verify text was extracted
+          logger.info(`OCR text content sample for lab result ${labResultId}:`, {
+            sample: text.substring(0, 100), // Log first 100 chars
+            fullLength: text.length
+          });
           
           // Store OCR text in metadata with standardized structure
           await db
