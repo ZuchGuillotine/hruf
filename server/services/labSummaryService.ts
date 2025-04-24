@@ -112,8 +112,48 @@ class LabSummaryService {
           File type: PDF. This is a PDF document that could not be parsed. Notes: ${labResult.notes || "No notes provided"}`;
         }
       } else if (labResult.fileType.startsWith('image/') || (fileType && fileType.mime && fileType.mime.startsWith('image/'))) {
-        textContent = `Image lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
-        This is an image file that may contain lab results. The file type is ${labResult.fileType}.`;
+        try {
+          const { createWorker } = await import('tesseract.js');
+          const worker = await createWorker();
+          
+          await worker.loadLanguage('eng');
+          await worker.initialize('eng');
+          
+          const { data: { text } } = await worker.recognize(fileBuffer);
+          await worker.terminate();
+
+          if (!text || text.trim().length === 0) {
+            throw new Error('OCR produced empty text content');
+          }
+
+          textContent = text;
+          
+          // Store OCR text in metadata
+          await db
+            .update(labResults)
+            .set({
+              metadata: {
+                ...labResult.metadata,
+                ocrText: text,
+                ocrDate: new Date().toISOString()
+              }
+            })
+            .where(eq(labResults.id, labResultId));
+
+          logger.info(`Successfully extracted text from image for lab result ${labResultId}`, {
+            textLength: text.length
+          });
+        } catch (ocrError) {
+          logger.error('Error performing OCR on image:', {
+            error: ocrError instanceof Error ? ocrError.message : String(ocrError),
+            stack: ocrError instanceof Error ? ocrError.stack : undefined,
+            filePath,
+            fileName: labResult.fileName
+          });
+          
+          textContent = `Image lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
+          File type: ${labResult.fileType}. OCR processing failed. Notes: ${labResult.notes || "No notes provided"}`;
+        }
       } else if (
         labResult.fileType === 'application/msword' ||
         labResult.fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
