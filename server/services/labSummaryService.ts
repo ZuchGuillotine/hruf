@@ -120,11 +120,19 @@ class LabSummaryService {
           });
 
           const { createWorker } = await import('tesseract.js');
-          const worker = await createWorker();
-
+          const worker = await createWorker({
+            logger: progress => {
+              logger.info(`OCR Progress:`, {
+                progress,
+                labId: labResultId
+              });
+            }
+          });
+          
+          await worker.load();
           await worker.loadLanguage('eng');
           await worker.initialize('eng');
-
+          
           const { data: { text } } = await worker.recognize(fileBuffer);
           await worker.terminate();
 
