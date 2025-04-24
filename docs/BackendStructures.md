@@ -636,6 +636,35 @@ Security logging and monitoring to support HIPAA compliance.
 - Proper connection management
 - Enhanced debugging capabilities
 
+## OCR Implementation Summary
+
+### Current Implementation (April 2025)
+- **Integration**: Tesseract OCR with specialized configuration
+- **Features**:
+  - Custom page segmentation mode for medical data
+  - Character whitelist optimization
+  - Enhanced error handling and recovery
+  - Debug logging infrastructure
+  - Token-efficient summarization
+  - PDF and image format support
+  - Metadata enrichment
+
+### Known Limitations
+- Inconsistent recognition of:
+  - Medical abbreviations
+  - Numerical data formatting
+  - Structured tabular content
+- Potential need for enterprise solutions:
+  - Google Cloud Vision API
+  - Azure Computer Vision
+  - Alternative OCR providers
+
+### Integration Points
+- **Lab Results Service**: Processes uploaded files
+- **Context Building**: Incorporates results into LLM context
+- **Summary System**: Generates analysis of lab data
+- **Vector Search**: Enables semantic search of results
+
 ## Testing Architecture
 
 The application uses Jest for testing core functionality with a focus on critical services.
