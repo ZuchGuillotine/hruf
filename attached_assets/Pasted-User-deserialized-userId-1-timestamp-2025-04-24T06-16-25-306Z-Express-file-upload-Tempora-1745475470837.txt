@@ -1,0 +1,33 @@
+User deserialized: { userId: 1, timestamp: '2025-04-24T06:16:25.306Z' }
+Express-file-upload: Temporary file path is /tmp/tmp-1-1745475385311
+Express-file-upload: Opening write stream for file->samplebloodtest2.jpg...
+Express-file-upload: New upload started file->samplebloodtest2.jpg, bytes:0
+Express-file-upload: Uploading file->samplebloodtest2.jpg, bytes:16236...
+Express-file-upload: Uploading file->samplebloodtest2.jpg, bytes:32620...
+Express-file-upload: Uploading file->samplebloodtest2.jpg, bytes:40812...
+Express-file-upload: Uploading file->samplebloodtest2.jpg, bytes:47818...
+Express-file-upload: Upload finished file->samplebloodtest2.jpg, bytes:47818
+Express-file-upload: Upload file->samplebloodtest2.jpg completed, bytes:47818.
+Express-file-upload: Busboy finished parsing request.
+Express-file-upload: Moving temporary file /tmp/tmp-1-1745475385311 to /home/runner/workspace/uploads/1745475385356-samplebloodtest2.jpg
+info: File moved to /home/runner/workspace/uploads/1745475385356-samplebloodtest2.jpg {"timestamp":"2025-04-24T06:16:25.358Z"}
+info: Lab result saved: {"fileName":"samplebloodtest2.jpg","fileSize":47818,"fileUrl":"/uploads/1745475385356-samplebloodtest2.jpg","labId":31,"timestamp":"2025-04-24T06:16:25.392Z","userId":1}
+info: Background summary generation started for lab ID: {"timestamp":"2025-04-24T06:16:25.393Z"}
+info: Starting OCR processing for lab result 31 {"fileName":"samplebloodtest2.jpg","fileSize":47818,"fileType":"image/jpeg","timestamp":"2025-04-24T06:16:25.418Z"}
+User deserialized: { userId: 1, timestamp: '2025-04-24T06:16:25.522Z' }
+User deserialized: { userId: 1, timestamp: '2025-04-24T06:16:25.544Z' }
+
+node:internal/per_context/domexception:53
+    ErrorCaptureStackTrace(this);
+    ^
+DOMException [DataCloneError]: progress=>{logger.info(`OCR Progress:`,{progress,labId:labResultId})} could not be cloned.
+    at new DOMException (node:internal/per_context/domexception:53:5)
+    at Worker.postMessage (node:internal/worker:378:5)
+    at module.exports (/home/runner/workspace/node_modules/tesseract.js/src/worker/node/send.js:11:10)
+    at /home/runner/workspace/node_modules/tesseract.js/src/createWorker.js:57:7
+    at new Promise (<anonymous>)
+    at startJob (/home/runner/workspace/node_modules/tesseract.js/src/createWorker.js:52:5)
+    at loadLanguageInternal (/home/runner/workspace/node_modules/tesseract.js/src/createWorker.js:108:51)
+    at /home/runner/workspace/node_modules/tesseract.js/src/createWorker.js:240:17
+
+Node.js v20.18.1
