@@ -2,8 +2,9 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { Upload, File, Check, X } from "lucide-react";
+import { Upload, File, Check, X, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 interface LabUploadProps {
   onUploadSuccess?: () => void;
@@ -70,7 +71,15 @@ export default function LabUpload({
       setFiles([]);
       toast({
         title: "Success",
-        description: "Lab results uploaded successfully",
+        description: (
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-500 text-xl">★</span>
+            <span>Ask about your results</span>
+            <Link to="/" className="text-primary hover:underline ml-1">
+              <ArrowRight className="h-4 w-4 inline" />
+            </Link>
+          </div>
+        ),
         duration: 3000
       });
       
