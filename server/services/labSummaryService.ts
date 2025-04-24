@@ -120,15 +120,9 @@ class LabSummaryService {
           });
 
           const { createWorker } = await import('tesseract.js');
-          const worker = await createWorker({
-            logger: progress => {
-              logger.info(`OCR Progress:`, {
-                progress,
-                labId: labResultId
-              });
-            }
-          });
+          const worker = await createWorker();
           
+          // Initialize worker without custom logger
           await worker.load();
           await worker.loadLanguage('eng');
           await worker.initialize('eng');
