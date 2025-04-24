@@ -125,9 +125,19 @@ class LabSummaryService {
           const { data: { text } } = await worker.recognize(fileBuffer);
           await worker.terminate();
 
-          logger.info(`OCR processing completed for lab result ${labResultId}`, {
+          // Log full OCR results for debugging
+          logger.info(`Full OCR results for lab ${labResultId}:`, {
+            text: text,
             textLength: text ? text.length : 0,
-            hasContent: !!text
+            hasContent: !!text,
+            timestamp: new Date().toISOString()
+          });
+
+          // Log first and last 500 characters to verify content boundaries
+          logger.info(`OCR content boundaries for lab ${labResultId}:`, {
+            start: text.substring(0, 500),
+            end: text.substring(Math.max(0, text.length - 500)),
+            totalLength: text.length
           });
 
           if (!text || text.trim().length === 0) {
