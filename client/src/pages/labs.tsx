@@ -4,7 +4,7 @@ import LabUpload from "@/components/lab-upload";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File, FileText, Download, Trash2, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 
 interface LabFile {
   id: number;
@@ -103,7 +103,7 @@ export default function Labs() {
             ))}
           </div>
         </div>
-        <Link href="/" className="flex items-center gap-2 text-black mt-6 ml-2 w-fit">
+        <Link to="/" className="flex items-center gap-2 text-black mt-6 ml-2 w-fit">
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Link>
       </main>
