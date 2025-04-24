@@ -74,7 +74,7 @@ export default function LabUpload({
         description: (
           <div className="flex items-center gap-2">
             <span className="text-yellow-500 text-xl">★</span>
-            <span>Ask about your results</span>
+            <span>Ask StackChat about your results</span>
             <Link to="/" className="text-primary hover:underline ml-1">
               <ArrowRight className="h-4 w-4 inline" />
             </Link>
