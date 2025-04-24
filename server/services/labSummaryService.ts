@@ -69,13 +69,13 @@ class LabSummaryService {
             fileSize: fileBuffer.length,
             fileName: labResult.fileName
           });
-          
+
           // Parse PDF directly from buffer
           const pdfData = await pdfParse(fileBuffer, {
             max: 0,
             version: 'v1.10.100' // Force specific PDF.js version
           });
-          
+
           textContent = pdfData.text;
 
           if (!textContent || textContent.trim().length === 0) {
@@ -121,10 +121,10 @@ class LabSummaryService {
 
           const { createWorker } = await import('tesseract.js');
           const worker = await createWorker();
-          
+
           await worker.loadLanguage('eng');
           await worker.initialize('eng');
-          
+
           const { data: { text } } = await worker.recognize(fileBuffer);
           await worker.terminate();
 
@@ -138,22 +138,30 @@ class LabSummaryService {
           }
 
           textContent = text;
-          
+
           // Verify text was extracted
           logger.info(`OCR text content sample for lab result ${labResultId}:`, {
             sample: text.substring(0, 100), // Log first 100 chars
             fullLength: text.length
           });
-          
+
           // Store OCR text in metadata with standardized structure
           await db
             .update(labResults)
             .set({
               metadata: {
                 ...labResult.metadata,
-                ocrText: text,
-                ocrDate: new Date().toISOString(),
-                extractedText: text, // Standardized field for context building
+                ocr: {
+                  text: textContent,
+                  processedAt: new Date().toISOString(),
+                  confidence: 100, // Add OCR confidence score in future enhancement
+                  engineVersion: 'tesseract.js',
+                  parameters: {
+                    language: 'eng',
+                    mode: 'automatic'
+                  }
+                },
+                extractedText: textContent,
                 extractionMethod: 'ocr',
                 extractionDate: new Date().toISOString()
               }
@@ -175,7 +183,7 @@ class LabSummaryService {
             filePath,
             fileName: labResult.fileName
           });
-          
+
           textContent = `Image lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
           File type: ${labResult.fileType}. OCR processing failed. Notes: ${labResult.notes || "No notes provided"}`;
         }
