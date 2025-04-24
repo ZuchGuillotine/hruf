@@ -122,8 +122,24 @@ class LabSummaryService {
           const { createWorker } = await import('tesseract.js');
           const worker = await createWorker('eng');
           
+          // Configure worker for better handling of medical data
+          await worker.setParameters({
+            tessedit_pageseg_mode: '6', // Assume uniform text block
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-/%:', // Include common medical chars
+            tessedit_ocr_engine_mode: '2', // Legacy engine mode
+            preserve_interword_spaces: '1'
+          });
+
           const { data: { text } } = await worker.recognize(fileBuffer);
           await worker.terminate();
+
+          // Log detailed OCR results to help debug recognition issues
+          logger.info(`Detailed OCR results for lab ${labResultId}:`, {
+            rawText: text,
+            textByLines: text.split('\n').map(line => line.trim()).filter(Boolean),
+            characterCount: text.length,
+            lineCount: text.split('\n').length
+          });
 
           // Log full OCR results for debugging
           logger.info(`Full OCR results for lab ${labResultId}:`, {
