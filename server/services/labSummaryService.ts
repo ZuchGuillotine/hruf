@@ -128,17 +128,25 @@ class LabSummaryService {
 
           textContent = text;
           
-          // Store OCR text in metadata
+          // Store OCR text in metadata with standardized structure
           await db
             .update(labResults)
             .set({
               metadata: {
                 ...labResult.metadata,
                 ocrText: text,
-                ocrDate: new Date().toISOString()
+                ocrDate: new Date().toISOString(),
+                extractedText: text, // Standardized field for context building
+                extractionMethod: 'ocr',
+                extractionDate: new Date().toISOString()
               }
             })
             .where(eq(labResults.id, labResultId));
+
+          logger.info(`Successfully extracted and stored OCR text for lab result ${labResultId}`, {
+            textLength: text.length,
+            method: 'ocr'
+          });
 
           logger.info(`Successfully extracted text from image for lab result ${labResultId}`, {
             textLength: text.length
