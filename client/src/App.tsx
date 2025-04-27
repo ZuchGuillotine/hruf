@@ -60,13 +60,6 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 function AppRouter() {
   const { user, isLoading } = useUser();
   const [location] = useLocation();
-  
-  // Remove loading class when authentication check completes
-  React.useEffect(() => {
-    if (!isLoading) {
-      document.body.classList.remove('app-loading');
-    }
-  }, [isLoading]);
 
   // Show loading spinner while checking authentication status
   if (isLoading) {

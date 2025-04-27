@@ -28,45 +28,6 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-  
-  /* Loading state styles to prevent 404 flash */
-  body.app-loading {
-    @apply bg-background;
-  }
-  
-  body.app-loading::after {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #e8f3e8;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  body.app-loading::before {
-    content: "";
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    margin-top: -1.5rem;
-    margin-left: -1.5rem;
-    width: 3rem;
-    height: 3rem;
-    border: 0.25rem solid rgba(27, 67, 50, 0.3);
-    border-top-color: #1b4332;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    z-index: 10000;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
 }
 
 /* Background Word Animation Styles */
