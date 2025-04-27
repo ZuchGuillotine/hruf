@@ -27,8 +27,6 @@ async function handleRequest(
 
     const data = await response.json();
 
-    const data = await response.json();
-
     if (!response.ok) {
       if (response.status === 401 && data.code === 'TRIAL_EXPIRED') {
         return { 
