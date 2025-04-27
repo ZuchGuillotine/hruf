@@ -169,7 +169,7 @@ export function AccountInfo() {
               onClick={() => handleSubscribe(false)}
               disabled={loading}
             >
-              Monthly - $21.99
+              Monthly - $19.99
             </Button>
             <Button 
               className="w-full" 
@@ -177,7 +177,7 @@ export function AccountInfo() {
               onClick={() => handleSubscribe(true)}
               disabled={loading}
             >
-              Yearly - $184.72 (Save 30%)
+              Yearly - $168 (Save $71.88)
             </Button>
           </div>
         )}
