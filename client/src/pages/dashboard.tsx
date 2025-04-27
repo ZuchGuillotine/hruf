@@ -3,7 +3,7 @@ import SupplementList from "@/components/supplement-list";
 import SupplementForm from "@/components/supplement-form";
 import LLMChat from "@/components/llm-chat";
 import Footer from "@/components/footer";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,16 +12,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, Moon, FileIcon, ArrowRight } from "lucide-react";
+import { Scale, Moon, FileIcon, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { ProfileCompletionNotification } from "@/components/profile-completion-notification";
+import { useUser } from "@/hooks/use-user";
 
 export default function Dashboard() {
+  const { isLoading: isUserLoading } = useUser();
   const [showSupplementForm, setShowSupplementForm] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
-      <ProfileCompletionNotification />
+      {!isUserLoading && <ProfileCompletionNotification />}
       <Header />
       <main className="container mx-auto px-4 py-6 space-y-6 flex-grow">
         {/* AI Assistant Section */}
@@ -29,7 +31,13 @@ export default function Dashboard() {
           <h2 className="text-2xl font-semibold mb-4 text-white">Stack Chat Assistant</h2>
           <p className="text-white/90 mb-4">How are you feeling?</p>
           <div className="h-[300px]">
-            <LLMChat />
+            <Suspense fallback={
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-white/70" />
+              </div>
+            }>
+              <LLMChat />
+            </Suspense>
           </div>
         </div>
 

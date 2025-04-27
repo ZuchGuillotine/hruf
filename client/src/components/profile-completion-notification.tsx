@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
 import {
   AlertDialog,
@@ -14,15 +14,31 @@ import {
 
 export function ProfileCompletionNotification() {
   const [dismissed, setDismissed] = useState(false);
-  const { completionPercentage } = useProfileCompletion();
+  const [showDialog, setShowDialog] = useState(false);
+  const { completionPercentage, isLoading } = useProfileCompletion();
   const [, setLocation] = useLocation();
 
-  if (completionPercentage === 100 || dismissed) {
+  // Use an effect to delay showing the notification until we're sure all data is loaded
+  useEffect(() => {
+    if (!isLoading && completionPercentage !== 100 && !dismissed) {
+      // Add a slight delay to ensure all authentication and profile data is loaded
+      const timer = setTimeout(() => {
+        setShowDialog(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowDialog(false);
+    }
+  }, [isLoading, completionPercentage, dismissed]);
+
+  // Don't render anything during loading or if the profile is complete or dismissed
+  if (isLoading || completionPercentage === 100 || dismissed || !showDialog) {
     return null;
   }
 
   return (
-    <AlertDialog defaultOpen>
+    <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
       <AlertDialogContent className="bg-red-50 border-red-200">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-red-900">Complete Your Profile</AlertDialogTitle>
