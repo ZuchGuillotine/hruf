@@ -78,6 +78,7 @@ function AppRouter() {
     "/learn",
     "/ask",
     "/research",
+    "/contact",
     location.startsWith("/learn/") ? location : null,
     location.startsWith("/research/") ? location : null
   ].filter(Boolean).includes(location);
@@ -93,6 +94,7 @@ function AppRouter() {
         <Route path="/learn" component={LearnPage} />
         <Route path="/learn/:slug" component={BlogPostPage} />
         <Route path="/ask" component={AskPage} />
+        <Route path="/contact" component={() => import('@/pages/contact')} />
         <Route path="/research">
           <ErrorBoundary>
             <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
