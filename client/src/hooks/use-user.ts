@@ -27,18 +27,21 @@ async function handleRequest(
 
     const data = await response.json();
 
+    const data = await response.json();
+
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && data.code === 'TRIAL_EXPIRED') {
         return { 
           ok: false, 
-          message: data.message || "Your trial has expired. Please upgrade to continue.",
+          message: "Your trial has expired. Please upgrade to continue.",
           code: 'TRIAL_EXPIRED'
         };
       }
-      if (response.status >= 500) {
-        return { ok: false, message: "Server error occurred", code: 'SERVER_ERROR' };
-      }
-      return { ok: false, message: data.message || "Login failed", code: 'AUTH_FAILED' };
+      return { 
+        ok: false, 
+        message: data.error || data.message || "Authentication failed",
+        code: response.status === 401 ? 'AUTH_FAILED' : 'SERVER_ERROR'
+      };
     }
 
     return { ok: true, ...data };

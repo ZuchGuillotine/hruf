@@ -55,16 +55,18 @@ export default function AuthPage() {
       if (isLogin) {
         console.log('Starting login process');
         const loginResponse = await login(data);
-        console.log('Login successful, response:', loginResponse);
+        console.log('Login attempt response:', loginResponse);
         
-        // Handle redirection - this is critical for existing users
-        if (loginResponse.ok && 'redirectUrl' in loginResponse && loginResponse.redirectUrl) {
-          console.log('Redirecting to:', loginResponse.redirectUrl);
-          // Use direct window location for consistent redirection behavior
-          window.location.href = loginResponse.redirectUrl;
+        if (loginResponse.ok) {
+          if ('redirectUrl' in loginResponse && loginResponse.redirectUrl) {
+            console.log('Redirecting to:', loginResponse.redirectUrl);
+            window.location.href = loginResponse.redirectUrl;
+          } else {
+            console.log('No redirect URL provided, redirecting to dashboard');
+            window.location.href = '/';
+          }
         } else {
-          console.log('No redirect URL provided, defaulting to dashboard');
-          setLocation('/');
+          throw new Error(loginResponse.message || 'Login failed');
         }
       } else {
         console.log('Starting registration process');
