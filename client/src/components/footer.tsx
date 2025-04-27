@@ -25,9 +25,9 @@ export default function Footer({ className = '' }: FooterProps) {
               </span>
             </Link>
             <Link href="/contact">
-              <span className="text-white/80 hover:text-white transition-colors cursor-pointer">
+              <a className="text-white/80 hover:text-white transition-colors cursor-pointer">
                 Contact
-              </span>
+              </a>
             </Link>
           </nav>
         </div>
