@@ -8,7 +8,7 @@ export function ValueProposition() {
       description: "Track your supplements and their effects with our intelligent system"
     },
     {
-      title: "Individualize Intelligent Insights",
+      title: "Individualized Insights",
       description: "Get personalized recommendations that improve over time based on your supplement stack and health history"
     },
     {
