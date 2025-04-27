@@ -8,16 +8,16 @@ export function ValueProposition() {
       description: "Track your supplements and their effects with our intelligent system"
     },
     {
+      title: "Upload Labs & Bloodwork to See Your Supplement's Impact",
+      description: "Learn how your supplements are moving your biomarkers and important health metrics"
+    },
+    {
       title: "Individualized Insights",
       description: "Get personalized recommendations that improve over time based on your supplement stack and health history"
     },
     {
       title: "Optimize Your Health Journey",
       description: "Learn how your supplements impact your health with detailed analytics and trends"
-    },
-    {
-      title: "Upload Labs & Bloodwork to See Your Supplement's Impact",
-      description: "Learn how your supplements are moving your biomarkers and important health metrics"
     },
   ];
 
