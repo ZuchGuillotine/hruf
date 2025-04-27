@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Home, BookOpen, Info, HelpCircle, FileText, Search } from "lucide-react";
+import { Home, BookOpen, Info, HelpCircle, FileText, Search, Menu } from "lucide-react";
 
 export default function LandingHeader() {
   const { user } = useUser();
@@ -15,12 +15,15 @@ export default function LandingHeader() {
   return (
     <header className="border-b bg-background relative z-10">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
-                StackTracker
-              </h1>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <Menu className="h-5 w-5 text-primary" />
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  StackTracker
+                </h1>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {user ? (

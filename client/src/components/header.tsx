@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History, HelpCircle, FileText } from 'lucide-react';
+import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History, HelpCircle, FileText, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -45,12 +45,15 @@ export default function Header() {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer">
-                StackTracker
-              </h1>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <Menu className="h-5 w-5 text-primary" />
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  StackTracker
+                </h1>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <Link href="/">
