@@ -90,12 +90,16 @@ export default function AuthPage() {
         errorMessage = error.message;
       }
 
-      toast({
-        variant: "destructive",
-        title: isLogin ? "Login Error" : "Registration Error",
-        description: errorMessage,
-        duration: 5000,
-      });
+      if (error.code === 'TRIAL_EXPIRED') {
+        setLocation('/subscription');
+      } else {
+        toast({
+          variant: "destructive",
+          title: isLogin ? "Login Error" : "Registration Error",
+          description: error.message || errorMessage,
+          duration: 5000,
+        });
+      }
     }
   };
 

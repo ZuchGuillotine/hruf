@@ -25,19 +25,25 @@ async function handleRequest(
       credentials: "include",
     });
 
-    if (!response.ok) {
-      if (response.status >= 500) {
-        return { ok: false, message: response.statusText };
-      }
+    const data = await response.json();
 
-      const message = await response.text();
-      return { ok: false, message };
+    if (!response.ok) {
+      if (response.status === 401) {
+        return { 
+          ok: false, 
+          message: data.message || "Your trial has expired. Please upgrade to continue.",
+          code: 'TRIAL_EXPIRED'
+        };
+      }
+      if (response.status >= 500) {
+        return { ok: false, message: "Server error occurred", code: 'SERVER_ERROR' };
+      }
+      return { ok: false, message: data.message || "Login failed", code: 'AUTH_FAILED' };
     }
 
-    const data = await response.json();
     return { ok: true, ...data };
   } catch (e: any) {
-    return { ok: false, message: e.toString() };
+    return { ok: false, message: "Connection error occurred", code: 'CONNECTION_ERROR' };
   }
 }
 
