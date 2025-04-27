@@ -58,12 +58,28 @@ export default function AuthPage() {
         console.log('Login attempt response:', loginResponse);
         
         if (loginResponse.ok) {
+          // Show a loading state to prevent 404 flash
+          document.body.classList.add('app-loading');
+          
+          // Use setLocation instead of direct window.location change to avoid router issues
           if ('redirectUrl' in loginResponse && loginResponse.redirectUrl) {
             console.log('Redirecting to:', loginResponse.redirectUrl);
-            window.location.href = loginResponse.redirectUrl;
+            
+            // Use React Router/Wouter for navigation
+            setLocation(loginResponse.redirectUrl);
+            
+            // Add a small delay to ensure route transition completes properly
+            setTimeout(() => {
+              document.body.classList.remove('app-loading');
+            }, 500);
           } else {
             console.log('No redirect URL provided, redirecting to dashboard');
-            window.location.href = '/';
+            setLocation('/');
+            
+            // Add a small delay to ensure route transition completes properly
+            setTimeout(() => {
+              document.body.classList.remove('app-loading');
+            }, 500);
           }
         } else {
           throw new Error(loginResponse.message || 'Login failed');
