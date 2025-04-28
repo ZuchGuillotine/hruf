@@ -170,12 +170,12 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         labResultsContext = "User's Lab Test Results:\n";
         for (const lab of relevantLabResults) {
           const labDate = new Date(lab.uploadedAt).toLocaleDateString();
-          
+
           // Get text content from either OCR or PDF parsing
           const extractedText = lab.metadata?.ocr?.text || // From Google Vision OCR
                               lab.metadata?.parsedText ||  // From PDF parsing
                               lab.metadata?.extractedText; // Generic extracted text field
-          
+
           if (extractedText) {
             labResultsContext += `[${labDate}] ${lab.fileName}:\n${extractedText}\n\n`;
           } else if (lab.metadata?.summary) {
