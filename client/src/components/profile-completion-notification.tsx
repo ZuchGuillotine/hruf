@@ -25,7 +25,7 @@ export function ProfileCompletionNotification() {
       const timer = setTimeout(() => {
         setShowDialog(true);
       }, 500);
-      
+
       return () => clearTimeout(timer);
     } else {
       setShowDialog(false);
@@ -39,23 +39,23 @@ export function ProfileCompletionNotification() {
 
   return (
     <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-      <AlertDialogContent className="bg-red-50 border-red-200">
+      <AlertDialogContent className="bg-cyan-50 border-cyan-200">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-red-900">Complete Your Profile</AlertDialogTitle>
-          <AlertDialogDescription className="text-red-800">
+          <AlertDialogTitle className="text-cyan-900">Complete Your Profile</AlertDialogTitle>
+          <AlertDialogDescription className="text-cyan-800">
             Take a moment to complete your profile to get the most out of Stack Tracker. You're currently at {completionPercentage}% complete. Adding your lab results helps us provide more personalized insights.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel 
             onClick={() => setDismissed(true)}
-            className="text-red-700 hover:text-red-800 hover:bg-red-100"
+            className="text-cyan-700 hover:text-cyan-800 hover:bg-cyan-100"
           >
             Skip for now
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => setLocation("/profile")}
-            className="bg-pink-600 hover:bg-pink-700 text-white"
+            className="bg-teal-600 hover:bg-teal-700 text-white"
           >
             Complete Profile
           </AlertDialogAction>
