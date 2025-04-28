@@ -119,9 +119,9 @@ class LabSummaryService {
             fileSize: fileBuffer.length
           });
 
-          const vision = require('@google-cloud/vision');
+          const { ImageAnnotatorClient } = await import('@google-cloud/vision');
           const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
-          const client = new vision.ImageAnnotatorClient({
+          const client = new ImageAnnotatorClient({
             credentials
           });
 
