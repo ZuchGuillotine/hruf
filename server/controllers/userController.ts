@@ -46,6 +46,25 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       updatedAt: new Date()
     }).returning();
 
+    // Set initial trial period (28 days)
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 28);
+
+    // Create new user with trial status
+    const [user] = await db.insert(users).values({
+      email,
+      password, // Note: Password should be hashed before saving
+      username: email.split('@')[0],
+      verificationToken,
+      emailVerified: false,
+      isPro: false,
+      isAdmin: false,
+      subscriptionStatus: 'trial',
+      trialEndsAt: trialEndsAt.toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+
     // Send verification email
     const verificationUrl = `${process.env.APP_URL}/verify?token=${verificationToken}`;
 

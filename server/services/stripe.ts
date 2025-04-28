@@ -40,14 +40,45 @@ export const stripeService = {
 
   async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const userId = parseInt(subscription.metadata.userId);
+    
+    const status = subscription.status === 'active' ? 'pro' : 
+                   subscription.status === 'trialing' ? 'trial' : 'free';
+                   
     await db.update(users)
       .set({ 
         isPro: subscription.status === 'active',
         subscriptionId: subscription.id,
-        subscriptionStatus: subscription.status,
-        trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+        subscriptionStatus: status,
+        // Only update trial end if coming from Stripe subscription
+        trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : undefined,
       })
       .where(eq(users.id, userId));
+  },
+
+  // Add method to check trial status
+  async checkTrialStatus(userId: number) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId)
+    });
+
+    if (!user) return false;
+
+    // If user has active subscription, they're not in trial
+    if (user.subscriptionStatus === 'pro') return false;
+
+    // Check if trial has expired
+    if (user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
+      // Update user to free status
+      await db.update(users)
+        .set({ 
+          subscriptionStatus: 'free',
+          trialEndsAt: null 
+        })
+        .where(eq(users.id, userId));
+      return false;
+    }
+
+    return user.trialEndsAt != null;
   },
 
   async extendTrialPeriod(userId: number, daysToAdd: number) {
