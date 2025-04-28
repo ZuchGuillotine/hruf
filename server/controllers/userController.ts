@@ -61,9 +61,13 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       isAdmin: false,
       subscriptionStatus: 'trial',
       trialEndsAt: trialEndsAt.toISOString(),
+      subscriptionId: null, // Explicitly set to null for trial users
       createdAt: new Date(),
       updatedAt: new Date()
     }).returning();
+
+    // Ensure trial status is set
+    await stripeService.updateTrialStatus(user.id);
 
     // Send verification email
     const verificationUrl = `${process.env.APP_URL}/verify?token=${verificationToken}`;
