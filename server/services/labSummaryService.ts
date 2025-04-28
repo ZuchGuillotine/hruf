@@ -120,8 +120,9 @@ class LabSummaryService {
           });
 
           const vision = require('@google-cloud/vision');
+          const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
           const client = new vision.ImageAnnotatorClient({
-            keyFilename: process.env.GOOGLE_VISION_KEYFILE
+            credentials
           });
 
           // Configure options for better handling of medical data
