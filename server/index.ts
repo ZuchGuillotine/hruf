@@ -20,6 +20,8 @@ import createMemoryStore from "memorystore";
 import crypto from "crypto";
 import { serviceInitializer } from './services/serviceInitializer';
 import path from "path";
+import stripeRoutes from './routes/stripe';
+import adminRoutes from './routes/admin';
 
 const app = express();
 
@@ -117,6 +119,8 @@ app.use('/api', slowDown({
 // Setup routes and error handling
 setupQueryRoutes(app);
 setupSummaryRoutes(app);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/admin', adminRoutes);
 const server = registerRoutes(app);
 
 // Global error handling middleware
