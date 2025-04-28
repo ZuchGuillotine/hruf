@@ -1,0 +1,32 @@
+Starting OCR process...
+Debug OCR error: Error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #798510659255 by visiting https://console.developers.google.com/billing/enable?project=798510659255 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/call.ts:82:17)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client.ts:360:55)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client-interceptors.ts:458:34)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client-interceptors.ts:419:48)
+    at <anonymous> (/home/runner/workspace/node_modules/@grpc/grpc-js/src/resolving-call.ts:169:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeUnaryRequest (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client.ts:325:42)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at /home/runner/workspace/node_modules/@google-cloud/vision/build/src/v1/image_annotator_client.js:254:29
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at repeat (/home/runner/workspace/node_modules/google-gax/build/src/normalCalls/retries.js:82:25)
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/retries.js:125:13
+    at OngoingCall.call (/home/runner/workspace/node_modules/google-gax/build/src/call.js:70:27)
+    at NormalApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/normalCalls/normalApiCaller.js:34:19)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:110:30
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 7,
+  details: 'This API method requires billing to be enabled. Please enable billing on project #798510659255 by visiting https://console.developers.google.com/billing/enable?project=798510659255 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.',
+  metadata: Metadata {
+    internalRepr: Map(4) {
+      'google.rpc.errorinfo-bin' => [Array],
+      'google.rpc.help-bin' => [Array],
+      'google.rpc.localizedmessage-bin' => [Array],
+      'grpc-status-details-bin' => [Array]
+    },
+    options: {}
+  },
+  note: 'Exception occurred in retry method that was not classified as transient'
+}
