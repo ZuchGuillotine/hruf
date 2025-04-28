@@ -119,19 +119,27 @@ class LabSummaryService {
             fileSize: fileBuffer.length
           });
 
-          const { createWorker } = await import('tesseract.js');
-          const worker = await createWorker('eng');
-          
-          // Configure worker for better handling of medical data
-          await worker.setParameters({
-            tessedit_pageseg_mode: '6', // Assume uniform text block
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-/%:', // Include common medical chars
-            tessedit_ocr_engine_mode: '2', // Legacy engine mode
-            preserve_interword_spaces: '1'
+          const vision = require('@google-cloud/vision');
+          const client = new vision.ImageAnnotatorClient({
+            keyFilename: process.env.GOOGLE_VISION_KEYFILE
           });
 
-          const { data: { text } } = await worker.recognize(fileBuffer);
-          await worker.terminate();
+          // Configure options for better handling of medical data
+          const request = {
+            image: {
+              content: fileBuffer.toString('base64')
+            },
+            imageContext: {
+              languageHints: ['en'], // English language hint
+              textDetectionParams: {
+                enableTextDetectionConfidenceScore: true
+              }
+            }
+          };
+
+          const [result] = await client.documentTextDetection(request);
+          const text = result.fullTextAnnotation?.text || '';
+          const confidence = result.fullTextAnnotation?.pages?.[0]?.confidence || 0;
 
           // Log detailed OCR results to help debug recognition issues
           logger.info(`Detailed OCR results for lab ${labResultId}:`, {
@@ -177,15 +185,15 @@ class LabSummaryService {
                 ocr: {
                   text: textContent,
                   processedAt: new Date().toISOString(),
-                  confidence: 100, // Add OCR confidence score in future enhancement
-                  engineVersion: 'tesseract.js',
+                  confidence: confidence * 100, // Convert to percentage
+                  engineVersion: 'google-vision',
                   parameters: {
-                    language: 'eng',
-                    mode: 'automatic'
+                    language: 'en',
+                    mode: 'document'
                   }
                 },
                 extractedText: textContent,
-                extractionMethod: 'ocr',
+                extractionMethod: 'google-vision',
                 extractionDate: new Date().toISOString()
               }
             })
