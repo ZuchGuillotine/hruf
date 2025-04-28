@@ -40,15 +40,38 @@ export const stripeService = {
 
   async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const userId = parseInt(subscription.metadata.userId);
+    
+    // Determine subscription status
+    let status = 'free';
+    if (subscription.status === 'active' || subscription.status === 'trialing') {
+      status = subscription.status;
+    }
+    
     await db.update(users)
       .set({ 
         isPro: subscription.status === 'active',
         subscriptionId: subscription.id,
-        subscriptionStatus: subscription.status,
+        subscriptionStatus: status,
         trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       })
       .where(eq(users.id, userId));
+      
+    console.log(`Updated subscription for user ${userId}:`, {
+      isPro: subscription.status === 'active',
+      status,
+      trialEnd: subscription.trial_end
+    });
   },
+
+  // Add method to set user as pro directly
+  async setUserAsProWithStatus(userId: number) {
+    return db.update(users)
+      .set({ 
+        isPro: true,
+        subscriptionStatus: 'active'
+      })
+      .where(eq(users.id, userId));
+  }
 
   async extendTrialPeriod(userId: number, daysToAdd: number) {
     const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
