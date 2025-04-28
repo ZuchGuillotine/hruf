@@ -1,0 +1,94 @@
+GNU Solidario Hospital
+Autovía del Norte 12485
+Las Palmas de Gran Canaria
+Spain
+Name Ana Betz
+Date
+2011-08-25 08:32
+Doctor Cameron Cordara
+LABORATORY REPORT
+Age 25y 10m 26d
+Patient ID PAC001
+Sex Female
+Test id B165AAF4
+Test Name
+COMPLETE BLOOD COUNT
+Result
+Normal Range
+Units
+Hemoglobin
+12
+RBC
+3.3
+11.0-16.0
+3.5-5.50
+g/dL
+10^6/uL
+HCT
+36
+37.0-50.0
+%
+MCV
+83
+82-95
+fl
+MCH
+28
+27-31
+pg
+MCHC
+33
+32.0-36.0
+g/dL
+RDW-CV
+12
+11.5-14.5
+%
+RDW-SD
+44
+35-56
+fl
+WBC
+6.7
+4.5-11
+10^3/uL
+NEU%
+60
+40-70
+LYM%
+30
+20-45
+MON%
+8
+2-10
+୫୫୫
+%
+EOS%
+BAS%
+LYM#
+GRA#
+PLT
+ESR
+NONTON
+2
+1-6
+%
+0
+0-2
+%
+2
+1.5-4.0
+10^3/uL
+4.7
+256
+2.0-7.5
+10^3/uL
+150-450
+10^3/uL
+2
+Up to 15
+mm/hr
+Digitally signed by
+Dr. Cameron Cordara
+GNU Public Key: E44311F4
+Test id: B165AAF4
