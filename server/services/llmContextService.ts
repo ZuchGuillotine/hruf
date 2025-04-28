@@ -170,17 +170,32 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         labResultsContext = "User's Lab Test Results:\n";
         for (const lab of relevantLabResults) {
           const labDate = new Date(lab.uploadedAt).toLocaleDateString();
-
-          // Get text content from either OCR or PDF parsing
-          const extractedText = lab.metadata?.ocr?.text || // From Google Vision OCR
-                              lab.metadata?.parsedText ||  // From PDF parsing
-                              lab.metadata?.extractedText; // Generic extracted text field
+          
+          // First try to get OCR text from Google Vision result
+          let extractedText = lab.metadata?.ocr?.text;
+          
+          // If no OCR text, try PDF parsed text
+          if (!extractedText) {
+            extractedText = lab.metadata?.parsedText;
+          }
+          
+          // Finally try generic extracted text field
+          if (!extractedText) {
+            extractedText = lab.metadata?.extractedText;
+          }
 
           if (extractedText) {
+            logger.info(`Found extracted text for lab ${lab.id}:`, {
+              textLength: extractedText.length,
+              source: lab.metadata?.ocr ? 'OCR' : 'PDF',
+              fileName: lab.fileName
+            });
             labResultsContext += `[${labDate}] ${lab.fileName}:\n${extractedText}\n\n`;
           } else if (lab.metadata?.summary) {
+            logger.info(`Using summary for lab ${lab.id} - no extracted text found`);
             labResultsContext += `[${labDate}] ${lab.fileName}:\n${lab.metadata.summary}\n\n`;
           } else {
+            logger.warn(`No text or summary found for lab ${lab.id}`);
             labResultsContext += `[${labDate}] ${lab.fileName}: Processing lab results...\n\n`;
           }
         }
