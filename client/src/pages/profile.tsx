@@ -17,7 +17,6 @@ type ProfileFormData = {
   phoneNumber?: string;
   name?: string;
   username: string;
-  isPro?: boolean;
 };
 
 async function updateProfile(data: ProfileFormData) {
@@ -138,15 +137,6 @@ export default function ProfilePage() {
                       {...form.register("username")}
                       className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                     />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="pro"
-                      checked={form.watch("isPro")}
-                      onCheckedChange={(checked) => form.setValue("isPro", checked)}
-                    />
-                    <Label htmlFor="pro">Pro Account</Label>
                   </div>
 
                   <Button
