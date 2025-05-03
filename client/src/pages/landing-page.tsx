@@ -35,31 +35,31 @@ export default function LandingPage() {
   const onSubmit = async (data: TrialFormData) => {
     try {
       setIsSubmitting(true);
-      
+
       // Register the user first
       const response = await register(data);
-      
+
       if (!response.ok) {
         throw new Error(response.message);
       }
-      
+
       // After successful registration, redirect to start free trial
       await fetch('/api/stripe/start-free-trial', {
         method: 'POST',
         credentials: 'include',
       });
-      
+
       // Redirect to dashboard after trial is started
       setLocation('/');
-      
+
     } catch (error: any) {
       console.error('Free trial signup error:', error);
-      
+
       let errorMessage = "Registration failed. Please try again.";
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         variant: "destructive",
         title: "Registration Error",
@@ -115,7 +115,7 @@ export default function LandingPage() {
         {/* Pricing Cards Section */}
         <div className="mb-24 px-4 sm:px-6">
           <h2 className="text-3xl font-bold text-center text-[#1b4332] mb-12">Simple, Transparent Pricing</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
             {/* Free Tier Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
@@ -152,12 +152,12 @@ export default function LandingPage() {
                     signupElement.scrollIntoView({ behavior: 'smooth' });
                   }
                 }}>
-                  <CalendarClock className="mr-2 h-4 w-4" />
-                  Start Free Trial
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Start Tracking
                 </Button>
               </CardFooter>
             </Card>
-            
+
             {/* Monthly Subscription Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4">
@@ -192,7 +192,7 @@ export default function LandingPage() {
                 </Button>
               </CardFooter>
             </Card>
-            
+
             {/* Annual Subscription Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4 relative">
@@ -308,7 +308,7 @@ export default function LandingPage() {
           </Card>
         </div>
       </main>
-      
+
       <Footer className="relative z-10" />
     </div>
   );
