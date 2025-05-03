@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, CalendarClock, ChevronRight } from "lucide-react";
+import { Loader2, CheckCircle, BarChart3, ChevronRight } from "lucide-react";
 import Footer from "@/components/footer";
 import LandingHeader from "@/components/landing-header";
 import BackgroundWords from "@/components/background-words";
@@ -233,9 +233,9 @@ export default function LandingPage() {
         <div id="free-trial-signup" className="max-w-md mx-auto mb-16 px-4 sm:px-6">
           <Card className="shadow-lg">
             <CardHeader className="text-center">
-              <CardTitle id="try-free">Try StackTracker Free for 28 Days</CardTitle>
+              <CardTitle id="try-free">Optimal Health Starts Here</CardTitle>
               <CardDescription>
-                No credit card required. Get full access instantly.
+                No credit card required
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -292,9 +292,9 @@ export default function LandingPage() {
                   {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <CalendarClock className="mr-2 h-4 w-4" />
+                    <BarChart3 className="mr-2 h-4 w-4" />
                   )}
-                  Start Free Trial
+                  Start Tracking
                 </Button>
                 <Button
                   type="button"
