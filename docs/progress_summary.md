@@ -1,4 +1,22 @@
 
+## Latest Status (May 03, 2025)
+
+### Subscription and Pricing Updates
+- Enhanced subscription tier implementation:
+  - Changed Free plan to "Core Tracking"
+  - Updated monthly plan to "Starter - AI essentials" ($7.99/mo or $69/yr)
+  - Renamed Annual plan to "Pro - Biohacker suite" ($14.99/mo or $99/yr)
+  - Implemented new Stripe product links and IDs
+  - Enhanced pricing display with clearer typography
+  - Added split buttons for monthly/yearly options
+  - Updated feature bullet points with usage limits
+
+### Signup Form Enhancements
+- Removed 'Try StackTracker free for 28 days' text
+- Fixed icon issues in signup buttons
+- Improved button styling and layout
+- Enhanced visual hierarchy in pricing cards
+
 ## Latest Status (April 24, 2025)
 
 ### Lab Results OCR Implementation Progress

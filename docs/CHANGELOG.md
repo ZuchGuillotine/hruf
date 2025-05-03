@@ -1,6 +1,27 @@
 
 ## [Unreleased]
 
+### Changed (May 03, 2025)
+- Enhanced Subscription Tiers:
+  - Renamed Free plan to "Core Tracking"
+  - Updated Starter plan to "Starter - AI essentials":
+    - New pricing at $7.99/month or $69/year
+    - Updated Stripe product links
+    - Enhanced feature descriptions with usage limits
+  - Rebranded Annual plan to "Pro - Biohacker suite":
+    - New pricing at $14.99/month or $99/year
+    - Updated payment links and product IDs
+    - Added split buttons for payment options
+  - Improved pricing display typography
+  - Enhanced vertical spacing in feature lists
+
+### Fixed (May 03, 2025)
+- Signup Form Updates:
+  - Removed trial period text from signup form
+  - Fixed CalendarClock icon undefined error
+  - Improved button styling and layout
+  - Enhanced pricing card visual hierarchy
+
 ### Added (April 24, 2025)
 - Enhanced OCR Implementation for Lab Results:
   - Configured Tesseract OCR with specialized parameters for medical data
