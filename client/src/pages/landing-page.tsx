@@ -120,7 +120,7 @@ export default function LandingPage() {
             {/* Free Tier Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl">Basic Tracking</CardTitle>
+                <CardTitle className="text-2xl">Core Tracking</CardTitle>
                 <CardDescription>Always free, forever</CardDescription>
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
@@ -161,12 +161,18 @@ export default function LandingPage() {
             {/* Monthly Subscription Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl">Monthly</CardTitle>
-                <CardDescription>Flexible month-to-month plan</CardDescription>
+                <CardTitle className="text-2xl">Starter - AI essentials</CardTitle>
+                <CardDescription>Flexible pricing options</CardDescription>
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
-                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$19.99</p>
-                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per month</p>
+                <a href="https://buy.stripe.com/6oEdTTeEQaWT76028b" className="no-underline hover:no-underline">
+                  <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$7.99</p>
+                  <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per month</p>
+                </a>
+                <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline">
+                  <p className="text-lg sm:text-xl font-bold text-[#2d6a4f] mb-3 sm:mb-4">$69</p>
+                  <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per year</p>
+                </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
@@ -186,9 +192,18 @@ export default function LandingPage() {
                   </li>
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="w-full" onClick={() => setLocation('/subscription')}>
-                  Select Plan
+              <CardFooter className="flex gap-2">
+                <Button 
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={() => window.location.href = 'https://buy.stripe.com/6oEdTTeEQaWT76028b'}
+                >
+                  Monthly
+                </Button>
+                <Button 
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={() => window.location.href = 'https://buy.stripe.com/eVa177aoAfd94XSbIM'}
+                >
+                  Yearly
                 </Button>
               </CardFooter>
             </Card>
