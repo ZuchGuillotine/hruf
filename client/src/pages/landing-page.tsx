@@ -159,7 +159,7 @@ export default function LandingPage() {
             </Card>
             
             {/* Monthly Subscription Card */}
-            <Card className="shadow-lg transform transition-transform hover:-translate-y-2">
+            <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4">
                 <CardTitle className="text-2xl">Monthly</CardTitle>
                 <CardDescription>Flexible month-to-month plan</CardDescription>
@@ -170,11 +170,15 @@ export default function LandingPage() {
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>All features included</span>
+                    <span>AI-powered supplement feedback</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Priority support</span>
+                    <span>Intelligent biomarker analysis</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Early access to new features</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
