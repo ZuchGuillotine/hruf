@@ -122,7 +122,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
+                    <Label htmlFor="name">Name (must match name on any medical documents uploaded)</Label>
                     <Input
                       id="name"
                       {...form.register("name")}
