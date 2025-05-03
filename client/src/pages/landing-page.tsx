@@ -166,12 +166,10 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
                 <a href="https://buy.stripe.com/6oEdTTeEQaWT76028b" className="no-underline hover:no-underline">
-                  <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$7.99</p>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per month</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$7.99/mo</p>
                 </a>
-                <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline">
-                  <p className="text-lg sm:text-xl font-bold text-[#2d6a4f] mb-3 sm:mb-4">$69</p>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per year</p>
+                <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline mt-2">
+                  <p className="text-xl sm:text-2xl font-bold text-[#1b4332]">$69/yr</p>
                 </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
