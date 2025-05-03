@@ -206,26 +206,34 @@ export default function LandingPage() {
               </CardFooter>
             </Card>
 
-            {/* Annual Subscription Card */}
+            {/* Pro Biohacker Suite Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4 relative">
                 <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-[#2d6a4f] text-white text-sm rounded-full">
                   Best Value
                 </div>
-                <CardTitle className="text-2xl">Annual</CardTitle>
-                <CardDescription>Save 30% with yearly billing</CardDescription>
+                <CardTitle className="text-2xl">Pro - Biohacker suite</CardTitle>
+                <CardDescription>Advanced features for optimal results</CardDescription>
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
-                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$168.00</p>
-                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per year (save over $70)</p>
+                <a href="https://buy.stripe.com/5kA5nn8gs7KH8a428e" className="no-underline hover:no-underline">
+                  <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$14.99/mo</p>
+                </a>
+                <a href="https://buy.stripe.com/8wM8zzfIU6GD760bIP" className="no-underline hover:no-underline mt-2">
+                  <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$99/yr (save $80)</p>
+                </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>AI-powered supplement feedback</span>
+                    <span>Unlimited AI-powered supplement feedback</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Intelligent biomarker analysis</span>
+                    <span>Unlimited intelligent biomarker analysis</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Early access to new features</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
@@ -233,9 +241,18 @@ export default function LandingPage() {
                   </li>
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button className="w-full bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => setLocation('/subscription')}>
-                  Select Plan
+              <CardFooter className="flex gap-2">
+                <Button 
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={() => window.location.href = 'https://buy.stripe.com/5kA5nn8gs7KH8a428e'}
+                >
+                  Monthly
+                </Button>
+                <Button 
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={() => window.location.href = 'https://buy.stripe.com/8wM8zzfIU6GD760bIP'}
+                >
+                  Yearly
                 </Button>
               </CardFooter>
             </Card>
