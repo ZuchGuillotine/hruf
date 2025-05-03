@@ -204,15 +204,15 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
                 <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">$168.00</p>
-                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per year (save $71.88)</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">per year (save over $70)</p>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>All features included</span>
+                    <span>AI-powered supplement feedback</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>VIP priority support</span>
+                    <span>Intelligent biomarker analysis</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
