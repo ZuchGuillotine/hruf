@@ -103,7 +103,7 @@ export default function LandingPage() {
               }
             }}
           >
-            Start 28-Day Free Trial <ChevronRight className="ml-2 h-4 w-4" />
+            Start Tracking <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
 
@@ -117,27 +117,31 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold text-center text-[#1b4332] mb-12">Simple, Transparent Pricing</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
-            {/* Free Trial Card */}
+            {/* Free Tier Card */}
             <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
               <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl">Free Trial</CardTitle>
-                <CardDescription>Try all features risk-free</CardDescription>
+                <CardTitle className="text-2xl">Basic Tracking</CardTitle>
+                <CardDescription>Always free, forever</CardDescription>
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
-                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">28 Days</p>
+                <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">Free</p>
                 <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">No credit card required</p>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Full access to all features</span>
+                    <span>Track supplement dosages and timing</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>AI-powered supplement analysis</span>
+                    <span>Log qualitative feedback</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Health tracking dashboard</span>
+                    <span>Smart reminder notifications</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Better than spreadsheets & calendars</span>
                   </li>
                 </ul>
               </CardContent>
