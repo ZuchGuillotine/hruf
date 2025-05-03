@@ -169,16 +169,16 @@ export default function LandingPage() {
                   <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$7.99/mo</p>
                 </a>
                 <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline mt-2">
-                  <p className="text-xl sm:text-2xl font-bold text-[#1b4332]">$69/yr</p>
+                  <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$69/yr</p>
                 </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>AI-powered supplement feedback</span>
+                    <span>AI-powered supplement feedback (100 per month)</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Intelligent biomarker analysis</span>
+                    <span>Intelligent biomarker analysis (3 per year)</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
