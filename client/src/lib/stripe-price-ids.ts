@@ -20,7 +20,7 @@ export type TierInfo = {
 export const TIERS = {
   starter: {
     MONTHLY: {
-      id: 'price_1OpGHMAIJBVVerrJCXB9LK8z',
+      id: 'price_1RKZsdAIJBVVerrJhsQhpig2',
       price: 21.99,
       url: 'https://buy.stripe.com/6oEdTTeEQaWT76028b'
     },

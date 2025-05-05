@@ -253,7 +253,7 @@ export default function LandingPage() {
                             'Content-Type': 'application/json',
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJCXB9LK8z',
+                            priceId: 'price_1RKZsdAIJBVVerrJhsQhpig2',
                             successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
                             cancelUrl: `${window.location.origin}`
                           })

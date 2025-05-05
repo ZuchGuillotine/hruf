@@ -8,7 +8,7 @@
 export const STRIPE_PRICE_MAP: Record<string, string> = {
   // Starter tier pricing
    // Starter Monthly
-  'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',     
+  'starter-monthly': 'price_1RKZsdAIJBVVerrJhsQhpig2',     
   'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',      // Starter Yearly
   
   // Pro tier pricing
