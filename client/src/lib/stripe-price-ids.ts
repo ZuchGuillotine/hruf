@@ -1,8 +1,8 @@
 // Centralized configuration for Stripe price IDs
 export const STRIPE_PRICES = {
   // Monthly plans
-  MONTHLY_STARTER: 'prod_RtcuCvjOY9gHvm', // $7.99/month
-  MONTHLY_PRO: 'prod_RpdfGxB4L6Rut7', // $14.99/month
+  MONTHLY_STARTER: 'prod_SF40NCVtZWsX05', // $7.99/month
+  MONTHLY_PRO: 'prod_RtcuCvjOY9gHvm', // $14.99/month
   
   // Yearly plans (with discounts)
   YEARLY_STARTER: 'price_starter_yearly', // $69/year
