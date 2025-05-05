@@ -210,7 +210,7 @@ export default function LandingPage() {
                 <a href="https://buy.stripe.com/6oEdTTeEQaWT76028b" className="no-underline hover:no-underline">
                   <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$7.99/mo</p>
                 </a>
-                <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline mt-2">
+                <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline">
                   <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$69/yr</p>
                 </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
@@ -297,7 +297,7 @@ export default function LandingPage() {
                 <a href="https://buy.stripe.com/5kA5nn8gs7KH8a428e" className="no-underline hover:no-underline">
                   <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$14.99/mo</p>
                 </a>
-                <a href="https://buy.stripe.com/8wM8zzfIU6GD760bIP" className="no-underline hover:no-underline mt-2">
+                <a href="https://buy.stripe.com/8wM8zzfIU6GD760bIP" className="no-underline hover:no-underline">
                   <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$99/yr (save $80)</p>
                 </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
