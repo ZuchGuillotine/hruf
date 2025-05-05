@@ -1,274 +1,256 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useLocation } from 'wouter';
-import { ArrowRight, Check, Loader2 } from 'lucide-react';
-import { useUser } from '@/hooks/use-user';
-import { queryClient } from '@/lib/queryClient';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-// Type for sign up form data
-type SignupFormData = {
-  email: string;
-  username: string;
-  password: string;
-};
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, CheckCircle2 } from 'lucide-react';
+import Footer from '@/components/Footer';
+import Header from '@/components/Header';
 
-// This page is shown after successful Stripe checkout
+const signUpSchema = z.object({
+  username: z.string().min(3, {
+    message: 'Username must be at least 3 characters.',
+  }),
+  email: z.string().email({
+    message: 'Please enter a valid email address.',
+  }),
+  password: z.string().min(6, {
+    message: 'Password must be at least 6 characters.',
+  }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+});
+
+type FormValues = z.infer<typeof signUpSchema>;
+
 export default function PaymentSuccessPage() {
-  const [, setLocation] = useLocation();
-  const { user, isLoading, error, register: registerUser } = useUser();
-  const [processingStatus, setProcessingStatus] = useState<'loading' | 'success' | 'error' | 'need-signup'>('loading');
-  const [message, setMessage] = useState('Processing your subscription...');
-  const [signupError, setSignupError] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [location, setLocation] = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const { toast } = useToast();
   
-  // Form for creating account after payment (for guest users)
-  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormData>();
+  // Initialize form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
+  // Extract the session_id from URL on component mount
   useEffect(() => {
-    // Get session ID and purchase ID from URL if present
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    const purchaseId = urlParams.get('purchase_id');
+    const searchParams = new URLSearchParams(window.location.search);
+    const session = searchParams.get('session_id');
     
-    const verifyPayment = async () => {
-      try {
-        if (sessionId) {
-          // Check if we have a purchaseId (meaning this was a guest checkout)
-          // and the user is not logged in yet
-          if (purchaseId && !user) {
-            // This is a guest who has completed checkout and needs to create an account
-            setProcessingStatus('need-signup');
-            setMessage('Your payment was successful! Create an account to access your subscription.');
-            return;
-          }
-          
-          // For logged-in users, verify the subscription
-          if (user) {
-            // Call API to verify the payment
-            const response = await fetch(`/api/stripe/subscription-success?session_id=${sessionId}`, {
-              credentials: 'include'
-            });
-            
-            if (!response.ok) {
-              throw new Error('Payment verification failed');
-            }
-            
-            // Refresh user data to get updated subscription status
-            await queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-            
-            setProcessingStatus('success');
-            setMessage('Your subscription has been activated successfully!');
-          }
-        } else {
-          // If no session ID, just check if user has active subscription
-          if (user?.isPro || (user?.subscriptionTier && user?.subscriptionTier !== 'free')) {
-            setProcessingStatus('success');
-            setMessage('Your subscription is active!');
-          } else {
-            throw new Error('No session ID found');
-          }
-        }
-      } catch (error) {
-        console.error('Payment verification error:', error);
-        setProcessingStatus('error');
-        setMessage('There was an issue processing your payment. Please contact support if your subscription is not active.');
-      }
-    };
-
-    // Wait until user data is loaded before verifying payment
-    if (!isLoading) {
-      verifyPayment();
+    if (session) {
+      setSessionId(session);
     }
-  }, [isLoading, user]);
-  
-  // Handle form submission for account creation after payment
-  const onSubmit = async (data: SignupFormData) => {
-    try {
-      setIsRegistering(true);
-      setSignupError('');
-      
-      // Get the session ID from the URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('session_id');
-      const purchaseId = urlParams.get('purchase_id');
-      
-      if (!sessionId || !purchaseId) {
-        throw new Error('Missing session information');
-      }
-      
-      // Register the user
-      const response = await registerUser({
-        ...data,
-        // Pass the session ID so the backend can link this user to the subscription
-        stripeSessionId: sessionId,
-        purchaseIdentifier: purchaseId
+  }, []);
+
+  const onSubmit = async (values: FormValues) => {
+    if (!sessionId) {
+      toast({
+        title: 'Error',
+        description: 'Missing payment session ID. Please contact support.',
+        variant: 'destructive',
       });
-      
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/register-post-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          sessionId: sessionId,
+        }),
+      });
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(response.message || 'Registration failed');
+        throw new Error(data.message || 'Registration failed');
       }
+
+      toast({
+        title: 'Success!',
+        description: 'Your account has been created. Welcome to StackTracker!',
+      });
+
+      // Navigate to dashboard
+      setLocation('/dashboard');
       
-      // Success! Show the confirmation screen
-      setProcessingStatus('success');
-      setMessage('Your account has been created and linked to your subscription!');
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      setSignupError(error.message || 'Failed to create account. Please try again.');
+    } catch (error) {
+      toast({
+        title: 'Registration failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive',
+      });
     } finally {
-      setIsRegistering(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-green-50 to-white p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center border-b pb-8">
-          <CardTitle className="text-xl md:text-2xl text-green-800">
-            Payment Confirmation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-8 pb-6 px-6 flex flex-col items-center">
-          {processingStatus === 'loading' && (
-            <>
-              <Loader2 className="h-12 w-12 text-green-600 animate-spin mb-4" />
-              <p className="text-center text-gray-700">{message}</p>
-            </>
-          )}
-
-          {processingStatus === 'success' && (
-            <>
-              <div className="bg-green-100 p-3 rounded-full mb-4">
-                <Check className="h-10 w-10 text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-center mb-2">Thank You!</h2>
-              <p className="text-center text-gray-700 mb-6">{message}</p>
-              
-              <div className="w-full space-y-4">
-                <Button 
-                  className="w-full" 
-                  onClick={() => setLocation('/')}
-                >
-                  Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </>
-          )}
-
-          {processingStatus === 'error' && (
-            <>
-              <div className="bg-red-100 p-3 rounded-full mb-4">
-                <span className="h-10 w-10 text-red-600 flex items-center justify-center text-2xl">!</span>
-              </div>
-              <h2 className="text-xl font-bold text-center mb-2">Oops!</h2>
-              <p className="text-center text-gray-700 mb-6">{message}</p>
-              
-              <div className="w-full space-y-4">
-                <Button 
-                  className="w-full" 
-                  onClick={() => setLocation('/subscription')}
-                >
-                  Try Again
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => setLocation('/')}
-                >
-                  Go to Dashboard
-                </Button>
-              </div>
-            </>
-          )}
-
-          {processingStatus === 'need-signup' && (
-            <>
-              <div className="bg-green-100 p-3 rounded-full mb-4">
-                <Check className="h-10 w-10 text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-center mb-2">Payment Successful!</h2>
-              <p className="text-center text-gray-700 mb-6">
-                Create your account to access your subscription.
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      
+      <main className="flex-1 container max-w-6xl py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
+            <p className="text-muted-foreground mb-6">
+              Thank you for your purchase. Please create your account to get started.
+            </p>
+            
+            <div className="flex items-center gap-2 text-green-600 mb-8">
+              <CheckCircle2 className="h-6 w-6" />
+              <span className="font-medium">Payment confirmed</span>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Your Account</CardTitle>
+                <CardDescription>
+                  Set up your account details to access your subscription.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input placeholder="username" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="email@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="******" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="******" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating Account...
+                        </>
+                      ) : (
+                        'Create Account'
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="hidden md:block">
+            <div className="rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 p-8 h-full flex flex-col justify-center">
+              <h2 className="text-2xl font-semibold mb-4">Welcome to StackTracker</h2>
+              <p className="mb-6">
+                Thank you for choosing StackTracker! We're excited to help you track and optimize your health supplements.
               </p>
-              <input type="hidden" {...register("subscriptionId")} value={searchParams.get('session_id') || ''} />
-              <input type="hidden" {...register("purchaseIdentifier")} value={searchParams.get('purchase_id') || ''} />
               
-              {signupError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm w-full">
-                  {signupError}
-                </div>
-              )}
+              <h3 className="text-lg font-medium mb-2">What's included in your subscription:</h3>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <span>Personalized supplement tracking</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <span>AI-powered health insights</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <span>Detailed supplement analytics</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <span>Lab results integration</span>
+                </li>
+              </ul>
               
-              <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...register("email", { required: "Email is required" })}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs">{errors.email.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="username" className="text-sm font-medium">
-                    Username
-                  </label>
-                  <Input
-                    id="username"
-                    type="text"
-                    {...register("username", { required: "Username is required" })}
-                    placeholder="Choose a username"
-                  />
-                  {errors.username && (
-                    <p className="text-red-500 text-xs">{errors.username.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </label>
-                  <Input
-                    id="password"
-                    type="password"
-                    {...register("password", { 
-                      required: "Password is required",
-                      minLength: { value: 6, message: "Password must be at least 6 characters" }
-                    })}
-                    placeholder="Create a password"
-                  />
-                  {errors.password && (
-                    <p className="text-red-500 text-xs">{errors.password.message}</p>
-                  )}
-                </div>
-                
-                <Button
-                  type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  disabled={isRegistering}
-                >
-                  {isRegistering ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    "Complete Signup"
-                  )}
-                </Button>
-              </form>
-            </>
-          )}
-        </CardContent>
-      </Card>
+              <p className="text-sm text-muted-foreground">
+                After creating your account, you'll have immediate access to all premium features.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <Footer />
     </div>
   );
 }
