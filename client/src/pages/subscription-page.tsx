@@ -4,7 +4,7 @@ import { CalendarIcon, CheckCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
-import PaymentOptionsModal from './PaymentOptionsModal'; // Assuming this component exists
+import { PaymentOptionsModal } from '@/components/PaymentOptionsModal';
 
 export default function SubscriptionPage() {
   const { user } = useUser();
