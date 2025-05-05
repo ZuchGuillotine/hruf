@@ -54,15 +54,6 @@ args = "npm run dev"
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "Test Registration Flow"
-author = 7339738
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev:server & sleep 5 && npx tsx scripts/test_post_payment.ts"
-
-[[workflows.workflow]]
 name = "Run"
 author = 7339738
 mode = "sequential"
