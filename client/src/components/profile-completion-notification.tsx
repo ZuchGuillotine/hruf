@@ -1,83 +1,55 @@
-import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
-import { useProfileCompletion } from "@/hooks/use-profile-completion";
-import { useQuery } from "@tanstack/react-query";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@/hooks/use-user';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 
-export function ProfileCompletionNotification() {
-  const [dismissed, setDismissed] = useState(false);
-  const [showDialog, setShowDialog] = useState(false);
-  const { completionPercentage, isLoading } = useProfileCompletion();
+export default function ProfileCompletionNotification() {
+  const { user } = useUser();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [dismissed, setDismissed] = useState(false);
 
-  // Use an effect to delay showing the notification until we're sure all data is loaded
-  const { data: healthStats } = useQuery(['health-stats']);
-  const { data: supplements } = useQuery(['supplements-count']);
-  const { data: labResults } = useQuery(['labs-count']);
+  const { data: profileCompletion } = useQuery({
+    queryKey: ['profileCompletion', user?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/profile/completion', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile completion status');
+      }
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
 
-  useEffect(() => {
-    const shouldShowDialog = !isLoading && 
-                           !dismissed && 
-                           completionPercentage < 100 &&
-                           healthStats && 
-                           supplements !== undefined && 
-                           labResults !== undefined;
-
-    if (shouldShowDialog) {
-      const timer = setTimeout(() => {
-        setShowDialog(true);
-        console.log('Profile completion state:', {
-          healthStats,
-          supplements,
-          labResults,
-          completionPercentage
-        });
-      }, 500);
-
-      return () => clearTimeout(timer);
-    } else {
-      setShowDialog(false);
-    }
-  }, [isLoading, completionPercentage, dismissed, healthStats, supplements, labResults]);
-
-  // Don't render anything during loading or if the profile is complete or dismissed
-  if (isLoading || completionPercentage === 100 || dismissed || !showDialog) {
+  if (!user || dismissed || !profileCompletion?.needsCompletion) {
     return null;
   }
 
   return (
-    <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-      <AlertDialogContent className="bg-cyan-50 border-cyan-200">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-cyan-900">Complete Your Profile</AlertDialogTitle>
-          <AlertDialogDescription className="text-cyan-800">
-            Take a moment to complete your profile to get the most out of Stack Tracker. You're currently at {completionPercentage}% complete. Adding your lab results helps us provide more personalized insights.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel 
-            onClick={() => setDismissed(true)}
-            className="text-cyan-700 hover:text-cyan-800 hover:bg-cyan-100"
-          >
-            Skip for now
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => setLocation("/profile")}
-            className="bg-teal-600 hover:bg-teal-700 text-white"
-          >
-            Complete Profile
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Alert className="mb-4">
+      <AlertTitle>Complete Your Profile</AlertTitle>
+      <AlertDescription className="mt-2">
+        <p>Please complete your profile to get personalized recommendations.</p>
+        <Button 
+          className="mt-2"
+          onClick={() => setLocation('/profile')}
+          variant="outline"
+        >
+          Complete Profile
+        </Button>
+        <Button
+          className="mt-2 ml-2"
+          onClick={() => setDismissed(true)}
+          variant="ghost"
+        >
+          Dismiss
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 }
