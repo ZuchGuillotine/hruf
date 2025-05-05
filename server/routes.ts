@@ -48,6 +48,12 @@ export function registerRoutes(app: Express): Server {
 
   // Ensure JSON parsing middleware is applied globally
   app.use(express.json());
+  
+  // Mount Stripe routes
+  app.use('/api/stripe', stripeRouter);
+  
+  // Mount post-payment registration routes
+  app.use('/api/post-payment', postPaymentRouter);
 
   // Middleware to check authentication
   const requireAuth = (req: Request, res: Response, next: Function) => {
@@ -66,10 +72,8 @@ export function registerRoutes(app: Express): Server {
   };
 
   // Mount routes
-  app.use('/api/stripe', stripeRouter);
   app.use('/api/supplements', supplementsRouter);
   app.use('/api/labs', requireAuth, labsRouter);
-  app.use('/api', postPaymentRouter);
   
   // Legacy post-payment registration route
   app.use('/api', express.Router().post('/register-post-payment', async (req, res) => {
