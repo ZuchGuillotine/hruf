@@ -51,7 +51,7 @@ declare global {
       email: string;
       name?: string | null;
       phoneNumber?: string | null;
-      isPro?: boolean | null;
+      subscriptionTier?: string;
       isAdmin?: boolean | null;
       trialEndsAt?: Date | null;
     }
@@ -389,7 +389,6 @@ export function setupAuth(app: Express) {
             
             // Extract subscription information
             userValues.subscriptionTier = 'pro'; // Depends on your pricing, adjust as needed
-            userValues.isPro = true;
             
             // If subscription was created, store subscription and customer IDs
             if (session.subscription) {
@@ -472,7 +471,7 @@ export function setupAuth(app: Express) {
             email: newUser.email,
             name: newUser.name,
             phoneNumber: newUser.phoneNumber,
-            isPro: newUser.isPro,
+            subscriptionTier: newUser.subscriptionTier,
           },
         });
       });
@@ -520,7 +519,7 @@ export function setupAuth(app: Express) {
             email: user.email,
             name: user.name,
             phoneNumber: user.phoneNumber,
-            isPro: user.isPro,
+            subscriptionTier: user.subscriptionTier,
           },
           redirectUrl: "/" // Add explicit redirect URL
         });
