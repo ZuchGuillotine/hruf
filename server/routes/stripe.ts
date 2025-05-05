@@ -1,10 +1,50 @@
 import express from 'express';
+import Stripe from 'stripe';
 import stripeService from '../services/stripe';
-import { db } from '@db';
-import { users } from '@db/schema';
-import { eq } from 'drizzle-orm';
+import { PRODUCTS } from '../../client/src/lib/stripe-price-ids';
 
 const router = express.Router();
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { 
+  apiVersion: '2023-10-16' 
+});
+
+// Helper function to validate environment
+function validateStripeEnvironment() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+  }
+}
+
+/**
+ * Get checkout session
+ * GET /api/stripe/checkout-session/:sessionId
+ */
+router.get('/checkout-session/:sessionId', async (req, res) => {
+  try {
+    validateStripeEnvironment();
+    
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+    
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    return res.json(session);
+  } catch (error: any) {
+    console.error('Error retrieving checkout session:', error);
+    return res.status(500).json({ 
+      error: 'Failed to retrieve checkout session',
+      message: error.message
+    });
+  }
+});
 
 /**
  * Create a checkout session
@@ -12,93 +52,185 @@ const router = express.Router();
  */
 router.post('/create-checkout-session', async (req, res) => {
   try {
-    const { priceId, customerId, metadata = {} } = req.body;
-
-    if (!priceId) {
-      return res.status(400).json({ error: 'Price ID is required' });
+    validateStripeEnvironment();
+    
+    const { priceId, successUrl, cancelUrl, customerEmail } = req.body;
+    
+    if (!priceId || !successUrl || !cancelUrl) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-
-    // If user is authenticated, add their ID to metadata
-    if (req.isAuthenticated() && req.user) {
-      metadata.userId = req.user.id.toString();
-    }
-
-    // Create a checkout session
-    const session = await stripeService.createCheckoutSession(
+    
+    // Create checkout session
+    const session = await stripeService.createCheckoutSession({
       priceId,
-      `${req.protocol}://${req.get('host')}/payment-success`,
-      `${req.protocol}://${req.get('host')}/subscription`,
-      customerId,
-      metadata
-    );
-
-    // Return the checkout session URL
-    res.json({ url: session.url });
-  } catch (error) {
+      successUrl,
+      cancelUrl,
+      customerEmail,
+      metadata: {
+        priceId,
+        userAgent: req.headers['user-agent'] || '',
+        referrer: req.headers.referer || '',
+      }
+    });
+    
+    return res.json({ 
+      sessionId: session.id,
+      url: session.url
+    });
+  } catch (error: any) {
     console.error('Error creating checkout session:', error);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    return res.status(500).json({ 
+      error: 'Failed to create checkout session',
+      message: error.message
+    });
   }
 });
 
 /**
- * Get checkout session details
- * GET /api/stripe/checkout-session/:id
+ * Get subscription details
+ * GET /api/stripe/subscription/:subscriptionId
  */
-router.get('/checkout-session/:id', async (req, res) => {
+router.get('/subscription/:subscriptionId', async (req, res) => {
   try {
-    const { id } = req.params;
+    validateStripeEnvironment();
     
-    if (!id) {
-      return res.status(400).json({ error: 'Session ID is required' });
+    // Ensure user is authenticated
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
     
-    const session = await stripeService.getCheckoutSession(id);
-    res.json(session);
-  } catch (error) {
-    console.error('Error retrieving checkout session:', error);
-    res.status(500).json({ error: 'Failed to retrieve checkout session' });
+    const { subscriptionId } = req.params;
+    
+    if (!subscriptionId) {
+      return res.status(400).json({ error: 'Subscription ID is required' });
+    }
+    
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    return res.json(subscription);
+  } catch (error: any) {
+    console.error('Error retrieving subscription:', error);
+    return res.status(500).json({ 
+      error: 'Failed to retrieve subscription',
+      message: error.message
+    });
   }
 });
 
 /**
- * Cancel subscription
- * POST /api/stripe/cancel-subscription
+ * Get subscription details for current user
+ * GET /api/stripe/my-subscription
  */
-router.post('/cancel-subscription', async (req, res) => {
+router.get('/my-subscription', async (req, res) => {
   try {
+    validateStripeEnvironment();
+    
     // Ensure user is authenticated
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     
-    // Get the user's subscription ID
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, req.user.id))
-      .limit(1);
+    // Check if user has a subscription
+    const subscriptionId = req.user.subscriptionId;
     
-    if (!user || !user.subscriptionId) {
-      return res.status(400).json({ error: 'No active subscription found' });
+    if (!subscriptionId) {
+      return res.status(404).json({ error: 'No subscription found for user' });
     }
     
-    // Cancel the subscription
-    await stripeService.cancelSubscription(user.subscriptionId);
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
     
-    // Update user record
-    await db
-      .update(users)
-      .set({
-        subscriptionId: null,
-        subscriptionTier: 'free',
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, req.user.id));
+    return res.json(subscription);
+  } catch (error: any) {
+    console.error('Error retrieving user subscription:', error);
+    return res.status(500).json({ 
+      error: 'Failed to retrieve subscription',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Get available subscription plans
+ * GET /api/stripe/plans
+ */
+router.get('/plans', async (req, res) => {
+  try {
+    validateStripeEnvironment();
     
-    res.json({ success: true, message: 'Subscription canceled successfully' });
-  } catch (error) {
-    console.error('Error canceling subscription:', error);
-    res.status(500).json({ error: 'Failed to cancel subscription' });
+    // Return the predefined products/plans
+    return res.json({ products: PRODUCTS });
+  } catch (error: any) {
+    console.error('Error retrieving plans:', error);
+    return res.status(500).json({ 
+      error: 'Failed to retrieve plans',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Stripe webhook
+ * POST /api/stripe/webhook
+ */
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const signature = req.headers['stripe-signature'];
+    
+    if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
+      return res.status(400).json({ error: 'Webhook signature missing' });
+    }
+    
+    let event;
+    
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    
+    // Handle events
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('Checkout session completed:', session.id);
+        // Handle session completion (e.g., provision access)
+        break;
+        
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription event:', event.type, subscription.id);
+        // Update user subscription status
+        break;
+        
+      case 'customer.subscription.deleted':
+        const deletedSubscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription deleted:', deletedSubscription.id);
+        // Downgrade user to free tier
+        break;
+        
+      case 'invoice.payment_failed':
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log('Payment failed:', invoice.id);
+        // Notify user of payment failure
+        break;
+        
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+    
+    res.json({ received: true });
+  } catch (error: any) {
+    console.error('Error handling webhook:', error);
+    return res.status(500).json({ 
+      error: 'Webhook processing failed',
+      message: error.message
+    });
   }
 });
 
