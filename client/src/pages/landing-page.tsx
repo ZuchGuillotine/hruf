@@ -251,8 +251,8 @@ export default function LandingPage() {
                           },
                           body: JSON.stringify({ 
                             priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw',
-                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`
                           })
                         });
 
@@ -288,8 +288,8 @@ export default function LandingPage() {
                           },
                           body: JSON.stringify({ 
                             priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw', //Corrected price ID for yearly plan.  This was likely a typo in original.  A correct priceID would need to be determined.
-                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`
                           })
                         });
 
@@ -360,8 +360,8 @@ export default function LandingPage() {
                           },
                           body: JSON.stringify({ 
                             priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw',
-                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`
                           })
                         });
 
@@ -397,8 +397,8 @@ export default function LandingPage() {
                           },
                           body: JSON.stringify({ 
                             priceId: 'price_1OpGHMAIJBVVerrJwXY9T8Nw',
-                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`
                           })
                         });
 
