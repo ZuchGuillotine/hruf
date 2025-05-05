@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale, Moon, FileIcon, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "wouter";
-import { ProfileCompletionNotification } from "@/components/profile-completion-notification";
+import ProfileCompletionNotification from "@/components/profile-completion-notification";
 import { useUser } from "@/hooks/use-user";
 
 export default function Dashboard() {
