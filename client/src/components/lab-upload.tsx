@@ -38,13 +38,13 @@ export default function LabUpload({
   if (user?.subscriptionTier === 'free') {
     return (
       <Card className="p-6 text-center relative bg-muted/30">
-        <Lock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Lab Analysis Feature</h3>
-        <p className="text-muted-foreground mb-4">
+        <Lock className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Lab Analysis Feature</h3>
+        <p className="text-gray-700 mb-4">
           Want in-depth analysis of bloodwork or other biomarker tests? Upgrade to get access.
         </p>
         <Link to="/subscription-page">
-          <Button className="w-full">
+          <Button className="w-full bg-blue-600 hover:bg-blue-700">
             Upgrade Now
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
