@@ -1,13 +1,21 @@
 import express from 'express';
-import { stripeService } from '../services/stripe';
+import * as stripeService from '../services/stripe';
 import Stripe from 'stripe';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { log } from '../vite';
+
+// Check for Stripe API key
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing required Stripe secret: STRIPE_SECRET_KEY");
+}
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+});
 
 // Ensure JSON parsing middleware is applied
 router.use(express.json());

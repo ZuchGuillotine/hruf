@@ -1,5 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation, Redirect } from "wouter";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Card,
   CardContent,
@@ -8,265 +13,386 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useUser } from "@/hooks/use-user";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import Footer from "@/components/footer";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import LandingHeader from "@/components/landing-header";
-import BackgroundWords from "@/components/background-words";
-import { ValueProposition } from "@/components/ValueProposition";
-import { useLocation } from 'wouter';
 
-type FormData = {
-  email: string;
-  password: string;
-  username?: string;
-};
+// Form validation schemas
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  stripeSessionId: z.string().optional(),
+  purchaseIdentifier: z.string().optional(),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.has('login');
-  });
-  const [verificationSent, setVerificationSent] = useState(false);
-  const { login, register } = useUser();
+  const [activeTab, setActiveTab] = useState("login");
+  const [, params] = useLocation();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const { handleSubmit, register: registerField, formState: { isSubmitting } } = useForm<FormData>();
+  const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const [stripeData, setStripeData] = useState<{
+    sessionId?: string;
+    purchaseId?: string;
+  }>({});
 
-  // Check URL parameters for Google OAuth callback
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('oauth') === 'google' && params.get('success') === 'true') {
-      setLocation('/subscription');
-    }
-  }, [setLocation]);
-
-  const handleGoogleSignup = () => {
-    window.location.href = '/auth/google?signup=true';
-  };
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      if (isLogin) {
-        console.log('Starting login process');
-        const loginResponse = await login(data);
-        console.log('Login attempt response:', loginResponse);
-        
-        if (loginResponse.ok) {
-          if ('redirectUrl' in loginResponse && loginResponse.redirectUrl) {
-            console.log('Redirecting to:', loginResponse.redirectUrl);
-            window.location.href = loginResponse.redirectUrl;
-          } else {
-            console.log('No redirect URL provided, redirecting to dashboard');
-            window.location.href = '/';
-          }
-        } else {
-          throw new Error(loginResponse.message || 'Login failed');
-        }
-      } else {
-        console.log('Starting registration process');
-        const response = await register(data);
-
-        if (response.ok && 'requiresVerification' in response && response.requiresVerification) {
-          setVerificationSent(true);
-        } else {
-          console.log('Registration successful, redirecting to subscription page');
-          window.location.href = '/subscription?newUser=true';
-        }
-      }
-    } catch (error: any) {
-      console.error('Authentication error:', error);
-
-      let errorMessage = isLogin
-        ? "Login failed. Please check your credentials."
-        : "Registration failed. Please try again.";
-
-      if (error.response?.data) {
-        errorMessage = error.response.data.message || errorMessage;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      if (error.code === 'TRIAL_EXPIRED') {
-        setLocation('/subscription');
-      } else {
-        toast({
-          variant: "destructive",
-          title: isLogin ? "Login Error" : "Registration Error",
-          description: error.message || errorMessage,
-          duration: 5000,
-        });
-      }
-    }
-  };
-
-  if (verificationSent) {
-    return (
-      <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
-        <LandingHeader />
-        <div className="flex-grow flex items-center justify-center px-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Check Your Email</CardTitle>
-              <CardDescription>
-                We've sent a verification link to your email address. Please click the link to verify your account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert>
-                <AlertDescription>
-                  The verification link will expire in 24 hours. If you don't see the email in your inbox, please check your spam folder.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-            <CardFooter>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setVerificationSent(false);
-                  setIsLogin(true);
-                }}
-              >
-                Back to Login
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-        <Footer />
-      </div>
-    );
+  // If user is already logged in, redirect to home
+  if (user) {
+    return <Redirect to="/" />;
   }
 
+  // Parse URL search params to check for Stripe session data
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const sessionId = searchParams.get("session_id");
+    const purchaseId = searchParams.get("purchase_id");
+    const plan = searchParams.get("plan");
+    
+    if (sessionId) {
+      setStripeData({
+        sessionId,
+        purchaseId: purchaseId || undefined
+      });
+      
+      // If we have a session ID, automatically switch to register tab
+      setActiveTab("register");
+      
+      toast({
+        title: "Payment Successful",
+        description: "Please complete your registration to activate your subscription.",
+      });
+    } else if (plan === "free") {
+      setActiveTab("register");
+    }
+  }, []);
+
+  // Login form
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  // Register form
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      stripeSessionId: stripeData.sessionId,
+      purchaseIdentifier: stripeData.purchaseId,
+    },
+  });
+
+  // Update register form when stripe data changes
+  useEffect(() => {
+    registerForm.setValue("stripeSessionId", stripeData.sessionId);
+    registerForm.setValue("purchaseIdentifier", stripeData.purchaseId);
+  }, [stripeData, registerForm]);
+
+  const onLoginSubmit = (data: LoginFormValues) => {
+    loginMutation.mutate(data);
+  };
+
+  const onRegisterSubmit = (data: RegisterFormValues) => {
+    registerMutation.mutate(data);
+  };
+
+  const isSubmitting = loginMutation.isPending || registerMutation.isPending || isLoading;
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8f3e8] relative">
-      <LandingHeader />
-      <BackgroundWords className="absolute inset-0 z-0" />
-
-      <div className="flex-grow container mx-auto px-4 py-8 relative z-50 flex flex-col items-center">
-        <Card className="mb-12 shadow-lg relative z-50 bg-white/95 backdrop-blur-sm max-w-3xl w-full">
-          <CardContent className="p-8 text-center">
-            <h1 className="text-4xl font-bold text-[#1b4332] mb-4">
-              Optimize Your Supplement Stack
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="grid w-full max-w-6xl gap-8 md:grid-cols-2">
+        <div className="flex flex-col justify-center space-y-6">
+          <div className="space-y-2 text-center md:text-left">
+            <h1 className="text-3xl font-bold tracking-tight">
+              {activeTab === "login" ? "Welcome Back" : "Join StackTracker"}
             </h1>
-            <p className="text-xl text-gray-600">
-              Track, analyze, and optimize your supplement regimen with AI-powered insights
+            <p className="text-muted-foreground">
+              {activeTab === "login"
+                ? "Enter your credentials to access your account"
+                : "Create an account to start tracking your health journey"}
             </p>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="flex-grow flex flex-col lg:grid lg:grid-cols-2 lg:gap-12 items-start">
-          {!isLogin && (
-            <div className="mb-8 lg:mb-0">
-              <ValueProposition />
-            </div>
-          )}
+          <Card className="border-muted/30">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+              </TabsList>
 
-          <div className={`flex justify-center w-full ${isLogin ? 'col-span-2 lg:mx-auto' : ''}`}>
-            <Card className="auth-card w-[90%] max-w-[380px] mx-auto shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <CardTitle>{isLogin ? "Login" : "Start for Free"}</CardTitle>
-                <CardDescription>
-                  {isLogin
-                    ? "Sign in to your account using your email or username"
-                    : "Join StackTracker to improve your supplementation protocol"}
-                </CardDescription>
-              </CardHeader>
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <CardContent className="space-y-3">
-                  {!isLogin && (
-                    <div className="space-y-2">
-                      <label htmlFor="username" className="text-sm font-medium">
-                        Username
-                      </label>
-                      <Input
-                        id="username"
-                        type="text"
-                        {...registerField("username")}
-                        required={!isLogin}
+              <TabsContent value="login">
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)}>
+                    <CardContent className="space-y-4 pt-5">
+                      <FormField
+                        control={loginForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter your username"
+                                disabled={isSubmitting}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium">
-                      {isLogin ? "Email or Username" : "Email"}
-                    </label>
-                    <Input
-                      id="email"
-                      type={isLogin ? "text" : "email"}
-                      {...registerField("email")}
-                      placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="text-sm font-medium">
-                      Password
-                    </label>
-                    <Input
-                      id="password"
-                      type="password"
-                      {...registerField("password")}
-                    />
-                  </div>
 
-                  {/* Google OAuth separator and button temporarily disabled */}
-                  {/* 
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <Separator className="w-full" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
+                      <FormField
+                        control={loginForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Enter your password"
+                                disabled={isSubmitting}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleGoogleSignup}
-                  >
-                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                      <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                    <CardFooter className="flex-col space-y-4">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center space-x-2">
+                            <span className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" />
+                            <span>Logging in...</span>
+                          </span>
+                        ) : (
+                          "Login"
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Form>
+              </TabsContent>
+
+              <TabsContent value="register">
+                <Form {...registerForm}>
+                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
+                    <CardContent className="space-y-4 pt-5">
+                      {stripeData.sessionId && (
+                        <div className="bg-muted/50 p-3 rounded-md mb-3">
+                          <p className="text-sm text-muted-foreground">
+                            Your payment has been confirmed. Complete registration to activate your subscription.
+                          </p>
+                        </div>
+                      )}
+
+                      <FormField
+                        control={registerForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Choose a username"
+                                disabled={isSubmitting}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={registerForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="Enter your email"
+                                disabled={isSubmitting}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={registerForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder="Create a password"
+                                disabled={isSubmitting}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+
+                    <CardFooter className="flex-col space-y-4">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center space-x-2">
+                            <span className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" />
+                            <span>Creating account...</span>
+                          </span>
+                        ) : (
+                          "Create Account"
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Form>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+
+        <div className="hidden md:flex md:flex-col md:items-center md:justify-center">
+          <div className="space-y-6 max-w-md">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight">
+                Track your health journey with StackTracker
+              </h2>
+              <p className="text-muted-foreground">
+                All your health data in one place - supplements, lab results, daily tracking, and AI-powered insights.
+              </p>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <svg
+                      className="h-4 w-4 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
-                    Continue with Google
-                  </Button>
-                  */}
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-4">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isLogin ? "Sign In" : "Sign Up"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => setIsLogin(!isLogin)}
-                  >
-                    {isLogin
-                      ? "Don't have an account? Sign up"
-                      : "Already have an account? Sign in"}
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-medium leading-tight">
+                      Track supplements and medications
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Never miss a dose with our organized tracking system
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <svg
+                      className="h-4 w-4 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-medium leading-tight">
+                      AI-powered health insights
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Get personalized recommendations and identify patterns
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <svg
+                      className="h-4 w-4 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-medium leading-tight">
+                      Upload and track lab results
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Monitor your biomarkers and track progress over time
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <Footer className="relative z-50" />
     </div>
   );
 }
