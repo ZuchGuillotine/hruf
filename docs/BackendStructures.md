@@ -180,6 +180,30 @@
     - Powers relevant context retrieval for query interface
     - Improves response quality with targeted context
 
+### Stripe Integration and Payment Processing
+- Payment processing structure:
+  - Centralized price/product mapping in stripe-price-ids.ts
+  - Stripe service singleton for consistent checkout handling
+  - Post-payment account completion flow
+  - Session-preserved authentication during checkout
+- Core components:
+  - StripeService class handling:
+    - Checkout session creation/retrieval
+    - Customer management
+    - Subscription updates
+    - Product/tier mapping
+  - Middleware:
+    - stripeAuthMiddleware for maintaining auth during redirects
+    - Handles session restoration after payment
+  - Routes:
+    - /api/stripe/create-checkout-session
+    - /api/stripe/checkout-session/:sessionId
+    - /api/stripe/update-subscription
+- Database schema additions:
+  - stripe_customer_id (TEXT)
+  - subscription_id (TEXT)
+  - subscription_tier (TEXT)
+
 ### Subscription Tiers and Usage Tracking System
 - Comprehensive tier structure:
   - Free: Basic supplement tracking
