@@ -53,18 +53,24 @@ export default function HealthStatsPage() {
     enabled: !!user,
   });
 
-  const form = useForm<HealthStatsFormData>({
-    defaultValues: {
-      weight: healthStats?.weight,
-      height: healthStats?.height,
-      gender: healthStats?.gender,
-      dateOfBirth: healthStats?.dateOfBirth,
-      sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
-      sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
-      profilePhotoUrl: healthStats?.profilePhotoUrl,
-      allergies: healthStats?.allergies || '',
-    },
-  });
+  const form = useForm<HealthStatsFormData>();
+
+  // Update form when health stats load
+  useEffect(() => {
+    if (healthStats) {
+      form.reset({
+        weight: healthStats.weight,
+        height: healthStats.height,
+        gender: healthStats.gender,
+        ethnicity: healthStats.ethnicity,
+        dateOfBirth: healthStats.dateOfBirth,
+        sleepHours: healthStats.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+        sleepMinutes: healthStats.averageSleep ? healthStats.averageSleep % 60 : undefined,
+        profilePhotoUrl: healthStats.profilePhotoUrl,
+        allergies: healthStats.allergies || '',
+      });
+    }
+  }, [healthStats, form.reset]);
 
   const mutation = useMutation({
     mutationFn: updateHealthStats,

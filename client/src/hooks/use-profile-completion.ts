@@ -20,7 +20,8 @@ export function useProfileCompletion() {
   const { data: supplementCount = 0 } = useQuery<number>({
     queryKey: ["/api/supplements/count"],
     enabled: !!user,
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 0, // Don't cache this query
+    retry: 2,
   });
 
   const { data: labResults = { count: 0 } } = useQuery<{count: number}>({
