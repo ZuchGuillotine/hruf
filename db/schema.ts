@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, numeric, vector } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
+import { z } from 'zod';
 
 // User account management and authentication
 export const users = pgTable("users", {
@@ -128,10 +129,11 @@ export const queryChatLogs = pgTable("query_chat_logs", {
 
 
 // Zod schemas for type-safe database operations
-export const insertUserSchema = createInsertSchema(users, {
-  // Add optional fields for Stripe integration
-  stripeSessionId: z => z.string().optional(),
-  purchaseIdentifier: z => z.string().optional(),
+
+export const insertUserSchema = createInsertSchema(users).extend({
+  // Add optional fields for Stripe integration that aren't in the database schema
+  stripeSessionId: z.string().optional(),
+  purchaseIdentifier: z.string().optional(),
 });
 export const selectUserSchema = createSelectSchema(users);
 export const insertHealthStatsSchema = createInsertSchema(healthStats);
