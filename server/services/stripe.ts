@@ -131,7 +131,7 @@ export const stripeService = {
     }
 
     await db.update(users)
-      .set({ subscriptionStatus: status })
+      .set({ subscriptionTier: status })
       .where(eq(users.id, userId));
   },
 
@@ -144,14 +144,14 @@ export const stripeService = {
     if (!user) return false;
 
     // If user has active subscription, they're not in trial
-    if (user.subscriptionStatus === 'pro') return false;
+    if (user.subscriptionTier === 'pro') return false;
 
     // Check if trial has expired
     if (user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
       // Update user to free status
       await db.update(users)
         .set({ 
-          subscriptionStatus: 'free',
+          subscriptionTier: 'free',
           trialEndsAt: null 
         })
         .where(eq(users.id, userId));

@@ -302,13 +302,28 @@ export default function LandingPage() {
               <CardFooter className="flex gap-2">
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => {
-                    // Redirect to signup page with tier indicator
-                    const signupElement = document.getElementById('free-trial-signup');
-                    if (signupElement) {
-                      signupElement.scrollIntoView({ behavior: 'smooth' });
-                      // Store selected plan for after signup
-                      sessionStorage.setItem('selectedPlan', 'pro-monthly');
+                  onClick={async () => {
+                    // Direct to Stripe checkout for Pro Monthly
+                    try {
+                      const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
+                      const priceId = getPriceIdByPlan('pro-monthly');
+                      
+                      const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ priceId }),
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
+                      }
+                      
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error) {
+                      console.error('Error creating checkout:', error);
                     }
                   }}
                 >
@@ -316,13 +331,28 @@ export default function LandingPage() {
                 </Button>
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => {
-                    // Redirect to signup page with tier indicator
-                    const signupElement = document.getElementById('free-trial-signup');
-                    if (signupElement) {
-                      signupElement.scrollIntoView({ behavior: 'smooth' });
-                      // Store selected plan for after signup
-                      sessionStorage.setItem('selectedPlan', 'pro-yearly');
+                  onClick={async () => {
+                    // Direct to Stripe checkout for Pro Yearly
+                    try {
+                      const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
+                      const priceId = getPriceIdByPlan('pro-yearly');
+                      
+                      const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ priceId }),
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
+                      }
+                      
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error) {
+                      console.error('Error creating checkout:', error);
                     }
                   }}
                 >

@@ -177,8 +177,7 @@ router.post('/start-free-trial', async (req, res) => {
       .update(users)
       .set({ 
         trialEndsAt: trialEndDate,
-        subscriptionTier: 'free',
-        subscriptionStatus: 'trial',
+        subscriptionTier: 'trial',
         isPro: false,
       })
       .where(eq(users.id, userId));
