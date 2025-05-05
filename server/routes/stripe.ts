@@ -221,16 +221,8 @@ router.post('/create-checkout-session-guest', async (req, res) => {
       return res.status(400).json({ error: 'Price ID is required' });
     }
 
-    // Map product IDs to their respective Stripe price IDs
-    const priceIdMap: Record<string, string> = {
-      'prod_RtcuCvjOY9gHvm': 'price_1QzpeMAIJBVVerrJ12ZYExkV', // Monthly no trial 
-      'price_starter_yearly': 'price_1QzpeMAIJBVVerrJ12ZYFxkV', // Replace with actual yearly Starter price ID
-      'prod_RpdfGxB4L6Rut7': 'price_1QvyNlAIJBVVerrJPOw4EIMa', // Pro monthly
-      'price_pro_yearly': 'price_1QvyNlAIJBVVerrJPOw5FIMa', // Replace with actual yearly Pro price ID
-    };
-
-    // Use the provided product ID directly or map it if needed
-    let stripePriceId = priceIdMap[priceId] || priceId;
+    // Use centralized price mapping from lib/stripe-price-ids.ts
+    let stripePriceId = STRIPE_PRICE_MAP[priceId] || priceId;
 
     // Using Stripe instance defined at the top of the file
     const baseUrl = process.env.NODE_ENV === 'production' 
