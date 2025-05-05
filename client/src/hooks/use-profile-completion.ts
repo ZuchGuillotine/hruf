@@ -17,6 +17,23 @@ export function useProfileCompletion() {
     enabled: !!user,
   });
 
+  const { data: supplementCount = 0 } = useQuery<number>({
+    queryKey: ["/api/supplements/count"],
+    enabled: !!user,
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  const { data: labResults = { count: 0 } } = useQuery<{count: number}>({
+    queryKey: ["labs-count"],
+    queryFn: async () => {
+      const response = await fetch('/api/labs');
+      const data = await response.json();
+      return { count: data.length };
+    },
+    enabled: !!user,
+    staleTime: 300000,
+  });
+
   const steps: ProfileStep[] = [
     {
       id: "basic-info",
@@ -40,26 +57,13 @@ export function useProfileCompletion() {
       id: "supplement-logs",
       label: "Log Your First Supplements",
       description: "Log at least one supplement",
-      completed: useQuery<number>({
-        queryKey: ["/api/supplements/count"],
-        enabled: !!user,
-        staleTime: 300000, // Cache for 5 minutes
-      }).data > 0,
+      completed: supplementCount > 0,
     },
     {
       id: "lab-results", 
       label: "Upload Lab Results",
       description: "Upload your first blood test or lab results",
-      completed: useQuery<{count: number}>({
-        queryKey: ["labs-count"],
-        queryFn: async () => {
-          const response = await fetch('/api/labs');
-          const data = await response.json();
-          return { count: data.length };
-        },
-        enabled: !!user,
-        staleTime: 300000,
-      }).data?.count > 0 || false,
+      completed: labResults.count > 0,
     },
   ];
 
