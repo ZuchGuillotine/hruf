@@ -21,7 +21,8 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+// Using ES modules syntax for direct execution
+if (import.meta.url === import.meta.resolve('./0016_add_ai_interactions_count.ts')) {
   main()
     .then(() => {
       console.log('Migration completed successfully');
