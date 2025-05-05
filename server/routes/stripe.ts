@@ -69,8 +69,8 @@ router.post('/create-checkout-session', async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}&setup_complete=true`,
-      cancel_url: `${baseUrl}/profile`,
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/`,
       client_reference_id: userId.toString(),
       allow_promotion_codes: true,
       billing_address_collection: 'required',
@@ -209,6 +209,87 @@ router.post('/start-free-trial', async (req, res) => {
     
     res.status(500).json({ 
       error: 'Failed to start free trial',
+      message: error.message 
+    });
+  }
+});
+
+// Guest checkout endpoint - no authentication required
+router.post('/create-checkout-session-guest', async (req, res) => {
+  try {
+    console.log('Creating guest checkout session:', {
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+
+    const { priceId } = req.body;
+
+    if (!priceId) {
+      console.log('Missing priceId in request');
+      return res.status(400).json({ error: 'Price ID is required' });
+    }
+
+    // Map product IDs to their respective Stripe price IDs
+    const priceIdMap: Record<string, string> = {
+      'prod_RtcuCvjOY9gHvm': 'price_1QzpeMAIJBVVerrJ12ZYExkV', // Monthly no trial 
+      'price_starter_yearly': 'price_1QzpeMAIJBVVerrJ12ZYFxkV', // Replace with actual yearly Starter price ID
+      'prod_RpdfGxB4L6Rut7': 'price_1QvyNlAIJBVVerrJPOw4EIMa', // Pro monthly
+      'price_pro_yearly': 'price_1QvyNlAIJBVVerrJPOw5FIMa', // Replace with actual yearly Pro price ID
+    };
+
+    // Use the provided product ID directly or map it if needed
+    let stripePriceId = priceIdMap[priceId] || priceId;
+
+    // Using Stripe instance defined at the top of the file
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+      : `${req.protocol}://${req.get('host')}`;
+
+    console.log('Creating guest checkout session:', {
+      priceId: stripePriceId,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Generate a unique session identifier for this purchase
+    const purchaseIdentifier = crypto.randomBytes(16).toString('hex');
+    
+    // Create Stripe checkout session for a guest (no authentication)
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: stripePriceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}&purchase_id=${purchaseIdentifier}`,
+      cancel_url: `${baseUrl}/`,
+      metadata: {
+        purchaseIdentifier
+      },
+      allow_promotion_codes: true,
+      billing_address_collection: 'required',
+      // No customer_email since this is for guests
+    });
+
+    console.log('Guest checkout session created:', {
+      sessionId: session.id,
+      purchaseIdentifier,
+      url: session.url,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({ url: session.url });
+  } catch (error: any) {
+    console.error('Error creating guest checkout session:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(500).json({ 
+      error: 'Failed to create checkout session',
       message: error.message 
     });
   }
