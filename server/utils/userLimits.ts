@@ -20,7 +20,7 @@ interface LimitStatus {
   /**
    * Whether the user is on a paid subscription (not on trial)
    */
-  isPro: boolean;
+  isPaidTier: boolean;
   
   /**
    * Whether the user is on a free trial
@@ -41,7 +41,6 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     // First, check if the user is on a paid subscription
     const userResult = await db
       .select({
-        isPro: users.isPro,
         subscriptionTier: users.subscriptionTier,
         trialEndsAt: users.trialEndsAt
       })
@@ -55,28 +54,28 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
       return {
         hasReachedLimit: false,
         currentCount: 0,
-        isPro: false,
+        isPaidTier: false,
         isOnTrial: true,
       };
     }
 
-    const { isPro, subscriptionTier, trialEndsAt } = userResult[0];
+    const { subscriptionTier, trialEndsAt } = userResult[0];
     
-    // Ensure isPro is a boolean
-    const isProSubscriber = !!isPro;
+    // Check if user is on a paid tier (pro, premium, etc.)
+    const isPaidTier = subscriptionTier === 'pro' || subscriptionTier === 'premium';
     
     // Determine if the user is on a trial based on subscription tier and trial end date
     const isOnTrial = 
-      !isProSubscriber && 
+      !isPaidTier && 
       (subscriptionTier === 'trial' || 
        (trialEndsAt && new Date() < new Date(trialEndsAt)));
 
     // If the user is on a paid subscription, they have no limit
-    if (isProSubscriber) {
+    if (isPaidTier) {
       return {
         hasReachedLimit: false,
         currentCount: 0,
-        isPro: true,
+        isPaidTier: true,
         isOnTrial: false,
       };
     }
@@ -120,7 +119,7 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     return {
       hasReachedLimit,
       currentCount: totalCount,
-      isPro: !!isPro,
+      isPaidTier,
       isOnTrial: !!isOnTrial,
     };
   } catch (error) {
@@ -134,7 +133,7 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     return {
       hasReachedLimit: false,
       currentCount: 0,
-      isPro: false,
+      isPaidTier: false,
       isOnTrial: true,
     };
   }

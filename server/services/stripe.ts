@@ -104,7 +104,6 @@ export const stripeService = {
       .set({ 
         subscriptionId: subscription.id,
         subscriptionTier: subscriptionTier,
-        isPro,
         trialEndsAt,
       })
       .where(eq(users.id, userId));
