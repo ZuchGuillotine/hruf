@@ -4,14 +4,21 @@ import { sql } from "drizzle-orm";
 
 // User account management and authentication
 export const users = pgTable("users", {
+  // Subscription-related fields
   subscriptionId: text("subscription_id"),
   subscriptionTier: text("subscription_tier").default('free').notNull(),
+  subscriptionStatus: text("subscription_status").default('free'),
+  isPro: boolean("is_pro").default(false),
+  trialEndsAt: timestamp("trial_ends_at"),
+  
+  // Usage limits and counters
   aiInteractionsCount: integer("ai_interactions_count").default(0),
   aiInteractionsReset: timestamp("ai_interactions_reset"),
   labUploadsCount: integer("lab_uploads_count").default(0),
   labUploadsReset: timestamp("lab_uploads_reset"),
-  aiInteractionsCount: integer("ai_interactions_count").default(0),
   lastRewardedAt: timestamp("last_rewarded_at"),
+  
+  // Core user fields
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),
   password: text("password").notNull(),
@@ -19,9 +26,13 @@ export const users = pgTable("users", {
   name: text("name"),
   phoneNumber: text("phone_number"),
   isAdmin: boolean("is_admin").default(false),
+  
+  // Email verification
   emailVerified: boolean("email_verified").default(false),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: timestamp("verification_token_expiry", { mode: 'date' }),
+  
+  // Timestamps
   createdAt: timestamp("created_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at", { mode: 'date' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

@@ -13,15 +13,32 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
   const [loading, setLoading] = useState(false);
   // const navigate = useNavigate(); //Removed as useNavigate is not used
 
-  const handleSubscribe = async (planType: 'monthlyWithTrial' | 'monthly' | 'yearly') => {
+  const handleStartFreeTrial = async () => {
     try {
       setLoading(true);
-
-      // For the free trial option, redirect to Stripe's hosted page
-      if (planType === 'monthlyWithTrial') {
-        window.location.href = 'https://buy.stripe.com/eVa6rr9kw6GD9e8aEE';
-        return;
+      
+      // Call the free trial API endpoint
+      const response = await fetch('/api/stripe/start-free-trial', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to start free trial');
       }
+      
+      // After successful trial setup, redirect to the dashboard
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Free trial error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubscribe = async (planType: 'monthly' | 'yearly') => {
+    try {
+      setLoading(true);
 
       // For paid options, create checkout session
       let priceId;
@@ -70,7 +87,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
           <div className="space-y-3">
             {/* Free Trial Option */}
             <Button 
-              onClick={() => handleSubscribe('monthlyWithTrial')}
+              onClick={handleStartFreeTrial}
               className="w-full bg-green-600 hover:bg-green-700"
               disabled={loading}
             >
