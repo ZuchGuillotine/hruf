@@ -53,9 +53,20 @@ export default function HealthStatsPage() {
     enabled: !!user,
   });
 
-  const form = useForm<HealthStatsFormData>();
+  const form = useForm<HealthStatsFormData>({
+    defaultValues: {
+      weight: healthStats?.weight,
+      height: healthStats?.height,
+      gender: healthStats?.gender,
+      ethnicity: healthStats?.ethnicity,
+      dateOfBirth: healthStats?.dateOfBirth,
+      sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+      sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
+      profilePhotoUrl: healthStats?.profilePhotoUrl,
+      allergies: healthStats?.allergies || '',
+    }
+  });
 
-  // Update form when health stats load
   useEffect(() => {
     if (healthStats) {
       form.reset({
@@ -70,7 +81,7 @@ export default function HealthStatsPage() {
         allergies: healthStats.allergies || '',
       });
     }
-  }, [healthStats, form.reset]);
+  }, [healthStats]);
 
   const mutation = useMutation({
     mutationFn: updateHealthStats,

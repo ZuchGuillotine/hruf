@@ -15,13 +15,17 @@ export function useProfileCompletion() {
   const { data: healthStats } = useQuery<SelectHealthStats>({
     queryKey: ["/api/health-stats"],
     enabled: !!user,
+    refetchOnMount: true,
+    staleTime: 0
   });
 
   const { data: supplementCount = 0 } = useQuery<number>({
     queryKey: ["/api/supplements/count"],
     enabled: !!user,
-    staleTime: 0, // Don't cache this query
-    retry: 2,
+    refetchOnMount: true,
+    staleTime: 0,
+    retry: 3,
+    retryDelay: 1000
   });
 
   const { data: labResults = { count: 0 } } = useQuery<{count: number}>({
