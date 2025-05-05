@@ -2,37 +2,35 @@ import Stripe from 'stripe';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
-import { getTierFromProductId } from '../../client/src/lib/stripe-price-ids';
 
-// Initialize Stripe with the secret key
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing STRIPE_SECRET_KEY environment variable');
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16' as any,
-});
+class StripeService {
+  stripe: Stripe;
 
-/**
- * Creates a Stripe checkout session
- * 
- * @param priceId Stripe price ID
- * @param successUrl URL to redirect after successful payment
- * @param cancelUrl URL to redirect if payment is canceled
- * @param customerId Optional Stripe customer ID for existing customers
- * @param metadata Additional metadata to include in the session
- * @returns Checkout session details including the URL
- */
-export async function createCheckoutSession(
-  priceId: string,
-  successUrl: string = `${process.env.SERVER_URL || 'http://localhost:5000'}/payment-success`,
-  cancelUrl: string = `${process.env.SERVER_URL || 'http://localhost:5000'}/subscription`,
-  customerId?: string | null,
-  metadata?: Record<string, string>
-) {
-  try {
-    // Create checkout session parameters
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+  constructor() {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2023-10-16',
+    });
+  }
+
+  /**
+   * Create a checkout session
+   * @param {object} options - Options for creating a checkout session
+   * @returns {Promise<Stripe.Checkout.Session>} - The created checkout session
+   */
+  async createCheckoutSession(options: {
+    priceId: string;
+    successUrl: string;
+    cancelUrl: string;
+    customerEmail?: string;
+    metadata?: Record<string, string>;
+  }): Promise<Stripe.Checkout.Session> {
+    const { priceId, successUrl, cancelUrl, customerEmail, metadata } = options;
+
+    return this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [
@@ -41,91 +39,82 @@ export async function createCheckoutSession(
           quantity: 1,
         },
       ],
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl,
       cancel_url: cancelUrl,
-      metadata: metadata || {},
-    };
-
-    // Add customer ID if provided
-    if (customerId) {
-      sessionParams.customer = customerId;
-    }
-
-    // Create the session
-    const session = await stripe.checkout.sessions.create(sessionParams);
-    
-    return {
-      sessionId: session.id,
-      url: session.url,
-    };
-  } catch (error) {
-    console.error('Error creating checkout session:', error);
-    throw error;
-  }
-}
-
-/**
- * Retrieves a checkout session by ID
- */
-export async function getCheckoutSession(sessionId: string) {
-  try {
-    return await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription', 'customer'],
+      customer_email: customerEmail,
+      metadata,
     });
-  } catch (error) {
-    console.error('Error retrieving checkout session:', error);
-    throw error;
   }
-}
 
-/**
- * Updates user subscription information in the database
- */
-export async function updateUserSubscription(
-  userId: number,
-  subscriptionId: string,
-  customerId: string,
-  productId: string
-) {
-  try {
-    // Determine subscription tier from product ID
-    const subscriptionTier = getTierFromProductId(productId);
-    
-    // Update user record with subscription information
+  /**
+   * Get a checkout session by ID
+   * @param {string} sessionId - The checkout session ID
+   * @returns {Promise<Stripe.Checkout.Session>} - The checkout session
+   */
+  async getCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+    return this.stripe.checkout.sessions.retrieve(sessionId);
+  }
+
+  /**
+   * Update a user's stripe customer ID
+   * @param {number} userId - The user ID
+   * @param {string} customerId - The Stripe customer ID
+   * @returns {Promise<any>} - The updated user
+   */
+  async updateStripeCustomerId(userId: number, customerId: string) {
     const [updatedUser] = await db
       .update(users)
-      .set({
-        stripeCustomerId: customerId,
-        stripeSubscriptionId: subscriptionId,
+      .set({ customerId })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+  /**
+   * Update a user's subscription details
+   * @param {number} userId - The user ID
+   * @param {object} data - The stripe data
+   * @returns {Promise<any>} - The updated user
+   */
+  async updateUserStripeInfo(userId: number, data: { customerId: string; subscriptionId: string }) {
+    const { customerId, subscriptionId } = data;
+    
+    // Get the product details to determine the tier
+    const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+    const productId = subscription.items.data[0].price.product as string;
+    const subscriptionTier = this.getTierFromProductId(productId);
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        customerId,
+        subscriptionId,
         subscriptionTier,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       })
       .where(eq(users.id, userId))
       .returning();
-    
+
     return updatedUser;
-  } catch (error) {
-    console.error('Error updating user subscription:', error);
-    throw error;
+  }
+
+  /**
+   * Determine subscription tier from Stripe product ID
+   * @param {string} productId - The Stripe product ID
+   * @returns {string} - The subscription tier
+   */
+  getTierFromProductId(productId: string): 'free' | 'starter' | 'pro' {
+    // These should match the product IDs in your Stripe account
+    const PRODUCT_MAP: Record<string, 'free' | 'starter' | 'pro'> = {
+      'prod_SF40NCVtZWsX05': 'starter', // Starter AI essentials
+      'prod_RtcuCvjOY9gHvm': 'pro',     // Pro biohacker suite
+    };
+
+    return PRODUCT_MAP[productId] || 'free';
   }
 }
 
-/**
- * Cancels a user's subscription
- */
-export async function cancelSubscription(subscriptionId: string) {
-  try {
-    return await stripe.subscriptions.cancel(subscriptionId);
-  } catch (error) {
-    console.error('Error canceling subscription:', error);
-    throw error;
-  }
-}
-
-export default {
-  createCheckoutSession,
-  getCheckoutSession,
-  updateUserSubscription,
-  cancelSubscription,
-  stripe,
-};
+// Export a singleton instance
+const stripeService = new StripeService();
+export default stripeService;

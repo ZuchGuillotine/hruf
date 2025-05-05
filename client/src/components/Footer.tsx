@@ -4,13 +4,13 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
   
   return (
-    <footer className="border-t py-8 bg-background">
-      <div className="container">
+    <footer className="border-t py-6 bg-slate-50">
+      <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-3">
-            <h3 className="font-bold">StackTracker</h3>
-            <p className="text-sm text-muted-foreground">
-              Track, analyze, and optimize your supplements for better health outcomes.
+          <div>
+            <h3 className="font-semibold text-lg mb-3">StackTracker</h3>
+            <p className="text-sm text-gray-500">
+              Optimize your supplements and health with AI-powered tracking and analysis.
             </p>
           </div>
           
@@ -18,44 +18,39 @@ export default function Footer() {
             <h4 className="font-medium mb-3">Product</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/subscription">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    Pricing
-                  </span>
+                <Link href="/features">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">Features</a>
                 </Link>
               </li>
               <li>
-                <Link href="/about">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    About
-                  </span>
+                <Link href="/pricing">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">Pricing</a>
                 </Link>
               </li>
               <li>
-                <Link href="/ask">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    Ask AI
-                  </span>
+                <Link href="/faq">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">FAQ</a>
                 </Link>
               </li>
             </ul>
           </div>
           
           <div>
-            <h4 className="font-medium mb-3">Resources</h4>
+            <h4 className="font-medium mb-3">Company</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/learn">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    Blog
-                  </span>
+                <Link href="/about">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">About Us</a>
                 </Link>
               </li>
               <li>
-                <Link href="/research">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    Research
-                  </span>
+                <Link href="/blog">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">Blog</a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">Contact</a>
                 </Link>
               </li>
             </ul>
@@ -65,25 +60,21 @@ export default function Footer() {
             <h4 className="font-medium mb-3">Legal</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/terms-of-service">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    Terms of Service
-                  </span>
+                <Link href="/terms">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">Terms of Service</a>
                 </Link>
               </li>
               <li>
-                <Link href="/privacy-policy">
-                  <span className="text-sm text-muted-foreground hover:text-foreground">
-                    Privacy Policy
-                  </span>
+                <Link href="/privacy">
+                  <a className="text-sm text-gray-500 hover:text-gray-900">Privacy Policy</a>
                 </Link>
               </li>
             </ul>
           </div>
         </div>
         
-        <div className="mt-8 pt-4 border-t text-sm text-muted-foreground">
-          <p>&copy; {currentYear} StackTracker. All rights reserved.</p>
+        <div className="mt-8 pt-4 border-t text-center text-sm text-gray-500">
+          <p>© {currentYear} StackTracker. All rights reserved.</p>
         </div>
       </div>
     </footer>

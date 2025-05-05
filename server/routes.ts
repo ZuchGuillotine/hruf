@@ -36,6 +36,7 @@ import { chat } from "./controllers/chatController";
 import { query } from "./controllers/queryController";
 import supplementsRouter from './routes/supplements';
 import stripeRouter from './routes/stripe';  // Import Stripe routes
+import postPaymentRouter from './routes/post-payment';  // Import post-payment routes
 import setupSummaryRoutes from './routes/summaryRoutes'; // Import summary routes
 import { generateResearch, getResearch, updateResearch, deleteResearch, getResearchBySlug } from './controllers/researchController';
 import { getFoodSensitivity, updateFoodSensitivity } from './controllers/foodSensitivityController';
@@ -68,8 +69,9 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/stripe', stripeRouter);
   app.use('/api/supplements', supplementsRouter);
   app.use('/api/labs', requireAuth, labsRouter);
+  app.use('/api', postPaymentRouter);
   
-  // Post-payment registration route
+  // Legacy post-payment registration route
   app.use('/api', express.Router().post('/register-post-payment', async (req, res) => {
     try {
       // Validate request data

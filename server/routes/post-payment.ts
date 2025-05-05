@@ -2,139 +2,131 @@ import express from 'express';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
-import Stripe from 'stripe';
+import stripeService from '../services/stripe';
 import { z } from 'zod';
-import crypto from 'crypto';
-import { scrypt } from 'crypto';
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const scryptAsync = promisify(scrypt);
 
-// Helper function to hash password
+// Schema for post-payment registration
+const postPaymentSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3).max(50),
+  password: z.string().min(8),
+  sessionId: z.string(),
+  name: z.string().optional(),
+});
+
 async function hashPassword(password: string) {
-  const salt = crypto.randomBytes(16).toString('hex');
+  const salt = randomBytes(16).toString('hex');
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString('hex')}.${salt}`;
 }
 
-// Validation schema for post-payment registration
-const registerPostPaymentSchema = z.object({
-  username: z.string().min(3),
-  email: z.string().email(),
-  password: z.string().min(6),
-  sessionId: z.string(),
-  subscriptionTier: z.string().optional(),
-  purchaseId: z.string().optional()
-});
-
-router.post('/register-post-payment', async (req, res) => {
+/**
+ * Register a user after they've completed payment
+ * POST /api/post-payment-registration
+ */
+router.post('/post-payment-registration', async (req, res) => {
   try {
-    // Validate request data
-    const validationResult = registerPostPaymentSchema.safeParse(req.body);
+    // Validate request body
+    const validationResult = postPaymentSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res.status(400).json({ 
-        message: 'Invalid registration data', 
-        errors: validationResult.error.errors 
+        error: 'Invalid request data',
+        details: validationResult.error.errors 
       });
     }
-    
-    const { username, email, password, sessionId, subscriptionTier, purchaseId } = validationResult.data;
-    
-    // Check if user already exists
+
+    const { email, username, password, sessionId, name } = validationResult.data;
+
+    // Check if user with this email already exists
     const existingUser = await db
-      .select({ count: sql`count(*)` })
+      .select()
       .from(users)
       .where(eq(users.email, email))
-      .then(rows => Number(rows[0]?.count || '0'));
-      
-    if (existingUser > 0) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+      .limit(1);
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: 'User with this email already exists' });
     }
-    
-    // Verify Stripe session exists and is valid
-    let stripeSubscriptionId = null;
-    let verified = false;
-    let verifiedTier = subscriptionTier || 'starter';
-    
-    try {
-      if (sessionId) {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        
-        if (session && session.payment_status === 'paid') {
-          verified = true;
-          
-          // Set subscription ID if available
-          if (session.subscription) {
-            stripeSubscriptionId = session.subscription as string;
-            
-            // Get more details about the subscription
-            const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-            
-            // Set the verified tier based on the product
-            if (subscription && subscription.items?.data[0]?.price?.product) {
-              const productId = subscription.items.data[0].price.product;
-              
-              // Map product IDs to subscription tiers
-              if (typeof productId === 'string') {
-                if (productId === 'prod_SF40NCVtZWsX05') {
-                  verifiedTier = 'starter';
-                } else if (productId === 'prod_RtcuCvjOY9gHvm') {
-                  verifiedTier = 'pro';
-                }
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error verifying Stripe session:', error);
-      // We'll still create the account, but as free tier
-      verified = false;
-      verifiedTier = 'free';
+
+    // Check if username is already taken
+    const existingUsername = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    if (existingUsername.length > 0) {
+      return res.status(400).json({ error: 'Username is already taken' });
     }
+
+    // Retrieve the checkout session to verify and get subscription info
+    const session = await stripeService.getCheckoutSession(sessionId);
     
-    // Create the user account
-    const [newUser] = await db
+    if (!session || session.status !== 'complete') {
+      return res.status(400).json({ error: 'Invalid or incomplete checkout session' });
+    }
+
+    // Get the subscription data
+    const subscriptionId = session.subscription as string;
+    const customerId = session.customer as string;
+    
+    if (!subscriptionId || !customerId) {
+      return res.status(400).json({ error: 'No subscription information found' });
+    }
+
+    // Retrieve the subscription to get the product
+    const subscription = await stripeService.stripe.subscriptions.retrieve(subscriptionId);
+    const productId = subscription.items.data[0].price.product as string;
+
+    // Create the user
+    const [user] = await db
       .insert(users)
       .values({
-        username,
         email,
+        username,
         password: await hashPassword(password),
-        subscriptionTier: verified ? verifiedTier : 'free',
-        stripeSubscriptionId: stripeSubscriptionId,
-        stripeCustomerId: null, // Will be updated later if needed
+        name: name || null,
+        subscriptionId,
+        customerId,
+        subscriptionTier: getTierFromProductId(productId), 
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .returning();
-    
-    if (!newUser) {
-      return res.status(500).json({ message: 'Failed to create user account' });
-    }
-    
-    // Log the user in (create a session)
-    req.login(newUser, (err) => {
+
+    // Log the user in
+    req.login(user, (err) => {
       if (err) {
-        console.error('Error logging in after registration:', err);
-        return res.status(500).json({ message: 'Account created but login failed' });
+        console.error('Error logging in user after registration:', err);
+        return res.status(500).json({ error: 'Failed to log in after registration' });
       }
       
-      // Return success with user data (excluding sensitive fields)
-      const { password, ...userWithoutPassword } = newUser;
-      return res.status(201).json({ 
-        message: 'Account created successfully',
-        user: userWithoutPassword
-      });
+      // Return success with user data (without sensitive fields)
+      const { password: _, ...userData } = user;
+      return res.status(201).json(userData);
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in post-payment registration:', error);
-    res.status(500).json({ 
-      message: 'Registration failed',
-      error: error.message
-    });
+    return res.status(500).json({ error: 'Failed to complete registration' });
   }
 });
+
+/**
+ * Determine subscription tier from Stripe product ID
+ */
+function getTierFromProductId(productId: string): 'free' | 'starter' | 'pro' {
+  // These should match the product IDs in your Stripe account
+  const PRODUCT_MAP: Record<string, 'free' | 'starter' | 'pro'> = {
+    'prod_SF40NCVtZWsX05': 'starter', // Starter AI essentials
+    'prod_RtcuCvjOY9gHvm': 'pro',     // Pro biohacker suite
+  };
+
+  return PRODUCT_MAP[productId] || 'free';
+}
 
 export default router;
