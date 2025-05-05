@@ -5,13 +5,11 @@ import { sql } from "drizzle-orm";
 // User account management and authentication
 export const users = pgTable("users", {
   subscriptionId: text("subscription_id"),
-  subscriptionStatus: text("subscription_status"),
   subscriptionTier: text("subscription_tier").default('free').notNull(),
   aiInteractionsCount: integer("ai_interactions_count").default(0),
   aiInteractionsReset: timestamp("ai_interactions_reset"),
   labUploadsCount: integer("lab_uploads_count").default(0),
   labUploadsReset: timestamp("lab_uploads_reset"),
-  trialEndsAt: timestamp("trial_ends_at"),
   chatCount: integer("chat_count").default(0),
   lastRewardedAt: timestamp("last_rewarded_at"),
   id: serial("id").primaryKey(),
@@ -20,7 +18,6 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   name: text("name"),
   phoneNumber: text("phone_number"),
-  isPro: boolean("is_pro").default(false),
   isAdmin: boolean("is_admin").default(false),
   emailVerified: boolean("email_verified").default(false),
   verificationToken: text("verification_token"),

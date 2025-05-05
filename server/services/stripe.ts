@@ -40,9 +40,8 @@ export const stripeService = {
 
   async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const userId = parseInt(subscription.metadata.userId);
-    const status = subscription.status === 'active' ? 'active' : 'expired';
     
-    // Determine tier based on price/product
+    // Determine tier based on price/product and subscription status
     const subscriptionTier = subscription.status === 'active' 
       ? subscription.items.data[0].price.id === process.env.STRIPE_PRO_PRICE_ID
         ? 'pro'
@@ -52,9 +51,7 @@ export const stripeService = {
     await db.update(users)
       .set({ 
         subscriptionId: subscription.id,
-        subscriptionStatus: status,
         subscriptionTier,
-        trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       })
       .where(eq(users.id, userId));
   },
