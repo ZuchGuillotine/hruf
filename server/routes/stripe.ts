@@ -54,7 +54,19 @@ router.post('/create-checkout-session', async (req, res) => {
       sessionOptions.customer_email = customerEmail;
     }
 
+    // Add metadata to track guest checkouts
+    sessionOptions.metadata = {
+      ...sessionOptions.metadata,
+      isGuestCheckout: (!req.isAuthenticated()).toString()
+    };
+
     const session = await stripe.checkout.sessions.create(sessionOptions);
+
+    // Store session ID for guest users
+    if (!req.isAuthenticated()) {
+      // Store in redis or session store that this is a pending guest checkout
+      req.session.pendingCheckoutId = session.id;
+    }
 
     res.json({ url: session.url, sessionId: session.id });
   } catch (error: any) {

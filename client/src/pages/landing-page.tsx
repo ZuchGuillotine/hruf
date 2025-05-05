@@ -348,15 +348,18 @@ export default function LandingPage() {
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
                     onClick={async () => {
                       try {
-                        // Create checkout session via API to ensure proper redirects
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                        // Store selected plan in session storage
+                        sessionStorage.setItem('selectedPlan', 'pro-monthly');
+                        
+                        const response = await fetch('/api/stripe/create-checkout-session', {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw', // Pro Monthly
-                            productId: 'prod_RtcuCvjOY9gHvm' // Pro product ID
+                            priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw',
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`
                           })
                         });
 
@@ -373,8 +376,6 @@ export default function LandingPage() {
                           title: "Error",
                           description: "Failed to start checkout process. Please try again.",
                         });
-                        // Fallback to direct link if session creation fails
-                        window.location.href = "https://buy.stripe.com/5kA5nn8gs7KH8a428e";
                       }
                     }}
                   >
