@@ -411,7 +411,7 @@ export function setupAuth(app: Express) {
             });
             
             // Set up free tier for users who didn't complete payment
-            userValues.subscription_tier = 'free'; // Free tier with no trial end date
+            userValues.subscriptionTier = 'free'; // Free tier with no trial end date
           }
         } catch (error) {
           console.error('Error processing Stripe session during registration:', {
@@ -422,11 +422,11 @@ export function setupAuth(app: Express) {
           });
           
           // Default to free tier if there's an error processing the session
-          userValues.subscription_tier = 'free'; // Use the exact column name from the database
+          userValues.subscriptionTier = 'free';
         }
       } else {
         // For regular signups without payment, set up free tier
-        userValues.subscription_tier = 'free'; // Use the exact column name from the database
+        userValues.subscriptionTier = 'free';
       }
 
       // Create user with appropriate status based on registration path

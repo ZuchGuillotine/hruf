@@ -8,7 +8,6 @@ export const users = pgTable("users", {
   // Subscription-related fields
   subscriptionId: text("subscription_id"),
   subscriptionTier: text("subscription_tier").default('free').notNull(),
-  trialEndsAt: timestamp("trial_ends_at"),
   
   // Usage limits and counters
   aiInteractionsCount: integer("ai_interactions_count").default(0),
