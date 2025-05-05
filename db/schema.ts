@@ -10,7 +10,7 @@ export const users = pgTable("users", {
   aiInteractionsReset: timestamp("ai_interactions_reset"),
   labUploadsCount: integer("lab_uploads_count").default(0),
   labUploadsReset: timestamp("lab_uploads_reset"),
-  chatCount: integer("chat_count").default(0),
+  aiInteractionsCount: integer("ai_interactions_count").default(0),
   lastRewardedAt: timestamp("last_rewarded_at"),
   id: serial("id").primaryKey(),
   username: text("username").unique().notNull(),

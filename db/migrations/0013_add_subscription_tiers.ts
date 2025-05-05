@@ -1,10 +1,9 @@
-
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
 async function main() {
   console.log('Starting migration: Adding subscription tier column...');
-  
+
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL environment variable is required");
   }
@@ -26,7 +25,7 @@ async function main() {
       ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free' NOT NULL;
     `);
     console.log('✅ Successfully added subscription_tier column');
-    
+
     return Promise.resolve();
   } catch (error) {
     console.error('Migration failed:', error);
