@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { TIERS } from '@/lib/stripe-price-ids';
 
-export function ProfileCompletionNotification() {
+export default function ProfileCompletionNotification() {
   const { user } = useUser();
   
   if (!user) return null;
