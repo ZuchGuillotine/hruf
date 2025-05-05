@@ -2,9 +2,11 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { Upload, File, Check, X, ArrowRight } from "lucide-react";
+import { Upload, File, Check, X, ArrowRight, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useUser } from "@/hooks/use-user";
+import { Card } from "@/components/ui/card";
 
 interface LabUploadProps {
   onUploadSuccess?: () => void;
@@ -30,13 +32,46 @@ export default function LabUpload({
 }: LabUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const { user } = useUser();
+
+  // Early return for free tier users
+  if (user?.subscriptionTier === 'free') {
+    return (
+      <Card className="p-6 text-center relative bg-muted/30">
+        <Lock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Lab Analysis Feature</h3>
+        <p className="text-muted-foreground mb-4">
+          Want in-depth analysis of bloodwork or other biomarker tests? Upgrade to get access.
+        </p>
+        <Link to="/subscription-page">
+          <Button className="w-full">
+            Upgrade Now
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Link>
+      </Card>
+    );
+  }
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    // For core tier, limit to 3 files total
+    if (user?.subscriptionTier === 'core') {
+      const totalFiles = (user.labUploadsCount || 0) + acceptedFiles.length;
+      if (totalFiles > 3) {
+        toast({
+          title: "Upload limit reached",
+          description: "Core tier is limited to 3 lab uploads. Upgrade to Pro for unlimited uploads.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setFiles(prev => {
       const newFiles = [...prev, ...acceptedFiles];
       return newFiles.slice(0, maxFiles);
     });
-  }, [maxFiles]);
+  }, [maxFiles, user]);
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
@@ -64,7 +99,23 @@ export default function LabUpload({
         });
 
         if (!response.ok) {
-          throw new Error(`Upload failed for ${file.name}`);
+          const data = await response.json();
+          if (response.status === 429) {
+            toast({
+              title: "Upload limit reached",
+              description: (
+                <div className="flex flex-col gap-2">
+                  <span>{data.message}</span>
+                  <Link to="/subscription-page" className="text-primary hover:underline">
+                    Upgrade to Pro <ArrowRight className="h-4 w-4 inline" />
+                  </Link>
+                </div>
+              ),
+              variant: "destructive"
+            });
+            return;
+          }
+          throw new Error(data.message || 'Upload failed');
         }
       }
 
@@ -90,7 +141,7 @@ export default function LabUpload({
       console.error('Upload failed:', error);
       toast({
         title: "Error",
-        description: "Failed to upload lab results",
+        description: error instanceof Error ? error.message : "Failed to upload lab results",
         variant: "destructive",
         duration: 3000
       });
@@ -104,8 +155,17 @@ export default function LabUpload({
     .map(ext => ext.replace('.', '').toUpperCase())
     .join(', ');
 
+  const uploadLimit = user?.subscriptionTier === 'core' ? 3 : Infinity;
+  const remainingUploads = uploadLimit - (user?.labUploadsCount || 0);
+
   return (
     <div className="space-y-4">
+      {user?.subscriptionTier === 'core' && (
+        <div className="text-sm text-muted-foreground mb-2">
+          Remaining uploads: {remainingUploads} of {uploadLimit}
+        </div>
+      )}
+      
       <div 
         {...getRootProps()} 
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
@@ -118,7 +178,7 @@ export default function LabUpload({
           Supported formats: {allowedExtensions}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Maximum {maxFiles} file{maxFiles !== 1 ? 's' : ''} allowed
+          Maximum {maxFiles} file{maxFiles !== 1 ? 's' : ''} per upload
         </p>
       </div>
 
