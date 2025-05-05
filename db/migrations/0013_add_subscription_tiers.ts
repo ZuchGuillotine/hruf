@@ -2,6 +2,7 @@ import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
 export async function up() {
+  console.log('Starting migration: Adding subscription tiers...');
   try {
     await db.execute(sql`
       -- Add subscription tier column if it doesn't exist
