@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle } from 'lucide-react';
 
 interface PaymentOptionsModalProps {
   isOpen: boolean;
@@ -9,6 +11,61 @@ interface PaymentOptionsModalProps {
 }
 
 export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProps) {
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleContinueFree = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/user/set-tier', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tier: 'free' })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to set free tier');
+      }
+      
+      onClose();
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error setting free tier:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubscribe = async (tier: 'core' | 'pro') => {
+    try {
+      setLoading(true);
+      const priceId = tier === 'core' 
+        ? process.env.STRIPE_CORE_MONTHLY_PRICE_ID 
+        : process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
+        
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+      
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Subscription error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -17,60 +74,50 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="text-center text-sm text-gray-500 mb-4">
-            Get access to all features and personalized supplement recommendations
+            Select a plan that fits your needs
           </div>
           
           <div className="space-y-3">
-            {/* Monthly subscription option */}
+            {/* Pro tier */}
             <Button
-              onClick={() => handleSubscribe('prod_RtcuCvjOY9gHvm')}
+              onClick={() => handleSubscribe('pro')}
               className="w-full bg-green-700 hover:bg-green-800"
               disabled={loading}
             >
-              {loading ? 'Processing...' : 'Monthly - $21.99'}
+              {loading ? 'Processing...' : 'Pro - Biohacker Suite ($14.99/mo)'}
             </Button>
+            <div className="text-xs text-gray-500 pl-2 flex items-center">
+              <CheckCircle className="h-3 w-3 mr-1" /> Full AI features
+              <CheckCircle className="h-3 w-3 mx-1" /> Lab results analysis
+              <CheckCircle className="h-3 w-3 mx-1" /> Advanced analytics
+            </div>
             
-            {/* Yearly subscription option with savings highlight */}
+            {/* Core tier */}
             <Button
-              onClick={() => handleSubscribe('prod_RpdfGxB4L6Rut7')}
+              onClick={() => handleSubscribe('core')}
               className="w-full"
               variant="outline"
               disabled={loading}
             >
-              {loading ? 'Processing...' : 'Yearly - $184.72 (Save 30%)'}
+              {loading ? 'Processing...' : 'Core - AI Essentials ($7.99/mo)'}
             </Button>
+            <div className="text-xs text-gray-500 pl-2 flex items-center">
+              <CheckCircle className="h-3 w-3 mr-1" /> Basic AI features
+              <CheckCircle className="h-3 w-3 mx-1" /> Enhanced tracking
+            </div>
             
-            {/* Free trial option */}
-            <a 
-              href="#"
-              className="block w-full"
-              onClick={async (e) => {
-                e.preventDefault();
-                try {
-                  const response = await fetch('/api/stripe/start-free-trial', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    }
-                  });
-                  
-                  if (!response.ok) {
-                    throw new Error('Failed to start free trial');
-                  }
-                  
-                  // Close modal and redirect to dashboard (at root path)
-                  onClose();
-                  window.location.href = '/';
-                } catch (error) {
-                  console.error('Free trial error:', error);
-                  // You could show an error message here
-                }
-              }}
+            {/* Free tier */}
+            <Button 
+              onClick={handleContinueFree}
+              className="w-full"
+              variant="ghost"
+              disabled={loading}
             >
-              <Button className="w-full" variant="link">
-                Start 28-Day Free Trial
-              </Button>
-            </a>
+              Continue with Basic Tracking
+            </Button>
+            <div className="text-xs text-gray-500 pl-2 flex items-center">
+              <CheckCircle className="h-3 w-3 mr-1" /> Basic supplement tracking
+            </div>
           </div>
         </div>
       </DialogContent>
