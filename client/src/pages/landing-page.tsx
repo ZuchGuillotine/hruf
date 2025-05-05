@@ -193,13 +193,29 @@ export default function LandingPage() {
               <CardFooter className="flex gap-2">
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => window.location.href = 'https://buy.stripe.com/6oEdTTeEQaWT76028b'}
+                  onClick={() => {
+                    // Redirect to signup page with tier indicator
+                    const signupElement = document.getElementById('free-trial-signup');
+                    if (signupElement) {
+                      signupElement.scrollIntoView({ behavior: 'smooth' });
+                      // Store selected plan for after signup
+                      sessionStorage.setItem('selectedPlan', 'starter-monthly');
+                    }
+                  }}
                 >
                   Monthly
                 </Button>
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => window.location.href = 'https://buy.stripe.com/eVa177aoAfd94XSbIM'}
+                  onClick={() => {
+                    // Redirect to signup page with tier indicator
+                    const signupElement = document.getElementById('free-trial-signup');
+                    if (signupElement) {
+                      signupElement.scrollIntoView({ behavior: 'smooth' });
+                      // Store selected plan for after signup
+                      sessionStorage.setItem('selectedPlan', 'starter-yearly');
+                    }
+                  }}
                 >
                   Yearly
                 </Button>
