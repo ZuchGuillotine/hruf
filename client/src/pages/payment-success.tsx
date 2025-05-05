@@ -192,6 +192,8 @@ export default function PaymentSuccessPage() {
               <p className="text-center text-gray-700 mb-6">
                 Create your account to access your subscription.
               </p>
+              <input type="hidden" {...register("subscriptionId")} value={searchParams.get('session_id') || ''} />
+              <input type="hidden" {...register("purchaseIdentifier")} value={searchParams.get('purchase_id') || ''} />
               
               {signupError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm w-full">

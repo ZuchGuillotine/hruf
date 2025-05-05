@@ -3,7 +3,7 @@ import { stripeService } from '../services/stripe';
 import Stripe from 'stripe';
 import { db } from '@db';
 import { users } from '@db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -54,11 +54,11 @@ router.post('/create-checkout-session', async (req, res) => {
       priceId: stripePriceId,
       timestamp: new Date().toISOString()
     });
-    
+
     // Determine if this plan should include a trial period
     // Usually starter and free plans get trials, pro plans don't
     const shouldIncludeTrial = stripePriceId.includes('starter') || priceId.includes('starter');
-    
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -114,11 +114,11 @@ router.get('/subscription-success', async (req, res) => {
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    
+
     if (session.payment_status === 'paid') {
       // Process the subscription update
       await stripeService.handleSubscriptionUpdated(session.subscription as any);
-      
+
       // Instead of redirecting, return success for the client to handle
       return res.status(200).json({ 
         success: true,
@@ -149,7 +149,7 @@ router.post('/check-subscription', async (req, res) => {
 
     const tier = await stripeService.getSubscriptionTier(userId);
     const isPaid = await stripeService.hasActivePaidSubscription(userId);
-    
+
     res.json({ 
       success: true,
       subscriptionTier: tier,
@@ -164,16 +164,16 @@ router.post('/check-subscription', async (req, res) => {
 router.post('/create-free-account', async (req, res) => {
   try {
     const userId = req.user?.id;
-    
+
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    
+
     console.log('Creating free tier account for user:', {
       userId,
       timestamp: new Date().toISOString()
     });
-    
+
     // Update user with free tier information
     await db
       .update(users)
@@ -181,19 +181,19 @@ router.post('/create-free-account', async (req, res) => {
         subscriptionTier: 'free'
       })
       .where(eq(users.id, userId));
-    
+
     console.log('Free tier account created successfully', {
       userId,
       timestamp: new Date().toISOString()
     });
-    
+
     // Get user data to return with the response
     const [updatedUser] = await db
       .select()
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
-    
+
     res.json({ 
       success: true,
       subscriptionTier: 'free',
@@ -205,7 +205,7 @@ router.post('/create-free-account', async (req, res) => {
       stack: error.stack,
       timestamp: new Date().toISOString()
     });
-    
+
     res.status(500).json({ 
       error: 'Failed to create free tier account',
       message: error.message 
@@ -248,10 +248,10 @@ router.post('/create-checkout-session-guest', async (req, res) => {
       priceId: stripePriceId,
       timestamp: new Date().toISOString()
     });
-    
+
     // Generate a unique session identifier for this purchase
     const purchaseIdentifier = crypto.randomBytes(16).toString('hex');
-    
+
     // Create Stripe checkout session for a guest (no authentication)
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

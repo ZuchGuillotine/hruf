@@ -55,12 +55,14 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
     try {
       setLoading(true);
 
-      // For paid options, get price ID from our centralized config
       const priceId = planType === 'yearly' 
         ? getYearlyPro() 
         : getMonthlyPro();
 
-      const response = await fetch('/api/stripe/create-checkout-session', {
+      // Use guest checkout for users without accounts
+      const endpoint = user ? '/api/stripe/create-checkout-session' : '/api/stripe/create-checkout-session-guest';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),
