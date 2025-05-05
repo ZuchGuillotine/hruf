@@ -46,9 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<User | undefined, Error>({
+  } = useQuery<User | null, Error>({
     queryKey: ['/api/user'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
+    initialData: null,
   });
 
   const loginMutation = useMutation({

@@ -21,7 +21,7 @@ export function getQueryFn({ on401 = 'throw' }: GetQueryFnOptions = {}) {
 
     if (response.status === 401) {
       if (on401 === 'returnNull') {
-        return undefined;
+        return null;
       }
       throw new Error('Unauthorized');
     }

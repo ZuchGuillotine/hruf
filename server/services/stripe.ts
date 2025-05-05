@@ -64,7 +64,7 @@ class StripeService {
   async updateStripeCustomerId(userId: number, customerId: string) {
     const [updatedUser] = await db
       .update(users)
-      .set({ customerId })
+      .set({ stripeCustomerId: customerId })
       .where(eq(users.id, userId))
       .returning();
 
