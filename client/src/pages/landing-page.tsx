@@ -358,8 +358,8 @@ export default function LandingPage() {
                           },
                           body: JSON.stringify({ 
                             priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw',
-                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.origin}`
+                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
                           })
                         });
 
