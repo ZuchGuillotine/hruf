@@ -1,3 +1,4 @@
+
 /**
  * Stripe product and price information
  * 
@@ -19,24 +20,24 @@ export type TierInfo = {
 export const TIERS = {
   starter: {
     MONTHLY: {
-      id: 'price_1PXnYnC7gKOJsRt7LFyCvdow', // Replace with your actual price ID
+      id: 'price_1OpGHMAIJBVVerrJCXB9LK8z',
       price: 21.99,
       url: 'https://buy.stripe.com/6oEdTTeEQaWT76028b'
     },
     YEARLY: {
-      id: 'price_1PXnZJC7gKOJsRt7FXnJcY6B', // Replace with your actual price ID
+      id: 'price_1RKZsdAIJBVVerrJmp9neLDz',
       price: 184.71,
       url: 'https://buy.stripe.com/eVa177aoAfd94XSbIM'
     }
   },
   pro: {
     MONTHLY: {
-      id: 'price_1PXnZoC7gKOJsRt7pz0Xtsim', // Replace with your actual price ID
+      id: 'price_1RFrkBAIJBVVerrJNDRc9xSL',
       price: 49.99,
       url: 'https://buy.stripe.com/5kA5nn8gs7KH8a428e'
     },
     YEARLY: {
-      id: 'price_1PXnaSC7gKOJsRt79aGOsLn7', // Replace with your actual price ID
+      id: 'price_1RKZwJAIJBVVerrJjGTuhgbG',
       price: 479.88,
       url: 'https://buy.stripe.com/8wM8zzfIU6GD760bIP'
     }
@@ -58,12 +59,12 @@ export const PRODUCTS = {
 // Map price IDs to their tier for utilities
 const PRICE_TO_TIER: Record<string, 'starter' | 'pro'> = {
   // Starter plan price IDs
-  'price_1PXnYnC7gKOJsRt7LFyCvdow': 'starter', // Monthly
-  'price_1PXnZJC7gKOJsRt7FXnJcY6B': 'starter', // Yearly
+  'price_1OpGHMAIJBVVerrJCXB9LK8z': 'starter', // Monthly
+  'price_1RKZsdAIJBVVerrJmp9neLDz': 'starter', // Yearly
 
   // Pro plan price IDs
-  'price_1PXnZoC7gKOJsRt7pz0Xtsim': 'pro', // Monthly
-  'price_1PXnaSC7gKOJsRt79aGOsLn7': 'pro' // Yearly
+  'price_1RFrkBAIJBVVerrJNDRc9xSL': 'pro',    // Monthly
+  'price_1RKZwJAIJBVVerrJjGTuhgbG': 'pro'     // Yearly
 };
 
 /**

@@ -72,12 +72,15 @@ export default function LandingPage() {
       } else {
         // For paid tiers, redirect to subscription checkout
         // Use PRODUCTS from our stripe price helper
-        const { PRODUCTS } = await import('@/lib/stripe-price-ids');
+        const priceIds = {
+          'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',
+          'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',
+          'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',
+          'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG'
+        };
+
         const [tier, interval] = (selectedPlan as string).split('-');
-        // Type assertion to make TypeScript happy
-        const upperTier = tier.toUpperCase() as keyof typeof PRODUCTS;
-        const upperInterval = interval.toUpperCase() as "MONTHLY" | "YEARLY";
-        const priceId = PRODUCTS[upperTier].tiers[upperInterval].id;
+        const priceId = priceIds[selectedPlan];
 
         // Create checkout session
         const checkoutResponse = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
@@ -250,7 +253,7 @@ export default function LandingPage() {
                             'Content-Type': 'application/json',
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw',
+                            priceId: 'price_1OpGHMAIJBVVerrJCXB9LK8z',
                             successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
                             cancelUrl: `${window.location.origin}`
                           })
@@ -288,7 +291,7 @@ export default function LandingPage() {
                             'Content-Type': 'application/json',
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw', //Corrected price ID for yearly plan.  This was likely a typo in original.  A correct priceID would need to be determined.
+                            priceId: 'price_1RKZsdAIJBVVerrJmp9neLDz',
                             successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
                             cancelUrl: `${window.location.origin}`
                           })
@@ -314,119 +317,119 @@ export default function LandingPage() {
                     Yearly
                   </Button>
                 </CardFooter>
-              </Card>
+            </Card>
 
-              {/* Pro Biohacker Suite Card */}
-              <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
-                <CardHeader className="text-center pb-4 relative">
-                  <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-[#2d6a4f] text-white text-sm rounded-full">
-                    Best Value
-                  </div>
-                  <CardTitle className="text-2xl">Pro - Biohacker suite</CardTitle>
-                  <CardDescription>Advanced features for optimal results</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center px-3 sm:px-6">
-                  <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$14.99/mo</p>
-                  <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$99/yr (save $80)</p>
-                  <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
-                    <li className="flex items-start">
-                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>Unlimited AI-powered supplement feedback</span>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>Unlimited intelligent biomarker analysis</span>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>Early access to new features</span>
-                    </li>
-                    <li className="flex items-start">
-                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>Lock in current pricing</span>
-                    </li>
-                  </ul>
-                </CardContent>
-                <CardFooter className="flex gap-2">
-                  <Button 
-                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        // Store selected plan in session storage
-                        sessionStorage.setItem('selectedPlan', 'pro-monthly');
+            {/* Pro Biohacker Suite Card */}
+            <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
+              <CardHeader className="text-center pb-4 relative">
+                <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-[#2d6a4f] text-white text-sm rounded-full">
+                  Best Value
+                </div>
+                <CardTitle className="text-2xl">Pro - Biohacker suite</CardTitle>
+                <CardDescription>Advanced features for optimal results</CardDescription>
+              </CardHeader>
+              <CardContent className="text-center px-3 sm:px-6">
+                <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$14.99/mo</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$99/yr (save $80)</p>
+                <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Unlimited AI-powered supplement feedback</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Unlimited intelligent biomarker analysis</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Early access to new features</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Lock in current pricing</span>
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter className="flex gap-2">
+                <Button 
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={async () => {
+                    try {
+                      // Store selected plan in session storage
+                      sessionStorage.setItem('selectedPlan', 'pro-monthly');
 
-                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw',
-                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.origin}`
-                          })
-                        });
+                      const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                          priceId: 'price_1RFrkBAIJBVVerrJNDRc9xSL',
+                          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                          cancelUrl: `${window.location.origin}`
+                        })
+                      });
 
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
-                        }
-
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error: any) {
-                        console.error('Error creating checkout:', error);
-                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
-                        toast({
-                          variant: "destructive",
-                          title: "Checkout Error",
-                          description: errorMessage,
-                        });
-                        // Fallback to direct link if session creation fails
-                        //window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
                       }
-                    }}
-                  >
-                    Monthly
-                  </Button>
-                  <Button 
-                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        // Store selected plan in session storage
-                        sessionStorage.setItem('selectedPlan', 'pro-yearly');
 
-                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJwXY9T8Nw',
-                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.origin}`
-                          })
-                        });
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error: any) {
+                      console.error('Error creating checkout:', error);
+                      const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
+                      toast({
+                        variant: "destructive",
+                        title: "Checkout Error",
+                        description: errorMessage,
+                      });
+                      // Fallback to direct link if session creation fails
+                      //window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
+                    }
+                  }}
+                >
+                  Monthly
+                </Button>
+                <Button 
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={async () => {
+                    try {
+                      // Store selected plan in session storage
+                      sessionStorage.setItem('selectedPlan', 'pro-yearly');
 
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
-                        }
+                      const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                          priceId: 'price_1RKZwJAIJBVVerrJjGTuhgbG',
+                          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                          cancelUrl: `${window.location.origin}`
+                        })
+                      });
 
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error: any) {
-                        console.error('Error creating checkout:', error);
-                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
-                        toast({
-                          variant: "destructive",
-                          title: "Checkout Error",
-                          description: errorMessage,
-                        });
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
                       }
-                    }}
-                  >
-                    Yearly
-                  </Button>
-                </CardFooter>
+
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error: any) {
+                      console.error('Error creating checkout:', error);
+                      const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
+                      toast({
+                        variant: "destructive",
+                        title: "Checkout Error",
+                        description: errorMessage,
+                      });
+                    }
+                  }}
+                >
+                  Yearly
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         </div>
