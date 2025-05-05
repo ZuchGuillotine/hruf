@@ -39,22 +39,56 @@ export const stripeService = {
   },
 
   async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-    const userId = parseInt(subscription.metadata.userId);
+    // Get userId from metadata or client_reference_id
+    let userId = 0;
     
-    // Map price IDs to tiers
-    const priceToTier: Record<string, 'pro' | 'core'> = {
+    if (subscription.metadata && subscription.metadata.userId) {
+      userId = parseInt(subscription.metadata.userId, 10);
+    }
+    
+    if (!userId && subscription.client_reference_id) {
+      userId = parseInt(subscription.client_reference_id, 10);
+    }
+    
+    if (!userId) {
+      console.error('Cannot update subscription: No user ID found in metadata or client_reference_id', {
+        subscriptionId: subscription.id,
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+    
+    // Map price IDs to tiers - use both env vars and hardcoded IDs as fallback
+    const priceToTier: Record<string, string> = {
+      // Try env vars first
       [process.env.STRIPE_PRO_MONTHLY_PRICE_ID || '']: 'pro',
       [process.env.STRIPE_PRO_YEARLY_PRICE_ID || '']: 'pro',
-      [process.env.STRIPE_CORE_MONTHLY_PRICE_ID || '']: 'core',
-      [process.env.STRIPE_CORE_YEARLY_PRICE_ID || '']: 'core'
+      [process.env.STRIPE_CORE_MONTHLY_PRICE_ID || '']: 'starter',
+      [process.env.STRIPE_CORE_YEARLY_PRICE_ID || '']: 'starter',
+      // Fallback to hardcoded IDs (replace with your actual IDs)
+      'price_1QvyNlAIJBVVerrJPOw4EIMa': 'pro', // Pro monthly
+      'price_1QvyNlAIJBVVerrJPOw5FIMa': 'pro', // Pro yearly
+      'price_1QzpeMAIJBVVerrJ12ZYExkV': 'starter', // Starter monthly
+      'price_1QzpeMAIJBVVerrJ12ZYFxkV': 'starter', // Starter yearly
     };
 
     const currentPriceId = subscription.items.data[0].price.id;
     
     // Determine tier based on price/product and subscription status
-    const subscriptionTier = subscription.status === 'active' 
-      ? priceToTier[currentPriceId] || 'free'
+    // 'active' includes paid subscriptions and those in trial
+    // 'trialing' is handled as active too
+    const isActive = ['active', 'trialing'].includes(subscription.status);
+    const subscriptionTier = isActive 
+      ? (priceToTier[currentPriceId] || 'free')
       : 'free';
+
+    // For trials, set the trial end date
+    const trialEndsAt = subscription.trial_end 
+      ? new Date(subscription.trial_end * 1000) 
+      : null;
+
+    // Determine if this is a pro subscription
+    const isPro = subscriptionTier === 'pro';
 
     console.log('Updating user subscription:', {
       userId,
@@ -62,14 +96,17 @@ export const stripeService = {
       status: subscription.status,
       priceId: currentPriceId,
       tier: subscriptionTier,
+      isPro,
+      trialEndsAt: trialEndsAt?.toISOString(),
       timestamp: new Date().toISOString()
     });
                    
     await db.update(users)
       .set({ 
         subscriptionId: subscription.id,
-        subscription_tier: subscriptionTier,
-        tier_start_date: new Date(),
+        subscriptionTier: subscriptionTier,
+        isPro,
+        trialEndsAt,
       })
       .where(eq(users.id, userId));
   },

@@ -36,6 +36,10 @@ export default function LandingPage() {
     try {
       setIsSubmitting(true);
 
+      // Get selected plan from session storage
+      const selectedPlan = sessionStorage.getItem('selectedPlan') || 'free';
+      console.log('Selected plan:', selectedPlan);
+
       // Register the user first
       const response = await register(data);
 
@@ -43,17 +47,57 @@ export default function LandingPage() {
         throw new Error(response.message);
       }
 
-      // After successful registration, redirect to start free trial
-      await fetch('/api/stripe/start-free-trial', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      if (selectedPlan === 'free') {
+        // For free tier, start free trial
+        await fetch('/api/stripe/start-free-trial', {
+          method: 'POST',
+          credentials: 'include',
+        });
+        
+        // Redirect to dashboard after trial is started
+        setLocation('/');
+      } else {
+        // For paid tiers, redirect to subscription checkout
+        // Map the selected plan to the appropriate price ID
+        let priceId;
+        switch (selectedPlan) {
+          case 'starter-monthly':
+            priceId = 'prod_RtcuCvjOY9gHvm'; // Monthly no trial
+            break;
+          case 'starter-yearly':
+            priceId = 'price_starter_yearly'; // Replace with actual yearly price ID
+            break;
+          case 'pro-monthly':
+            priceId = 'prod_RpdfGxB4L6Rut7'; // Pro monthly
+            break;
+          case 'pro-yearly':
+            priceId = 'price_pro_yearly'; // Replace with actual yearly price ID
+            break;
+          default:
+            priceId = 'prod_RpdfGxB4L6Rut7'; // Default to monthly pro
+        }
 
-      // Redirect to dashboard after trial is started
-      setLocation('/');
+        // Create checkout session
+        const checkoutResponse = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ priceId }),
+          credentials: 'include'
+        });
 
+        if (!checkoutResponse.ok) {
+          const errorData = await checkoutResponse.json();
+          throw new Error(errorData.message || 'Failed to create checkout session');
+        }
+
+        const { url } = await checkoutResponse.json();
+        // Redirect to Stripe checkout
+        window.location.href = url;
+      }
     } catch (error: any) {
-      console.error('Free trial signup error:', error);
+      console.error('Signup error:', error);
 
       let errorMessage = "Registration failed. Please try again.";
       if (error.message) {
@@ -260,13 +304,29 @@ export default function LandingPage() {
               <CardFooter className="flex gap-2">
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => window.location.href = 'https://buy.stripe.com/5kA5nn8gs7KH8a428e'}
+                  onClick={() => {
+                    // Redirect to signup page with tier indicator
+                    const signupElement = document.getElementById('free-trial-signup');
+                    if (signupElement) {
+                      signupElement.scrollIntoView({ behavior: 'smooth' });
+                      // Store selected plan for after signup
+                      sessionStorage.setItem('selectedPlan', 'pro-monthly');
+                    }
+                  }}
                 >
                   Monthly
                 </Button>
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => window.location.href = 'https://buy.stripe.com/8wM8zzfIU6GD760bIP'}
+                  onClick={() => {
+                    // Redirect to signup page with tier indicator
+                    const signupElement = document.getElementById('free-trial-signup');
+                    if (signupElement) {
+                      signupElement.scrollIntoView({ behavior: 'smooth' });
+                      // Store selected plan for after signup
+                      sessionStorage.setItem('selectedPlan', 'pro-yearly');
+                    }
+                  }}
                 >
                   Yearly
                 </Button>

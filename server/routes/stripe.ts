@@ -35,29 +35,31 @@ router.post('/create-checkout-session', async (req, res) => {
 
     // Map product IDs to their respective Stripe price IDs
     const priceIdMap: Record<string, string> = {
-      'prod_Rpderg7Xqdw1zZ': 'price_1QvyMvAIJBVVerrJQDznxCdB', // Monthly with trial
-      'prod_RtcuCvjOY9gHvm': 'price_1QzpeMAIJBVVerrJ12ZYExkV', // Monthly no trial
-      'prod_RpdfGxB4L6Rut7': 'price_1QvyNlAIJBVVerrJPOw4EIMa', // Yearly
+      'prod_RtcuCvjOY9gHvm': 'price_1QzpeMAIJBVVerrJ12ZYExkV', // Monthly no trial 
+      'price_starter_yearly': 'price_1QzpeMAIJBVVerrJ12ZYFxkV', // Replace with actual yearly Starter price ID
+      'prod_RpdfGxB4L6Rut7': 'price_1QvyNlAIJBVVerrJPOw4EIMa', // Pro monthly
+      'price_pro_yearly': 'price_1QvyNlAIJBVVerrJPOw5FIMa', // Replace with actual yearly Pro price ID
     };
 
-    const stripePriceId = priceIdMap[priceId];
-    if (!stripePriceId) {
-      return res.status(400).json({ error: 'Invalid product ID' });
-    }
+    // Use the provided product ID directly or map it if needed
+    let stripePriceId = priceIdMap[priceId] || priceId;
 
     // Using Stripe instance defined at the top of the file
-    
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
       : `${req.protocol}://${req.get('host')}`;
 
-    // Use the session cookie approach instead of database tokens
-    // This is simpler and doesn't require schema changes
     console.log('Creating checkout session with user ID:', {
       userId,
+      priceId: stripePriceId,
       timestamp: new Date().toISOString()
     });
     
+    // Determine if this plan should include a trial period
+    // Usually starter and free plans get trials, pro plans don't
+    const shouldIncludeTrial = stripePriceId.includes('starter') || priceId.includes('starter');
+    
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -73,6 +75,13 @@ router.post('/create-checkout-session', async (req, res) => {
       allow_promotion_codes: true,
       billing_address_collection: 'required',
       customer_email: req.user?.email,
+      subscription_data: {
+        // Add trial period for starter plans
+        trial_period_days: shouldIncludeTrial ? 14 : undefined,
+        metadata: {
+          userId: userId.toString(),
+        },
+      },
     });
 
     console.log('Checkout session created:', {
