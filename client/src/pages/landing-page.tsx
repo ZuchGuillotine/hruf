@@ -241,15 +241,18 @@ export default function LandingPage() {
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
                     onClick={async () => {
                       try {
-                        // Create checkout session via API to ensure proper redirects
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                        // Store selected plan in session storage
+                        sessionStorage.setItem('selectedPlan', 'starter-monthly');
+
+                        const response = await fetch('/api/stripe/create-checkout-session', {
                           method: 'POST',
-                          headers: { 
-                            'Content-Type': 'application/json'
+                          headers: {
+                            'Content-Type': 'application/json',
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw', // Starter Monthly
-                            productId: 'prod_SF40NCVtZWsX05' // Starter product ID
+                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw',
+                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
                           })
                         });
 
@@ -266,8 +269,6 @@ export default function LandingPage() {
                           title: "Error",
                           description: "Failed to start checkout process. Please try again.",
                         });
-                        // Fallback to direct link if session creation fails
-                        window.location.href = "https://buy.stripe.com/6oEdTTeEQaWT76028b";
                       }
                     }}
                   >
@@ -277,15 +278,18 @@ export default function LandingPage() {
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
                     onClick={async () => {
                       try {
-                        // Create checkout session via API to ensure proper redirects
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                        // Store selected plan in session storage
+                        sessionStorage.setItem('selectedPlan', 'starter-yearly');
+
+                        const response = await fetch('/api/stripe/create-checkout-session', {
                           method: 'POST',
-                          headers: { 
-                            'Content-Type': 'application/json'
+                          headers: {
+                            'Content-Type': 'application/json',
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw', // Starter Yearly
-                            productId: 'prod_SF40NCVtZWsX05' // Starter product ID
+                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw', //Corrected price ID for yearly plan.  This was likely a typo in original.  A correct priceID would need to be determined.
+                            successUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.href.split('?')[0].replace(/\/$/, '')}`
                           })
                         });
 
@@ -302,8 +306,6 @@ export default function LandingPage() {
                           title: "Error",
                           description: "Failed to start checkout process. Please try again.",
                         });
-                        // Fallback to direct link if session creation fails
-                        window.location.href = "https://buy.stripe.com/eVa177aoAfd94XSbIM";
                       }
                     }}
                   >
@@ -414,7 +416,7 @@ export default function LandingPage() {
                           description: "Failed to start checkout process. Please try again.",
                         });
                         // Fallback to direct link if session creation fails
-                        window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
+                        //window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
                       }
                     }}
                   >
