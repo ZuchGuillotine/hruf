@@ -128,7 +128,11 @@ export const queryChatLogs = pgTable("query_chat_logs", {
 
 
 // Zod schemas for type-safe database operations
-export const insertUserSchema = createInsertSchema(users);
+export const insertUserSchema = createInsertSchema(users, {
+  // Add optional fields for Stripe integration
+  stripeSessionId: z => z.string().optional(),
+  purchaseIdentifier: z => z.string().optional(),
+});
 export const selectUserSchema = createSelectSchema(users);
 export const insertHealthStatsSchema = createInsertSchema(healthStats);
 export const selectHealthStatsSchema = createSelectSchema(healthStats);

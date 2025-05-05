@@ -331,7 +331,15 @@ export function setupAuth(app: Express) {
           .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
-      const { email, username, password } = result.data;
+      const { email, username, password, stripeSessionId, purchaseIdentifier } = result.data;
+      
+      console.log('Registration request:', {
+        username,
+        email,
+        hasStripeSession: !!stripeSessionId,
+        hasPurchaseId: !!purchaseIdentifier,
+        timestamp: new Date().toISOString()
+      });
 
       // Check if user already exists with either email or username
       const [existingUser] = await db
@@ -355,17 +363,86 @@ export function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await crypto.hash(password);
 
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
+      // Set up default user values
+      let userValues: any = {
+        ...result.data,
+        password: hashedPassword,
+      };
+      
+      // Check if this user is registering after a payment (has stripeSessionId)
+      if (stripeSessionId) {
+        try {
+          // Import Stripe to get the session
+          const Stripe = require('stripe');
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+          
+          // Retrieve the checkout session
+          const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+          
+          if (session.payment_status === 'paid') {
+            console.log('Found paid session for new user:', {
+              sessionId: stripeSessionId,
+              email,
+              subscriptionId: session.subscription,
+              timestamp: new Date().toISOString()
+            });
+            
+            // Extract subscription information
+            userValues.subscriptionTier = 'pro'; // Depends on your pricing, adjust as needed
+            userValues.isPro = true;
+            
+            // If subscription was created, store subscription and customer IDs
+            if (session.subscription) {
+              // Get subscription details
+              const subscription = await stripe.subscriptions.retrieve(session.subscription);
+              userValues.stripeSubscriptionId = session.subscription;
+              userValues.stripeCustomerId = session.customer;
+              
+              console.log('Added subscription info to new user:', {
+                customerId: session.customer,
+                subscriptionId: session.subscription,
+                timestamp: new Date().toISOString()
+              });
+            }
+          } else {
+            console.log('Stripe session not paid:', {
+              sessionId: stripeSessionId,
+              status: session.payment_status,
+              timestamp: new Date().toISOString()
+            });
+            
+            // Set up trial for users who didn't complete payment
+            const trialEndDate = new Date();
+            trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
+            userValues.trialEndsAt = trialEndDate;
+            userValues.subscriptionTier = 'trial';
+          }
+        } catch (error) {
+          console.error('Error processing Stripe session during registration:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            sessionId: stripeSessionId,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Default to trial if there's an error processing the session
+          const trialEndDate = new Date();
+          trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
+          userValues.trialEndsAt = trialEndDate;
+          userValues.subscriptionTier = 'trial';
+        }
+      } else {
+        // For regular signups without payment, set up trial period
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
+        userValues.trialEndsAt = trialEndDate;
+        userValues.subscriptionTier = 'trial';
+      }
 
-      // Create user
+      // Create user with appropriate status based on registration path
       const [newUser] = await db
         .insert(users)
-        .values({
-          ...result.data,
-          password: hashedPassword,
-          trialEndsAt: trialEndDate,
-        })
+        .values(userValues)
         .returning();
 
       // Send welcome email
