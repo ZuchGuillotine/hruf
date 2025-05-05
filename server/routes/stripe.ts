@@ -7,6 +7,28 @@ import stripeService from '../services/stripe';
 
 const router = Router();
 
+// Allow custom domain and Replit domain
+router.use((req, res, next) => {
+  const allowedOrigins = [
+    'https://stacktracker.io',
+    process.env.REPLIT_URL || 'https://stacktracker.replit.app'
+  ];
+  
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing STRIPE_SECRET_KEY environment variable');
 }

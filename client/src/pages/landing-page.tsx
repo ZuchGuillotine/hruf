@@ -80,7 +80,7 @@ export default function LandingPage() {
         const priceId = PRODUCTS[upperTier].tiers[upperInterval].id;
 
         // Create checkout session
-        const checkoutResponse = await fetch('/api/stripe/create-checkout-session', {
+        const checkoutResponse = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ export default function LandingPage() {
                         // Store selected plan in session storage
                         sessionStorage.setItem('selectedPlan', 'starter-monthly');
 
-                        const response = await fetch('/api/stripe/create-checkout-session', {
+                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
@@ -281,7 +281,7 @@ export default function LandingPage() {
                         // Store selected plan in session storage
                         sessionStorage.setItem('selectedPlan', 'starter-yearly');
 
-                        const response = await fetch('/api/stripe/create-checkout-session', {
+                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
@@ -353,7 +353,7 @@ export default function LandingPage() {
                         // Store selected plan in session storage
                         sessionStorage.setItem('selectedPlan', 'pro-monthly');
 
-                        const response = await fetch('/api/stripe/create-checkout-session', {
+                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
@@ -390,7 +390,7 @@ export default function LandingPage() {
                         // Store selected plan in session storage
                         sessionStorage.setItem('selectedPlan', 'pro-yearly');
 
-                        const response = await fetch('/api/stripe/create-checkout-session', {
+                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
