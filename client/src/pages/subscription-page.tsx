@@ -144,7 +144,10 @@ export default function SubscriptionPage() {
           </div>
         </div>
       </div>
-      <PaymentOptionsModal isOpen={true} onClose={() => window.location.href = '/'} />
+      {/* Only show modal for new registrations */}
+      {new URLSearchParams(window.location.search).has('newUser') && (
+        <PaymentOptionsModal isOpen={true} onClose={() => window.location.href = '/'} />
+      )}
     </div>
   );
 }
