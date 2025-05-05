@@ -1,7 +1,12 @@
-
 ## [Unreleased]
 
 ### Added (May 05, 2025)
+- Enhanced Stripe Integration:
+  - Implemented centralized price/product mapping
+  - Added seamless checkout session creation
+  - Enhanced session preservation during payment flow
+  - Improved post-payment account completion
+  - Added proper subscription status tracking
 - Usage Tracking Implementation:
   - Added ai_interactions_count with monthly reset
   - Added lab_uploads_count with yearly reset
