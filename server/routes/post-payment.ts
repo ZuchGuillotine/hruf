@@ -47,9 +47,6 @@ const postPaymentRegistrationSchema = z.object({
  */
 router.post('/register-post-payment', async (req, res) => {
   try {
-    // Special test mode flag
-    const isTestMode = process.env.NODE_ENV === 'development' && req.query.test === 'true';
-
     // Validate request body
     const result = postPaymentRegistrationSchema.safeParse(req.body);
     if (!result.success) {
@@ -59,10 +56,9 @@ router.post('/register-post-payment', async (req, res) => {
 
     const { username, email, password, sessionId, subscriptionTier, purchaseId } = result.data;
 
-    // Skip Stripe verification in test mode
-    if (!isTestMode) {
-      try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // Verify the session with Stripe
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
       
       if (session.payment_status !== 'paid') {
         return res.status(400).json({ message: 'Payment has not been completed' });
@@ -79,7 +75,6 @@ router.post('/register-post-payment', async (req, res) => {
       return res.status(400).json({ 
         message: 'Unable to verify payment session. Please contact support.' 
       });
-    }
     }
 
     // Check if username or email already exists
