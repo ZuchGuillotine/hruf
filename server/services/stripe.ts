@@ -88,7 +88,7 @@ class StripeService {
     const [updatedUser] = await db
       .update(users)
       .set({ 
-        customerId,
+        stripeCustomerId: customerId,
         subscriptionId,
         subscriptionTier,
         updatedAt: new Date()

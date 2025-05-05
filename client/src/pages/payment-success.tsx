@@ -1,330 +1,273 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { 
-  CreditCard, 
-  CheckCircle2, 
-  Loader2,
-  User,
-  Mail,
-  Lock
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import Footer from '@/components/Footer';
-import Header from '@/components/Header';
-import { useToast } from '@/hooks/use-toast';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { getTierFromPriceId } from '@/lib/stripe-price-ids';
+import Footer from '@/components/footer';
+import Header from '@/components/header';
 
+// Form validation schema
 const formSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string()
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword']
+  username: z
+    .string()
+    .min(3, { message: 'Username must be at least 3 characters' })
+    .max(50, { message: 'Username must be less than 50 characters' }),
+  email: z.string().email({ message: 'Please enter a valid email address' }),
+  password: z
+    .string()
+    .min(8, { message: 'Password must be at least 8 characters' })
+    .max(100, { message: 'Password must be less than 100 characters' }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
-export default function PaymentSuccessPage() {
-  const [loading, setLoading] = useState(true);
-  const [registering, setRegistering] = useState(false);
-  const [sessionData, setSessionData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function PaymentSuccess() {
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [sessionData, setSessionData] = useState<null | {
+    sessionId: string;
+    priceId: string;
+    subscriptionTier: 'free' | 'starter' | 'pro';
+  }>(null);
 
-  // Parse the URL query parameters
-  const params = new URLSearchParams(window.location.search);
-  const sessionId = params.get('session_id');
-
-  // Form setup
-  const form = useForm<FormValues>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: '',
       email: '',
       password: '',
-      confirmPassword: ''
-    }
+      confirmPassword: '',
+    },
   });
 
-  // Fetch session data on mount
+  // Get the session_id query parameter from the URL
   useEffect(() => {
-    // If already authenticated, redirect to dashboard
-    if (user) {
-      setLocation('/');
-      return;
-    }
+    const searchParams = new URLSearchParams(window.location.search);
+    const sessionId = searchParams.get('session_id');
 
-    // If no session ID, show error
     if (!sessionId) {
-      setLoading(false);
-      setError('Invalid session. Please try again or contact support.');
+      toast({
+        title: 'Error',
+        description: 'No payment session ID found. Please try again.',
+        variant: 'destructive',
+      });
+      navigate('/');
       return;
     }
 
-    // Fetch session data from Stripe
-    const fetchSessionData = async () => {
+    // Fetch session details from our backend
+    const fetchSession = async () => {
       try {
-        const response = await fetch(`/api/stripe/checkout-session/${sessionId}`);
+        const response = await apiRequest(
+          'GET',
+          `/api/stripe/checkout-session/${sessionId}`
+        );
         
         if (!response.ok) {
           throw new Error('Failed to verify payment session');
         }
-        
+
         const data = await response.json();
         
-        // Verify the payment was successful
-        if (data.payment_status !== 'paid') {
-          throw new Error('Payment was not completed successfully');
+        // Pre-fill the email field if available from Stripe
+        if (data.customerEmail) {
+          form.setValue('email', data.customerEmail);
         }
+
+        // Determine subscription tier from the price ID
+        const tier = getTierFromPriceId(data.priceId);
         
-        setSessionData(data);
-        
-        // Pre-fill the email if available
-        if (data.customer_details?.email) {
-          form.setValue('email', data.customer_details.email);
-        }
-      } catch (err: any) {
-        console.error('Error fetching session:', err);
-        setError(err.message || 'Failed to verify payment. Please contact support.');
+        setSessionData({
+          sessionId,
+          priceId: data.priceId,
+          subscriptionTier: tier,
+        });
+      } catch (error) {
+        console.error('Error verifying payment session:', error);
+        toast({
+          title: 'Error',
+          description: 'Unable to verify your payment. Please contact support.',
+          variant: 'destructive',
+        });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchSessionData();
-  }, [sessionId, user, setLocation, form]);
+    fetchSession();
+  }, [navigate, toast, form]);
 
-  // Handle form submission
-  const onSubmit = async (values: FormValues) => {
-    setRegistering(true);
-    
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!sessionData) return;
+
     try {
-      // Determine subscription tier from the price ID
-      const priceId = sessionData?.line_items?.data[0]?.price?.id;
-      const subscriptionTier = priceId ? getTierFromPriceId(priceId) : 'free';
+      setIsLoading(true);
       
-      // Register the user
-      const response = await fetch('/api/register-post-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...values,
-          sessionId,
-          subscriptionTier,
-          purchaseId: sessionData?.id
-        })
+      // Create user account with payment information
+      const response = await apiRequest('POST', '/api/post-payment/register', {
+        username: values.username,
+        email: values.email,
+        password: values.password,
+        sessionId: sessionData.sessionId,
+        subscriptionTier: sessionData.subscriptionTier,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+        throw new Error(errorData.message || 'Failed to create account');
       }
-      
+
+      // Success - show toast and redirect to dashboard
       toast({
-        title: 'Account created successfully!',
-        description: 'Welcome to StackTracker. You can now access all features.',
+        title: 'Account created!',
+        description: 'Welcome to StackTracker! You are now logged in.',
       });
       
       // Redirect to dashboard
-      setTimeout(() => {
-        setLocation('/');
-      }, 1000);
-    } catch (err: any) {
-      console.error('Registration error:', err);
+      navigate('/dashboard');
+    } catch (error: any) {
       toast({
+        title: 'Account creation failed',
+        description: error.message || 'An unexpected error occurred',
         variant: 'destructive',
-        title: 'Registration failed',
-        description: err.message || 'Something went wrong. Please try again.',
       });
     } finally {
-      setRegistering(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      
-      <main className="flex-grow flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl w-full space-y-8">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center p-8">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="mt-4 text-lg">Verifying your payment...</p>
-            </div>
-          ) : error ? (
-            <Card className="border-red-200 bg-red-50">
-              <CardHeader>
-                <CardTitle className="text-red-800">Payment Verification Failed</CardTitle>
-                <CardDescription className="text-red-700">
-                  We couldn't verify your payment session
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-red-700">{error}</p>
-              </CardContent>
-              <CardFooter>
-                <Button onClick={() => setLocation('/')}>Return to Home</Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <div className="space-y-8">
-              <div className="text-center">
-                <CheckCircle2 className="mx-auto h-16 w-16 text-green-500" />
-                <h1 className="mt-4 text-3xl font-extrabold text-gray-900">Payment Successful!</h1>
-                <p className="mt-2 text-lg text-gray-600">
-                  Thank you for your purchase. Please complete your account setup below.
+      <main className="flex-1 container max-w-6xl py-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold">Payment Successful!</h1>
+          <p className="mt-4 text-xl">Complete your account setup to get started</p>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-16">
+            <LoadingSpinner size="lg" />
+            <span className="ml-3">Verifying your payment...</span>
+          </div>
+        ) : (
+          <div className="max-w-md mx-auto">
+            <div className="bg-card text-card-foreground rounded-lg border shadow-sm p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold">Create your account</h2>
+                <p className="text-muted-foreground">
+                  Set up your StackTracker account to access your subscription
                 </p>
               </div>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Create Your Account</CardTitle>
-                  <CardDescription>
-                    Set up your account to access all StackTracker features
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="Enter your username" 
-                                  className="pl-10" 
-                                  {...field} 
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="you@example.com" 
-                                  type="email" 
-                                  className="pl-10" 
-                                  {...field} 
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="Create a password" 
-                                  type="password" 
-                                  className="pl-10" 
-                                  {...field} 
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Confirm Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="Confirm your password" 
-                                  type="password" 
-                                  className="pl-10" 
-                                  {...field} 
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button 
-                        type="submit" 
-                        className="w-full mt-6" 
-                        disabled={registering}
-                      >
-                        {registering ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating Account...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Complete Account Setup
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="email" 
+                            placeholder="Enter email" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Create password" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Confirm password" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      'Complete Setup'
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
-      
       <Footer />
     </div>
   );

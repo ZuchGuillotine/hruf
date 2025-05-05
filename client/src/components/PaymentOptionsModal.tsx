@@ -1,96 +1,53 @@
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Check, 
-  Sparkles, 
-  Star, 
-  Loader2, 
-  CreditCard
-} from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
+import { PRODUCTS, TIERS } from '@/lib/stripe-price-ids';
+import { apiRequest } from '@/lib/queryClient';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
-import { 
-  PRODUCTS, 
-  getMonthlyPrice, 
-  getYearlyPrice, 
-  getSavingsPercentage, 
-  getDirectCheckoutUrl,
-  type SubscriptionInterval,
-  type SubscriptionTier
-} from '@/lib/stripe-price-ids';
-import { useToast } from '@/hooks/use-toast';
-
-interface PaymentOptionsModalProps {
+type PaymentOptionsModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  currentTier?: SubscriptionTier;
-}
+};
 
-export function PaymentOptionsModal({ 
-  isOpen, 
-  onClose, 
-  currentTier = 'free' 
-}: PaymentOptionsModalProps) {
-  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>(
-    currentTier === 'free' ? 'starter' : 'pro'
-  );
-  const [billingInterval, setBillingInterval] = useState<SubscriptionInterval>('year');
+export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [selectedTab, setSelectedTab] = useState<'monthly' | 'yearly'>('monthly');
 
-  // Filter products to only show upgrades from current tier
-  const availableProducts = PRODUCTS.filter(product => {
-    if (currentTier === 'free') return product.id !== 'free';
-    if (currentTier === 'starter') return product.id === 'pro';
-    return false; // Pro users don't see upgrade options
-  });
+  // Calculate annual savings
+  const calculateSavings = (tier: 'starter' | 'pro') => {
+    const monthly = TIERS[tier].MONTHLY.price;
+    const yearly = TIERS[tier].YEARLY.price;
+    const annualMonthly = monthly * 12;
+    const savings = Math.round(((annualMonthly - yearly) / annualMonthly) * 100);
+    return savings;
+  };
 
-  const handleUpgrade = async () => {
-    setIsLoading(true);
-
+  const handlePlanSelection = async (tier: 'starter' | 'pro', interval: 'MONTHLY' | 'YEARLY') => {
     try {
-      // Get the checkout URL based on the selected plan
-      const directUrl = getDirectCheckoutUrl(selectedTier, billingInterval);
+      setIsLoading(true);
       
-      if (!directUrl) {
-        throw new Error('Invalid plan selection');
-      }
-
-      // For server-generated checkout sessions:
-      /*
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId: PRODUCTS.find(p => p.id === selectedTier)?.prices[billingInterval].id,
-          successUrl: `${window.location.origin}/payment-success`,
-          cancelUrl: `${window.location.origin}/dashboard`,
-        }),
+      const priceId = TIERS[tier][interval].id;
+      
+      // Create a server-side checkout session for better tracking and post-payment handling
+      const response = await apiRequest('POST', '/api/stripe/create-checkout-session', {
+        priceId,
+        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: window.location.origin,
+        customerEmail: null, // Will be filled in if user is logged in on backend
       });
-
-      const { url } = await response.json();
-      window.location.href = url;
-      */
-
-      // For direct checkout URLs:
-      window.location.href = directUrl;
+      
+      const data = await response.json();
+      
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
     } catch (error) {
-      console.error('Error starting checkout:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Checkout Error',
-        description: 'Unable to start checkout process. Please try again.',
-      });
+      console.error('Error creating checkout session:', error);
+      // Fallback to direct Stripe checkout links if the server endpoint fails
+      window.location.href = TIERS[tier][interval].url;
     } finally {
       setIsLoading(false);
     }
@@ -98,186 +55,192 @@ export function PaymentOptionsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
-            Upgrade Your StackTracker Experience
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            Choose the plan that's right for you and take your supplement tracking to the next level
+          <DialogTitle className="text-2xl">Upgrade Your Plan</DialogTitle>
+          <DialogDescription>
+            Choose the plan that best fits your health optimization journey
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="year" className="mt-4" onValueChange={(value) => setBillingInterval(value as SubscriptionInterval)}>
-          <div className="flex justify-center">
+        <Tabs defaultValue="monthly" className="w-full" onValueChange={(value) => setSelectedTab(value as 'monthly' | 'yearly')}>
+          <div className="flex justify-center mb-6">
             <TabsList>
-              <TabsTrigger value="month">Monthly</TabsTrigger>
-              <TabsTrigger value="year">
-                Yearly
-                <span className="ml-1.5 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800">
-                  Save {getSavingsPercentage('starter')}%
-                </span>
-              </TabsTrigger>
+              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+              <TabsTrigger value="yearly">Yearly <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Save 15-20%</span></TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="month" className="mt-4">
-            <RadioGroup 
-              value={selectedTier} 
-              onValueChange={(value) => setSelectedTier(value as SubscriptionTier)}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {availableProducts.map((product) => (
-                <div 
-                  key={product.id}
-                  className={`relative rounded-lg border p-4 hover:border-primary hover:shadow transition-all ${
-                    selectedTier === product.id ? 'border-primary border-2 shadow' : 'border-muted'
-                  }`}
-                >
-                  <RadioGroupItem 
-                    value={product.id} 
-                    id={`plan-${product.id}-monthly`} 
-                    className="sr-only" 
-                  />
-                  <Label 
-                    htmlFor={`plan-${product.id}-monthly`}
-                    className="flex flex-col h-full cursor-pointer"
+          {/* Monthly Plan Options */}
+          <TabsContent value="monthly" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Starter Plan */}
+              <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all">
+                <CardHeader>
+                  <CardTitle>Starter AI Essentials</CardTitle>
+                  <CardDescription>Essential AI features for health optimization beginners</CardDescription>
+                  <div className="mt-2 text-3xl font-bold">${TIERS.starter.MONTHLY.price}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>3 AI health chats per day</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>10 Lab result uploads per month</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Basic supplement tracking</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Weekly health insights</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full gap-2"
+                    onClick={() => handlePlanSelection('starter', 'MONTHLY')}
+                    disabled={isLoading}
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="flex items-center">
-                          <h3 className="text-lg font-semibold">{product.name}</h3>
-                          {product.popular && (
-                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-                              Popular
-                            </span>
-                          )}
-                        </span>
-                        <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-2xl font-bold">{getMonthlyPrice(product.id)}</span>
-                        <span className="text-muted-foreground">/month</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 space-y-2 flex-grow">
-                      {product.features.map((feature, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </Label>
-                  {product.id === 'starter' && (
-                    <div className="absolute -top-2 -right-2">
-                      <Sparkles className="h-5 w-5 text-amber-500" />
-                    </div>
-                  )}
-                  {product.id === 'pro' && (
-                    <div className="absolute -top-2 -right-2">
-                      <Star className="h-5 w-5 text-purple-500" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </RadioGroup>
+                    {isLoading ? <LoadingSpinner /> : <>Get Started <ArrowRight className="h-4 w-4" /></>}
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              {/* Pro Plan */}
+              <Card className="border-2 border-primary shadow-lg hover:border-primary/90 transition-all">
+                <CardHeader>
+                  <div className="bg-primary text-primary-foreground text-xs rounded-full px-2.5 py-0.5 w-fit mb-2">MOST POPULAR</div>
+                  <CardTitle>Pro Biohacker Suite</CardTitle>
+                  <CardDescription>Advanced features for the dedicated health optimizer</CardDescription>
+                  <div className="mt-2 text-3xl font-bold">${TIERS.pro.MONTHLY.price}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Unlimited</strong> AI health chats</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Unlimited</strong> lab result uploads</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Advanced supplement tracking with insights</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Daily personalized health recommendations</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Priority feature releases</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full gap-2"
+                    onClick={() => handlePlanSelection('pro', 'MONTHLY')}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <LoadingSpinner /> : <>Upgrade to Pro <ArrowRight className="h-4 w-4" /></>}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
           </TabsContent>
 
-          <TabsContent value="year" className="mt-4">
-            <RadioGroup 
-              value={selectedTier} 
-              onValueChange={(value) => setSelectedTier(value as SubscriptionTier)}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
-            >
-              {availableProducts.map((product) => (
-                <div 
-                  key={product.id}
-                  className={`relative rounded-lg border p-4 hover:border-primary hover:shadow transition-all ${
-                    selectedTier === product.id ? 'border-primary border-2 shadow' : 'border-muted'
-                  }`}
-                >
-                  <RadioGroupItem 
-                    value={product.id} 
-                    id={`plan-${product.id}-yearly`} 
-                    className="sr-only" 
-                  />
-                  <Label 
-                    htmlFor={`plan-${product.id}-yearly`}
-                    className="flex flex-col h-full cursor-pointer"
+          {/* Yearly Plan Options */}
+          <TabsContent value="yearly" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Starter Plan */}
+              <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all">
+                <CardHeader>
+                  <CardTitle>Starter AI Essentials</CardTitle>
+                  <CardDescription>Essential AI features for health optimization beginners</CardDescription>
+                  <div className="mt-2 text-3xl font-bold">${(TIERS.starter.YEARLY.price / 12).toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+                  <div className="text-sm text-primary">Save {calculateSavings('starter')}% with annual billing</div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>3 AI health chats per day</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>10 Lab result uploads per month</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Basic supplement tracking</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Weekly health insights</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full gap-2"
+                    onClick={() => handlePlanSelection('starter', 'YEARLY')}
+                    disabled={isLoading}
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="flex items-center">
-                          <h3 className="text-lg font-semibold">{product.name}</h3>
-                          {product.popular && (
-                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-                              Popular
-                            </span>
-                          )}
-                        </span>
-                        <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground line-through">
-                          {getMonthlyPrice(product.id)} × 12
-                        </p>
-                        <span className="text-2xl font-bold">{getYearlyPrice(product.id)}</span>
-                        <span className="text-muted-foreground">/year</span>
-                        <p className="text-xs text-green-600">
-                          Save {getSavingsPercentage(product.id)}%
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 space-y-2 flex-grow">
-                      {product.features.map((feature, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </Label>
-                  {product.id === 'starter' && (
-                    <div className="absolute -top-2 -right-2">
-                      <Sparkles className="h-5 w-5 text-amber-500" />
-                    </div>
-                  )}
-                  {product.id === 'pro' && (
-                    <div className="absolute -top-2 -right-2">
-                      <Star className="h-5 w-5 text-purple-500" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </RadioGroup>
+                    {isLoading ? <LoadingSpinner /> : <>Get Annual Plan <ArrowRight className="h-4 w-4" /></>}
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              {/* Pro Plan */}
+              <Card className="border-2 border-primary shadow-lg hover:border-primary/90 transition-all">
+                <CardHeader>
+                  <div className="bg-primary text-primary-foreground text-xs rounded-full px-2.5 py-0.5 w-fit mb-2">BEST VALUE</div>
+                  <CardTitle>Pro Biohacker Suite</CardTitle>
+                  <CardDescription>Advanced features for the dedicated health optimizer</CardDescription>
+                  <div className="mt-2 text-3xl font-bold">${(TIERS.pro.YEARLY.price / 12).toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+                  <div className="text-sm text-primary">Save {calculateSavings('pro')}% with annual billing</div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Unlimited</strong> AI health chats</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Unlimited</strong> lab result uploads</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Advanced supplement tracking with insights</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Daily personalized health recommendations</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Priority feature releases</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full gap-2"
+                    onClick={() => handlePlanSelection('pro', 'YEARLY')}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <LoadingSpinner /> : <>Upgrade to Annual Pro <ArrowRight className="h-4 w-4" /></>}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 mt-6">
-          <Button variant="outline" onClick={onClose} className="sm:mr-2 w-full sm:w-auto">
-            Continue with Free Plan
-          </Button>
-          <Button 
-            onClick={handleUpgrade} 
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Upgrade Now
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+        <div className="text-center text-sm text-muted-foreground mt-6">
+          All plans include a 14-day money-back guarantee. No questions asked.
+        </div>
       </DialogContent>
     </Dialog>
   );
