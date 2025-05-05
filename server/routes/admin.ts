@@ -23,7 +23,6 @@ router.get('/users/subscriptions', async (req, res) => {
         id: users.id,
         email: users.email,
         subscriptionTier: users.subscriptionTier,
-        trialEndsAt: users.trialEndsAt,
         subscriptionId: users.subscriptionId
       })
       .from(users);
@@ -44,7 +43,6 @@ router.get('/users/:userId/subscription', async (req, res) => {
         id: users.id,
         email: users.email,
         subscriptionTier: users.subscriptionTier,
-        trialEndsAt: users.trialEndsAt,
         subscriptionId: users.subscriptionId
       })
       .from(users)

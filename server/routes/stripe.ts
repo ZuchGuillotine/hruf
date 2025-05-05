@@ -140,17 +140,23 @@ router.get('/subscription-success', async (req, res) => {
   }
 });
 
-router.post('/extend-trial', async (req, res) => {
+router.post('/check-subscription', async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    await stripeService.extendTrialPeriod(userId, 7);
-    res.json({ success: true });
+    const tier = await stripeService.getSubscriptionTier(userId);
+    const isPaid = await stripeService.hasActivePaidSubscription(userId);
+    
+    res.json({ 
+      success: true,
+      subscriptionTier: tier,
+      isPaidSubscription: isPaid
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to extend trial period' });
+    res.status(500).json({ error: 'Failed to check subscription status' });
   }
 });
 

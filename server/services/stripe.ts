@@ -13,7 +13,7 @@ const MONTHLY_PRICE_ID = process.env.STRIPE_MONTHLY_PRICE_ID;
 const YEARLY_PRICE_ID = process.env.STRIPE_YEARLY_PRICE_ID;
 
 export const stripeService = {
-  async createCheckoutSession(userId: number, priceId: string, isTrialEligible: boolean = true) {
+  async createCheckoutSession(userId: number, priceId: string) {
     const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
     if (!user.length) throw new Error('User not found');
@@ -28,7 +28,6 @@ export const stripeService = {
       success_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/subscription`,
       subscription_data: {
-        trial_period_days: isTrialEligible ? 28 : undefined,
         metadata: {
           userId: userId.toString(),
         },
@@ -81,95 +80,43 @@ export const stripeService = {
       ? (priceToTier[currentPriceId] || 'free')
       : 'free';
 
-    // For trials, set the trial end date
-    const trialEndsAt = subscription.trial_end 
-      ? new Date(subscription.trial_end * 1000) 
-      : null;
-
     console.log('Updating user subscription:', {
       userId,
       subscriptionId: subscription.id,
       status: subscription.status,
       priceId: currentPriceId,
       tier: subscriptionTier,
-      trialEndsAt: trialEndsAt?.toISOString(),
       timestamp: new Date().toISOString()
     });
                    
     await db.update(users)
       .set({ 
         subscriptionId: subscription.id,
-        subscriptionTier: subscriptionTier,
-        trialEndsAt,
+        subscriptionTier: subscriptionTier
       })
       .where(eq(users.id, userId));
   },
 
-  // Add method to update subscription status based on trial period
-  async updateTrialStatus(userId: number) {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId)
-    });
-
-    if (!user) return;
-
-    // If user has active subscription through Stripe, don't modify status
-    if (user.subscriptionId) return;
-
-    const now = new Date();
-    const trialEnd = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
-    
-    // Determine status based on trial end date
-    let status = 'trial';
-    if (trialEnd && now > trialEnd) {
-      status = 'expired';
-    }
-
-    await db.update(users)
-      .set({ subscriptionTier: status })
-      .where(eq(users.id, userId));
-  },
-
-  // Add method to check trial status
-  async checkTrialStatus(userId: number) {
+  // Check if a user has an active paid subscription
+  async hasActivePaidSubscription(userId: number) {
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId)
     });
 
     if (!user) return false;
 
-    // If user has active subscription, they're not in trial
-    if (user.subscriptionTier === 'pro') return false;
-
-    // Check if trial has expired
-    if (user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
-      // Update user to free status
-      await db.update(users)
-        .set({ 
-          subscriptionTier: 'free',
-          trialEndsAt: null 
-        })
-        .where(eq(users.id, userId));
-      return false;
-    }
-
-    return user.trialEndsAt != null;
+    // Only 'starter' and 'pro' tiers are considered paid
+    return ['starter', 'pro'].includes(user.subscriptionTier);
   },
 
-  async extendTrialPeriod(userId: number, daysToAdd: number) {
-    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    if (!user.length || !user[0].subscriptionId) throw new Error('User or subscription not found');
-
-    const subscription = await stripe.subscriptions.retrieve(user[0].subscriptionId);
-    const currentTrialEnd = subscription.trial_end || Math.floor(Date.now() / 1000);
-    const newTrialEnd = currentTrialEnd + (daysToAdd * 86400);
-
-    const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
-      trial_end: newTrialEnd,
+  // Method to check subscription tier
+  async getSubscriptionTier(userId: number) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId)
     });
 
-    await this.handleSubscriptionUpdated(updatedSubscription);
-    return updatedSubscription;
+    if (!user) return 'free';
+    return user.subscriptionTier;
   },
 
   async setUserAsPro(userId: number) {
