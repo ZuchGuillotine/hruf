@@ -217,7 +217,7 @@ export function setupAuth(app: Express) {
               name: profile.displayName || null,
               emailVerified: true, // Google has already verified the email
               password: crypto.randomBytes(32).toString('hex'), // Generate random password
-              subscription_tier: 'free',
+              subscriptionTier: 'free',
               profilePhotoUrl: profile.photos?.[0]?.value || null,
               createdAt: new Date(),
               updatedAt: new Date()

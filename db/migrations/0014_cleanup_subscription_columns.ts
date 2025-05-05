@@ -11,7 +11,7 @@ async function main() {
       SET subscription_tier = 
         CASE 
           WHEN is_pro = true THEN 'pro'
-          WHEN subscription_status = 'active' THEN 'core'
+          WHEN subscription_tier = 'active' OR subscription_status = 'active' THEN 'core'
           ELSE 'free'
         END
       WHERE subscription_tier IS NULL
