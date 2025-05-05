@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useUser } from "./use-user";
 import { useQuery } from "@tanstack/react-query";
@@ -11,44 +12,43 @@ type ProfileStep = {
 };
 
 export function useProfileCompletion() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading: userLoading } = useUser();
 
-  const { data: healthStats } = useQuery<SelectHealthStats>({
-    queryKey: ["/api/health-stats"],
-    enabled: !!user,
-    refetchOnMount: true,
-    staleTime: 0,
-    retry: 3,
-    onError: (error) => {
-      console.error('Error fetching health stats:', error);
-    }
-  });
-
-  // Log health stats data for debugging
-  useEffect(() => {
-    if (healthStats) {
-      console.log('Health stats loaded:', healthStats);
-    }
-  }, [healthStats]);
-
-  const { data: supplementCount = 0 } = useQuery<number>({
-    queryKey: ["/api/supplements/count"],
-    enabled: !!user,
-    refetchOnMount: true,
-    staleTime: 0,
-    retry: 3,
-    retryDelay: 1000
-  });
-
-  const { data: labResults = { count: 0 } } = useQuery<{count: number}>({
-    queryKey: ["labs-count"],
+  const { data: healthStats, isLoading: healthStatsLoading } = useQuery({
+    queryKey: ['health-stats', user?.id],
     queryFn: async () => {
-      const response = await fetch('/api/labs');
+      const response = await fetch('/api/health-stats', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch health stats');
+      return response.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: supplementCount } = useQuery({
+    queryKey: ['supplements-count', user?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/supplements/count', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch supplement count');
+      return response.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: labResults } = useQuery({
+    queryKey: ['labs-count', user?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/labs', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch lab results');
       const data = await response.json();
       return { count: data.length };
     },
-    enabled: !!user,
-    staleTime: 300000,
+    enabled: !!user?.id,
   });
 
   const steps: ProfileStep[] = [
@@ -74,13 +74,13 @@ export function useProfileCompletion() {
       id: "supplement-logs",
       label: "Log Your First Supplements",
       description: "Log at least one supplement",
-      completed: (supplementCount || 0) > 0,
+      completed: !!(supplementCount && supplementCount > 0),
     },
     {
       id: "lab-results", 
       label: "Upload Lab Results",
       description: "Upload your first blood test or lab results",
-      completed: (labResults?.count || 0) > 0,
+      completed: !!(labResults?.count && labResults.count > 0),
     },
   ];
 
@@ -93,6 +93,6 @@ export function useProfileCompletion() {
     completedSteps,
     totalSteps,
     completionPercentage,
-    isLoading,
+    isLoading: userLoading || healthStatsLoading,
   };
 }

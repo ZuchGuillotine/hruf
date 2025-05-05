@@ -5,28 +5,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
+import { useProfileCompletion } from '@/hooks/use-profile-completion';
 
 export default function ProfileCompletionNotification() {
   const { user } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [dismissed, setDismissed] = useState(false);
+  const { completionPercentage, isLoading } = useProfileCompletion();
 
-  const { data: profileCompletion } = useQuery({
-    queryKey: ['profileCompletion', user?.id],
-    queryFn: async () => {
-      const response = await fetch('/api/profile/completion', {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile completion status');
-      }
-      return response.json();
-    },
-    enabled: !!user?.id
-  });
-
-  if (!user || dismissed || !profileCompletion?.needsCompletion) {
+  if (!user || dismissed || completionPercentage === 100 || isLoading) {
     return null;
   }
 
