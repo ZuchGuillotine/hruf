@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom'; //Removed as useNavigate is not used
 import { CalendarIcon, CheckCircle } from 'lucide-react';
 
 interface PaymentOptionsModalProps {
@@ -12,12 +11,12 @@ interface PaymentOptionsModalProps {
 
 export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProps) {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); //Removed as useNavigate is not used
 
   const handleSubscribe = async (planType: 'monthlyWithTrial' | 'monthly' | 'yearly') => {
     try {
       setLoading(true);
-      
+
       // For the free trial option, redirect to Stripe's hosted page
       if (planType === 'monthlyWithTrial') {
         window.location.href = 'https://buy.stripe.com/eVa6rr9kw6GD9e8aEE';
@@ -67,7 +66,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
           <div className="text-center text-sm text-gray-500 mb-4">
             Start your journey with StackTracker Pro!
           </div>
-          
+
           <div className="space-y-3">
             {/* Free Trial Option */}
             <Button 
