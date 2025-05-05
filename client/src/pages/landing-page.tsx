@@ -248,7 +248,7 @@ export default function LandingPage() {
                             'Content-Type': 'application/json'
                           },
                           body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJCXB9LK8z', // Starter Monthly
+                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw', // Starter Monthly
                             productId: 'prod_SF40NCVtZWsX05' // Starter product ID
                           })
                         });
@@ -350,7 +350,7 @@ export default function LandingPage() {
                       try {
                         // Store selected plan in session storage
                         sessionStorage.setItem('selectedPlan', 'pro-monthly');
-                        
+
                         const response = await fetch('/api/stripe/create-checkout-session', {
                           method: 'POST',
                           headers: {
