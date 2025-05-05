@@ -1,0 +1,85 @@
+}
+Attempting to send welcome email to: doctor1@haidaa.com
+Failed to send welcome email: ReferenceError: require is not defined
+    at <anonymous> (/home/runner/workspace/server/auth.ts:374:38)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Error details: {
+  name: 'ReferenceError',
+  message: 'require is not defined',
+  stack: 'ReferenceError: require is not defined\n' +
+    '    at <anonymous> (/home/runner/workspace/server/auth.ts:374:38)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)',
+  response: undefined
+}
+Serializing user: { userId: 92, timestamp: '2025-05-05T06:12:27.557Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.697Z' }
+User info request: {
+  isAuthenticated: true,
+  hasUser: true,
+  userId: 92,
+  timestamp: '2025-05-05T06:12:27.697Z'
+}
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.739Z' }
+Starting free trial for user: { userId: 92, timestamp: '2025-05-05T06:12:27.742Z' }
+Error starting free trial: {
+  error: 'syntax error at or near "where"',
+  stack: 'NeonDbError: syntax error at or near "where"\n' +
+    '    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1554:77)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/server/routes/stripe.ts:153:5)',
+  timestamp: '2025-05-05T06:12:27.770Z'
+}
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.867Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.886Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.905Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.920Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.926Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.936Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.943Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.945Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.952Z' }
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:27.954Z' }
+info: Retrieved 0 lab results for user 92 {"timestamp":"2025-05-05T06:12:28.002Z"}
+User deserialized: { userId: 92, timestamp: '2025-05-05T06:12:49.036Z' }
+Logging out user: {
+  userId: 92,
+  email: 'doctor1@haidaa.com',
+  timestamp: '2025-05-05T06:12:49.037Z'
+}
+User info request: {
+  isAuthenticated: false,
+  hasUser: false,
+  userId: undefined,
+  timestamp: '2025-05-05T06:12:49.140Z'
+}
+Attempting to send welcome email to: doc2@haidaamadeup.com
+Failed to send welcome email: ReferenceError: require is not defined
+    at <anonymous> (/home/runner/workspace/server/auth.ts:374:38)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Error details: {
+  name: 'ReferenceError',
+  message: 'require is not defined',
+  stack: 'ReferenceError: require is not defined\n' +
+    '    at <anonymous> (/home/runner/workspace/server/auth.ts:374:38)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)',
+  response: undefined
+}
+Serializing user: { userId: 93, timestamp: '2025-05-05T06:13:10.430Z' }
+User deserialized: { userId: 93, timestamp: '2025-05-05T06:13:10.549Z' }
+User info request: {
+  isAuthenticated: true,
+  hasUser: true,
+  userId: 93,
+  timestamp: '2025-05-05T06:13:10.549Z'
+}
+User deserialized: { userId: 93, timestamp: '2025-05-05T06:13:10.600Z' }
+Starting free trial for user: { userId: 93, timestamp: '2025-05-05T06:13:10.601Z' }
+Error starting free trial: {
+  error: 'syntax error at or near "where"',
+  stack: 'NeonDbError: syntax error at or near "where"\n' +
+    '    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1554:77)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+    '    at async <anonymous> (/home/runner/workspace/server/routes/stripe.ts:153:5)',
+  timestamp: '2025-05-05T06:13:10.624Z'
+}
+User deserialized: { userId: 93, timestamp: '2025-05-05T06:13:10.697Z' }
