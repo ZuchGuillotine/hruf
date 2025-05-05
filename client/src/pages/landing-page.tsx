@@ -47,35 +47,33 @@ export default function LandingPage() {
         throw new Error(response.message);
       }
 
+      // Show success toast for successful signup
+      toast({
+        title: "Account Created",
+        description: "Your account has been created successfully!",
+      });
+
       if (selectedPlan === 'free') {
         // For free tier, start free trial
-        await fetch('/api/stripe/start-free-trial', {
+        const trialResponse = await fetch('/api/stripe/start-free-trial', {
           method: 'POST',
           credentials: 'include',
         });
         
-        // Redirect to dashboard after trial is started
+        if (!trialResponse.ok) {
+          const trialError = await trialResponse.json();
+          console.error('Free trial setup error:', trialError);
+          // Even if there's an error starting the trial, we'll continue to the dashboard
+          // The user can set up their subscription later
+        }
+        
+        // Redirect to dashboard after registration (and trial if successful)
         setLocation('/');
       } else {
         // For paid tiers, redirect to subscription checkout
-        // Map the selected plan to the appropriate price ID
-        let priceId;
-        switch (selectedPlan) {
-          case 'starter-monthly':
-            priceId = 'prod_RtcuCvjOY9gHvm'; // Monthly no trial
-            break;
-          case 'starter-yearly':
-            priceId = 'price_starter_yearly'; // Replace with actual yearly price ID
-            break;
-          case 'pro-monthly':
-            priceId = 'prod_RpdfGxB4L6Rut7'; // Pro monthly
-            break;
-          case 'pro-yearly':
-            priceId = 'price_pro_yearly'; // Replace with actual yearly price ID
-            break;
-          default:
-            priceId = 'prod_RpdfGxB4L6Rut7'; // Default to monthly pro
-        }
+        // Use getPriceIdByPlan from our stripe price helper
+        const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
+        const priceId = getPriceIdByPlan(selectedPlan as any);
 
         // Create checkout session
         const checkoutResponse = await fetch('/api/stripe/create-checkout-session', {

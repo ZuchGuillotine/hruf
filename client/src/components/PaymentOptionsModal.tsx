@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-// import { useNavigate } from 'react-router-dom'; //Removed as useNavigate is not used
 import { CalendarIcon, CheckCircle } from 'lucide-react';
+import { getMonthlyPro, getYearlyPro } from '@/lib/stripe-price-ids';
+import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/hooks/use-user';
 
 interface PaymentOptionsModalProps {
   isOpen: boolean;
@@ -11,7 +13,8 @@ interface PaymentOptionsModalProps {
 
 export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProps) {
   const [loading, setLoading] = useState(false);
-  // const navigate = useNavigate(); //Removed as useNavigate is not used
+  const { toast } = useToast();
+  const { user, isLoading: isUserLoading } = useUser();
 
   const handleStartFreeTrial = async () => {
     try {
@@ -24,13 +27,25 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
       });
       
       if (!response.ok) {
-        throw new Error('Failed to start free trial');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to start free trial');
       }
+      
+      toast({
+        title: "Free Trial Started",
+        description: "Your 28-day free trial has started. Enjoy!",
+      });
       
       // After successful trial setup, redirect to the dashboard
       window.location.href = '/';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Free trial error:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to start free trial",
+      });
     } finally {
       setLoading(false);
     }
@@ -40,18 +55,10 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
     try {
       setLoading(true);
 
-      // For paid options, create checkout session
-      let priceId;
-      switch (planType) {
-        case 'yearly':
-          priceId = 'prod_RpdfGxB4L6Rut7';
-          break;
-        case 'monthly':
-          priceId = 'prod_RtcuCvjOY9gHvm';
-          break;
-        default:
-          throw new Error('Invalid plan type');
-      }
+      // For paid options, get price ID from our centralized config
+      const priceId = planType === 'yearly' 
+        ? getYearlyPro() 
+        : getMonthlyPro();
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -61,18 +68,33 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create checkout session');
       }
 
       const { url } = await response.json();
       window.location.href = url;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Subscription error:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to process subscription",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // Don't show the modal if the user is already on a Pro plan
+  if (user?.isPro || (user?.subscriptionTier && user.subscriptionTier !== 'free')) {
+    return null;
+  }
+
+  // Check if user is already on a trial
+  const isOnTrial = user?.trialEndsAt && new Date(user.trialEndsAt) > new Date();
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -81,28 +103,34 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="text-center text-sm text-gray-500 mb-4">
-            Start your journey with StackTracker Pro!
+            {isOnTrial 
+              ? "You're currently on a free trial! Upgrade to a paid plan for continued access."
+              : "Start your journey with StackTracker Pro!"}
           </div>
 
           <div className="space-y-3">
-            {/* Free Trial Option */}
-            <Button 
-              onClick={handleStartFreeTrial}
-              className="w-full bg-green-600 hover:bg-green-700"
-              disabled={loading}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {loading ? "Processing..." : "Start 28-Day Free Trial"}
-            </Button>
+            {/* Free Trial Option - only show if not already on trial */}
+            {!isOnTrial && (
+              <>
+                <Button 
+                  onClick={handleStartFreeTrial}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={loading}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {loading ? "Processing..." : "Start 28-Day Free Trial"}
+                </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or subscribe now</span>
-              </div>
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or subscribe now</span>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Monthly Option */}
             <Button 

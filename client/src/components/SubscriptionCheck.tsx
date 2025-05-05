@@ -24,23 +24,27 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
   const handleSubscribe = async (isYearly: boolean) => {
     setLoading(true);
     try {
+      // Get the appropriate price ID from our helper
+      const { getYearlyPro, getMonthlyPro } = await import('@/lib/stripe-price-ids');
       const priceId = isYearly 
-        ? import.meta.env.STRIPE_YEARLY_PRICE_ID || 'prod_RpdfGxB4L6Rut7'
-        : import.meta.env.STRIPE_MONTHLY_PRICE_ID || 'prod_RtcuCvjOY9gHvm';
+        ? getYearlyPro()
+        : getMonthlyPro();
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start subscription');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to start subscription');
       }
 
       const { url } = await response.json();
       window.location.href = url;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start subscription:', error);
     } finally {
       setLoading(false);

@@ -34,8 +34,8 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
       });
       
       // If this is a success redirect and we have setup_complete parameter,
-      // redirect the user to the dashboard
-      if (req.query.setup_complete === 'true' && req.path === '/') {
+      // redirect the user to the dashboard after updating subscription
+      if (req.query.setup_complete === 'true') {
         // Process the subscription and ensure user status is updated
         try {
           const stripe = await import('stripe').then(module => 
@@ -112,8 +112,8 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
               });
               
               // If this was a setup_complete redirect, redirect to the dashboard
-              if (req.query.setup_complete === 'true' && req.path === '/') {
-                return res.redirect('/dashboard');
+              if (req.query.setup_complete === 'true') {
+                return res.redirect('/');
               }
             }
             next();
