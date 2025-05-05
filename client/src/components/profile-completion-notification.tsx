@@ -2,52 +2,117 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/use-user';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'wouter';
-import { useProfileCompletion } from '@/hooks/use-profile-completion';
-import { Progress } from '@/components/ui/progress';
+import { ArrowRight, CheckCircle } from 'lucide-react';
+import { TIERS } from '@/lib/stripe-price-ids';
 
-export default function ProfileCompletionNotification() {
+export function ProfileCompletionNotification() {
   const { user } = useUser();
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [dismissed, setDismissed] = useState(false);
-  const { completionPercentage, isLoading } = useProfileCompletion();
+  
+  if (!user) return null;
 
-  if (!user || dismissed || completionPercentage === 100 || isLoading) {
-    return null;
-  }
+  const renderFreeTierCard = () => (
+    <Card className="border-2">
+      <CardHeader>
+        <CardTitle>Free Core Account</CardTitle>
+        <CardDescription>Basic supplement tracking</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex items-start gap-2">
+          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <span>Basic supplement tracking</span>
+        </div>
+        <div className="text-sm text-muted-foreground mt-4">
+          Upgrade to unlock AI analysis and advanced features
+        </div>
+      </CardContent>
+      <CardFooter className="flex gap-2">
+        <Button 
+          className="w-1/2"
+          onClick={() => window.location.href = TIERS.starter.MONTHLY.url}
+        >
+          Starter ${TIERS.starter.MONTHLY.price}/mo
+        </Button>
+        <Button 
+          className="w-1/2"
+          onClick={() => window.location.href = TIERS.pro.MONTHLY.url}
+        >
+          Pro ${TIERS.pro.MONTHLY.price}/mo
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+
+  const renderStarterTierCard = () => (
+    <Card className="border-2">
+      <CardHeader>
+        <CardTitle>Starter AI Essentials</CardTitle>
+        <CardDescription>AI-powered health optimization</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex items-start gap-2">
+          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <span>100 AI interactions per month</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <span>3 lab result analyses per year</span>
+        </div>
+        <div className="text-sm text-muted-foreground mt-4">
+          Upgrade to Pro for unlimited features
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button 
+          className="w-full"
+          onClick={() => window.location.href = TIERS.pro.YEARLY.url}
+        >
+          Upgrade to Pro ${(TIERS.pro.YEARLY.price / 12).toFixed(2)}/mo (Annual)
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+
+  const renderProTierCard = () => (
+    <Card className="border-2">
+      <CardHeader>
+        <CardTitle>Pro Biohacker Suite</CardTitle>
+        <CardDescription>Advanced health optimization</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex items-start gap-2">
+          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <span>Unlimited AI interactions</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <span>Unlimited lab result analyses</span>
+        </div>
+        {user.subscriptionInterval === 'MONTHLY' && (
+          <div className="text-sm text-muted-foreground mt-4">
+            Save ${(TIERS.pro.MONTHLY.price * 12 - TIERS.pro.YEARLY.price).toFixed(2)} per year by switching to annual billing
+          </div>
+        )}
+      </CardContent>
+      {user.subscriptionInterval === 'MONTHLY' && (
+        <CardFooter>
+          <Button 
+            className="w-full"
+            onClick={() => window.location.href = TIERS.pro.YEARLY.url}
+          >
+            Switch to Annual (Save ${(TIERS.pro.MONTHLY.price * 12 - TIERS.pro.YEARLY.price).toFixed(2)}/yr)
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
+  );
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-lg max-w-md w-full mx-4">
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-blue-900">Complete Your Profile</h3>
-          <p className="text-blue-700">
-            Completing your profile helps us give better health insights
-          </p>
-          <div className="space-y-2">
-            <Progress value={completionPercentage} className="h-2 bg-blue-200" indicatorClassName="bg-blue-600" />
-            <p className="text-sm text-blue-600 font-medium">{completionPercentage}% Complete</p>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button 
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setLocation('/profile')}
-            >
-              Complete Profile
-            </Button>
-            <Button
-              className="bg-transparent hover:bg-blue-100 text-blue-600"
-              variant="ghost"
-              onClick={() => setDismissed(true)}
-            >
-              Dismiss
-            </Button>
-          </div>
-        </div>
-      </div>
+    <div className="w-full max-w-md mx-auto">
+      {user.subscriptionTier === 'free' && renderFreeTierCard()}
+      {user.subscriptionTier === 'starter' && renderStarterTierCard()}
+      {user.subscriptionTier === 'pro' && renderProTierCard()}
     </div>
   );
 }
