@@ -34,19 +34,19 @@ export default async function(db) {
     `);
   }
   
-  // Check if subscriptionStatus column exists
-  const checkSubscriptionStatus = await db.execute(sql`
+  // Check if subscriptionTier column exists
+  const checkSubscriptionTier = await db.execute(sql`
     SELECT column_name 
     FROM information_schema.columns 
     WHERE table_name = 'users' 
-    AND column_name = 'subscription_status'
+    AND column_name = 'subscription_tier'
   `);
   
-  if (checkSubscriptionStatus.rows.length === 0) {
-    console.log('Adding subscriptionStatus column to users table');
+  if (checkSubscriptionTier.rows.length === 0) {
+    console.log('Adding subscriptionTier column to users table');
     await db.execute(sql`
       ALTER TABLE users
-      ADD COLUMN subscription_status TEXT DEFAULT 'free'
+      ADD COLUMN subscription_tier TEXT DEFAULT 'free'
     `);
   }
   
