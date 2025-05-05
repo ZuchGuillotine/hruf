@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { db } from '@db';
 import { users } from '@db/schema';
@@ -25,7 +24,6 @@ router.get('/users/subscriptions', async (req, res) => {
         email: users.email,
         subscriptionTier: users.subscriptionTier,
         trialEndsAt: users.trialEndsAt,
-        isPro: users.isPro,
         subscriptionId: users.subscriptionId
       })
       .from(users);
@@ -47,7 +45,6 @@ router.get('/users/:userId/subscription', async (req, res) => {
         email: users.email,
         subscriptionTier: users.subscriptionTier,
         trialEndsAt: users.trialEndsAt,
-        isPro: users.isPro,
         subscriptionId: users.subscriptionId
       })
       .from(users)

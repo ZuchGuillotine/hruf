@@ -86,16 +86,12 @@ export const stripeService = {
       ? new Date(subscription.trial_end * 1000) 
       : null;
 
-    // Determine if this is a pro subscription
-    const isPro = subscriptionTier === 'pro';
-
     console.log('Updating user subscription:', {
       userId,
       subscriptionId: subscription.id,
       status: subscription.status,
       priceId: currentPriceId,
       tier: subscriptionTier,
-      isPro,
       trialEndsAt: trialEndsAt?.toISOString(),
       timestamp: new Date().toISOString()
     });
@@ -178,7 +174,7 @@ export const stripeService = {
 
   async setUserAsPro(userId: number) {
     return db.update(users)
-      .set({ isPro: true })
+      .set({ subscriptionTier: 'pro' })
       .where(eq(users.id, userId));
   }
 };
