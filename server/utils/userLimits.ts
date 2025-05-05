@@ -60,15 +60,15 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
       };
     }
 
-    const { isPro, subscriptionStatus, trialEndsAt } = userResult[0];
+    const { isPro, subscriptionTier, trialEndsAt } = userResult[0];
     
     // Ensure isPro is a boolean
     const isProSubscriber = !!isPro;
     
-    // Determine if the user is on a trial based on subscription status and trial end date
+    // Determine if the user is on a trial based on subscription tier and trial end date
     const isOnTrial = 
       !isProSubscriber && 
-      (subscriptionStatus === 'trial' || 
+      (subscriptionTier === 'trial' || 
        (trialEndsAt && new Date() < new Date(trialEndsAt)));
 
     // If the user is on a paid subscription, they have no limit
