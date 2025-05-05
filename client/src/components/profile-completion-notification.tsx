@@ -1,11 +1,12 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/use-user';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { useProfileCompletion } from '@/hooks/use-profile-completion';
+import { Progress } from '@/components/ui/progress';
 
 export default function ProfileCompletionNotification() {
   const { user } = useUser();
@@ -19,25 +20,34 @@ export default function ProfileCompletionNotification() {
   }
 
   return (
-    <Alert className="mb-4">
-      <AlertTitle>Complete Your Profile</AlertTitle>
-      <AlertDescription className="mt-2">
-        <p>Please complete your profile to get personalized recommendations.</p>
-        <Button 
-          className="mt-2"
-          onClick={() => setLocation('/profile')}
-          variant="outline"
-        >
-          Complete Profile
-        </Button>
-        <Button
-          className="mt-2 ml-2"
-          onClick={() => setDismissed(true)}
-          variant="ghost"
-        >
-          Dismiss
-        </Button>
-      </AlertDescription>
-    </Alert>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-lg max-w-md w-full mx-4">
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-blue-900">Complete Your Profile</h3>
+          <p className="text-blue-700">
+            Completing your profile helps us give better health insights
+          </p>
+          <div className="space-y-2">
+            <Progress value={completionPercentage} className="h-2 bg-blue-200" indicatorClassName="bg-blue-600" />
+            <p className="text-sm text-blue-600 font-medium">{completionPercentage}% Complete</p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setLocation('/profile')}
+            >
+              Complete Profile
+            </Button>
+            <Button
+              className="bg-transparent hover:bg-blue-100 text-blue-600"
+              variant="ghost"
+              onClick={() => setDismissed(true)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
