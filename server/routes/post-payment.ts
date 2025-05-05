@@ -102,23 +102,20 @@ router.post('/register-post-payment', async (req, res) => {
       updatedAt: new Date()
     }).returning();
 
-    // Log the user in
-    if (req.logIn) {
-      req.logIn(user, (err) => {
-        if (err) {
-          console.error('Error logging in user:', err);
-          return res.status(500).json({ message: 'Failed to log in' });
-        }
-        
-        // Success - return user without password
-        const { password, ...userWithoutPassword } = user;
-        return res.status(201).json(userWithoutPassword);
-      });
-    } else {
-      // Fallback if req.logIn is not available
+    // Log the user in and establish session
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error('Error logging in user:', err);
+        return res.status(500).json({ message: 'Failed to log in' });
+      }
+      
+      // Success - return user without password
       const { password, ...userWithoutPassword } = user;
-      return res.status(201).json(userWithoutPassword);
-    }
+      return res.status(201).json({
+        ...userWithoutPassword,
+        isAuthenticated: true
+      });
+    });
   } catch (err: any) {
     console.error('Post-payment registration error:', err);
     return res.status(500).json({ 
