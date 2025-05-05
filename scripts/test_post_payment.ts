@@ -1,7 +1,5 @@
 
-#!/usr/bin/env node
-
-import axios from 'axios';
+const axios = require('axios');
 
 async function testPostPaymentRegistration() {
   try {
@@ -32,7 +30,7 @@ async function testPostPaymentRegistration() {
       console.log('User is authenticated and should be redirected to dashboard');
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error testing post-payment registration:', error.response?.data || error.message);
   }
 }
