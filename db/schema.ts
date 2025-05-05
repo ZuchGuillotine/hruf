@@ -6,6 +6,11 @@ import { sql } from "drizzle-orm";
 export const users = pgTable("users", {
   subscriptionId: text("subscription_id"),
   subscriptionStatus: text("subscription_status"),
+  subscriptionTier: text("subscription_tier").default('free').notNull(),
+  aiInteractionsCount: integer("ai_interactions_count").default(0),
+  aiInteractionsReset: timestamp("ai_interactions_reset"),
+  labUploadsCount: integer("lab_uploads_count").default(0),
+  labUploadsReset: timestamp("lab_uploads_reset"),
   trialEndsAt: timestamp("trial_ends_at"),
   chatCount: integer("chat_count").default(0),
   lastRewardedAt: timestamp("last_rewarded_at"),
