@@ -1,62 +1,76 @@
 /**
- * Contains all Stripe product/pricing information for the application
- * This includes direct payment links, product IDs, and price information
+ * Stripe product and price information
+ * 
+ * These values need to match what is set up in your Stripe dashboard.
+ * 
+ * Usage: 
+ * - TIERS: used directly in the subscription UI to display plans and prices
+ * - PRODUCTS: used to map product IDs to their respective tiers
  */
 
-// Stripe Tier Prices and URLs
+// Tier info type for TypeScript support
+export type TierInfo = {
+  id: string;
+  price: number;
+  url: string;
+};
+
+// Subscription tiers with direct Stripe checkout URLs
 export const TIERS = {
   starter: {
     MONTHLY: {
+      id: 'price_1PXnYnC7gKOJsRt7LFyCvdow', // Replace with your actual price ID
       price: 21.99,
-      url: 'https://buy.stripe.com/6oEdTTeEQaWT76028b',
+      url: 'https://buy.stripe.com/6oEdTTeEQaWT76028b'
     },
     YEARLY: {
+      id: 'price_1PXnZJC7gKOJsRt7FXnJcY6B', // Replace with your actual price ID
       price: 184.71,
-      url: 'https://buy.stripe.com/eVa177aoAfd94XSbIM',
-    },
+      url: 'https://buy.stripe.com/eVa177aoAfd94XSbIM'
+    }
   },
   pro: {
     MONTHLY: {
+      id: 'price_1PXnZoC7gKOJsRt7pz0Xtsim', // Replace with your actual price ID
       price: 49.99,
-      url: 'https://buy.stripe.com/5kA5nn8gs7KH8a428e',
+      url: 'https://buy.stripe.com/5kA5nn8gs7KH8a428e'
     },
     YEARLY: {
-      price: 399.99,
-      url: 'https://buy.stripe.com/8wM8zzfIU6GD760bIP',
-    },
+      id: 'price_1PXnaSC7gKOJsRt79aGOsLn7', // Replace with your actual price ID
+      price: 479.88,
+      url: 'https://buy.stripe.com/8wM8zzfIU6GD760bIP'
+    }
+  }
+};
+
+// Product information for server-side tier mapping
+export const PRODUCTS = {
+  'prod_SF40NCVtZWsX05': {
+    name: 'Starter AI Essentials',
+    tier: 'starter'
   },
+  'prod_RtcuCvjOY9gHvm': {
+    name: 'Pro Biohacker Suite',
+    tier: 'pro'
+  }
 };
 
-// Product ID to tier mapping
-const PRODUCT_ID_TO_TIER: Record<string, 'starter' | 'pro'> = {
-  'prod_SF40NCVtZWsX05': 'starter', // Starter AI essentials
-  'prod_RtcuCvjOY9gHvm': 'pro',     // Pro biohacker suite
-};
-
-// Price ID to tier mapping
-const PRICE_ID_TO_TIER: Record<string, 'starter' | 'pro'> = {
-  'price_1P9XCbBnKIqhVfskV6ZbkAy5': 'starter', // Monthly Starter
-  'price_1P9XDQBnKIqhVfskuAZ3e7yX': 'starter', // Annual Starter
-  'price_1P9XIsBnKIqhVfskAtrugJ6y': 'pro',     // Monthly Pro
-  'price_1P9XJyBnKIqhVfsk5RBejxAu': 'pro',     // Annual Pro
+// Map price IDs to their tier for utilities
+const PRICE_TO_TIER: Record<string, 'starter' | 'pro'> = {
+  // Starter plan price IDs
+  'price_1PXnYnC7gKOJsRt7LFyCvdow': 'starter', // Monthly
+  'price_1PXnZJC7gKOJsRt7FXnJcY6B': 'starter', // Yearly
+  
+  // Pro plan price IDs
+  'price_1PXnZoC7gKOJsRt7pz0Xtsim': 'pro', // Monthly
+  'price_1PXnaSC7gKOJsRt79aGOsLn7': 'pro' // Yearly
 };
 
 /**
- * Get subscription tier from Stripe price ID
+ * Helper to get the tier from a price ID
  * @param priceId Stripe price ID
- * @returns Subscription tier or 'free' if not found
+ * @returns 'starter', 'pro', or 'free' if not found
  */
-export function getTierFromPriceId(priceId?: string): 'free' | 'starter' | 'pro' {
-  if (!priceId) return 'free';
-  return PRICE_ID_TO_TIER[priceId] || 'free';
-}
-
-/**
- * Get subscription tier from Stripe product ID
- * @param productId Stripe product ID
- * @returns Subscription tier or 'free' if not found
- */
-export function getTierFromProductId(productId?: string): 'free' | 'starter' | 'pro' {
-  if (!productId) return 'free';
-  return PRODUCT_ID_TO_TIER[productId] || 'free';
+export function getTierFromPriceId(priceId: string): 'free' | 'starter' | 'pro' {
+  return PRICE_TO_TIER[priceId] || 'free';
 }
