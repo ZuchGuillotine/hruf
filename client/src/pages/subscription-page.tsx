@@ -4,6 +4,7 @@ import { CalendarIcon, CheckCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
+import PaymentOptionsModal from './PaymentOptionsModal'; // Assuming this component exists
 
 export default function SubscriptionPage() {
   const { user } = useUser();
@@ -143,6 +144,7 @@ export default function SubscriptionPage() {
           </div>
         </div>
       </div>
+      <PaymentOptionsModal isOpen={true} onClose={() => window.location.href = '/'} />
     </div>
   );
 }

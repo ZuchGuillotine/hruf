@@ -76,7 +76,7 @@ export default function AuthPage() {
           setVerificationSent(true);
         } else {
           console.log('Registration successful, redirecting to subscription page');
-          setLocation('/subscription');
+          window.location.href = '/subscription';
         }
       }
     } catch (error: any) {
