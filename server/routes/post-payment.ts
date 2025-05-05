@@ -1,128 +1,107 @@
-import express from 'express';
-import Stripe from 'stripe';
-import { z } from 'zod';
+import { Router } from 'express';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
-import { fromZodError } from 'zod-validation-error';
+import Stripe from 'stripe';
+import { getTierFromProductId } from '../utils/stripe-utils';
 
-const router = express.Router();
+const router = Router();
 const scryptAsync = promisify(scrypt);
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { 
-  apiVersion: '2023-10-16' 
-});
-
-/**
- * Hash a password using scrypt
- * @param password Password to hash
- * @returns Hashed password with salt
- */
+// Helper for hashing passwords
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString('hex');
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString('hex')}.${salt}`;
 }
 
-/**
- * Registration schema for post-payment user registration
- */
-const postPaymentRegistrationSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  sessionId: z.string().min(1, 'Session ID is required'),
-  subscriptionTier: z.enum(['free', 'starter', 'pro']),
-  purchaseId: z.string().optional(),
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing STRIPE_SECRET_KEY environment variable');
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16',
 });
 
-/**
- * Register a user after payment
- * POST /api/register-post-payment
- */
-router.post('/register-post-payment', async (req, res) => {
+// Register a user after they've completed a Stripe payment
+router.post('/register', async (req, res) => {
   try {
-    // Validate request body
-    const result = postPaymentRegistrationSchema.safeParse(req.body);
-    if (!result.success) {
-      const error = fromZodError(result.error);
-      return res.status(400).json({ message: error.toString() });
-    }
+    const { username, email, password, sessionId, subscriptionTier } = req.body;
 
-    const { username, email, password, sessionId, subscriptionTier, purchaseId } = result.data;
-
-    // Verify the session with Stripe
-    try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      
-      if (session.payment_status !== 'paid') {
-        return res.status(400).json({ message: 'Payment has not been completed' });
-      }
-      
-      // Verify email matches if available in session
-      if (session.customer_details?.email && session.customer_details.email !== email) {
-        return res.status(400).json({ 
-          message: 'Email does not match the one used for payment' 
-        });
-      }
-    } catch (err: any) {
-      console.error('Error verifying Stripe session:', err);
+    // Validate required fields
+    if (!username || !email || !password || !sessionId) {
       return res.status(400).json({ 
-        message: 'Unable to verify payment session. Please contact support.' 
+        message: 'Username, email, password, and session ID are required' 
       });
     }
 
     // Check if username or email already exists
-    const existingUser = await db.query.users.findFirst({
-      where: (users, { or, eq }) => or(
-        eq(users.username, username),
-        eq(users.email, email)
-      )
-    });
+    const existingUser = await db.select().from(users).where(
+      users => users.username.equals(username).or(users.email.equals(email))
+    ).limit(1);
 
-    if (existingUser) {
-      return res.status(400).json({ 
-        message: 'Username or email already exists' 
+    if (existingUser.length > 0) {
+      return res.status(400).json({
+        message: 'Username or email already exists'
       });
     }
 
-    // Create user record
+    // Verify the Stripe session
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'line_items.data.price.product', 'customer']
+    });
+
+    if (!session || session.status !== 'complete') {
+      return res.status(400).json({
+        message: 'Invalid or incomplete payment session'
+      });
+    }
+
+    // Get the subscription ID and customer ID from the session
+    const subscriptionId = session.subscription as string;
+    const stripeCustomerId = session.customer as string;
+
+    // Determine the subscription tier from the product ID
+    // If we couldn't determine it from the sessionId, use the provided tier
+    let tier = subscriptionTier;
+    if (session.line_items?.data[0]?.price?.product) {
+      const productId = session.line_items.data[0].price.product as string;
+      tier = getTierFromProductId(productId);
+    }
+
+    // Create the user with subscription information
     const [user] = await db.insert(users).values({
       username,
       email,
       password: await hashPassword(password),
-      subscriptionTier,
-      purchaseId,
+      subscriptionTier: tier,
+      subscriptionId,
+      stripeCustomerId,
       createdAt: new Date(),
       updatedAt: new Date()
     }).returning();
 
-    // Log the user in
-    if (req.logIn) {
-      req.logIn(user, (err) => {
-        if (err) {
-          console.error('Error logging in user:', err);
-          return res.status(500).json({ message: 'Failed to log in' });
-        }
-        
-        // Success - return user without password
-        const { password, ...userWithoutPassword } = user;
-        return res.status(201).json(userWithoutPassword);
-      });
-    } else {
-      // Fallback if req.logIn is not available
-      const { password, ...userWithoutPassword } = user;
-      return res.status(201).json(userWithoutPassword);
+    // Log in the user by setting a session
+    if (req.session) {
+      req.session.userId = user.id;
     }
-  } catch (err: any) {
-    console.error('Post-payment registration error:', err);
-    return res.status(500).json({ 
-      message: 'Registration failed. Please try again or contact support.' 
+
+    // Return success
+    res.status(201).json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier
+      }
+    });
+  } catch (error: any) {
+    console.error('Post-payment registration error:', error);
+    
+    res.status(500).json({
+      message: `Registration failed: ${error.message}`
     });
   }
 });
