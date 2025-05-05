@@ -20,86 +20,33 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 // Ensure JSON parsing middleware is applied
 router.use(express.json());
 
+// Create checkout session - this is now for unauthenticated users in our new flow
 router.post('/create-checkout-session', async (req, res) => {
   try {
-    console.log('Creating checkout session:', {
-      body: req.body,
-      user: req.user,
-      timestamp: new Date().toISOString()
-    });
+    log('Creating checkout session', 'express');
+    const { planId, isAnnual } = req.body;
 
-    const { priceId } = req.body;
-    const userId = req.user?.id;
-
-    if (!userId) {
-      console.log('Unauthorized request - no user ID');
-      return res.status(401).json({ error: 'Unauthorized' });
+    if (!planId) {
+      return res.status(400).json({ error: 'Plan ID is required' });
     }
 
-    if (!priceId) {
-      console.log('Missing priceId in request');
-      return res.status(400).json({ error: 'Price ID is required' });
-    }
-
-    // Map product IDs to their respective Stripe price IDs
-    const priceIdMap: Record<string, string> = {
-      'prod_RtcuCvjOY9gHvm': 'price_1QzpeMAIJBVVerrJ12ZYExkV', // Monthly no trial 
-      'price_starter_yearly': 'price_1QzpeMAIJBVVerrJ12ZYFxkV', // Replace with actual yearly Starter price ID
-      'prod_RpdfGxB4L6Rut7': 'price_1QvyNlAIJBVVerrJPOw4EIMa', // Pro monthly
-      'price_pro_yearly': 'price_1QvyNlAIJBVVerrJPOw5FIMa', // Replace with actual yearly Pro price ID
-    };
-
-    // Use the provided product ID directly or map it if needed
-    let stripePriceId = priceIdMap[priceId] || priceId;
-
-    // Using Stripe instance defined at the top of the file
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-      : `${req.protocol}://${req.get('host')}`;
-
-    console.log('Creating checkout session with user ID:', {
-      userId,
-      priceId: stripePriceId,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Determine if this plan should include a trial period
-    // Usually starter and free plans get trials, pro plans don't
-    const shouldIncludeTrial = stripePriceId.includes('starter') || priceId.includes('starter');
-    
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: stripePriceId,
-          quantity: 1,
-        },
-      ],
-      success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/`,
-      client_reference_id: userId.toString(),
-      allow_promotion_codes: true,
-      billing_address_collection: 'required',
-      customer_email: req.user?.email,
-      subscription_data: {
-        // Add trial period for starter plans
-        trial_period_days: shouldIncludeTrial ? 14 : undefined,
-        metadata: {
-          userId: userId.toString(),
-        },
-      },
+    // Using the updated checkout service
+    const result = await stripeService.createCheckoutSession({
+      planId,
+      isAnnual: !!isAnnual,
+      successUrl: `${process.env.PUBLIC_URL || req.headers.origin}/auth`,
+      cancelUrl: `${process.env.PUBLIC_URL || req.headers.origin}/`,
     });
 
-    console.log('Checkout session created:', {
-      sessionId: session.id,
-      url: session.url,
-      timestamp: new Date().toISOString()
-    });
+    log(`Checkout session created: ${result.sessionId}`, 'express');
 
-    res.json({ url: session.url });
+    res.json({ 
+      url: result.url,
+      sessionId: result.sessionId,
+      purchaseId: result.purchaseId
+    });
   } catch (error: any) {
+    log(`Error creating checkout session: ${error.message}`, 'express');
     console.error('Error creating checkout session:', {
       error: error.message,
       stack: error.stack,
@@ -114,7 +61,8 @@ router.post('/create-checkout-session', async (req, res) => {
 });
 
 
-router.get('/subscription-success', async (req, res) => {
+// Validate a Stripe checkout session before creating a user account
+router.get('/validate-session', async (req, res) => {
   try {
     const sessionId = req.query.session_id as string;
     if (!sessionId) {
@@ -123,26 +71,35 @@ router.get('/subscription-success', async (req, res) => {
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     
-    if (session.payment_status === 'paid') {
-      // Process the subscription update
-      await stripeService.handleSubscriptionUpdated(session.subscription as any);
+    if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
+      // Get subscription tier from the session metadata or line items
+      let subscriptionTier = 'premium';
       
-      // Instead of redirecting, return success for the client to handle
+      // Get optional customer info for pre-filling registration form
+      const customerDetails = {
+        email: session.customer_details?.email || null,
+        name: session.customer_details?.name || null,
+      };
+      
       return res.status(200).json({ 
-        success: true,
-        subscriptionId: session.subscription,
-        status: 'active'
+        valid: true,
+        sessionId,
+        customerDetails,
+        subscriptionTier,
+        status: session.payment_status
       });
     }
 
     res.status(400).json({ 
+      valid: false,
       error: 'Payment not completed',
       status: session.payment_status
     });
   } catch (error) {
-    console.error('Error handling subscription success:', error);
+    log(`Error validating session: ${error instanceof Error ? error.message : 'Unknown error'}`, 'express');
     res.status(500).json({ 
-      error: 'Failed to process subscription',
+      valid: false,
+      error: 'Failed to validate session',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }

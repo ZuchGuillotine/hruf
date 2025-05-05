@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   // Subscription-related fields
   subscriptionId: text("subscription_id"),
   subscriptionTier: text("subscription_tier").default('free').notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   
   // Usage limits and counters
   aiInteractionsCount: integer("ai_interactions_count").default(0),
