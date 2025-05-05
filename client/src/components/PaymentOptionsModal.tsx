@@ -19,28 +19,28 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
   const handleStartFreeTrial = async () => {
     try {
       setLoading(true);
-      
+
       // Call the free trial API endpoint
       const response = await fetch('/api/stripe/start-free-trial', {
         method: 'POST',
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to start free trial');
       }
-      
+
       toast({
         title: "Free Trial Started",
         description: "Your 28-day free trial has started. Enjoy!",
       });
-      
+
       // After successful trial setup, redirect to the dashboard
       window.location.href = '/';
     } catch (error: any) {
       console.error('Free trial error:', error);
-      
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -75,7 +75,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
       window.location.href = url;
     } catch (error: any) {
       console.error('Subscription error:', error);
-      
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -88,7 +88,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
 
   // This modal should only show after a free tier signup
   // No additional checks needed as it's controlled by the parent component
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
