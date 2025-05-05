@@ -1,5 +1,6 @@
 
 #!/usr/bin/env node
+
 import axios from 'axios';
 
 async function testPostPaymentRegistration() {
@@ -8,7 +9,7 @@ async function testPostPaymentRegistration() {
       username: "testuser" + Math.floor(Math.random() * 1000),
       email: `test${Math.floor(Math.random() * 1000)}@example.com`,
       password: "testpassword123",
-      sessionId: "test_session",
+      sessionId: "test_session", 
       subscriptionTier: "starter"
     };
 
