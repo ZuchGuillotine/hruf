@@ -5,8 +5,8 @@ import { sql } from 'drizzle-orm';
 async function main() {
   console.log('Starting subscription columns cleanup migration...');
   try {
+    // First ensure all users have a valid tier
     await db.execute(sql`
-      -- First ensure all users have a valid tier
       UPDATE users 
       SET subscription_tier = 
         CASE 
@@ -14,13 +14,25 @@ async function main() {
           WHEN subscription_status = 'active' THEN 'core'
           ELSE 'free'
         END
-      WHERE subscription_tier IS NULL;
+      WHERE subscription_tier IS NULL
+    `);
 
-      -- Remove obsolete columns
+    // Remove trial_ends_at column
+    await db.execute(sql`
       ALTER TABLE users
-      DROP COLUMN IF EXISTS trial_ends_at,
-      DROP COLUMN IF EXISTS is_pro,
-      DROP COLUMN IF EXISTS subscription_status;
+      DROP COLUMN IF EXISTS trial_ends_at
+    `);
+
+    // Remove is_pro column
+    await db.execute(sql`
+      ALTER TABLE users
+      DROP COLUMN IF EXISTS is_pro
+    `);
+
+    // Remove subscription_status column
+    await db.execute(sql`
+      ALTER TABLE users
+      DROP COLUMN IF EXISTS subscription_status
     `);
     
     console.log('✅ Successfully cleaned up subscription columns');
@@ -52,9 +64,17 @@ export async function down() {
   try {
     await db.execute(sql`
       ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ,
-      ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS subscription_status TEXT;
+      ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT false
+    `);
+
+    await db.execute(sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS subscription_status TEXT
     `);
     
     console.log('✅ Successfully restored subscription columns');
