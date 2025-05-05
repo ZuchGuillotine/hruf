@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useProfileCompletion } from "@/hooks/use-profile-completion";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,18 +20,34 @@ export function ProfileCompletionNotification() {
   const [, setLocation] = useLocation();
 
   // Use an effect to delay showing the notification until we're sure all data is loaded
+  const { data: healthStats } = useQuery(['health-stats']);
+  const { data: supplements } = useQuery(['supplements-count']);
+  const { data: labResults } = useQuery(['labs-count']);
+
   useEffect(() => {
-    if (!isLoading && completionPercentage !== 100 && !dismissed) {
-      // Add a slight delay to ensure all authentication and profile data is loaded
+    const shouldShowDialog = !isLoading && 
+                           !dismissed && 
+                           completionPercentage < 100 &&
+                           healthStats && 
+                           supplements !== undefined && 
+                           labResults !== undefined;
+
+    if (shouldShowDialog) {
       const timer = setTimeout(() => {
         setShowDialog(true);
+        console.log('Profile completion state:', {
+          healthStats,
+          supplements,
+          labResults,
+          completionPercentage
+        });
       }, 500);
 
       return () => clearTimeout(timer);
     } else {
       setShowDialog(false);
     }
-  }, [isLoading, completionPercentage, dismissed]);
+  }, [isLoading, completionPercentage, dismissed, healthStats, supplements, labResults]);
 
   // Don't render anything during loading or if the profile is complete or dismissed
   if (isLoading || completionPercentage === 100 || dismissed || !showDialog) {
