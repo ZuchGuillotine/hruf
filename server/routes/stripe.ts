@@ -154,8 +154,8 @@ router.post('/extend-trial', async (req, res) => {
   }
 });
 
-// Endpoint to start free trial without requiring payment info
-router.post('/start-free-trial', async (req, res) => {
+// Endpoint to create a free tier account without requiring payment info
+router.post('/create-free-account', async (req, res) => {
   try {
     const userId = req.user?.id;
     
@@ -163,27 +163,21 @@ router.post('/start-free-trial', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    console.log('Starting free trial for user:', {
+    console.log('Creating free tier account for user:', {
       userId,
       timestamp: new Date().toISOString()
     });
     
-    // Set trial end date to 28 days from now
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 28);
-    
-    // Update user with trial information
+    // Update user with free tier information
     await db
       .update(users)
       .set({ 
-        trialEndsAt: trialEndDate,
-        subscriptionTier: 'trial'
+        subscriptionTier: 'free'
       })
       .where(eq(users.id, userId));
     
-    console.log('Free trial started successfully', {
+    console.log('Free tier account created successfully', {
       userId,
-      trialEndsAt: trialEndDate.toISOString(),
       timestamp: new Date().toISOString()
     });
     
@@ -196,18 +190,18 @@ router.post('/start-free-trial', async (req, res) => {
     
     res.json({ 
       success: true,
-      trialEndsAt: trialEndDate.toISOString(),
+      subscriptionTier: 'free',
       user: updatedUser
     });
   } catch (error: any) {
-    console.error('Error starting free trial:', {
+    console.error('Error creating free tier account:', {
       error: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()
     });
     
     res.status(500).json({ 
-      error: 'Failed to start free trial',
+      error: 'Failed to create free tier account',
       message: error.message 
     });
   }
