@@ -8,6 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import { labSummaryService } from '../services/labSummaryService';
 import logger from '../utils/logger';
+import { checkLabUploadLimit } from '../middleware/tierLimitMiddleware';
 
 const router = express.Router();
 
@@ -46,7 +47,7 @@ router.get('/', async (req, res) => {
 });
 
 // Upload new lab result
-router.post('/', uploadMiddleware, async (req, res) => {
+router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
   try {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: 'No file uploaded' });

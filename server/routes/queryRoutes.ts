@@ -5,6 +5,7 @@ import { db } from "@db";
 import { queryChats } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 import { setAuthInfo } from "../middleware/authMiddleware";
+import { checkLLMLimit } from "../middleware/tierLimitMiddleware";
 
 function setupQueryRoutes(app: Express) {
   // Debug endpoint to verify authentication state
@@ -39,7 +40,7 @@ function setupQueryRoutes(app: Express) {
   });
 
   // Regular query endpoint with enhanced auth logging
-  app.post("/api/query", async (req, res) => {
+  app.post("/api/query", checkLLMLimit, async (req, res) => {
     try {
       console.log('Query Authentication State:', {
         session: {
