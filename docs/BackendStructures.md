@@ -180,7 +180,29 @@
     - Powers relevant context retrieval for query interface
     - Improves response quality with targeted context
 
-### Subscription Tiers System
+### Subscription Tiers and Usage Tracking System
+- Comprehensive tier structure:
+  - Free: Basic supplement tracking
+  - Core ($7.99/mo or $69/yr): AI essentials package
+  - Pro ($14.99/mo or $99/yr): Full biohacker suite
+- Usage tracking implementation:
+  - AI interactions count with monthly reset
+  - Lab uploads count with yearly reset
+  - Automatic tier change management
+  - Usage verification middleware
+  - Upgrade path handling
+- Tier limit middleware:
+  - Real-time usage verification
+  - Graceful limit handling
+  - Clear upgrade prompts
+  - Enhanced error responses
+  - Comprehensive logging
+- Database schema:
+  - subscription_tier (TEXT)
+  - ai_interactions_count (INTEGER)
+  - ai_interactions_reset (TIMESTAMPTZ)
+  - lab_uploads_count (INTEGER)
+  - lab_uploads_reset (TIMESTAMPTZ)
 - Three-tier structure:
   - Free: Basic supplement tracking functionality
   - Core: AI essentials package ($7.99/mo or $69/yr)

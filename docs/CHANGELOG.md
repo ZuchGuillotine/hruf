@@ -1,7 +1,29 @@
 
 ## [Unreleased]
 
+### Added (May 05, 2025)
+- Usage Tracking Implementation:
+  - Added ai_interactions_count with monthly reset
+  - Added lab_uploads_count with yearly reset
+  - Implemented usage tracking middleware
+  - Enhanced error handling for limits
+  - Added upgrade prompts for limit reached scenarios
+
 ### Changed (May 05, 2025)
+- Enhanced Lab Upload System:
+  - Updated labs component with tier awareness
+  - Improved upload limit handling
+  - Enhanced error messaging
+  - Added clear upgrade paths
+  - Improved file management
+
+### Fixed (May 05, 2025)
+- Database Structure:
+  - Cleaned up legacy subscription columns
+  - Properly mapped existing users to new tiers
+  - Fixed column dependencies in auth flow
+  - Resolved migration execution order
+  - Enhanced schema consistency
 - Enhanced Subscription System:
   - Implemented three-tier subscription model:
     - Free: Basic supplement tracking
