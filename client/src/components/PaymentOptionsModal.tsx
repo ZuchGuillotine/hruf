@@ -59,10 +59,7 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
         ? getYearlyPro() 
         : getMonthlyPro();
 
-      // Use guest checkout for users without accounts
-      const endpoint = user ? '/api/stripe/create-checkout-session' : '/api/stripe/create-checkout-session-guest';
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),

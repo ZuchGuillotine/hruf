@@ -40,19 +40,13 @@ export function SignupForm({ onSignup }: SignupFormProps) {
       const result = await response.json();
       console.log('Signup successful, showing subscription modal');
 
-      // Show success toast
-      toast({
-        title: "Success",
-        description: "Account created successfully!",
-      });
+      // For free tier signups, show payment options modal
+      setShowSubscriptionModal(true);
 
-      // Call the onSignup callback if provided
+      // Call onSignup callback if provided
       if (onSignup) {
         onSignup(result);
       }
-
-      // Show subscription modal
-      setShowSubscriptionModal(true);
 
     } catch (error: any) {
       console.error('Signup error:', error);

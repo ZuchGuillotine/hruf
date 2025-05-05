@@ -237,12 +237,23 @@ export default function LandingPage() {
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
                   onClick={() => {
                     // Redirect to signup page with tier indicator
-                    const signupElement = document.getElementById('free-trial-signup');
-                    if (signupElement) {
-                      signupElement.scrollIntoView({ behavior: 'smooth' });
-                      // Store selected plan for after signup
-                      sessionStorage.setItem('selectedPlan', 'starter-monthly');
+                    // For paid tiers, go directly to Stripe
+                    const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
+                    const priceId = getPriceIdByPlan('starter-monthly');
+                    
+                    const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ priceId }),
+                      credentials: 'include'
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to create checkout session');
                     }
+
+                    const { url } = await response.json();
+                    window.location.href = url;
                   }}
                 >
                   Monthly
