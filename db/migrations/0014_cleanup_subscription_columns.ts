@@ -2,7 +2,8 @@
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
-export async function up() {
+async function main() {
+  console.log('Starting subscription columns cleanup migration...');
   try {
     await db.execute(sql`
       -- First ensure all users have a valid tier
@@ -23,16 +24,33 @@ export async function up() {
     `);
     
     console.log('✅ Successfully cleaned up subscription columns');
+    return Promise.resolve();
   } catch (error) {
     console.error('Migration failed:', error);
-    throw error;
+    return Promise.reject(error);
   }
+}
+
+// Execute migration if running directly
+if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+  main()
+    .then(() => {
+      console.log('Migration completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Migration failed:', error);
+      process.exit(1);
+    });
+}
+
+export async function up() {
+  return main();
 }
 
 export async function down() {
   try {
     await db.execute(sql`
-      -- Restore columns if needed
       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT false,
@@ -40,8 +58,9 @@ export async function down() {
     `);
     
     console.log('✅ Successfully restored subscription columns');
+    return Promise.resolve();
   } catch (error) {
     console.error('Rollback failed:', error);
-    throw error;
+    return Promise.reject(error);
   }
 }

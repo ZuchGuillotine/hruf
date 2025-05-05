@@ -2,7 +2,8 @@
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
-export async function up() {
+async function main() {
+  console.log('Starting user tiers update migration...');
   try {
     // First ensure subscription_tier column exists
     await db.execute(sql`
@@ -17,14 +18,14 @@ export async function up() {
       END $$;
     `);
 
-    // Update admin user to pro tier
+    // Update admin users to pro tier
     await db.execute(sql`
       UPDATE users 
       SET subscription_tier = 'pro'
       WHERE is_admin = true;
     `);
 
-    // Update specific user to core tier
+    // Update specific users to core tier
     await db.execute(sql`
       UPDATE users 
       SET subscription_tier = 'core'
@@ -40,10 +41,28 @@ export async function up() {
     `);
     
     console.log('✅ Successfully updated existing users with subscription tiers');
+    return Promise.resolve();
   } catch (error) {
     console.error('Migration failed:', error);
-    throw error;
+    return Promise.reject(error);
   }
+}
+
+// Execute migration if running directly
+if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+  main()
+    .then(() => {
+      console.log('Migration completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Migration failed:', error);
+      process.exit(1);
+    });
+}
+
+export async function up() {
+  return main();
 }
 
 export async function down() {
@@ -55,8 +74,9 @@ export async function down() {
     `);
     
     console.log('✅ Successfully rolled back subscription tier updates');
+    return Promise.resolve();
   } catch (error) {
     console.error('Rollback failed:', error);
-    throw error;
+    return Promise.reject(error);
   }
 }
