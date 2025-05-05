@@ -180,6 +180,17 @@
     - Powers relevant context retrieval for query interface
     - Improves response quality with targeted context
 
+### Subscription Tiers System
+- Three-tier structure:
+  - Free: Basic supplement tracking functionality
+  - Core: AI essentials package ($7.99/mo or $69/yr)
+  - Pro: Full biohacker suite ($14.99/mo or $99/yr)
+- Usage Tracking:
+  - AI interactions count with reset timing
+  - Lab upload count with reset timing
+  - Tier start date tracking
+  - Automatic tier change management
+
 ### Tables Schema Overview
 
 #### Vector Search Tables
@@ -199,8 +210,15 @@
 - users:
   - Authentication data (username, email, password)
   - Profile information
-  - Subscription status (isPro, isAdmin)
+  - Subscription data:
+    - subscription_tier (free, core, pro)
+    - ai_interactions_count
+    - ai_interactions_reset
+    - lab_uploads_count
+    - lab_uploads_reset
+    - tier_start_date
   - Email verification fields
+  - Admin status
 
 - supplements:
   - Active supplement tracking

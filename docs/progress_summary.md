@@ -1,5 +1,18 @@
 
-## Latest Status (May 03, 2025)
+## Latest Status (May 05, 2025)
+
+### Subscription and Pricing Updates
+- Implemented new subscription tier system:
+  - Free tier: Basic supplement tracking and logging
+  - Core tier ($7.99/mo or $69/yr): AI essentials package
+  - Pro tier ($14.99/mo or $99/yr): Full biohacker suite
+  - Enhanced database schema with subscription_tier tracking
+  - Added usage tracking columns (ai_interactions, lab_uploads)
+  - Implemented tier change date tracking
+  - Removed legacy trial-related columns
+  - Updated Stripe service with proper tier mapping
+
+### Previous Status (May 03, 2025)
 
 ### Subscription and Pricing Updates
 - Enhanced subscription tier implementation:
