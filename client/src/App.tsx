@@ -16,7 +16,7 @@ import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import AdminSupplements from "@/pages/admin/supplements";
 import CookieConsent from "@/components/cookie-consent";
-import { useAuth, AuthProvider } from "@/hooks/use-auth";
+import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
 import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
@@ -32,7 +32,7 @@ import Labs from "./pages/labs";
  * Checks for user authentication and admin status before rendering
  */
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading } = useUser();
 
   if (isLoading) {
     return (
@@ -59,7 +59,7 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
  * 3. Protected routes (require authentication)
  */
 function AppRouter() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading } = useUser();
   const [location] = useLocation();
 
   // Show loading spinner while checking authentication status
@@ -191,13 +191,11 @@ function AppRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ErrorBoundary>
-          <AppRouter />
-        </ErrorBoundary>
-        <CookieConsent />
-        <Toaster />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AppRouter />
+      </ErrorBoundary>
+      <CookieConsent />
+      <Toaster />
     </QueryClientProvider>
   );
 }

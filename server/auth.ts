@@ -53,6 +53,7 @@ declare global {
       phoneNumber?: string | null;
       subscriptionTier?: string;
       isAdmin?: boolean | null;
+      trialEndsAt?: Date | null;
     }
   }
 }
