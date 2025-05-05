@@ -66,5 +66,27 @@ try {
 
 // ... rest of the route handler code to save healthStatsData ...
 
+app.get("/api/health-stats", requireAuth, async (req, res) => {
+    try {
+      const userStats = await db.query.healthStats.findFirst({
+        where: eq(healthStats.userId, req.user!.id)
+      });
+
+      console.log("Fetched health stats for user", req.user!.id, ":", userStats);
+
+      if (!userStats) {
+        // Return empty object with userId for new users
+        return res.json({ userId: req.user!.id });
+      }
+
+      res.json(userStats);
+    } catch (error) {
+      console.error("Error fetching health stats:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch health stats",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
 // ... rest of the file ...

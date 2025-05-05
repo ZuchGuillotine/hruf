@@ -49,7 +49,16 @@ export default function HealthStatsPage() {
   const [isEditing, setIsEditing] = useState(false);
 
   const { data: healthStats, isLoading: statsLoading } = useQuery<SelectHealthStats>({
-    queryKey: ['/api/health-stats'],
+    queryKey: ['/api/health-stats', user?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/health-stats', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch health stats');
+      }
+      return response.json();
+    },
     enabled: !!user,
   });
 
