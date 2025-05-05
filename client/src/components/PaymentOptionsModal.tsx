@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { CalendarIcon, CheckCircle } from 'lucide-react';
-import { getMonthlyPro, getYearlyPro } from '@/lib/stripe-price-ids';
+import { PRODUCTS } from '@/lib/stripe-price-ids';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 
@@ -56,8 +56,8 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
       setLoading(true);
 
       const priceId = planType === 'yearly' 
-        ? getYearlyPro() 
-        : getMonthlyPro();
+        ? PRODUCTS.PRO.tiers.YEARLY.id 
+        : PRODUCTS.PRO.tiers.MONTHLY.id;
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',

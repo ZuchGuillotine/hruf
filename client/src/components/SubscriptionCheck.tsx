@@ -25,10 +25,10 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
     setLoading(true);
     try {
       // Get the appropriate price ID from our helper
-      const { getYearlyPro, getMonthlyPro } = await import('@/lib/stripe-price-ids');
+      const { PRODUCTS } = await import('@/lib/stripe-price-ids');
       const priceId = isYearly 
-        ? getYearlyPro()
-        : getMonthlyPro();
+        ? PRODUCTS.PRO.tiers.YEARLY.id
+        : PRODUCTS.PRO.tiers.MONTHLY.id;
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',

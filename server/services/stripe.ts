@@ -1,127 +1,131 @@
 import Stripe from 'stripe';
-import { users } from '../../db/schema';
-import { db } from '../../db';
+import { db } from '@db';
+import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
+import { getTierFromProductId } from '../../client/src/lib/stripe-price-ids';
 
+// Initialize Stripe with the secret key
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY must be set');
+  throw new Error('Missing STRIPE_SECRET_KEY environment variable');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16' as any,
+});
 
-const MONTHLY_PRICE_ID = process.env.STRIPE_MONTHLY_PRICE_ID;
-const YEARLY_PRICE_ID = process.env.STRIPE_YEARLY_PRICE_ID;
-
-export const stripeService = {
-  async createCheckoutSession(userId: number, priceId: string) {
-    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-
-    if (!user.length) throw new Error('User not found');
-
-    return stripe.checkout.sessions.create({
-      customer_email: user[0].email,
+/**
+ * Creates a Stripe checkout session
+ * 
+ * @param priceId Stripe price ID
+ * @param successUrl URL to redirect after successful payment
+ * @param cancelUrl URL to redirect if payment is canceled
+ * @param customerId Optional Stripe customer ID for existing customers
+ * @param metadata Additional metadata to include in the session
+ * @returns Checkout session details including the URL
+ */
+export async function createCheckoutSession(
+  priceId: string,
+  successUrl: string = `${process.env.SERVER_URL || 'http://localhost:5000'}/payment-success`,
+  cancelUrl: string = `${process.env.SERVER_URL || 'http://localhost:5000'}/subscription`,
+  customerId?: string | null,
+  metadata?: Record<string, string>
+) {
+  try {
+    // Create checkout session parameters
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
-      line_items: [{
-        price: priceId,
-        quantity: 1,
-      }],
-      success_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/subscription`,
-      subscription_data: {
-        metadata: {
-          userId: userId.toString(),
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
         },
-      },
-    });
-  },
-
-  async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-    // Get userId from metadata or client_reference_id
-    let userId = 0;
-    
-    if (subscription.metadata && subscription.metadata.userId) {
-      userId = parseInt(subscription.metadata.userId, 10);
-    }
-    
-    // client_reference_id is deprecated, but keeping this for backward compatibility
-    if (!userId && (subscription as any).client_reference_id) {
-      userId = parseInt((subscription as any).client_reference_id, 10);
-    }
-    
-    if (!userId) {
-      console.error('Cannot update subscription: No user ID found in metadata or client_reference_id', {
-        subscriptionId: subscription.id,
-        timestamp: new Date().toISOString()
-      });
-      return;
-    }
-    
-    // Map price IDs to tiers - use both env vars and hardcoded IDs as fallback
-    const priceToTier: Record<string, string> = {
-      // Try env vars first
-      [process.env.STRIPE_PRO_MONTHLY_PRICE_ID || '']: 'pro',
-      [process.env.STRIPE_PRO_YEARLY_PRICE_ID || '']: 'pro',
-      [process.env.STRIPE_CORE_MONTHLY_PRICE_ID || '']: 'starter',
-      [process.env.STRIPE_CORE_YEARLY_PRICE_ID || '']: 'starter',
-      // Fallback to hardcoded IDs (replace with your actual IDs)
-      'price_1QvyNlAIJBVVerrJPOw4EIMa': 'pro', // Pro monthly
-      'price_1QvyNlAIJBVVerrJPOw5FIMa': 'pro', // Pro yearly
-      'price_1QzpeMAIJBVVerrJ12ZYExkV': 'starter', // Starter monthly
-      'price_1QzpeMAIJBVVerrJ12ZYFxkV': 'starter', // Starter yearly
+      ],
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl,
+      metadata: metadata || {},
     };
 
-    const currentPriceId = subscription.items.data[0].price.id;
+    // Add customer ID if provided
+    if (customerId) {
+      sessionParams.customer = customerId;
+    }
+
+    // Create the session
+    const session = await stripe.checkout.sessions.create(sessionParams);
     
-    // Determine tier based on price/product and subscription status
-    // 'active' includes paid subscriptions and those in trial
-    // 'trialing' is handled as active too
-    const isActive = ['active', 'trialing'].includes(subscription.status);
-    const subscriptionTier = isActive 
-      ? (priceToTier[currentPriceId] || 'free')
-      : 'free';
-
-    console.log('Updating user subscription:', {
-      userId,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      priceId: currentPriceId,
-      tier: subscriptionTier,
-      timestamp: new Date().toISOString()
-    });
-                   
-    await db.update(users)
-      .set({ 
-        subscriptionId: subscription.id,
-        subscriptionTier: subscriptionTier
-      })
-      .where(eq(users.id, userId));
-  },
-
-  // Check if a user has an active paid subscription
-  async hasActivePaidSubscription(userId: number) {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId)
-    });
-
-    if (!user) return false;
-
-    // Only 'starter' and 'pro' tiers are considered paid
-    return ['starter', 'pro'].includes(user.subscriptionTier);
-  },
-
-  // Method to check subscription tier
-  async getSubscriptionTier(userId: number) {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId)
-    });
-
-    if (!user) return 'free';
-    return user.subscriptionTier;
-  },
-
-  async setUserAsPro(userId: number) {
-    return db.update(users)
-      .set({ subscriptionTier: 'pro' })
-      .where(eq(users.id, userId));
+    return {
+      sessionId: session.id,
+      url: session.url,
+    };
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw error;
   }
+}
+
+/**
+ * Retrieves a checkout session by ID
+ */
+export async function getCheckoutSession(sessionId: string) {
+  try {
+    return await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'customer'],
+    });
+  } catch (error) {
+    console.error('Error retrieving checkout session:', error);
+    throw error;
+  }
+}
+
+/**
+ * Updates user subscription information in the database
+ */
+export async function updateUserSubscription(
+  userId: number,
+  subscriptionId: string,
+  customerId: string,
+  productId: string
+) {
+  try {
+    // Determine subscription tier from product ID
+    const subscriptionTier = getTierFromProductId(productId);
+    
+    // Update user record with subscription information
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        subscriptionTier,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  } catch (error) {
+    console.error('Error updating user subscription:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cancels a user's subscription
+ */
+export async function cancelSubscription(subscriptionId: string) {
+  try {
+    return await stripe.subscriptions.cancel(subscriptionId);
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    throw error;
+  }
+}
+
+export default {
+  createCheckoutSession,
+  getCheckoutSession,
+  updateUserSubscription,
+  cancelSubscription,
+  stripe,
 };

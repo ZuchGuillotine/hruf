@@ -71,9 +71,13 @@ export default function LandingPage() {
         setLocation('/');
       } else {
         // For paid tiers, redirect to subscription checkout
-        // Use getPriceIdByPlan from our stripe price helper
-        const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
-        const priceId = getPriceIdByPlan(selectedPlan as any);
+        // Use PRODUCTS from our stripe price helper
+        const { PRODUCTS } = await import('@/lib/stripe-price-ids');
+        const [tier, interval] = (selectedPlan as string).split('-');
+        // Type assertion to make TypeScript happy
+        const upperTier = tier.toUpperCase() as keyof typeof PRODUCTS;
+        const upperInterval = interval.toUpperCase() as "MONTHLY" | "YEARLY";
+        const priceId = PRODUCTS[upperTier].tiers[upperInterval].id;
 
         // Create checkout session
         const checkoutResponse = await fetch('/api/stripe/create-checkout-session', {
