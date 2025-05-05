@@ -60,7 +60,7 @@ const PRICE_TO_TIER: Record<string, 'starter' | 'pro'> = {
   // Starter plan price IDs
   'price_1PXnYnC7gKOJsRt7LFyCvdow': 'starter', // Monthly
   'price_1PXnZJC7gKOJsRt7FXnJcY6B': 'starter', // Yearly
-  
+
   // Pro plan price IDs
   'price_1PXnZoC7gKOJsRt7pz0Xtsim': 'pro', // Monthly
   'price_1PXnaSC7gKOJsRt79aGOsLn7': 'pro' // Yearly

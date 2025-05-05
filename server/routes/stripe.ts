@@ -46,6 +46,14 @@ router.post('/create-checkout-session', async (req, res) => {
       return res.status(400).json({ error: 'Price ID is required' });
     }
 
+    // Add debug logging
+    console.log('Creating checkout session:', {
+      priceId,
+      isAuthenticated: req.isAuthenticated?.(),
+      user: req.user,
+      timestamp: new Date().toISOString()
+    });
+
     // Get the price from Stripe to verify it exists
     const price = await stripe.prices.retrieve(priceId);
     

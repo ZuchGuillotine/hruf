@@ -262,12 +262,13 @@ export default function LandingPage() {
 
                         const { url } = await response.json();
                         window.location.href = url;
-                      } catch (error) {
+                      } catch (error: any) {
                         console.error('Error creating checkout:', error);
+                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
                         toast({
                           variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
+                          title: "Checkout Error",
+                          description: errorMessage,
                         });
                       }
                     }}
@@ -299,12 +300,13 @@ export default function LandingPage() {
 
                         const { url } = await response.json();
                         window.location.href = url;
-                      } catch (error) {
+                      } catch (error: any) {
                         console.error('Error creating checkout:', error);
+                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
                         toast({
                           variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
+                          title: "Checkout Error",
+                          description: errorMessage,
                         });
                       }
                     }}
@@ -371,13 +373,16 @@ export default function LandingPage() {
 
                         const { url } = await response.json();
                         window.location.href = url;
-                      } catch (error) {
+                      } catch (error: any) {
                         console.error('Error creating checkout:', error);
+                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
                         toast({
                           variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
+                          title: "Checkout Error",
+                          description: errorMessage,
                         });
+                        // Fallback to direct link if session creation fails
+                        //window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
                       }
                     }}
                   >
@@ -408,15 +413,14 @@ export default function LandingPage() {
 
                         const { url } = await response.json();
                         window.location.href = url;
-                      } catch (error) {
+                      } catch (error: any) {
                         console.error('Error creating checkout:', error);
+                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
                         toast({
                           variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
+                          title: "Checkout Error",
+                          description: errorMessage,
                         });
-                        // Fallback to direct link if session creation fails
-                        //window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
                       }
                     }}
                   >

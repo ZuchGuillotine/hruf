@@ -7,14 +7,14 @@
 // Price ID mapping for all subscription tiers
 export const STRIPE_PRICE_MAP: Record<string, string> = {
   // Starter tier pricing
-  'prod_SF40NCVtZWsX05': 'price_1OpGHMAIJBVVerrJCXB9LK8z', // Starter Monthly
+  'prod_SF40NCVtZWsX05': 'price_1RKZsdAIJBVVerrJhsQhpig2', // Starter Monthly
   'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',     // Starter Monthly (alternate key)
-  'starter-yearly': 'price_1OpGHMAIJBVVerrJvkT9T8Nw',      // Starter Yearly
+  'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',      // Starter Yearly
   
   // Pro tier pricing
   'prod_RtcuCvjOY9gHvm': 'price_1OpGHMAIJBVVerrJzYX9T8Nw', // Pro Monthly
-  'pro-monthly': 'price_1OpGHMAIJBVVerrJzYX9T8Nw',         // Pro Monthly (alternate key)
-  'pro-yearly': 'price_1OpGHMAIJBVVerrJwXY9T8Nw',          // Pro Yearly
+  'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',         // Pro Monthly (alternate key)
+  'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG',          // Pro Yearly
 };
 
 // Original direct checkout URLs for fallback
