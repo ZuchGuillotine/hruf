@@ -235,64 +235,18 @@ export default function LandingPage() {
               <CardFooter className="flex gap-2">
                 <Button 
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                          method: 'POST',
-                          headers: { 
-                            'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJCXB9LK8z' // Starter Monthly $7.99
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
-                        }
-
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error) {
-                        console.error('Error creating checkout:', error);
-                        toast({
-                          variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
-                        });
-                      }
+                    onClick={() => {
+                      // Direct to Stripe checkout link for Starter Monthly
+                      window.location.href = "https://buy.stripe.com/6oEdTTeEQaWT76028b";
                     }}
                   >
                     Monthly
                   </Button>
                   <Button 
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                          method: 'POST',
-                          headers: { 
-                            'Content-Type': 'application/json'
-                          },
-                          body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw' // Starter Yearly $69
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
-                        }
-
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error) {
-                        console.error('Error creating checkout:', error);
-                        toast({
-                          variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
-                        });
-                      }
+                    onClick={() => {
+                      // Direct to Stripe checkout link for Starter Yearly
+                      window.location.href = "https://buy.stripe.com/eVa177aoAfd94XSbIM";
                     }}
                   >
                     Yearly
@@ -334,64 +288,18 @@ export default function LandingPage() {
                 <CardFooter className="flex gap-2">
                   <Button 
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw' // Pro Monthly $14.99
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
-                        }
-
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error) {
-                        console.error('Error creating checkout:', error);
-                        toast({
-                          variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
-                        });
-                      }
+                    onClick={() => {
+                      // Direct to Stripe checkout link for Pro Monthly
+                      window.location.href = "https://buy.stripe.com/5kA5nn8gs7KH8a428e";
                     }}
                   >
                     Monthly
                   </Button>
                   <Button 
                     className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({ 
-                            priceId: 'price_1OpGHMAIJBVVerrJwXY9T8Nw' // Pro Yearly $99
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
-                        }
-
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error) {
-                        console.error('Error creating checkout:', error);
-                        toast({
-                          variant: "destructive",
-                          title: "Error",
-                          description: "Failed to start checkout process. Please try again.",
-                        });
-                      }
+                    onClick={() => {
+                      // Direct to Stripe checkout link for Pro Yearly
+                      window.location.href = "https://buy.stripe.com/8wM8zzfIU6GD760bIP";
                     }}
                   >
                     Yearly
