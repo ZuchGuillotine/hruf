@@ -22,6 +22,7 @@ import LearnPage from "./pages/learn";
 import BlogPostPage from "./pages/learn/[slug]";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SubscriptionPage from "@/pages/subscription-page";
+import PaymentSuccessPage from "@/pages/payment-success";
 import Research from "./pages/research";
 import Labs from "./pages/labs";
 
@@ -124,6 +125,7 @@ function AppRouter() {
     return (
       <Switch>
         <Route path="/subscription" component={SubscriptionPage} />
+        <Route path="/payment-success" component={PaymentSuccessPage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/" component={LandingPage} />
         <Route component={LandingPage} />
@@ -135,6 +137,7 @@ function AppRouter() {
   return (
     <Switch>
       <Route path="/subscription" component={SubscriptionPage} />
+      <Route path="/payment-success" component={PaymentSuccessPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/health-stats" component={HealthStatsPage} />
       <Route path="/supplement-history" component={SupplementHistory} />
