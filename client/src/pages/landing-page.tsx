@@ -73,10 +73,10 @@ export default function LandingPage() {
         // For paid tiers, redirect to subscription checkout
         // Use PRODUCTS from our stripe price helper
         const priceIds = {
-          'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',
-          'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',
-          'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',
-          'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG'
+          'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',  // Monthly starter
+          'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',   // Yearly starter 
+          'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',      // Monthly pro
+          'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG'        // Yearly pro
         };
 
         const [tier, interval] = (selectedPlan as string).split('-');
