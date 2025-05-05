@@ -54,7 +54,7 @@ export function useProfileCompletion() {
   const steps: ProfileStep[] = [
     {
       id: "basic-info",
-      label: "Basic Information",
+      label: "Basic Information", 
       description: "Add your name and contact details",
       completed: !!(user?.name && user?.email),
     },
@@ -62,25 +62,25 @@ export function useProfileCompletion() {
       id: "health-metrics",
       label: "Health Metrics",
       description: "Add your weight and sleep patterns",
-      completed: !!(healthStats?.weight && healthStats?.averageSleep),
+      completed: !!(healthStats?.weight || healthStats?.height || healthStats?.gender || healthStats?.dateOfBirth),
     },
     {
       id: "allergies",
       label: "Allergies",
       description: "List any allergies you have",
-      completed: !!(healthStats?.allergies && healthStats.allergies.length > 0),
+      completed: !!(healthStats?.allergies && healthStats.allergies.trim().length > 0),
     },
     {
       id: "supplement-logs",
       label: "Log Your First Supplements",
       description: "Log at least one supplement",
-      completed: supplementCount > 0,
+      completed: (supplementCount || 0) > 0,
     },
     {
       id: "lab-results", 
       label: "Upload Lab Results",
       description: "Upload your first blood test or lab results",
-      completed: labResults.count > 0,
+      completed: (labResults?.count || 0) > 0,
     },
   ];
 
