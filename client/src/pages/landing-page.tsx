@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -59,14 +58,14 @@ export default function LandingPage() {
           method: 'POST',
           credentials: 'include',
         });
-        
+
         if (!trialResponse.ok) {
           const trialError = await trialResponse.json();
           console.error('Free trial setup error:', trialError);
           // Even if there's an error starting the trial, we'll continue to the dashboard
           // The user can set up their subscription later
         }
-        
+
         // Redirect to dashboard after registration (and trial if successful)
         setLocation('/');
       } else {
@@ -235,25 +234,34 @@ export default function LandingPage() {
               <CardFooter className="flex gap-2">
                 <Button 
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => {
+                  onClick={async () => {
                     // Redirect to signup page with tier indicator
                     // For paid tiers, go directly to Stripe
-                    const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
-                    const priceId = getPriceIdByPlan('starter-monthly');
-                    
-                    const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ priceId }),
-                      credentials: 'include'
-                    });
+                    try {
+                      const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
+                      const priceId = getPriceIdByPlan('starter-monthly');
 
-                    if (!response.ok) {
-                      throw new Error('Failed to create checkout session');
+                      const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ priceId }),
+                        credentials: 'include'
+                      });
+
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
+                      }
+
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error) {
+                      console.error('Error creating checkout:', error);
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Failed to start checkout process. Please try again.",
+                      });
                     }
-
-                    const { url } = await response.json();
-                    window.location.href = url;
                   }}
                 >
                   Monthly
@@ -318,7 +326,7 @@ export default function LandingPage() {
                     try {
                       const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
                       const priceId = getPriceIdByPlan('pro-monthly');
-                      
+
                       const response = await fetch('/api/stripe/create-checkout-session-guest', {
                         method: 'POST',
                         headers: {
@@ -326,15 +334,20 @@ export default function LandingPage() {
                         },
                         body: JSON.stringify({ priceId }),
                       });
-                      
+
                       if (!response.ok) {
                         throw new Error('Failed to create checkout session');
                       }
-                      
+
                       const { url } = await response.json();
                       window.location.href = url;
                     } catch (error) {
                       console.error('Error creating checkout:', error);
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Failed to start checkout process. Please try again.",
+                      });
                     }
                   }}
                 >
@@ -347,7 +360,7 @@ export default function LandingPage() {
                     try {
                       const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
                       const priceId = getPriceIdByPlan('pro-yearly');
-                      
+
                       const response = await fetch('/api/stripe/create-checkout-session-guest', {
                         method: 'POST',
                         headers: {
@@ -355,15 +368,20 @@ export default function LandingPage() {
                         },
                         body: JSON.stringify({ priceId }),
                       });
-                      
+
                       if (!response.ok) {
                         throw new Error('Failed to create checkout session');
                       }
-                      
+
                       const { url } = await response.json();
                       window.location.href = url;
                     } catch (error) {
                       console.error('Error creating checkout:', error);
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Failed to start checkout process. Please try again.",
+                      });
                     }
                   }}
                 >
