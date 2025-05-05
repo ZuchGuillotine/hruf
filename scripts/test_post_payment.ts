@@ -1,4 +1,5 @@
 
+#!/usr/bin/env node
 import axios from 'axios';
 
 async function testPostPaymentRegistration() {
