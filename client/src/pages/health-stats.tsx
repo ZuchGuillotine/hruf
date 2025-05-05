@@ -53,19 +53,26 @@ export default function HealthStatsPage() {
     enabled: !!user,
   });
 
-  const form = useForm<HealthStatsFormData>({
-    defaultValues: {
-      weight: healthStats?.weight,
-      height: healthStats?.height,
-      gender: healthStats?.gender,
-      ethnicity: healthStats?.ethnicity,
-      dateOfBirth: healthStats?.dateOfBirth,
-      sleepHours: healthStats?.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
-      sleepMinutes: healthStats?.averageSleep ? healthStats.averageSleep % 60 : undefined,
-      profilePhotoUrl: healthStats?.profilePhotoUrl,
-      allergies: healthStats?.allergies || '',
+  const form = useForm<HealthStatsFormData>();
+
+  // Initialize form data when health stats load
+  useEffect(() => {
+    console.log('Health stats received:', healthStats);
+    
+    if (healthStats) {
+      form.reset({
+        weight: healthStats.weight || undefined,
+        height: healthStats.height || undefined,
+        gender: healthStats.gender || undefined,
+        ethnicity: healthStats.ethnicity || undefined,
+        dateOfBirth: healthStats.dateOfBirth || undefined,
+        sleepHours: healthStats.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+        sleepMinutes: healthStats.averageSleep ? healthStats.averageSleep % 60 : undefined,
+        profilePhotoUrl: healthStats.profilePhotoUrl || undefined,
+        allergies: healthStats.allergies || '',
+      });
     }
-  });
+  }, [healthStats, form]);
 
   useEffect(() => {
     if (healthStats) {

@@ -16,8 +16,19 @@ export function useProfileCompletion() {
     queryKey: ["/api/health-stats"],
     enabled: !!user,
     refetchOnMount: true,
-    staleTime: 0
+    staleTime: 0,
+    retry: 3,
+    onError: (error) => {
+      console.error('Error fetching health stats:', error);
+    }
   });
+
+  // Log health stats data for debugging
+  useEffect(() => {
+    if (healthStats) {
+      console.log('Health stats loaded:', healthStats);
+    }
+  }, [healthStats]);
 
   const { data: supplementCount = 0 } = useQuery<number>({
     queryKey: ["/api/supplements/count"],
