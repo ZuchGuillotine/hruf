@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { CalendarIcon, CheckCircle } from 'lucide-react';
 
 interface PaymentOptionsModalProps {
   isOpen: boolean;
@@ -14,49 +14,40 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleContinueFree = async () => {
+  const handleSubscribe = async (planType: 'monthlyWithTrial' | 'monthly' | 'yearly') => {
     try {
       setLoading(true);
-      const response = await fetch('/api/user/set-tier', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tier: 'free' })
-      });
       
-      if (!response.ok) {
-        throw new Error('Failed to set free tier');
+      // For the free trial option, redirect to Stripe's hosted page
+      if (planType === 'monthlyWithTrial') {
+        window.location.href = 'https://buy.stripe.com/eVa6rr9kw6GD9e8aEE';
+        return;
       }
-      
-      onClose();
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Error setting free tier:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleSubscribe = async (tier: 'core' | 'pro') => {
-    try {
-      setLoading(true);
-      const priceId = tier === 'core' 
-        ? process.env.STRIPE_CORE_MONTHLY_PRICE_ID 
-        : process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
-        
+      // For paid options, create checkout session
+      let priceId;
+      switch (planType) {
+        case 'yearly':
+          priceId = 'prod_RpdfGxB4L6Rut7';
+          break;
+        case 'monthly':
+          priceId = 'prod_RtcuCvjOY9gHvm';
+          break;
+        default:
+          throw new Error('Invalid plan type');
+      }
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ priceId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+        credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create checkout session');
       }
-      
+
       const { url } = await response.json();
       window.location.href = url;
     } catch (error) {
@@ -74,49 +65,61 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="text-center text-sm text-gray-500 mb-4">
-            Select a plan that fits your needs
+            Start your journey with StackTracker Pro!
           </div>
           
           <div className="space-y-3">
-            {/* Pro tier */}
-            <Button
-              onClick={() => handleSubscribe('pro')}
-              className="w-full bg-green-700 hover:bg-green-800"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Pro - Biohacker Suite ($14.99/mo)'}
-            </Button>
-            <div className="text-xs text-gray-500 pl-2 flex items-center">
-              <CheckCircle className="h-3 w-3 mr-1" /> Full AI features
-              <CheckCircle className="h-3 w-3 mx-1" /> Lab results analysis
-              <CheckCircle className="h-3 w-3 mx-1" /> Advanced analytics
-            </div>
-            
-            {/* Core tier */}
-            <Button
-              onClick={() => handleSubscribe('core')}
-              className="w-full"
-              variant="outline"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Core - AI Essentials ($7.99/mo)'}
-            </Button>
-            <div className="text-xs text-gray-500 pl-2 flex items-center">
-              <CheckCircle className="h-3 w-3 mr-1" /> Basic AI features
-              <CheckCircle className="h-3 w-3 mx-1" /> Enhanced tracking
-            </div>
-            
-            {/* Free tier */}
+            {/* Free Trial Option */}
             <Button 
-              onClick={handleContinueFree}
-              className="w-full"
-              variant="ghost"
+              onClick={() => handleSubscribe('monthlyWithTrial')}
+              className="w-full bg-green-600 hover:bg-green-700"
               disabled={loading}
             >
-              Continue with Basic Tracking
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {loading ? "Processing..." : "Start 28-Day Free Trial"}
             </Button>
-            <div className="text-xs text-gray-500 pl-2 flex items-center">
-              <CheckCircle className="h-3 w-3 mr-1" /> Basic supplement tracking
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or subscribe now</span>
+              </div>
+            </div>
+
+            {/* Monthly Option */}
+            <Button 
+              onClick={() => handleSubscribe('monthly')}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Processing..." : "Monthly - $21.99/month"}
+            </Button>
+
+            {/* Yearly Option */}
+            <Button 
+              onClick={() => handleSubscribe('yearly')}
+              disabled={loading}
+              variant="outline"
+              className="w-full"
+            >
+              {loading ? "Processing..." : "Yearly - $184.71/year (Save 30%)"}
+            </Button>
+
+            <div className="space-y-2 text-sm text-gray-500 mt-4">
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                Unlimited AI Interactions
+              </div>
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                Advanced Analytics
+              </div>
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                Priority Support
+              </div>
             </div>
           </div>
         </div>
