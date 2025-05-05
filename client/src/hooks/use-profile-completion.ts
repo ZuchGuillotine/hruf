@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useUser } from "./use-user";
 import { useQuery } from "@tanstack/react-query";
 import { SelectHealthStats } from "@db/neon-schema";
