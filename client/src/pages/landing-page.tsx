@@ -234,161 +234,169 @@ export default function LandingPage() {
               </CardContent>
               <CardFooter className="flex gap-2">
                 <Button 
-                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={async () => {
-                    // Redirect to signup page with tier indicator
-                    // For paid tiers, go directly to Stripe
-                    try {
-                      const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
-                      const priceId = getPriceIdByPlan('starter-monthly');
+                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                          method: 'POST',
+                          headers: { 
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({ 
+                            priceId: 'price_1OpGHMAIJBVVerrJCXB9LK8z' // Starter Monthly $7.99
+                          })
+                        });
 
-                      const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ priceId }),
-                        credentials: 'include'
-                      });
+                        if (!response.ok) {
+                          throw new Error('Failed to create checkout session');
+                        }
 
-                      if (!response.ok) {
-                        throw new Error('Failed to create checkout session');
+                        const { url } = await response.json();
+                        window.location.href = url;
+                      } catch (error) {
+                        console.error('Error creating checkout:', error);
+                        toast({
+                          variant: "destructive",
+                          title: "Error",
+                          description: "Failed to start checkout process. Please try again.",
+                        });
                       }
+                    }}
+                  >
+                    Monthly
+                  </Button>
+                  <Button 
+                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                          method: 'POST',
+                          headers: { 
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({ 
+                            priceId: 'price_1OpGHMAIJBVVerrJvkT9T8Nw' // Starter Yearly $69
+                          })
+                        });
 
-                      const { url } = await response.json();
-                      window.location.href = url;
-                    } catch (error) {
-                      console.error('Error creating checkout:', error);
-                      toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Failed to start checkout process. Please try again.",
-                      });
-                    }
-                  }}
-                >
-                  Monthly
-                </Button>
-                <Button 
-                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={() => {
-                    // Redirect to signup page with tier indicator
-                    const signupElement = document.getElementById('free-trial-signup');
-                    if (signupElement) {
-                      signupElement.scrollIntoView({ behavior: 'smooth' });
-                      // Store selected plan for after signup
-                      sessionStorage.setItem('selectedPlan', 'starter-yearly');
-                    }
-                  }}
-                >
-                  Yearly
-                </Button>
-              </CardFooter>
-            </Card>
+                        if (!response.ok) {
+                          throw new Error('Failed to create checkout session');
+                        }
 
-            {/* Pro Biohacker Suite Card */}
-            <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
-              <CardHeader className="text-center pb-4 relative">
-                <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-[#2d6a4f] text-white text-sm rounded-full">
-                  Best Value
-                </div>
-                <CardTitle className="text-2xl">Pro - Biohacker suite</CardTitle>
-                <CardDescription>Advanced features for optimal results</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center px-3 sm:px-6">
-                <a href="https://buy.stripe.com/5kA5nn8gs7KH8a428e" className="no-underline hover:no-underline">
+                        const { url } = await response.json();
+                        window.location.href = url;
+                      } catch (error) {
+                        console.error('Error creating checkout:', error);
+                        toast({
+                          variant: "destructive",
+                          title: "Error",
+                          description: "Failed to start checkout process. Please try again.",
+                        });
+                      }
+                    }}
+                  >
+                    Yearly
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              {/* Pro Biohacker Suite Card */}
+              <Card className="shadow-lg border-2 border-[#2d6a4f] transform transition-transform hover:-translate-y-2">
+                <CardHeader className="text-center pb-4 relative">
+                  <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-[#2d6a4f] text-white text-sm rounded-full">
+                    Best Value
+                  </div>
+                  <CardTitle className="text-2xl">Pro - Biohacker suite</CardTitle>
+                  <CardDescription>Advanced features for optimal results</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center px-3 sm:px-6">
                   <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$14.99/mo</p>
-                </a>
-                <a href="https://buy.stripe.com/8wM8zzfIU6GD760bIP" className="no-underline hover:no-underline">
                   <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$99/yr (save $80)</p>
-                </a>
-                <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Unlimited AI-powered supplement feedback</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Unlimited intelligent biomarker analysis</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Early access to new features</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Lock in current pricing</span>
-                  </li>
-                </ul>
-              </CardContent>
-              <CardFooter className="flex gap-2">
-                <Button 
-                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={async () => {
-                    // Direct to Stripe checkout for Pro Monthly
-                    try {
-                      const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
-                      const priceId = getPriceIdByPlan('pro-monthly');
+                  <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
+                    <li className="flex items-start">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Unlimited AI-powered supplement feedback</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Unlimited intelligent biomarker analysis</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Early access to new features</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Lock in current pricing</span>
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter className="flex gap-2">
+                  <Button 
+                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ 
+                            priceId: 'price_1OpGHMAIJBVVerrJzYX9T8Nw' // Pro Monthly $14.99
+                          })
+                        });
 
-                      const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ priceId }),
-                      });
+                        if (!response.ok) {
+                          throw new Error('Failed to create checkout session');
+                        }
 
-                      if (!response.ok) {
-                        throw new Error('Failed to create checkout session');
+                        const { url } = await response.json();
+                        window.location.href = url;
+                      } catch (error) {
+                        console.error('Error creating checkout:', error);
+                        toast({
+                          variant: "destructive",
+                          title: "Error",
+                          description: "Failed to start checkout process. Please try again.",
+                        });
                       }
+                    }}
+                  >
+                    Monthly
+                  </Button>
+                  <Button 
+                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/stripe/create-checkout-session-guest', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ 
+                            priceId: 'price_1OpGHMAIJBVVerrJwXY9T8Nw' // Pro Yearly $99
+                          })
+                        });
 
-                      const { url } = await response.json();
-                      window.location.href = url;
-                    } catch (error) {
-                      console.error('Error creating checkout:', error);
-                      toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Failed to start checkout process. Please try again.",
-                      });
-                    }
-                  }}
-                >
-                  Monthly
-                </Button>
-                <Button 
-                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  onClick={async () => {
-                    // Direct to Stripe checkout for Pro Yearly
-                    try {
-                      const { getPriceIdByPlan } = await import('@/lib/stripe-price-ids');
-                      const priceId = getPriceIdByPlan('pro-yearly');
+                        if (!response.ok) {
+                          throw new Error('Failed to create checkout session');
+                        }
 
-                      const response = await fetch('/api/stripe/create-checkout-session-guest', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ priceId }),
-                      });
-
-                      if (!response.ok) {
-                        throw new Error('Failed to create checkout session');
+                        const { url } = await response.json();
+                        window.location.href = url;
+                      } catch (error) {
+                        console.error('Error creating checkout:', error);
+                        toast({
+                          variant: "destructive",
+                          title: "Error",
+                          description: "Failed to start checkout process. Please try again.",
+                        });
                       }
-
-                      const { url } = await response.json();
-                      window.location.href = url;
-                    } catch (error) {
-                      console.error('Error creating checkout:', error);
-                      toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Failed to start checkout process. Please try again.",
-                      });
-                    }
-                  }}
-                >
-                  Yearly
-                </Button>
-              </CardFooter>
+                    }}
+                  >
+                    Yearly
+                  </Button>
+                </CardFooter>
             </Card>
           </div>
         </div>
