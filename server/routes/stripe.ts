@@ -150,9 +150,11 @@ router.post('/start-free-trial', async (req, res) => {
     trialEndDate.setDate(trialEndDate.getDate() + 28);
     
     // Update user with trial information
-    await db.update(users)
+    await db
+      .update(users)
       .set({ 
-        trialEndsAt: trialEndDate
+        trialEndsAt: trialEndDate,
+        subscriptionTier: 'free'
       })
       .where(eq(users.id, userId));
     
