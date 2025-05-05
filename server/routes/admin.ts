@@ -23,7 +23,7 @@ router.get('/users/subscriptions', async (req, res) => {
       .select({
         id: users.id,
         email: users.email,
-        subscriptionStatus: users.subscriptionStatus,
+        subscriptionTier: users.subscriptionTier,
         trialEndsAt: users.trialEndsAt,
         isPro: users.isPro,
         subscriptionId: users.subscriptionId
@@ -45,7 +45,7 @@ router.get('/users/:userId/subscription', async (req, res) => {
       .select({
         id: users.id,
         email: users.email,
-        subscriptionStatus: users.subscriptionStatus,
+        subscriptionTier: users.subscriptionTier,
         trialEndsAt: users.trialEndsAt,
         isPro: users.isPro,
         subscriptionId: users.subscriptionId

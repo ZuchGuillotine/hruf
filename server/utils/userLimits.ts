@@ -42,7 +42,7 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     const userResult = await db
       .select({
         isPro: users.isPro,
-        subscriptionStatus: users.subscriptionStatus,
+        subscriptionTier: users.subscriptionTier,
         trialEndsAt: users.trialEndsAt
       })
       .from(users)
