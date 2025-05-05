@@ -41,12 +41,29 @@ export const stripeService = {
   async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const userId = parseInt(subscription.metadata.userId);
     
+    // Map price IDs to tiers
+    const priceToTier: Record<string, 'pro' | 'core'> = {
+      [process.env.STRIPE_PRO_MONTHLY_PRICE_ID || '']: 'pro',
+      [process.env.STRIPE_PRO_YEARLY_PRICE_ID || '']: 'pro',
+      [process.env.STRIPE_CORE_MONTHLY_PRICE_ID || '']: 'core',
+      [process.env.STRIPE_CORE_YEARLY_PRICE_ID || '']: 'core'
+    };
+
+    const currentPriceId = subscription.items.data[0].price.id;
+    
     // Determine tier based on price/product and subscription status
     const subscriptionTier = subscription.status === 'active' 
-      ? subscription.items.data[0].price.id === process.env.STRIPE_PRO_PRICE_ID
-        ? 'pro'
-        : 'core'
+      ? priceToTier[currentPriceId] || 'free'
       : 'free';
+
+    console.log('Updating user subscription:', {
+      userId,
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      priceId: currentPriceId,
+      tier: subscriptionTier,
+      timestamp: new Date().toISOString()
+    });
                    
     await db.update(users)
       .set({ 
