@@ -410,11 +410,8 @@ export function setupAuth(app: Express) {
               timestamp: new Date().toISOString()
             });
             
-            // Set up trial for users who didn't complete payment
-            const trialEndDate = new Date();
-            trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
-            userValues.trialEndsAt = trialEndDate;
-            userValues.subscriptionTier = 'trial';
+            // Set up free tier for users who didn't complete payment
+            userValues.subscription_tier = 'free'; // Free tier with no trial end date
           }
         } catch (error) {
           console.error('Error processing Stripe session during registration:', {
@@ -424,18 +421,12 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
           
-          // Default to trial if there's an error processing the session
-          const trialEndDate = new Date();
-          trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
-          userValues.trialEndsAt = trialEndDate;
-          userValues.subscriptionTier = 'trial';
+          // Default to free tier if there's an error processing the session
+          userValues.subscription_tier = 'free'; // Use the exact column name from the database
         }
       } else {
-        // For regular signups without payment, set up trial period
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
-        userValues.trialEndsAt = trialEndDate;
-        userValues.subscriptionTier = 'trial';
+        // For regular signups without payment, set up free tier
+        userValues.subscription_tier = 'free'; // Use the exact column name from the database
       }
 
       // Create user with appropriate status based on registration path
