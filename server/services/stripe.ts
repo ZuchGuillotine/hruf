@@ -7,9 +7,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY must be set');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16'
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const MONTHLY_PRICE_ID = process.env.STRIPE_MONTHLY_PRICE_ID;
 const YEARLY_PRICE_ID = process.env.STRIPE_YEARLY_PRICE_ID;
@@ -27,8 +25,8 @@ export const stripeService = {
         price: priceId,
         quantity: 1,
       }],
-      success_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/profile`,
+      success_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL || 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co'}/subscription`,
       subscription_data: {
         trial_period_days: isTrialEligible ? 28 : undefined,
         metadata: {
@@ -46,8 +44,9 @@ export const stripeService = {
       userId = parseInt(subscription.metadata.userId, 10);
     }
     
-    if (!userId && subscription.client_reference_id) {
-      userId = parseInt(subscription.client_reference_id, 10);
+    // client_reference_id is deprecated, but keeping this for backward compatibility
+    if (!userId && (subscription as any).client_reference_id) {
+      userId = parseInt((subscription as any).client_reference_id, 10);
     }
     
     if (!userId) {

@@ -114,15 +114,29 @@ router.get('/subscription-success', async (req, res) => {
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
     if (session.payment_status === 'paid') {
+      // Process the subscription update
       await stripeService.handleSubscriptionUpdated(session.subscription as any);
-      return res.redirect('/');
+      
+      // Instead of redirecting, return success for the client to handle
+      return res.status(200).json({ 
+        success: true,
+        subscriptionId: session.subscription,
+        status: 'active'
+      });
     }
 
-    res.status(400).json({ error: 'Payment not completed' });
+    res.status(400).json({ 
+      error: 'Payment not completed',
+      status: session.payment_status
+    });
   } catch (error) {
     console.error('Error handling subscription success:', error);
-    res.status(500).json({ error: 'Failed to process subscription' });
+    res.status(500).json({ 
+      error: 'Failed to process subscription',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
