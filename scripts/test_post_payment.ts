@@ -1,5 +1,5 @@
 
-const axios = require('axios');
+import axios from 'axios';
 
 async function testPostPaymentRegistration() {
   try {
