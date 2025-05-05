@@ -209,9 +209,6 @@ export function setupAuth(app: Express) {
             timestamp: new Date().toISOString()
           });
 
-          const trialEndDate = new Date();
-          trialEndDate.setDate(trialEndDate.getDate() + 28); // 28-day trial
-
           const [newUser] = await db
             .insert(users)
             .values({
@@ -220,7 +217,7 @@ export function setupAuth(app: Express) {
               name: profile.displayName || null,
               emailVerified: true, // Google has already verified the email
               password: crypto.randomBytes(32).toString('hex'), // Generate random password
-              trialEndsAt: trialEndDate, // 14-day trial
+              subscription_tier: 'free',
               profilePhotoUrl: profile.photos?.[0]?.value || null,
               createdAt: new Date(),
               updatedAt: new Date()

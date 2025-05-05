@@ -68,7 +68,8 @@ export const stripeService = {
     await db.update(users)
       .set({ 
         subscriptionId: subscription.id,
-        subscriptionTier,
+        subscription_tier: subscriptionTier,
+        tier_start_date: new Date(),
       })
       .where(eq(users.id, userId));
   },
