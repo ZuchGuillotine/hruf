@@ -77,7 +77,11 @@ router.post('/register-post-payment', async (req, res) => {
       const productId = session.line_items?.data[0]?.price?.product as string;
       if (productId) {
         const stripeService = new StripeService();
-        subscriptionTier = stripeService.getTierFromProductId(productId);
+        const derivedTier = stripeService.getTierFromProductId(productId);
+        if (derivedTier !== subscriptionTier) {
+          console.log(`Updating tier from ${subscriptionTier} to ${derivedTier} based on product`);
+          req.body.subscriptionTier = derivedTier;
+        }
       }
     } catch (err: any) {
       console.error('Error verifying Stripe session:', err);
