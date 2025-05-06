@@ -23,6 +23,7 @@ export async function up() {
   console.log('Starting migration to fix paid users subscription tiers...');
 
   try {
+    console.log('Connected to database, querying users...');
     // Get all users with Stripe customer IDs but marked as free
     const results = await db.execute(sql`
       SELECT id, email, stripe_customer_id 
@@ -30,6 +31,8 @@ export async function up() {
       WHERE subscription_tier = 'free' 
       AND stripe_customer_id IS NOT NULL
     `);
+    
+    console.log(`Found ${results.rows.length} users to process`);
 
     for (const user of results.rows) {
       try {
