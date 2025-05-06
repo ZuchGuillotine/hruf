@@ -1,4 +1,3 @@
-
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
@@ -19,7 +18,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
 
-export async function up() {
+async function main() {
   console.log('Starting migration to fix paid users subscription tiers...');
   console.log('Database URL exists:', !!process.env.DATABASE_URL);
   console.log('Stripe key exists:', !!process.env.STRIPE_SECRET_KEY);
@@ -38,7 +37,7 @@ export async function up() {
       WHERE subscription_tier = 'free' 
       AND stripe_customer_id IS NOT NULL
     `);
-    
+
     console.log(`Found ${results.rows.length} users to process`);
 
     for (const user of results.rows) {
@@ -53,7 +52,7 @@ export async function up() {
         if (subscriptions.data.length > 0) {
           const subscription = subscriptions.data[0];
           const productId = subscription.items.data[0].price.product as string;
-          
+
           // Update user's subscription tier based on product
           await db.execute(sql`
             UPDATE users 
@@ -75,11 +74,15 @@ export async function up() {
     }
 
     console.log('✅ Successfully updated paid users subscription tiers');
-    return Promise.resolve();
+    process.exit(0);
   } catch (error) {
     console.error('Migration failed:', error);
-    return Promise.reject(error);
+    process.exit(1);
   }
+}
+
+if (require.main === module) {
+  main();
 }
 
 export async function down() {
