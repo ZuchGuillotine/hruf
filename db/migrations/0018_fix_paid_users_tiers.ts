@@ -37,15 +37,22 @@ export async function main() {
 
     console.log(`Found ${results.rows.length} users to process`);
 
+    console.log(`Processing ${results.rows.length} users`);
+    
     for (const user of results.rows) {
+      console.log(`Checking subscriptions for user ${user.email}`);
+      
       const subscriptions = await stripe.subscriptions.list({
         customer: user.stripe_customer_id,
         status: 'active'
       });
 
+      console.log(`Found ${subscriptions.data.length} active subscriptions`);
+
       if (subscriptions.data.length > 0) {
         const subscription = subscriptions.data[0];
         const productId = subscription.items.data[0].price.product as string;
+        console.log(`Found product ID: ${productId}`);
 
         await db.execute(sql`
           UPDATE users 
