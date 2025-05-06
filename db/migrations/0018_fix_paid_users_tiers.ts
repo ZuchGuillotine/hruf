@@ -21,9 +21,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export async function up() {
   console.log('Starting migration to fix paid users subscription tiers...');
+  console.log('Database URL exists:', !!process.env.DATABASE_URL);
+  console.log('Stripe key exists:', !!process.env.STRIPE_SECRET_KEY);
 
   try {
-    console.log('Connected to database, querying users...');
+    console.log('Initializing database connection...');
+    const sql_connection = neon(process.env.DATABASE_URL!);
+    const db = drizzle(sql_connection);
+    console.log('Database connection initialized');
+
+    console.log('Querying users with stripe_customer_id...');
     // Get all users with Stripe customer IDs but marked as free
     const results = await db.execute(sql`
       SELECT id, email, stripe_customer_id 
