@@ -104,12 +104,27 @@ router.post('/register-post-payment', async (req, res) => {
       });
     }
 
+    // Get or create Stripe customer
+    let stripeCustomerId = '';
+    try {
+      const customer = await stripe.customers.create({
+        email,
+        metadata: {
+          username
+        }
+      });
+      stripeCustomerId = customer.id;
+    } catch (error) {
+      console.error('Error creating Stripe customer:', error);
+    }
+
     // Create user record
     const [user] = await db.insert(users).values({
       username,
       email,
       password: await hashPassword(password),
       subscriptionTier,
+      stripeCustomerId,
       purchaseId,
       createdAt: new Date(),
       updatedAt: new Date()
