@@ -567,15 +567,26 @@ export function setupAuth(app: Express) {
   });
 }
 
-passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+passport.use(new LocalStrategy({ usernameField: 'email' }, async (emailOrUsername, password, done) => {
   try {
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    // Check if input matches either email or username
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(
+        or(
+          eq(users.email, emailOrUsername),
+          eq(users.username, emailOrUsername)
+        )
+      )
+      .limit(1);
+
     if (!user) {
-      return done(null, false, { message: 'Incorrect email or password' });
+      return done(null, false, { message: 'Incorrect email/username or password' });
     }
     const isValid = await crypto.compare(password, user.password);
     if (!isValid) {
-      return done(null, false, { message: 'Incorrect email or password' });
+      return done(null, false, { message: 'Incorrect email/username or password' });
     }
     return done(null, user);
   } catch (error) {
