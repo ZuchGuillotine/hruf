@@ -2,8 +2,17 @@ import express from 'express';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
+import cors from 'cors';
 
 const router = express.Router();
+
+// Configure CORS for admin routes
+router.use(cors({
+  origin: process.env.ADMIN_DASHBOARD_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Middleware to check admin status
 const requireAdmin = async (req: any, res: any, next: any) => {
