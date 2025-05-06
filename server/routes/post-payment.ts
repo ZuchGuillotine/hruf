@@ -58,7 +58,9 @@ router.post('/register-post-payment', async (req, res) => {
 
     // Verify the session with Stripe
     try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['line_items', 'line_items.data.price.product']
+      });
       
       if (session.payment_status !== 'paid') {
         return res.status(400).json({ message: 'Payment has not been completed' });
@@ -69,6 +71,13 @@ router.post('/register-post-payment', async (req, res) => {
         return res.status(400).json({ 
           message: 'Email does not match the one used for payment' 
         });
+      }
+
+      // Get product ID and determine subscription tier
+      const productId = session.line_items?.data[0]?.price?.product as string;
+      if (productId) {
+        const stripeService = new StripeService();
+        subscriptionTier = stripeService.getTierFromProductId(productId);
       }
     } catch (err: any) {
       console.error('Error verifying Stripe session:', err);

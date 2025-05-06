@@ -37,6 +37,54 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
 
+// Stripe webhook handler
+router.post('/webhook', async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  
+  try {
+    const event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      
+      // Retrieve session with expanded line items
+      const expandedSession = await stripe.checkout.sessions.retrieve(session.id, {
+        expand: ['line_items', 'line_items.data.price.product']
+      });
+
+      const productId = expandedSession.line_items?.data[0]?.price?.product as string;
+      const customerEmail = expandedSession.customer_details?.email;
+
+      if (productId && customerEmail) {
+        const stripeService = new StripeService();
+        const subscriptionTier = stripeService.getTierFromProductId(productId);
+
+        // Update user's subscription tier
+        await db
+          .update(users)
+          .set({ 
+            subscriptionTier,
+            stripeCustomerId: expandedSession.customer as string,
+            subscriptionId: expandedSession.subscription as string,
+            updatedAt: new Date()
+          })
+          .where(eq(users.email, customerEmail));
+
+        console.log(`Updated subscription tier to ${subscriptionTier} for ${customerEmail}`);
+      }
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Webhook error:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+});
+
 // Create a checkout session
 router.post('/create-checkout-session', async (req, res) => {
   try {
