@@ -115,6 +115,11 @@ class StripeService {
   }
 }
 
+// Export the getTierFromProductId function
+export const getTierFromProductId = (productId: string): 'free' | 'starter' | 'pro' => {
+  return new StripeService().getTierFromProductId(productId);
+};
+
 // Export a singleton instance
 const stripeService = new StripeService();
 export default stripeService;
