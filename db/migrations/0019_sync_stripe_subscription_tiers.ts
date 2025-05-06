@@ -29,73 +29,73 @@ export async function up() {
     await db.execute(sql`SELECT 1`);
     console.log('Database connection verified');
 
-    // Get all users that have either a stripe_customer_id or subscription_id
-    const users = await db.execute(sql`
-      SELECT id, email, stripe_customer_id, subscription_id, subscription_tier 
-      FROM users 
-      WHERE stripe_customer_id IS NOT NULL 
-      OR subscription_id IS NOT NULL
-    `);
+    // First get all Stripe customers
+    const customers = await stripe.customers.list({
+      limit: 100,
+      expand: ['data.subscriptions']
+    });
 
-    console.log(`Found ${users.rows.length} users with Stripe info`);
+    console.log(`Found ${customers.data.length} customers in Stripe`);
 
-    for (const user of users.rows) {
+    // Process each Stripe customer
+    for (const customer of customers.data) {
       try {
-        console.log(`Processing user ${user.email}`);
+        console.log(`Processing Stripe customer: ${customer.email}`);
         
-        // If user has subscription_id, use that first
-        if (user.subscription_id) {
-          const subscription = await stripe.subscriptions.retrieve(user.subscription_id);
-          const priceId = subscription.items.data[0].price.id;
-          const newTier = PRICE_TIERS[priceId] || 'free';
-
-          if (newTier !== user.subscription_tier) {
-            await db.execute(sql`
-              UPDATE users 
-              SET subscription_tier = ${newTier},
-                  updated_at = NOW()
-              WHERE id = ${user.id}
-            `);
-            console.log(`Updated ${user.email} from ${user.subscription_tier} to ${newTier} using subscription`);
-          }
+        if (!customer.subscriptions?.data?.length) {
+          console.log(`No active subscriptions for customer ${customer.email}`);
+          continue;
         }
-        // Otherwise check for active subscriptions using customer ID
-        else if (user.stripe_customer_id) {
-          const subscriptions = await stripe.subscriptions.list({
-            customer: user.stripe_customer_id,
-            status: 'active',
-            limit: 1
-          });
 
-          if (subscriptions.data.length > 0) {
-            const priceId = subscriptions.data[0].items.data[0].price.id;
-            const newTier = PRICE_TIERS[priceId] || 'free';
+        const subscription = customer.subscriptions.data[0];
+        const priceId = subscription.items.data[0].price.id;
+        const newTier = PRICE_TIERS[priceId] || 'free';
 
-            if (newTier !== user.subscription_tier) {
-              await db.execute(sql`
-                UPDATE users 
-                SET subscription_tier = ${newTier},
-                    subscription_id = ${subscriptions.data[0].id},
-                    updated_at = NOW()
-                WHERE id = ${user.id}
-              `);
-              console.log(`Updated ${user.email} from ${user.subscription_tier} to ${newTier} using customer ID`);
-            }
-          } else {
-            // No active subscriptions - set to free tier
-            if (user.subscription_tier !== 'free') {
-              await db.execute(sql`
-                UPDATE users 
-                SET subscription_tier = 'free',
-                    updated_at = NOW()
-                WHERE id = ${user.id}
-              `);
-              console.log(`Reset ${user.email} to free tier (no active subscriptions)`);
-            }
-          }
+        // Try to find user by subscription ID first
+        let [user] = await db.execute(sql`
+          SELECT id, email, subscription_tier 
+          FROM users 
+          WHERE subscription_id = ${subscription.id}
+        `);
+
+        // If no match, try by email
+        if (!user) {
+          [user] = await db.execute(sql`
+            SELECT id, email, subscription_tier 
+            FROM users 
+            WHERE email = ${customer.email}
+          `);
         }
+
+        // If no match by email, try by stripe_customer_id
+        if (!user) {
+          [user] = await db.execute(sql`
+            SELECT id, email, subscription_tier 
+            FROM users 
+            WHERE stripe_customer_id = ${customer.id}
+          `);
+        }
+
+        if (user) {
+          console.log(`Found matching user: ${user.email}`);
+          
+          // Update user with all Stripe info
+          await db.execute(sql`
+            UPDATE users 
+            SET subscription_tier = ${newTier},
+                stripe_customer_id = ${customer.id},
+                subscription_id = ${subscription.id},
+                updated_at = NOW()
+            WHERE id = ${user.id}
+          `);
+          
+          console.log(`Updated ${user.email} from ${user.subscription_tier} to ${newTier}`);
+        } else {
+          console.log(`WARNING: No matching user found for Stripe customer ${customer.email}`);
+        }
+
       } catch (err) {
-        console.error(`Error processing user ${user.email}:`, err);
+        console.error(`Error processing Stripe customer ${customer.email}:`, err);
       }
     }
 
@@ -121,4 +121,6 @@ const isDirectExecution = async () => {
   }
 };
 
-isDirectExecution();
+if (require.main === module) {
+  isDirectExecution();
+}
