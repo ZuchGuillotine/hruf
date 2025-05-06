@@ -100,8 +100,12 @@ export const down = async () => {
 
 // Auto-execute if run directly
 if (import.meta.url === process.argv[1]) {
+  console.error('Starting migration execution...');
   main().catch((error) => {
     console.error('Unhandled error:', error);
+    console.error('Error details:', error.stack);
     process.exit(1);
   });
+} else {
+  console.error('Migration module loaded but not executed directly');
 }
