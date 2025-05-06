@@ -42,12 +42,18 @@ export async function up() {
       try {
         console.log(`Processing Stripe customer: ${customer.email}`);
         
-        if (!customer.subscriptions?.data?.length) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: 'active',
+          limit: 1
+        });
+
+        if (!subscriptions.data.length) {
           console.log(`No active subscriptions for customer ${customer.email}`);
           continue;
         }
 
-        const subscription = customer.subscriptions.data[0];
+        const subscription = subscriptions.data[0];
         const priceId = subscription.items.data[0].price.id;
         const newTier = PRICE_TIERS[priceId] || 'free';
 
