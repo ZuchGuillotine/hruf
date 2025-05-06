@@ -4,7 +4,7 @@ import { neon } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
 import Stripe from 'stripe';
 
-async function main() {
+export async function main() {
   console.error('Migration starting...');
 
   try {
@@ -77,12 +77,16 @@ async function main() {
   }
 }
 
-console.error('Migration script loaded');
+// Export for programmatic usage
+export const up = main;
+export const down = async () => {
+  console.error('No down migration implemented');
+};
 
-if (process.argv[1] === import.meta.url) {
-  console.error('Starting migration execution...');
+// Auto-execute if run directly
+if (import.meta.url === process.argv[1]) {
   main().catch((error) => {
-    console.error('Unhandled error in main:', error);
+    console.error('Unhandled error:', error);
     process.exit(1);
   });
 }
