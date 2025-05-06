@@ -3,6 +3,8 @@ import { db } from '../index';
 import { sql } from 'drizzle-orm';
 import Stripe from 'stripe';
 
+console.log('Migration script starting...');
+
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing STRIPE_SECRET_KEY environment variable');
 }
@@ -94,4 +96,6 @@ if (import.meta.url === process.argv[1]) {
     console.error('Migration failed:', error);
     process.exit(1);
   });
+} else {
+  console.log('Migration module loaded but not executed directly');
 }
