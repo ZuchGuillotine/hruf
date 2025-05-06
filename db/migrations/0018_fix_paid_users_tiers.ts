@@ -1,20 +1,14 @@
 
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
+import { db } from '../index';
 import { sql } from 'drizzle-orm';
 import Stripe from 'stripe';
 import { getTierFromProductId } from '../../server/services/stripe';
 
 export async function main() {
   console.error('Migration starting...');
-  let db;
   let stripe;
 
   try {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('Missing DATABASE_URL environment variable');
-    }
-
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('Missing STRIPE_SECRET_KEY environment variable');
     }
@@ -24,11 +18,10 @@ export async function main() {
     stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     console.error('Stripe instance created successfully');
 
-    // Initialize database with better error handling
-    console.error('Initializing database connection...');
-    const sql_connection = neon(process.env.DATABASE_URL);
-    db = drizzle(sql_connection);
-    console.error('Database connection initialized');
+    // Test database connection
+    console.error('Testing database connection...');
+    await db.execute(sql`SELECT 1`);
+    console.error('Database connection verified');
 
     // Get all users with stripe customer IDs
     console.error('Executing user query...');
