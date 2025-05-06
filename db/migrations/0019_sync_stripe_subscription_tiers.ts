@@ -89,13 +89,16 @@ export async function down() {
   console.log('No down migration implemented');
 }
 
-// Auto-execute if run directly
-if (import.meta.url === process.argv[1]) {
-  console.log('Executing migration directly...');
-  up().catch((error) => {
+// Auto-execute if this file is the entry point
+const isDirectExecution = async () => {
+  try {
+    await up();
+    console.log('Migration completed successfully');
+    process.exit(0);
+  } catch (error) {
     console.error('Migration failed:', error);
     process.exit(1);
-  });
-} else {
-  console.log('Migration module loaded but not executed directly');
-}
+  }
+};
+
+isDirectExecution();
