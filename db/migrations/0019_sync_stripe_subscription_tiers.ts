@@ -111,16 +111,13 @@ export async function down() {
 }
 
 // Auto-execute if this file is the entry point
-const isDirectExecution = async () => {
-  try {
-    await up();
-    process.exit(0);
-  } catch (error) {
-    console.error('Migration failed:', error);
-    process.exit(1);
-  }
-};
-
-if (require.main === module) {
-  isDirectExecution();
+if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+  up()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Migration failed:', error);
+      process.exit(1);
+    });
 }
