@@ -54,9 +54,17 @@ export async function main() {
           const subscription = subscriptions.data[0];
           const productId = subscription.items.data[0].price.product.id;
           console.error(`Product ID from Stripe: ${productId}`);
-
+          
+          // Debug product details
+          const product = subscription.items.data[0].price.product;
+          console.error('Full product details:', JSON.stringify(product, null, 2));
+          
           const tier = getTierFromProductId(productId);
           console.error(`Mapped tier: ${tier}`);
+          
+          if (tier === 'free') {
+            console.error(`WARNING: Product ${productId} mapped to free tier - this may indicate a mapping issue`);
+          }
 
           if (tier !== user.subscription_tier) {
             await db.execute(sql`
