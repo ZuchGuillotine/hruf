@@ -88,7 +88,7 @@ export async function down() {
 }
 
 // Auto-execute if run directly
-if (require.main === module) {
+if (import.meta.url === process.argv[1]) {
   console.log('Executing migration directly...');
   up().catch((error) => {
     console.error('Migration failed:', error);

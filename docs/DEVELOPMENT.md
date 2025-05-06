@@ -52,6 +52,24 @@ Tests that interact with the database are designed to handle cases where the dat
 Many tests are designed to clean up after themselves to avoid test data accumulation. For example, summary tests track created records and remove them during test cleanup.
 
 
+
+### Common ES Module Errors
+
+If you encounter "require is not defined in ES module scope" errors:
+1. Replace `require.main === module` with `import.meta.url === process.argv[1]` for direct script execution checks
+2. Use ES Module imports (e.g., `import x from 'y'`) instead of CommonJS require
+3. Make sure imported paths include the `.js` extension
+4. For TypeScript files imported from JS, use the `.js` extension in the import path (not `.ts`)
+
+Example of correct ES module usage:
+```typescript
+// Check if file is being run directly
+if (import.meta.url === process.argv[1]) {
+  main().catch(console.error);
+}
+```
+
+
 # Development Guide
 
 ## Architecture Overview
