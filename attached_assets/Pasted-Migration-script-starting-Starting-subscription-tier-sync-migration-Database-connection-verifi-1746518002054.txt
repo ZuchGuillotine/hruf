@@ -1,0 +1,49 @@
+Migration script starting...
+Starting subscription tier sync migration...
+Database connection verified
+Found 13 customers in Stripe
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: delicacybydesign@gmail.com
+No active subscriptions for customer delicacybydesign@gmail.com
+Processing Stripe customer: Kelseyld1980@yahoo.com
+No active subscriptions for customer Kelseyld1980@yahoo.com
+Processing Stripe customer: bencox820@hotmail.com
+Error processing Stripe customer bencox820@hotmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Processing Stripe customer: speedykiller861@gmail.com
+No active subscriptions for customer speedykiller861@gmail.com
+Processing Stripe customer: Kelseyld1980@yahoo.com
+No active subscriptions for customer Kelseyld1980@yahoo.com
+Processing Stripe customer: delicacybydesign@gmail.com
+Error processing Stripe customer delicacybydesign@gmail.com: TypeError: (intermediate value) is not iterable
+    at up (/home/runner/workspace/db/migrations/0019_sync_stripe_subscription_tiers.ts:55:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Migration completed successfully
