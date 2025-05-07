@@ -13,36 +13,6 @@ const requireAuth = (req: any, res: any, next: any) => {
   next();
 };
 
-// Get user's supplements
-router.get('/', requireAuth, async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const userSupplements = await db
-      .select({
-        id: supplements.id,
-        name: supplements.name,
-        dosage: supplements.dosage,
-        frequency: supplements.frequency,
-        notes: supplements.notes,
-        active: supplements.active,
-        startDate: supplements.startDate
-      })
-      .from(supplements)
-      .where(eq(supplements.userId, userId))
-      .where(eq(supplements.active, true))
-      .orderBy(desc(supplements.startDate));
-
-    res.json(userSupplements);
-  } catch (error) {
-    console.error('Error fetching supplements:', error);
-    res.status(500).json({ error: 'Failed to fetch supplements' });
-  }
-});
-
 // Get user's supplement streak
 router.get('/streak', requireAuth, async (req, res) => {
   try {
