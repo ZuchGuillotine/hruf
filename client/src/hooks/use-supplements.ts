@@ -6,9 +6,18 @@ import { useUser } from "./use-user";
 export function useSupplements() {
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const today = new Date().toISOString().split('T')[0];
 
   const supplements = useQuery<SelectSupplement[]>({
-    queryKey: ["/api/supplements", user?.id],
+    queryKey: ['supplement-logs', today],
+    queryFn: async () => {
+      const response = await fetch(`/api/supplement-logs/${today}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch supplements');
+      }
+      const data = await response.json();
+      return data.supplements || [];
+    },
     enabled: !!user,
     retry: 2,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -30,8 +39,6 @@ export function useSupplements() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
-      const today = new Date().toISOString().split('T')[0];
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
@@ -56,8 +63,6 @@ export function useSupplements() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
-      const today = new Date().toISOString().split('T')[0];
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
@@ -76,8 +81,6 @@ export function useSupplements() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
-      const today = new Date().toISOString().split('T')[0];
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
