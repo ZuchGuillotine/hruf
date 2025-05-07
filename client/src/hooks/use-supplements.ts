@@ -1,11 +1,17 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { InsertSupplement, SelectSupplement } from "@db/neon-schema";
+import { useUser } from "./use-user";
 
 export function useSupplements() {
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
   const supplements = useQuery<SelectSupplement[]>({
-    queryKey: ["/api/supplements"],
+    queryKey: ["/api/supplements", user?.id],
+    enabled: !!user,
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const addSupplement = useMutation<SelectSupplement, Error, InsertSupplement>({
@@ -25,7 +31,6 @@ export function useSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
-      // Also invalidate today's supplement logs
       const today = new Date().toISOString().split('T')[0];
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
@@ -52,7 +57,6 @@ export function useSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
-      // Also invalidate today's supplement logs
       const today = new Date().toISOString().split('T')[0];
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
@@ -73,7 +77,6 @@ export function useSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
-      // Also invalidate today's supplement logs
       const today = new Date().toISOString().split('T')[0];
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
