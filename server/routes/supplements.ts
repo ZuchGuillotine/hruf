@@ -22,10 +22,19 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     const userSupplements = await db
-      .select()
+      .select({
+        id: supplements.id,
+        name: supplements.name,
+        dosage: supplements.dosage,
+        frequency: supplements.frequency,
+        notes: supplements.notes,
+        active: supplements.active,
+        startDate: supplements.startDate
+      })
       .from(supplements)
       .where(eq(supplements.userId, userId))
-      .where(eq(supplements.active, true));
+      .where(eq(supplements.active, true))
+      .orderBy(desc(supplements.startDate));
 
     res.json(userSupplements);
   } catch (error) {
