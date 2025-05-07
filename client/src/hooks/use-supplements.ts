@@ -8,12 +8,28 @@ export function useSupplements() {
   const { user } = useUser();
   const today = new Date().toISOString().split('T')[0];
 
-  const supplements = useQuery<SelectSupplement[]>({
+  // Query for active supplements
+  const activeSupplements = useQuery<SelectSupplement[]>({
+    queryKey: ['supplements'],
+    queryFn: async () => {
+      const response = await fetch('/api/supplements');
+      if (!response.ok) {
+        throw new Error('Failed to fetch supplements');
+      }
+      return response.json();
+    },
+    enabled: !!user,
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Query for today's supplement logs
+  const supplementLogs = useQuery<SelectSupplement[]>({
     queryKey: ['supplement-logs', today],
     queryFn: async () => {
       const response = await fetch(`/api/supplement-logs/${today}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch supplements');
+        throw new Error('Failed to fetch supplement logs');
       }
       const data = await response.json();
       return data.supplements || [];
@@ -39,6 +55,7 @@ export function useSupplements() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplements'] });
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
@@ -63,6 +80,7 @@ export function useSupplements() {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplements'] });
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
@@ -81,14 +99,16 @@ export function useSupplements() {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplements'] });
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
 
   return {
-    supplements: supplements.data ?? [],
-    isLoading: supplements.isLoading,
-    error: supplements.error,
+    supplements: activeSupplements.data ?? [],
+    supplementLogs: supplementLogs.data ?? [],
+    isLoading: activeSupplements.isLoading || supplementLogs.isLoading,
+    error: activeSupplements.error || supplementLogs.error,
     addSupplement: addSupplement.mutateAsync,
     updateSupplement: updateSupplement.mutateAsync,
     deleteSupplement: deleteSupplement.mutateAsync,
