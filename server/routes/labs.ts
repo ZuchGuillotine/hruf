@@ -1,5 +1,4 @@
-
-import express from 'express';
+import express, { Request } from 'express';
 import { db } from '@db';
 import { labResults } from '@db/schema';
 import { eq } from 'drizzle-orm';
@@ -9,6 +8,31 @@ import fs from 'fs';
 import { labSummaryService } from '../services/labSummaryService';
 import logger from '../utils/logger';
 import { checkLabUploadLimit } from '../middleware/tierLimitMiddleware';
+import { biomarkerExtractionService } from '../services/biomarkerExtractionService';
+
+// Define a flexible user type that can handle both authenticated and anonymous users
+type BaseUser = {
+  id?: number;  // Optional for anonymous users
+  sessionId?: string;  // For tracking anonymous uploads
+};
+
+type AuthenticatedUser = BaseUser & {
+  id: number;  // Required for authenticated users
+  username?: string;
+  email?: string;
+};
+
+type AnonymousUser = BaseUser & {
+  sessionId: string;  // Required for anonymous users
+};
+
+type LabUser = AuthenticatedUser | AnonymousUser;
+
+// Extend Express Request type to include files and flexible user
+interface LabRequest extends Request {
+  files?: fileUpload.FileArray;
+  user?: LabUser;
+}
 
 const router = express.Router();
 
@@ -47,7 +71,7 @@ router.get('/', async (req, res) => {
 });
 
 // Upload new lab result
-router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
+router.post('/', uploadMiddleware, checkLabUploadLimit, async (req: LabRequest, res) => {
   try {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -74,19 +98,23 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
     const [result] = await db
       .insert(labResults)
       .values({
-        userId: req.user!.id,
+        userId: req.user?.id || null,  // Allow null for anonymous uploads
         fileName: file.name,
         fileType: file.mimetype,
         fileUrl: relativeUrl,
         metadata: {
           size: file.size,
           lastViewed: new Date().toISOString(),
-          originalName: file.name,
-          absolutePath: filePath,
-          relativePath: relativeUrl,
-          uploadTimestamp: Date.now(),
-          mimeType: file.mimetype,
-          md5: file.md5
+          tags: [],
+          ocr: {
+            originalName: file.name,
+            absolutePath: filePath,
+            relativePath: relativeUrl,
+            uploadTimestamp: Date.now(),
+            mimeType: file.mimetype,
+            md5: file.md5,
+            sessionId: req.user?.sessionId  // Store session ID for anonymous uploads
+          }
         }
       })
       .returning();
@@ -95,12 +123,13 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
       labId: result.id,
       fileName: file.name,
       fileUrl: relativeUrl,
-      userId: req.user!.id,
+      userId: req.user?.id || null,
       fileSize: file.size
     });
 
-    // Trigger background summarization
+    // Trigger background processing in parallel
     try {
+      // Start summarization
       labSummaryService.summarizeLabResult(result.id)
         .then((summary) => {
           if (summary) {
@@ -116,20 +145,33 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
             stack: summaryError instanceof Error ? summaryError.stack : undefined
           });
         });
+
+      // Start biomarker extraction
+      biomarkerExtractionService.processLabResult(result.id)
+        .then(() => {
+          logger.info(`Background biomarker extraction completed for lab ID ${result.id}`);
+        })
+        .catch(biomarkerError => {
+          logger.error('Background biomarker extraction failed:', {
+            labId: result.id,
+            error: biomarkerError instanceof Error ? biomarkerError.message : String(biomarkerError),
+            stack: biomarkerError instanceof Error ? biomarkerError.stack : undefined
+          });
+        });
         
-      logger.info('Background summary generation started for lab ID:', result.id);
-    } catch (summaryError) {
-      logger.error('Failed to initiate lab summarization:', {
+      logger.info('Background processing started for lab ID:', result.id);
+    } catch (processingError) {
+      logger.error('Failed to initiate lab processing:', {
         labId: result.id,
-        error: summaryError instanceof Error ? summaryError.message : String(summaryError),
-        stack: summaryError instanceof Error ? summaryError.stack : undefined
+        error: processingError instanceof Error ? processingError.message : String(processingError),
+        stack: processingError instanceof Error ? processingError.stack : undefined
       });
     }
 
     res.json(result);
   } catch (error) {
     logger.error('Error uploading lab result:', {
-      userId: req.user!.id,
+      userId: req.user?.id || null,
       fileName: req.files?.file ? (req.files.file as fileUpload.UploadedFile).name : 'unknown',
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined

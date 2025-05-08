@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 08/05/2025 - 00:09:34
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 08/05/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import OpenAI from "openai";
 import { db } from "../../db";
 import { labResults } from "../../db/schema";
@@ -7,6 +19,7 @@ import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
+import biomarkerExtractionService from "./biomarkerExtractionService";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -59,6 +72,7 @@ class LabSummaryService {
       const fileType = await fileTypeFromBuffer(fileBuffer);
 
       let textContent = "";
+      const fileSize = fileBuffer.length;
 
       if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
         try {
@@ -66,7 +80,7 @@ class LabSummaryService {
           const pdfParse = await import('pdf-parse').then(module => module.default);
 
           logger.info(`Processing PDF file: ${filePath}`, {
-            fileSize: fileBuffer.length,
+            fileSize,
             fileName: labResult.fileName
           });
 
@@ -87,6 +101,7 @@ class LabSummaryService {
             .update(labResults)
             .set({
               metadata: {
+                size: fileSize,
                 ...labResult.metadata,
                 parsedText: textContent,
                 parseDate: new Date().toISOString()
@@ -98,16 +113,13 @@ class LabSummaryService {
             textLength: textContent.length
           });
         } catch (error) {
-          logger.error('Error parsing PDF:', {
+          logger.error('Error processing PDF:', {
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
             filePath,
-            fileName: labResult.fileName,
-            fileUrl: labResult.fileUrl,
-            timestamp: new Date().toISOString()
+            fileName: labResult.fileName
           });
 
-          // Fallback to basic metadata
           textContent = `Lab result file: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
           File type: PDF. This is a PDF document that could not be parsed. Notes: ${labResult.notes || "No notes provided"}`;
         }
@@ -116,7 +128,7 @@ class LabSummaryService {
           logger.info(`Starting OCR processing for lab result ${labResultId}`, {
             fileName: labResult.fileName,
             fileType: labResult.fileType,
-            fileSize: fileBuffer.length
+            fileSize
           });
 
           const { ImageAnnotatorClient } = await import('@google-cloud/vision');
@@ -142,46 +154,18 @@ class LabSummaryService {
           const text = result.fullTextAnnotation?.text || '';
           const confidence = result.fullTextAnnotation?.pages?.[0]?.confidence || 0;
 
-          // Log detailed OCR results to help debug recognition issues
-          logger.info(`Detailed OCR results for lab ${labResultId}:`, {
-            rawText: text,
-            textByLines: text.split('\n').map(line => line.trim()).filter(Boolean),
-            characterCount: text.length,
-            lineCount: text.split('\n').length
-          });
-
-          // Log full OCR results for debugging
-          logger.info(`Full OCR results for lab ${labResultId}:`, {
-            text: text,
-            textLength: text ? text.length : 0,
-            hasContent: !!text,
-            timestamp: new Date().toISOString()
-          });
-
-          // Log first and last 500 characters to verify content boundaries
-          logger.info(`OCR content boundaries for lab ${labResultId}:`, {
-            start: text.substring(0, 500),
-            end: text.substring(Math.max(0, text.length - 500)),
-            totalLength: text.length
-          });
-
           if (!text || text.trim().length === 0) {
             throw new Error('OCR produced empty text content');
           }
 
           textContent = text;
 
-          // Verify text was extracted
-          logger.info(`OCR text content sample for lab result ${labResultId}:`, {
-            sample: text.substring(0, 100), // Log first 100 chars
-            fullLength: text.length
-          });
-
-          // Store OCR text in metadata with standardized structure
+          // Store OCR text in metadata
           await db
             .update(labResults)
             .set({
               metadata: {
+                size: fileSize,
                 ...labResult.metadata,
                 ocr: {
                   text: textContent,
@@ -192,18 +176,10 @@ class LabSummaryService {
                     language: 'en',
                     mode: 'document'
                   }
-                },
-                extractedText: textContent,
-                extractionMethod: 'google-vision',
-                extractionDate: new Date().toISOString()
+                }
               }
             })
             .where(eq(labResults.id, labResultId));
-
-          logger.info(`Successfully extracted and stored OCR text for lab result ${labResultId}`, {
-            textLength: text.length,
-            method: 'ocr'
-          });
 
           logger.info(`Successfully extracted text from image for lab result ${labResultId}`, {
             textLength: text.length
@@ -255,9 +231,12 @@ class LabSummaryService {
         .update(labResults)
         .set({
           metadata: {
+            size: fileSize,
             ...labResult.metadata,
-            summary: summaryContent,
-            summarizedAt: new Date().toISOString()
+            summary: {
+              content: summaryContent,
+              generatedAt: new Date().toISOString()
+            }
           }
         })
         .where(eq(labResults.id, labResultId));
