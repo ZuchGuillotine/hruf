@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { labResults } from "../../db/schema";
 import { and, eq, desc } from "drizzle-orm";
 import embeddingService from "./embeddingService";
+import { biomarkerExtractionService } from "./biomarkerExtractionService";
 import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
@@ -82,6 +83,19 @@ class LabSummaryService {
             throw new Error('PDF parsing produced empty text content');
           }
 
+          // Extract biomarkers in parallel with other processing
+          const biomarkerPromise = biomarkerExtractionService.extractBiomarkers(textContent)
+            .then(async (biomarkerResults) => {
+              logger.info(`Extracted biomarkers for lab result ${labResultId}`, {
+                biomarkerCount: biomarkerResults.parsedBiomarkers.length
+              });
+              return biomarkerResults;
+            })
+            .catch(error => {
+              logger.error(`Error extracting biomarkers for lab result ${labResultId}:`, error);
+              return null;
+            });
+
           // Store parsed text in metadata
           await db
             .update(labResults)
@@ -94,8 +108,25 @@ class LabSummaryService {
             })
             .where(eq(labResults.id, labResultId));
 
+          // Wait for biomarker extraction and update metadata if successful
+          const biomarkerResults = await biomarkerPromise;
+          if (biomarkerResults) {
+            await db
+              .update(labResults)
+              .set({
+                metadata: {
+                  ...labResult.metadata,
+                  parsedText: textContent,
+                  parseDate: new Date().toISOString(),
+                  biomarkers: biomarkerResults
+                }
+              })
+              .where(eq(labResults.id, labResultId));
+          }
+
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
-            textLength: textContent.length
+            textLength: textContent.length,
+            hasBiomarkers: !!biomarkerResults
           });
         } catch (error) {
           logger.error('Error parsing PDF:', {
@@ -177,6 +208,19 @@ class LabSummaryService {
             fullLength: text.length
           });
 
+          // Extract biomarkers in parallel with OCR processing
+          const biomarkerPromise = biomarkerExtractionService.extractBiomarkers(textContent)
+            .then(async (biomarkerResults) => {
+              logger.info(`Extracted biomarkers from OCR for lab result ${labResultId}`, {
+                biomarkerCount: biomarkerResults.parsedBiomarkers.length
+              });
+              return biomarkerResults;
+            })
+            .catch(error => {
+              logger.error(`Error extracting biomarkers from OCR for lab result ${labResultId}:`, error);
+              return null;
+            });
+
           // Store OCR text in metadata with standardized structure
           await db
             .update(labResults)
@@ -200,9 +244,37 @@ class LabSummaryService {
             })
             .where(eq(labResults.id, labResultId));
 
+          // Wait for biomarker extraction and update metadata if successful
+          const biomarkerResults = await biomarkerPromise;
+          if (biomarkerResults) {
+            await db
+              .update(labResults)
+              .set({
+                metadata: {
+                  ...labResult.metadata,
+                  ocr: {
+                    text: textContent,
+                    processedAt: new Date().toISOString(),
+                    confidence: confidence * 100,
+                    engineVersion: 'google-vision',
+                    parameters: {
+                      language: 'en',
+                      mode: 'document'
+                    }
+                  },
+                  extractedText: textContent,
+                  extractionMethod: 'google-vision',
+                  extractionDate: new Date().toISOString(),
+                  biomarkers: biomarkerResults
+                }
+              })
+              .where(eq(labResults.id, labResultId));
+          }
+
           logger.info(`Successfully extracted and stored OCR text for lab result ${labResultId}`, {
             textLength: text.length,
-            method: 'ocr'
+            method: 'ocr',
+            hasBiomarkers: !!biomarkerResults
           });
 
           logger.info(`Successfully extracted text from image for lab result ${labResultId}`, {
