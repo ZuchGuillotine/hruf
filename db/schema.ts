@@ -158,6 +158,32 @@ export const labResults = pgTable("lab_results", {
     size: number;
     lastViewed?: string;
     tags?: string[];
+    parsedText?: string;
+    parseDate?: string;
+    ocr?: {
+      text: string;
+      processedAt: string;
+      confidence: number;
+      engineVersion: string;
+      parameters: Record<string, unknown>;
+    };
+    extractedText?: string;
+    extractionMethod?: string;
+    extractionDate?: string;
+    summary?: string;
+    summarizedAt?: string;
+    biomarkers?: {
+      parsedBiomarkers: Array<{
+        name: string;
+        value: number;
+        unit: string;
+        referenceRange?: string;
+        testDate?: string;
+        category?: string;
+      }>;
+      parsingErrors: string[];
+      extractedAt: string;
+    };
   }>(),
 });
 
