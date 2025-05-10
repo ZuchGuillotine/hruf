@@ -319,8 +319,9 @@ export class BiomarkerExtractionService {
         .set({
           metadata: {
             ...labResult.metadata,
-            parsedBiomarkers: biomarkerResults.parsedBiomarkers,
-            parsingErrors: biomarkerResults.parsingErrors
+            biomarkers: biomarkerResults.parsedBiomarkers,
+            parsingErrors: biomarkerResults.parsingErrors,
+            extractedAt: new Date().toISOString()
           }
         })
         .where(eq(labResults.id, labResultId));

@@ -28,8 +28,10 @@ async function verifyLabStorage() {
 
       // Check for biomarkers
       const biomarkers = result.metadata?.biomarkers || [];
-      console.log('Biomarkers Status:', biomarkers.length > 0 ? '✅ Present' : '❌ Missing');
-      console.log('Biomarkers Found:', biomarkers.length);
+      const biomarkerCount = biomarkers.length;
+      console.log('Biomarkers Status:', biomarkerCount > 0 ? '✅ Present' : '❌ Missing');
+      console.log('Biomarkers Found:', biomarkerCount);
+      console.log('Extraction Date:', result.metadata?.extractedAt || 'Not available');
       
       if (biomarkers.length > 0) {
         console.log('\nBiomarker Examples:');
