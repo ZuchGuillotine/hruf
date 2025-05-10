@@ -220,7 +220,7 @@ export class BiomarkerExtractionService {
   private async extractWithLLM(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     try {
       const completion = await openai.chat.completions.create({
-        model: "o3-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
