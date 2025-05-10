@@ -186,9 +186,10 @@ export class BiomarkerExtractionService {
       if (dateMatch) {
         try {
           testDate = new Date(dateMatch[1]).toISOString();
+          logger.info('Found test date with regex:', { date: testDate, pattern: pattern.toString() });
           break;
         } catch (e) {
-          logger.warn('Failed to parse date:', dateMatch[1]);
+          logger.warn('Failed to parse date:', { date: dateMatch[1], error: e instanceof Error ? e.message : String(e) });
         }
       }
     }
@@ -197,27 +198,86 @@ export class BiomarkerExtractionService {
     const referenceRangePattern = /(?:Reference Range|Normal Range|Reference Values?):\s*([^\.]+)/i;
     const referenceRangeMatch = text.match(referenceRangePattern);
     const referenceRange = referenceRangeMatch ? referenceRangeMatch[1].trim() : undefined;
+    if (referenceRange) {
+      logger.info('Found reference range:', { range: referenceRange });
+    }
+
+    // Track matches and validation results
+    let totalMatches = 0;
+    let validationFailures = 0;
 
     for (const [name, { pattern, category }] of Object.entries(BIOMARKER_PATTERNS)) {
       const match = text.match(pattern);
       if (match) {
+        totalMatches++;
         const [_, value, unit] = match;
-        results.push({
-          name,
-          value: parseFloat(value),
-          unit,
-          testDate,
-          referenceRange,
+        logger.info('Regex match found:', { 
+          biomarker: name,
+          rawValue: value,
+          unit: unit,
           category
         });
+
+        try {
+          const parsedValue = parseFloat(value);
+          if (isNaN(parsedValue)) {
+            logger.warn('Failed to parse biomarker value as number:', {
+              biomarker: name,
+              rawValue: value
+            });
+            validationFailures++;
+            continue;
+          }
+
+          const biomarker = {
+            name,
+            value: parsedValue,
+            unit,
+            testDate,
+            referenceRange,
+            category
+          };
+
+          try {
+            const validated = BiomarkerSchema.parse(biomarker);
+            results.push(validated);
+            logger.info('Successfully validated biomarker:', {
+              biomarker: name,
+              value: parsedValue,
+              unit
+            });
+          } catch (validationError) {
+            validationFailures++;
+            logger.warn('Zod validation failed for biomarker:', {
+              biomarker: name,
+              error: validationError instanceof Error ? validationError.message : String(validationError),
+              issues: validationError instanceof z.ZodError ? validationError.issues : undefined
+            });
+          }
+        } catch (parseError) {
+          validationFailures++;
+          logger.warn('Error processing biomarker value:', {
+            biomarker: name,
+            error: parseError instanceof Error ? parseError.message : String(parseError)
+          });
+        }
       }
     }
+
+    logger.info('Regex extraction complete:', {
+      totalMatches,
+      validationFailures,
+      successfulExtractions: results.length,
+      biomarkersFound: results.map(r => r.name)
+    });
 
     return results;
   }
 
   private async extractWithLLM(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     try {
+      logger.info('Starting LLM extraction with text length:', { textLength: text.length });
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
@@ -241,15 +301,55 @@ export class BiomarkerExtractionService {
         response_format: { type: "json_object" }
       });
 
-      const response = JSON.parse(completion.choices[0]?.message?.content || "{}");
-      const parsed = BiomarkersArraySchema.parse(response.biomarkers || []);
-      logger.info('LLM extraction successful', { biomarkerCount: parsed.length });
-      return parsed;
+      const rawContent = completion.choices[0]?.message?.content;
+      logger.info('Raw LLM response:', { 
+        contentLength: rawContent?.length,
+        contentPreview: rawContent?.substring(0, 200) // Log first 200 chars
+      });
+
+      if (!rawContent) {
+        logger.warn('LLM returned no content');
+        return [];
+      }
+
+      let parsedContent;
+      try {
+        parsedContent = JSON.parse(rawContent);
+        logger.info('Successfully parsed LLM JSON response');
+      } catch (parseError) {
+        logger.error('Failed to parse LLM JSON response:', {
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+          contentPreview: rawContent.substring(0, 500)
+        });
+        return [];
+      }
+
+      // Log the structure of the parsed content
+      logger.info('Parsed LLM content structure:', {
+        hasBiomarkers: 'biomarkers' in parsedContent,
+        biomarkersLength: parsedContent.biomarkers?.length,
+        sampleBiomarker: parsedContent.biomarkers?.[0]
+      });
+
+      try {
+        const parsed = BiomarkersArraySchema.parse(parsedContent.biomarkers || []);
+        logger.info('Successfully validated biomarkers with Zod schema', {
+          biomarkerCount: parsed.length,
+          sampleValidated: parsed[0]
+        });
+        return parsed;
+      } catch (validationError) {
+        logger.error('Zod validation failed for LLM biomarkers:', {
+          error: validationError instanceof Error ? validationError.message : String(validationError),
+          issues: validationError instanceof z.ZodError ? validationError.issues : undefined,
+          sampleInvalid: parsedContent.biomarkers?.[0]
+        });
+        return [];
+      }
     } catch (error) {
-      logger.error('Error extracting biomarkers with LLM:', {
+      logger.error('Error in LLM extraction:', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        responseContent: completion.choices[0]?.message?.content
+        stack: error instanceof Error ? error.stack : undefined
       });
       return [];
     }
@@ -261,13 +361,24 @@ export class BiomarkerExtractionService {
   }> {
     const errors: string[] = [];
     try {
+      logger.info('Starting biomarker extraction process');
+      
       // First try regex extraction
       const regexResults = await this.extractWithRegex(text);
+      logger.info('Regex extraction results:', {
+        biomarkerCount: regexResults.length,
+        biomarkers: regexResults.map(r => ({ name: r.name, value: r.value, unit: r.unit }))
+      });
 
       // If we got less than 15 results or detected potential missing data,
       // fall back to LLM
       if (regexResults.length < 15 || text.length > 1000) {
+        logger.info('Insufficient regex results, attempting LLM extraction');
         const llmResults = await this.extractWithLLM(text);
+        logger.info('LLM extraction results:', {
+          biomarkerCount: llmResults.length,
+          biomarkers: llmResults.map(r => ({ name: r.name, value: r.value, unit: r.unit }))
+        });
 
         // Merge results, preferring regex matches
         const regexNames = new Set(regexResults.map(r => r.name));
@@ -275,6 +386,13 @@ export class BiomarkerExtractionService {
           ...regexResults,
           ...llmResults.filter(r => !regexNames.has(r.name))
         ];
+
+        logger.info('Combined extraction results:', {
+          totalBiomarkers: combinedResults.length,
+          fromRegex: regexResults.length,
+          fromLLM: llmResults.length,
+          uniqueFromLLM: llmResults.filter(r => !regexNames.has(r.name)).length
+        });
 
         return {
           parsedBiomarkers: combinedResults,
@@ -287,7 +405,12 @@ export class BiomarkerExtractionService {
         parsingErrors: errors
       };
     } catch (error) {
-      errors.push(`Failed to parse biomarkers: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      errors.push(`Failed to parse biomarkers: ${errorMessage}`);
+      logger.error('Error in biomarker extraction:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return {
         parsedBiomarkers: [],
         parsingErrors: errors
