@@ -27,7 +27,7 @@ async function verifyLabStorage() {
       }
 
       // Check for biomarkers
-      const biomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
+      const biomarkers = result.metadata?.biomarkers || [];
       console.log('Biomarkers Status:', biomarkers.length > 0 ? '✅ Present' : '❌ Missing');
       console.log('Biomarkers Found:', biomarkers.length);
       
@@ -39,7 +39,7 @@ async function verifyLabStorage() {
       }
 
       // Check for any parsing errors
-      const parsingErrors = result.metadata?.biomarkers?.parsingErrors || [];
+      const parsingErrors = result.metadata?.parsingErrors || [];
       if (parsingErrors.length > 0) {
         console.log('\nParsing Errors:', parsingErrors);
       }
