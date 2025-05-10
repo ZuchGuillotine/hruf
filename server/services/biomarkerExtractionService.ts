@@ -13,10 +13,8 @@
 import { z } from 'zod';
 import { openai } from '../openai';
 import logger from '../utils/logger';
-import { db } from '@db';
-import { labResults } from '@db/schema';
-import { db } from '../db';
-import { labResults } from '../db/schema';
+import { db } from '../../db';
+import { labResults } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 
 // Zod schema for biomarker validation
