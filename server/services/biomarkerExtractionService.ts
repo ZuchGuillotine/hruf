@@ -171,6 +171,7 @@ const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerC
 export class BiomarkerExtractionService {
   private async extractWithRegex(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     const results: z.infer<typeof BiomarkerSchema>[] = [];
+    logger.info('Starting regex extraction with text length:', { textLength: text.length });
 
     // Extract test date with more flexible patterns
     const datePatterns = [
@@ -241,9 +242,15 @@ export class BiomarkerExtractionService {
       });
 
       const response = JSON.parse(completion.choices[0]?.message?.content || "{}");
-      return BiomarkersArraySchema.parse(response.biomarkers || []);
+      const parsed = BiomarkersArraySchema.parse(response.biomarkers || []);
+      logger.info('LLM extraction successful', { biomarkerCount: parsed.length });
+      return parsed;
     } catch (error) {
-      logger.error('Error extracting biomarkers with LLM:', error);
+      logger.error('Error extracting biomarkers with LLM:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        responseContent: completion.choices[0]?.message?.content
+      });
       return [];
     }
   }
@@ -319,11 +326,11 @@ export class BiomarkerExtractionService {
         .set({
           metadata: {
             ...labResult.metadata,
-            biomarkers: {
+            biomarkers: biomarkerResults.parsedBiomarkers.length > 0 ? {
               parsedBiomarkers: biomarkerResults.parsedBiomarkers,
               parsingErrors: biomarkerResults.parsingErrors,
               extractedAt: new Date().toISOString()
-            }
+            } : undefined
           }
         })
         .where(eq(labResults.id, labResultId));
