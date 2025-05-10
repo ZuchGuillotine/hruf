@@ -171,7 +171,11 @@ const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerC
 export class BiomarkerExtractionService {
   private async extractWithRegex(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     const results: z.infer<typeof BiomarkerSchema>[] = [];
-    logger.info('Starting regex extraction with text length:', { textLength: text.length });
+    logger.info('Starting regex extraction with text:', { 
+      textLength: text.length,
+      textSample: text.substring(0, 500), // Log first 500 chars
+      patterns: Object.keys(BIOMARKER_PATTERNS) 
+    });
 
     // Extract test date with more flexible patterns
     const datePatterns = [
@@ -208,6 +212,12 @@ export class BiomarkerExtractionService {
 
     for (const [name, { pattern, category }] of Object.entries(BIOMARKER_PATTERNS)) {
       const match = text.match(pattern);
+      logger.debug('Pattern matching attempt:', {
+        biomarker: name,
+        pattern: pattern.toString(),
+        matched: !!match,
+        matchValue: match ? match[1] : null
+      });
       if (match) {
         totalMatches++;
         const [_, value, unit] = match;
@@ -304,7 +314,11 @@ export class BiomarkerExtractionService {
       const rawContent = completion.choices[0]?.message?.content;
       logger.info('Raw LLM response:', { 
         contentLength: rawContent?.length,
-        contentPreview: rawContent?.substring(0, 200) // Log first 200 chars
+        contentPreview: rawContent?.substring(0, 200), // Log first 200 chars
+        finishReason: completion.choices[0]?.finish_reason,
+        modelUsed: completion.model,
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens
       });
 
       if (!rawContent) {
