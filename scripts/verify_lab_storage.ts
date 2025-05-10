@@ -27,7 +27,7 @@ async function verifyLabStorage() {
       }
 
       // Check for biomarkers
-      const biomarkers = result.metadata?.biomarkers || [];
+      const biomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
       const biomarkerCount = biomarkers.length;
       console.log('Biomarkers Status:', biomarkerCount > 0 ? '✅ Present' : '❌ Missing');
       console.log('Biomarkers Found:', biomarkerCount);
