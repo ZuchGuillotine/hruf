@@ -427,6 +427,24 @@ POST /api/summaries/realtime
 
 ## Data Flow Architecture
 
+### Biomarker Extraction System
+- Service: biomarkerExtractionService.ts
+  - Purpose: Extract and validate biomarkers from lab results
+  - Components:
+    - Regex-based extraction (primary)
+    - LLM-based extraction (fallback)
+    - Hybrid storage system
+  - Current Architecture:
+    - Two-phase extraction (regex then LLM)
+    - Metadata updates for storing results
+    - Validation using BiomarkerSchema
+    - Separate processing for parser errors
+  - Known Issues (May 10, 2025):
+    - Regex patterns not matching actual lab formats
+    - LLM results not being properly stored
+    - Race conditions in metadata updates
+    - Storage structure misalignment
+
 ### Lab Results File Handling
 1. File Upload Flow:
    - Client sends multipart form data

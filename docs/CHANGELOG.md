@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+### Issues Identified (May 10, 2025)
+- Biomarker Extraction System:
+  - Identified critical issues in biomarker extraction pipeline:
+    - Regex patterns not matching lab result formats
+    - LLM extraction returning empty results
+    - Multiple metadata updates causing race conditions
+    - Inconsistent storage structure between services
+  - Current Implementation Status:
+    - Text extraction working correctly
+    - Storage system properly configured
+    - Biomarker detection functioning
+    - Extraction and persistence failing
+
 ### Added (May 05, 2025)
 - Enhanced Stripe Integration:
   - Implemented centralized price/product mapping
