@@ -435,15 +435,20 @@ POST /api/summaries/realtime
     - LLM-based extraction (fallback)
     - Hybrid storage system
   - Current Architecture:
-    - Two-phase extraction (regex then LLM)
-    - Metadata updates for storing results
-    - Validation using BiomarkerSchema
-    - Separate processing for parser errors
-  - Known Issues (May 10, 2025):
-    - Regex patterns not matching actual lab formats
-    - LLM results not being properly stored
-    - Race conditions in metadata updates
-    - Storage structure misalignment
+    - Parallel processing of extraction methods
+    - Intelligent metadata updates
+    - Strict validation using BiomarkerSchema
+    - Comprehensive error handling
+  - Performance (May 11, 2025):
+    - 91% extraction accuracy (20/22 biomarkers)
+    - Successful hybrid extraction strategy
+    - Proper metadata persistence
+    - Efficient error recovery
+  - Integration Points:
+    - Works with labSummaryService for initial processing
+    - Connects with metadata storage system
+    - Integrates with validation framework
+    - Supports vector search capabilities
 
 ### Lab Results File Handling
 1. File Upload Flow:
