@@ -37,21 +37,23 @@ router.get('/', async (req, res) => {
         error: 'Authentication required'
       });
     }
-    
+
     // Validate & coerce query params
     const { page, pageSize, biomarker } = querySchema.parse(req.query);
     const offset = (page - 1) * pageSize;
 
     // Get lab results with biomarker data
     const results = await db
-      .select({
-        id: labResults.id,
-        metadata: labResults.metadata,
-        uploadedAt: labResults.uploadedAt
-      })
+      .select()
       .from(labResults)
-      .where(eq(labResults.userId, req.user!.id))
+      .where(eq(labResults.userId, req.user.id))
       .orderBy(labResults.uploadedAt, 'desc');
+
+    // Log the retrieved data for debugging
+    logger.info(`Retrieved ${results.length} lab results for user ${req.user.id}`, {
+      userId: req.user.id,
+      resultCount: results.length
+    });
 
     // Extract and flatten biomarkers
     const data: ChartEntry[] = results.flatMap(lab => {
@@ -69,17 +71,26 @@ router.get('/', async (req, res) => {
         }));
     });
 
+    // Check if we have any biomarkers
+    const hasBiomarkers = data.length > 0;
+
+    // Apply pagination after all processing
+    const paginatedData = data.slice(offset, offset + pageSize);
+
     logger.info('Retrieved lab chart data:', {
-      userId: req.user!.id,
+      userId: req.user.id,
       resultCount: results.length,
       biomarkerCount: data.length,
+      hasBiomarkers,
       page,
-      pageSize
+      pageSize,
+      requestedBiomarker: biomarker
     });
 
     res.json({
       success: true,
-      data,
+      data: paginatedData,
+      hasBiomarkers,
       pagination: {
         page,
         pageSize,
