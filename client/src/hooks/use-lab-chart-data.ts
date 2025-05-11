@@ -1,70 +1,54 @@
-
 import { useQuery } from '@tanstack/react-query';
-import type { ChartApiResponse, BiomarkerDataPoint, Series } from '@/types/chart';
-import { queryClient, getQueryFn } from '@/lib/queryClient';
+import type { BiomarkerDataPoint, Series } from '@/types/chart';
 
-export interface UseLabChartDataOptions {
-  /** Page number for pagination (1-based) */
-  page?: number;
-  /** Number of items per page (max 100) */
-  pageSize?: number;
+interface ChartData {
+  series: Series[];
+  allBiomarkers: string[];
+  categories: Record<string, string>;
 }
 
-export interface UseLabChartDataResult {
-  /** Flattened array of data points */
-  data?: BiomarkerDataPoint[];
-  /** Loading state */
-  isLoading: boolean;
-  /** Error state */
-  isError: boolean;
-  /** Error object if any */
-  error: Error | null;
-  /** Refetch trigger */
-  refetch: () => Promise<void>;
-  /**
-   * Returns a grouped series for the given biomarker name,
-   * or undefined if that biomarker is not on the current page.
-   */
-  getSeriesByName: (name: string) => Series | undefined;
-}
+export function useLabChartData() {
+  return useQuery<ChartData>({
+    queryKey: ['labChartData'],
+    queryFn: async () => {
+      const response = await fetch('/api/labs/chart-data');
+      if (!response.ok) {
+        throw new Error('Failed to fetch lab chart data');
+      }
+      const data = await response.json();
 
-/**
- * React Query hook to fetch paginated lab chart data.
- * Caches results per page and pageSize.
- */
-export function useLabChartData(
-  { page = 1, pageSize = 50 }: UseLabChartDataOptions = {}
-): UseLabChartDataResult {
-  const queryKey = ['labChartData', page, pageSize];
-  
-  const { data: response, isLoading, isError, error, refetch } = useQuery<ChartApiResponse, Error>({
-    queryKey,
-    queryFn: getQueryFn(),
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    keepPreviousData: true
+      // Group data points by biomarker name
+      const biomarkerMap = new Map<string, BiomarkerDataPoint[]>();
+      data.data.forEach((point: BiomarkerDataPoint) => {
+        const points = biomarkerMap.get(point.name) || [];
+        points.push(point);
+        biomarkerMap.set(point.name, points);
+      });
+
+      // Convert to series format
+      const series: Series[] = Array.from(biomarkerMap.entries()).map(([name, points]) => ({
+        name,
+        unit: points[0].unit,
+        category: points[0].category,
+        points: points
+          .sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
+          .map(p => ({ testDate: p.testDate, value: p.value }))
+      }));
+
+      // Track categories for coloring
+      const categories: Record<string, string> = {};
+      series.forEach(s => {
+        if (s.category) {
+          categories[s.name] = s.category;
+        }
+      });
+
+      return {
+        series,
+        allBiomarkers: Array.from(biomarkerMap.keys()).sort(),
+        categories
+      };
+    },
+    staleTime: 5 * 60 * 1000 // Consider data stale after 5 minutes
   });
-
-  const dataPoints = response?.data;
-
-  const getSeriesByName = (name: string): Series | undefined => {
-    if (!dataPoints) return undefined;
-    const filtered = dataPoints.filter((dp) => dp.name === name);
-    if (filtered.length === 0) return undefined;
-    
-    const unit = filtered[0].unit;
-    const points = filtered
-      .sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
-      .map((dp) => ({ testDate: dp.testDate, value: dp.value }));
-      
-    return { name, unit, points };
-  };
-
-  return {
-    data: dataPoints,
-    isLoading,
-    isError,
-    error: error || null,
-    refetch: async () => { await refetch(); },
-    getSeriesByName,
-  };
 }

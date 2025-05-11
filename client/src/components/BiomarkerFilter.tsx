@@ -1,21 +1,25 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
+const CATEGORY_COLORS = {
+  lipid: 'bg-red-100 hover:bg-red-200',
+  metabolic: 'bg-blue-100 hover:bg-blue-200',
+  thyroid: 'bg-green-100 hover:bg-green-200',
+  vitamin: 'bg-yellow-100 hover:bg-yellow-200',
+  blood: 'bg-purple-100 hover:bg-purple-200',
+  other: 'bg-gray-100 hover:bg-gray-200'
+};
+
 export function BiomarkerFilter() {
-  const { data: biomarkerData, isLoading } = useLabChartData();
+  const { data, isLoading } = useLabChartData();
   const [location, setLocation] = useLocation();
 
-  const allNames = useMemo(() => {
-    if (!biomarkerData?.series) return [];
-    return Array.from(new Set(biomarkerData.series.map(s => s.name))).sort();
-  }, [biomarkerData]);
-
-  const selectedNames = useMemo(() => {
+  const selectedNames = React.useMemo(() => {
     const params = new URLSearchParams(location.split('?')[1]);
     const param = params.get('biomarkers') ?? '';
     return new Set(param.split(',').filter(Boolean));
@@ -53,13 +57,17 @@ export function BiomarkerFilter() {
     <Card className="p-4">
       <ScrollArea className="h-[200px] w-full">
         <div className="flex flex-wrap gap-2 p-2">
-          {allNames.map((name) => (
+          {data?.allBiomarkers.map((name) => (
             <Button
               key={name}
               variant={selectedNames.has(name) ? "default" : "outline"}
               size="sm"
               onClick={() => toggleName(name)}
-              className="rounded-full"
+              className={`rounded-full ${
+                selectedNames.has(name) 
+                  ? '' 
+                  : CATEGORY_COLORS[data.categories[name] || 'other']
+              }`}
             >
               {name}
             </Button>
