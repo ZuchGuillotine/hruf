@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { useLabChartData } from '../../hooks/use-lab-chart-data';
+import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
 export function BiomarkerFilter() {
   const { data: dataPoints = [], isLoading } = useLabChartData();
