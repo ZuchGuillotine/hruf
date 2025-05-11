@@ -11,7 +11,12 @@ export function useLabChartData() {
   return useQuery<BiomarkerData>({
     queryKey: ['labChartData'],
     queryFn: async () => {
-      const response = await fetch('/api/labs/chart-data');
+      const response = await fetch('/api/labs/chart-data', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch lab chart data');
       }

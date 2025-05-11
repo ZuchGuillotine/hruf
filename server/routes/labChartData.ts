@@ -31,6 +31,13 @@ type ChartEntry = {
 
 router.get('/', async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Authentication required'
+      });
+    }
+    
     // Validate & coerce query params
     const { page, pageSize, biomarker } = querySchema.parse(req.query);
     const offset = (page - 1) * pageSize;
