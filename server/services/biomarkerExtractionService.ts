@@ -490,13 +490,25 @@ export class BiomarkerExtractionService {
   }
 
   async processLabResult(labResultId: number): Promise<void> {
-  try {
-    // Get the lab result from the database
-    const [labResult] = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.id, labResultId))
+    try {
+      // Get the lab result from the database
+      const [labResult] = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.id, labResultId))
+        .limit(1);
 
+      if (!labResult) {
+        logger.error(`Lab result with ID ${labResultId} not found`);
+        return;
+      }
+    } catch (error) {
+      logger.error(`Error processing lab result ${labResultId}:`, {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  }
 
   async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
     const trx = await db.transaction();
