@@ -1,0 +1,31 @@
+Cannot read properties of undefined (reading 'map')
+at BiomarkerFilter (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/components/BiomarkerFilter.tsx:69:247)
+at renderWithHooks (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:11548:26)
+at updateFunctionComponent (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:14582:28)
+at beginWork (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:15924:22)
+at HTMLUnknownElement.callCallback2 (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:3674:22)
+at Object.invokeGuardedCallbackDev (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:3699:24)
+at invokeGuardedCallback (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:3733:39)
+at beginWork$1 (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:19765:15)
+at performUnitOfWork (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:19198:20)
+at workLoopSync (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=df52745a:19137:13)
+The above error occurred in the <BiomarkerFilter> component:
+
+    at BiomarkerFilter (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/components/BiomarkerFilter.tsx:34:31)
+    at div
+    at main
+    at div
+    at Labs (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/pages/labs.tsx:31:35)
+    at Route (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=df52745a:191:16)
+    at Switch (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=df52745a:247:17)
+    at AppRouter (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/App.tsx?v=HIG0LJpKo8Nw7vLV5HJC5:78:31)
+    at ErrorBoundary (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/components/ErrorBoundary.tsx:9:5)
+    at AuthProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=df52745a:2805:3)
+    at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+Error caught by ErrorBoundary: 
+TypeError {}
+ 
+Object {componentStack: "↵    at BiomarkerFilter…"}
