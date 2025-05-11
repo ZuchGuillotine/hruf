@@ -152,3 +152,27 @@ export async function down(db: PostgresJsDatabase) {
     throw error;
   }
 }
+
+// Execute migration if running directly
+if (require.main === module) {
+  import('postgres').then(async ({ default: postgres }) => {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable not set');
+    }
+
+    const client = postgres(process.env.DATABASE_URL);
+    const db = drizzle(client);
+
+    try {
+      console.log('Running biomarker tables migration...');
+      await up(db);
+      console.log('Migration completed successfully');
+    } catch (error) {
+      console.error('Migration failed:', error);
+      process.exit(1);
+    } finally {
+      await client.end();
+      process.exit();
+    }
+  });
+}
