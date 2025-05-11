@@ -96,33 +96,25 @@ class LabSummaryService {
               return null;
             });
 
-          // Store parsed text in metadata
+          // Wait for biomarker extraction before updating metadata
+          const biomarkerResults = await biomarkerPromise;
+          
           await db
             .update(labResults)
             .set({
               metadata: {
                 ...labResult.metadata,
                 parsedText: textContent,
-                parseDate: new Date().toISOString()
+                parseDate: new Date().toISOString(),
+                biomarkers: biomarkerResults || undefined
               }
             })
             .where(eq(labResults.id, labResultId));
 
-          // Wait for biomarker extraction and update metadata if successful
-          const biomarkerResults = await biomarkerPromise;
-          if (biomarkerResults) {
-            await db
-              .update(labResults)
-              .set({
-                metadata: {
-                  ...labResult.metadata,
-                  parsedText: textContent,
-                  parseDate: new Date().toISOString(),
-                  biomarkers: biomarkerResults
-                }
-              })
-              .where(eq(labResults.id, labResultId));
-          }
+          logger.info(`Updated lab result ${labResultId} with biomarkers:`, {
+            hasBiomarkers: !!biomarkerResults,
+            biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0
+          });
 
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
             textLength: textContent.length,
