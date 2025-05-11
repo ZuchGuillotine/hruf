@@ -292,12 +292,12 @@ export class BiomarkerExtractionService {
       
       const functions = [{
         name: "extract_lab_biomarkers",
-        description: "Extract biomarkers from medical lab report text",
+        description: "Extract biomarkers from medical lab report text with precise values and units",
         parameters: {
           type: "object",
           properties: {
             biomarkers: {
-              type: "array", 
+              type: "array",
               items: {
                 type: "object",
                 required: ["name", "value", "unit"],
@@ -310,6 +310,10 @@ export class BiomarkerExtractionService {
                   category: { 
                     type: "string",
                     enum: ['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other']
+                  },
+                  status: {
+                    type: "string",
+                    enum: ['High', 'Low', 'Normal']
                   }
                 }
               }
@@ -319,12 +323,20 @@ export class BiomarkerExtractionService {
         }
       }];
 
+      const systemPrompt = `You are a precise medical lab report parser. Extract all biomarkers with the following rules:
+- Convert all numeric values to valid numbers
+- Include units exactly as written
+- Capture any reference ranges
+- Note if values are marked High/Low/Normal
+- Categorize biomarkers into appropriate types
+- Format dates as ISO strings`;
+
       const completion = await openai.chat.completions.create({
         model: "gpt-4-0613",
         messages: [
           {
             role: "system",
-            content: "You are a precise medical lab report parser. Extract all biomarkers including their values, units, and any available reference ranges or test dates. Convert all values to numbers."
+            content: systemPrompt
           },
           {
             role: "user",
@@ -333,7 +345,7 @@ export class BiomarkerExtractionService {
         ],
         functions,
         function_call: { name: "extract_lab_biomarkers" },
-        temperature: 0
+        temperature: 0.5
       });
 
       const rawArgs = completion.choices[0]?.message?.function_call?.arguments;
@@ -346,29 +358,37 @@ export class BiomarkerExtractionService {
         completionTokens: completion.usage?.completion_tokens
       });
 
-      if (!rawArgs) {
+      const funcCall = completion.choices[0]?.message?.function_call;
+      if (!funcCall?.arguments) {
         logger.error('No function_call arguments returned from LLM');
         return [];
       }
 
       try {
-        const parsed = JSON.parse(rawArgs).biomarkers;
+        const parsed = JSON.parse(funcCall.arguments);
+        if (!parsed.biomarkers) {
+          logger.error('No biomarkers array in function response');
+          return [];
+        }
+
         logger.info('Successfully parsed LLM function response:', {
-          biomarkerCount: parsed?.length,
-          sampleBiomarker: parsed?.[0]
+          biomarkerCount: parsed.biomarkers.length,
+          sampleBiomarker: parsed.biomarkers[0],
+          finishReason: completion.choices[0]?.finish_reason
         });
         
-        const validated = BiomarkersArraySchema.parse(parsed || []);
+        const validated = BiomarkersArraySchema.parse(parsed.biomarkers);
         logger.info('Successfully validated biomarkers with Zod schema', {
-          biomarkerCount: parsed.length,
-          sampleValidated: parsed[0]
+          biomarkerCount: validated.length,
+          sampleValidated: validated[0]
         });
-        return parsed;
-      } catch (validationError) {
-        logger.error('Zod validation failed for LLM biomarkers:', {
-          error: validationError instanceof Error ? validationError.message : String(validationError),
-          issues: validationError instanceof z.ZodError ? validationError.issues : undefined,
-          sampleInvalid: parsedContent.biomarkers?.[0]
+        
+        return validated;
+      } catch (error) {
+        logger.error('Error processing LLM response:', {
+          error: error instanceof Error ? error.message : String(error),
+          issues: error instanceof z.ZodError ? error.issues : undefined,
+          rawArgs: funcCall.arguments.substring(0, 200) // Log first 200 chars
         });
         return [];
       }
