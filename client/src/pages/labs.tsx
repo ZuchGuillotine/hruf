@@ -70,6 +70,12 @@ export default function Labs() {
     }
   };
 
+  const chartData = useMemo(() => {
+      return Array.from(selectedNames).map(name =>
+          getSeriesByName(name)
+      ).filter(Boolean) as Series[];
+  }, [selectedNames, getSeriesByName]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
       <Header />
@@ -81,11 +87,9 @@ export default function Labs() {
               <BiomarkerFilter />
               <div className="mt-4">
                 {selectedNames.size > 0 ? (
-                  <BiomarkerHistoryChart 
-                    series={Array.from(selectedNames).map(name => 
-                      getSeriesByName(name)
-                    ).filter(Boolean) as Series[]} 
-                  />
+                  <div className="w-full max-w-[95vw] mx-auto">
+                    <BiomarkerHistoryChart series={chartData} />
+                  </div>
                 ) : (
                   <Card className="bg-white/10 border-none">
                     <CardContent className="p-6 text-center">
@@ -155,3 +159,4 @@ export default function Labs() {
     </div>
   );
 }
+```This update ensures the chart spans almost the entire width of the page, improving its visual prominence.

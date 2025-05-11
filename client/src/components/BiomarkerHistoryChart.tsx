@@ -43,7 +43,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
   }
 
   return (
-    <div className="w-full h-[400px] bg-white rounded-lg p-4">
+    <div className="w-full h-[600px] bg-white rounded-lg p-2 shadow-sm border border-gray-100">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
