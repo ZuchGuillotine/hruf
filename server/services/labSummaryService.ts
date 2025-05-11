@@ -95,16 +95,32 @@ class LabSummaryService {
             })
             .where(eq(labResults.id, labResultId));
 
-          // Then process biomarkers
-          await biomarkerExtractionService.processLabResult(labResultId);
+          logger.info(`Updated lab result ${labResultId} with parsed text`);
 
-          logger.info(`Updated lab result ${labResultId} with parsed text and triggered biomarker extraction`);
+          // Only trigger biomarker extraction if not already processed
+          const currentLabResult = await db
+            .select()
+            .from(labResults)
+            .where(eq(labResults.id, labResultId))
+            .limit(1)
+            .then(results => results[0]);
 
-          // Log the update for verification
-          logger.info(`Updated lab result ${labResultId} metadata:`, {
-            hasBiomarkers: !!biomarkerResults,
-            biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0,
-            parseDate: new Date().toISOString()
+          if (!currentLabResult?.metadata?.biomarkers?.extractedAt) {
+            await biomarkerExtractionService.processLabResult(labResultId);
+          }
+
+          // Get final result after all processing
+          const [finalResult] = await db
+            .select()
+            .from(labResults)
+            .where(eq(labResults.id, labResultId))
+            .limit(1);
+
+          logger.info(`Lab result ${labResultId} metadata after processing:`, {
+            hasBiomarkers: !!finalResult?.metadata?.biomarkers,
+            biomarkerCount: finalResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0,
+            parseDate: finalResult?.metadata?.parseDate,
+            extractedAt: finalResult?.metadata?.biomarkers?.extractedAt
           });
 
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {

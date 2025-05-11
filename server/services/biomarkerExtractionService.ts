@@ -528,18 +528,20 @@ export class BiomarkerExtractionService {
 
       const baseMetadata = currentResult.metadata || {};
       
-      // Carefully merge metadata
+      // Skip if already processed
+      if (baseMetadata.biomarkers?.extractedAt) {
+        logger.info(`Biomarkers already extracted for lab ${labResultId} at ${baseMetadata.biomarkers.extractedAt}`);
+        return;
+      }
+      
+      // Carefully merge metadata while preserving existing fields
       const updatedMetadata = {
         ...baseMetadata,
         biomarkers: {
           parsedBiomarkers: biomarkerResults.parsedBiomarkers,
           parsingErrors: biomarkerResults.parsingErrors,
           extractedAt: new Date().toISOString()
-        },
-        // Preserve OCR and parsed text if they exist
-        ocr: baseMetadata.ocr || undefined,
-        parsedText: baseMetadata.parsedText || undefined,
-        parseDate: baseMetadata.parseDate || undefined
+        }
       };
 
       // Direct update without transaction
