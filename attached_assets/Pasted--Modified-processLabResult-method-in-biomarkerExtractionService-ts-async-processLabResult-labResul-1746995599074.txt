@@ -1,0 +1,71 @@
+// Modified processLabResult method in biomarkerExtractionService.ts
+async processLabResult(labResultId: number): Promise<void> {
+  try {
+    // Get the lab result from the database
+    const [labResult] = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.id, labResultId))
+      .limit(1);
+
+    if (!labResult) {
+      logger.error(`Lab result with ID ${labResultId} not found`);
+      return;
+    }
+
+    // Get the text content from metadata
+    const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
+
+    if (!textContent) {
+      logger.error(`No text content found for lab result ${labResultId}`);
+      return;
+    }
+
+    // Extract biomarkers from the text
+    const biomarkerResults = await this.extractBiomarkers(textContent);
+
+    // Log the extraction results
+    logger.info(`Biomarker extraction results for lab ${labResultId}:`, {
+      biomarkerCount: biomarkerResults.parsedBiomarkers.length,
+      biomarkers: biomarkerResults.parsedBiomarkers.map(b => ({
+        name: b.name,
+        value: b.value,
+        unit: b.unit,
+        category: b.category
+      })),
+      errors: biomarkerResults.parsingErrors
+    });
+
+    if (biomarkerResults.parsedBiomarkers.length > 0) {
+      // Preserve any existing metadata and merge with new biomarker data
+      const updatedMetadata = {
+        ...(labResult.metadata || {}),
+        biomarkers: {
+          parsedBiomarkers: biomarkerResults.parsedBiomarkers,
+          parsingErrors: biomarkerResults.parsingErrors,
+          extractedAt: new Date().toISOString()
+        }
+      };
+
+      // Update the lab result with biomarker data
+      await db
+        .update(labResults)
+        .set({
+          metadata: updatedMetadata
+        })
+        .where(eq(labResults.id, labResultId));
+
+      logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
+        biomarkerCount: biomarkerResults.parsedBiomarkers.length,
+        labResultId
+      });
+    } else {
+      logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
+    }
+  } catch (error) {
+    logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+  }
+}
