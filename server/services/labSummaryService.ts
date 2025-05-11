@@ -97,7 +97,13 @@ class LabSummaryService {
 
           logger.info(`Updated lab result ${labResultId} with parsed text`);
 
-          // Only trigger biomarker extraction if not already processed
+          // Process text for embeddings first
+          const embeddingContent = await extractTextContent(labResultId);
+          if (embeddingContent) {
+            await embeddingService.createLabEmbedding(labResultId, embeddingContent);
+          }
+
+          // Separately handle biomarker extraction
           const currentLabResult = await db
             .select()
             .from(labResults)
@@ -109,7 +115,7 @@ class LabSummaryService {
             await biomarkerExtractionService.processLabResult(labResultId);
           }
 
-          // Get final result after all processing
+          // Get final result after processing
           const [finalResult] = await db
             .select()
             .from(labResults)
@@ -120,7 +126,8 @@ class LabSummaryService {
             hasBiomarkers: !!finalResult?.metadata?.biomarkers,
             biomarkerCount: finalResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0,
             parseDate: finalResult?.metadata?.parseDate,
-            extractedAt: finalResult?.metadata?.biomarkers?.extractedAt
+            extractedAt: finalResult?.metadata?.biomarkers?.extractedAt,
+            hasEmbedding: !!finalResult?.metadata?.embedding
           });
 
           // Get the latest lab result data with extracted biomarkers

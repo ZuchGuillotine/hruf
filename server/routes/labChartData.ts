@@ -58,11 +58,19 @@ router.get('/', async (req, res) => {
     // Extract and flatten biomarkers with debug logging
     const data: ChartEntry[] = results.flatMap(lab => {
       const biomarkers = lab.metadata?.biomarkers?.parsedBiomarkers;
+      const metadataStructure = {
+        hasBiomarkersObject: !!lab.metadata?.biomarkers,
+        hasParsedBiomarkers: !!biomarkers,
+        biomarkerCount: biomarkers?.length || 0,
+        metadataKeys: Object.keys(lab.metadata || {}),
+        biomarkerLastExtracted: lab.metadata?.biomarkers?.extractedAt,
+        embeddingTimestamp: lab.metadata?.embeddingCreatedAt
+      };
+      
       logger.debug('Processing lab result biomarkers:', {
         labId: lab.id,
-        hasBiomarkers: !!biomarkers,
-        biomarkerCount: biomarkers?.length,
-        metadata: lab.metadata
+        ...metadataStructure,
+        sampleBiomarkers: biomarkers?.slice(0, 2)
       });
 
       if (!Array.isArray(biomarkers)) {
