@@ -1,16 +1,5 @@
 ## [Unreleased]
 
-### Added (May 11, 2025)
-- Biomarker Chart Feature Implementation:
-  - Added BiomarkerFilter component for filtering biomarker data
-  - Implemented BiomarkerHistoryChart for visualization
-  - Created useLabChartData hook for data fetching
-  - Added comprehensive type definitions for chart data
-  - Enhanced error boundaries and loading states
-  - Implemented responsive chart layout
-  - Fixed chart rendering and filter connection issues
-  - Added proper data validation and error handling
-  - Enhanced chart data API endpoints with pagination
 
 ### Added (May 11, 2025)
 - Biomarker Chart Feature Implementation (Initial):

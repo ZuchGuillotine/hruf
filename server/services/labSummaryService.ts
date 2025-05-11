@@ -83,64 +83,45 @@ class LabSummaryService {
             throw new Error('PDF parsing produced empty text content');
           }
 
-          // First update with parsed text
+          // Extract biomarkers in parallel with other processing
+          const biomarkerPromise = biomarkerExtractionService.extractBiomarkers(textContent)
+            .then(async (biomarkerResults) => {
+              logger.info(`Extracted biomarkers for lab result ${labResultId}`, {
+                biomarkerCount: biomarkerResults.parsedBiomarkers.length
+              });
+              return biomarkerResults;
+            })
+            .catch(error => {
+              logger.error(`Error extracting biomarkers for lab result ${labResultId}:`, error);
+              return null;
+            });
+
+          // Wait for biomarker extraction before updating metadata
+          const biomarkerResults = await biomarkerPromise;
+
+          // Single metadata update that includes both parsed text and biomarkers
           await db
             .update(labResults)
             .set({
               metadata: {
                 ...labResult.metadata,
                 parsedText: textContent,
-                parseDate: new Date().toISOString()
+                parseDate: new Date().toISOString(),
+                biomarkers: biomarkerResults || undefined
               }
             })
             .where(eq(labResults.id, labResultId));
 
-          logger.info(`Updated lab result ${labResultId} with parsed text`);
-
-          // Process text for embeddings first
-          const embeddingContent = await extractTextContent(labResultId);
-          if (embeddingContent) {
-            await embeddingService.createLabEmbedding(labResultId, embeddingContent);
-          }
-
-          // Separately handle biomarker extraction
-          const currentLabResult = await db
-            .select()
-            .from(labResults)
-            .where(eq(labResults.id, labResultId))
-            .limit(1)
-            .then(results => results[0]);
-
-          if (!currentLabResult?.metadata?.biomarkers?.extractedAt) {
-            await biomarkerExtractionService.processLabResult(labResultId);
-          }
-
-          // Get final result after processing
-          const [finalResult] = await db
-            .select()
-            .from(labResults)
-            .where(eq(labResults.id, labResultId))
-            .limit(1);
-
-          logger.info(`Lab result ${labResultId} metadata after processing:`, {
-            hasBiomarkers: !!finalResult?.metadata?.biomarkers,
-            biomarkerCount: finalResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0,
-            parseDate: finalResult?.metadata?.parseDate,
-            extractedAt: finalResult?.metadata?.biomarkers?.extractedAt,
-            hasEmbedding: !!finalResult?.metadata?.embedding
+          // Log the update for verification
+          logger.info(`Updated lab result ${labResultId} metadata:`, {
+            hasBiomarkers: !!biomarkerResults,
+            biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0,
+            parseDate: new Date().toISOString()
           });
-
-          // Get the latest lab result data with extracted biomarkers
-          const [currentResult] = await db
-            .select()
-            .from(labResults)
-            .where(eq(labResults.id, labResultId))
-            .limit(1);
 
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
             textLength: textContent.length,
-            hasBiomarkers: !!currentResult?.metadata?.biomarkers,
-            biomarkerCount: currentResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0
+            hasBiomarkers: !!biomarkerResults
           });
         } catch (error) {
           logger.error('Error parsing PDF:', {
@@ -324,18 +305,6 @@ class LabSummaryService {
         textContent += `\n\nUser notes: ${labResult.notes}`;
       }
 
-      // Get latest lab result with biomarkers
-      const [latestResult] = await db
-        .select()
-        .from(labResults)
-        .where(eq(labResults.id, labResultId))
-        .limit(1);
-
-      // Enhanced prompt with biomarker context
-      const biomarkerContext = latestResult?.metadata?.biomarkers?.parsedBiomarkers 
-        ? `\n\nExtracted Biomarkers:\n${JSON.stringify(latestResult.metadata.biomarkers.parsedBiomarkers, null, 2)}`
-        : '';
-
       const completion = await openai.chat.completions.create({
         model: this.SUMMARY_MODEL,
         messages: [
@@ -345,16 +314,10 @@ class LabSummaryService {
           },
           {
             role: "user",
-            content: `Here is a lab result to summarize with extracted biomarkers:
-
-Lab Text:
-${textContent}
-${biomarkerContext}
-
-Please provide a comprehensive summary including analysis of the biomarker values and their implications.`
+            content: `Here is a lab result to summarize:\n\n${textContent}`
           }
         ],
-        max_tokens: 2000
+        max_tokens: 1000
       });
 
       const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';

@@ -337,19 +337,11 @@ class EmbeddingService {
       const embedding = await this.generateEmbedding(content);
 
       // Update the lab result with the embedding
-      const [currentLab] = await db
-        .select()
-        .from(labResults)
-        .where(eq(labResults.id, labId))
-        .limit(1);
-
-      // Carefully preserve existing metadata, especially biomarkers
       await db.update(labResults)
         .set({
           metadata: {
-            ...currentLab?.metadata,
-            embedding,
-            embeddingCreatedAt: new Date().toISOString()
+            ...(await db.select().from(labResults).where(eq(labResults.id, labId)).limit(1))[0]?.metadata,
+            embedding
           }
         })
         .where(eq(labResults.id, labId));

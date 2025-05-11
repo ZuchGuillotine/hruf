@@ -478,7 +478,7 @@ export class BiomarkerExtractionService {
 
   async processLabResult(labResultId: number): Promise<void> {
   try {
-    // Get the lab result and lock for update
+    // Get the lab result from the database
     const [labResult] = await db
       .select()
       .from(labResults)
@@ -515,28 +515,10 @@ export class BiomarkerExtractionService {
 
     // Only update if we have extracted biomarkers
     if (biomarkerResults.parsedBiomarkers.length > 0) {
-      // Get latest metadata to prevent overwrites
-      const [currentResult] = await db
-        .select()
-        .from(labResults)
-        .where(eq(labResults.id, labResultId))
-        .limit(1);
-
-      if (!currentResult) {
-        throw new Error('Lab result no longer exists');
-      }
-
-      const baseMetadata = currentResult.metadata || {};
-      
-      // Skip if already processed
-      if (baseMetadata.biomarkers?.extractedAt) {
-        logger.info(`Biomarkers already extracted for lab ${labResultId} at ${baseMetadata.biomarkers.extractedAt}`);
-        return;
-      }
-      
-      // Carefully merge metadata while preserving existing fields
+      // Ensure we preserve existing metadata structure
+      const existingMetadata = labResult.metadata || {};
       const updatedMetadata = {
-        ...baseMetadata,
+        ...existingMetadata,
         biomarkers: {
           parsedBiomarkers: biomarkerResults.parsedBiomarkers,
           parsingErrors: biomarkerResults.parsingErrors,
@@ -544,24 +526,15 @@ export class BiomarkerExtractionService {
         }
       };
 
-      // Direct update without transaction
+      // Update the lab result with biomarker data
       await db
         .update(labResults)
         .set({ metadata: updatedMetadata })
         .where(eq(labResults.id, labResultId));
 
-      // Verify the update
-      const [verifyResult] = await db
-        .select()
-        .from(labResults)
-        .where(eq(labResults.id, labResultId))
-        .limit(1);
-
-      logger.info(`Metadata update result for lab ${labResultId}:`, {
+      logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
         biomarkerCount: biomarkerResults.parsedBiomarkers.length,
-        hasBiomarkers: !!verifyResult?.metadata?.biomarkers,
-        biomarkerData: verifyResult?.metadata?.biomarkers,
-        updateTime: new Date().toISOString()
+        labResultId
       });
     } else {
       logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
