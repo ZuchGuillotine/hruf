@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import type { BiomarkerDataPoint, Series } from '@/types/chart';
 
@@ -11,19 +10,12 @@ interface ChartData {
 interface ApiResponse {
   success: boolean;
   data: Array<{
-    id: number;
-    metadata: {
-      biomarkers?: {
-        parsedBiomarkers: Array<{
-          name: string;
-          value: number;
-          unit: string;
-          testDate?: string;
-          category?: string;
-        }>;
-      };
-    };
-    uploadedAt: string;
+    name: string;
+    value: number;
+    unit: string;
+    testDate: string;
+    category: string;
+    status: string | null;
   }>;
   pagination: {
     page: number;
@@ -42,11 +34,11 @@ export function useLabChartData() {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch lab chart data');
       }
-      
+
       return response.json();
     },
     select: (response) => {
@@ -55,26 +47,21 @@ export function useLabChartData() {
         testDate: string;
         unit: string;
       }>>();
-      
+
       const categoriesMap: Record<string, string> = {};
 
-      response.data.forEach(result => {
-        const parsedBiomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
-        parsedBiomarkers.forEach(biomarker => {
-          if (!biomarker.name || typeof biomarker.value !== 'number') return;
-
-          const series = biomarkers.get(biomarker.name) || [];
-          series.push({
-            value: biomarker.value,
-            testDate: biomarker.testDate || result.uploadedAt,
-            unit: biomarker.unit
-          });
-          biomarkers.set(biomarker.name, series);
-          
-          if (biomarker.category) {
-            categoriesMap[biomarker.name] = biomarker.category;
-          }
+      response.data.forEach(biomarker => {
+        const series = biomarkers.get(biomarker.name) || [];
+        series.push({
+          value: biomarker.value,
+          testDate: biomarker.testDate,
+          unit: biomarker.unit
         });
+        biomarkers.set(biomarker.name, series);
+
+        if (biomarker.category) {
+          categoriesMap[biomarker.name] = biomarker.category;
+        }
       });
 
       const allSeries = Array.from(biomarkers.entries()).map(([name, points]) => ({
