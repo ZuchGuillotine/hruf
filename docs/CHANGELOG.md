@@ -1,5 +1,21 @@
 ## [Unreleased]
 
+
+### Added (May 11, 2025)
+- Biomarker Chart Feature Implementation (Initial):
+  - Created BiomarkerFilter component for filtering biomarker data
+  - Implemented BiomarkerHistoryChart component for visualization
+  - Added useLabChartData hook for data fetching
+  - Created new lab chart data API endpoints
+  - Added TypeScript interfaces for chart data types
+
+### Known Issues (May 11, 2025)
+- LineChart component reference error in BiomarkerHistoryChart
+- Chart visualization not fully functional
+- Need to properly import and configure chart components
+- Filter functionality needs connection to chart updates
+
+
 ### Added (May 11, 2025)
 - Lab Chart Data API Implementation:
   - Added new /api/labs/chart-data endpoints:
