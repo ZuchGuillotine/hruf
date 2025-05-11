@@ -1,0 +1,76 @@
+// src/hooks/useLabChartData.ts
+
+import { useQuery } from '@tanstack/react-query';
+import type { ChartApiResponse, BiomarkerDataPoint, Series } from '@/types/chart';
+
+interface UseLabChartDataOptions {
+  /** Page number for pagination (1-based) */
+  page?: number;
+  /** Number of items per page (max 100) */
+  pageSize?: number;
+}
+
+interface UseLabChartDataResult {
+  /** Flattened array of data points */
+  data?: BiomarkerDataPoint[];
+  /** Loading state */
+  isLoading: boolean;
+  /** Error state */
+  isError: boolean;
+  /** Error object if any */
+  error: unknown;
+  /** Refetch trigger */
+  refetch: () => void;
+  /**
+   * Returns a grouped series for the given biomarker name,
+   * or undefined if that biomarker is not on the current page.
+   */
+  getSeriesByName: (name: string) => Series | undefined;
+}
+
+/**
+ * React Query hook to fetch paginated lab chart data.
+ * Caches results per page and pageSize.
+ */
+export function useLabChartData(
+  { page = 1, pageSize = 50 }: UseLabChartDataOptions = {}
+): UseLabChartDataResult {
+  const queryKey = ['labChartData', page, pageSize];
+  const { data: response, isLoading, isError, error, refetch } = useQuery<ChartApiResponse, Error>(
+    queryKey,
+    async () => {
+      const res = await fetch(`/api/labs/chart-data?page=${page}&pageSize=${pageSize}`);
+      if (!res.ok) {
+        throw new Error(`Fetch error: ${res.statusText}`);
+      }
+      const json: ChartApiResponse = await res.json();
+      if (!json.success) {
+        throw new Error('API returned unsuccessful response');
+      }
+      return json;
+    },
+    {
+      keepPreviousData: true,
+    }
+  );
+
+  const dataPoints = response?.data;
+
+  const getSeriesByName = (name: string): Series | undefined => {
+    if (!dataPoints) return undefined;
+    const filtered = dataPoints.filter((dp) => dp.name === name);
+    if (filtered.length === 0) return undefined;
+    const unit = filtered[0].unit;
+    const points = filtered.map((dp) => ({ testDate: dp.testDate, value: dp.value }));
+    return { name, unit, points };
+  };
+
+  return {
+    data: dataPoints,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    getSeriesByName,
+  };
+}
