@@ -159,4 +159,3 @@ export default function Labs() {
     </div>
   );
 }
-```This update ensures the chart spans almost the entire width of the page, improving its visual prominence.
