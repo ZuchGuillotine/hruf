@@ -95,3 +95,65 @@ router.get('/', async (req, res) => {
 });
 
 export default router;
+
+
+
+// GET /api/biomarkers/trends
+router.get('/trends', async (req, res) => {
+  try {
+    const biomarkerNames = req.query.names ? String(req.query.names).split(',') : [];
+    
+    // Get all lab results for user
+    const results = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.userId, req.user!.id))
+      .orderBy(labResults.uploadedAt);
+
+    // Process and aggregate trends
+    const trends = biomarkerNames.map(name => {
+      const series = results.flatMap(lab => {
+        const biomarkers = lab.metadata?.biomarkers?.parsedBiomarkers;
+        if (!Array.isArray(biomarkers)) return [];
+
+        const biomarker = biomarkers.find(b => b.name === name);
+        if (!biomarker) return [];
+
+        return [{
+          date: biomarker.testDate || lab.uploadedAt.toISOString(),
+          value: typeof biomarker.value === 'number' ? biomarker.value : Number(biomarker.value)
+        }];
+      }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      return {
+        name,
+        series
+      };
+    });
+
+    logger.info('Retrieved biomarker trends:', {
+      userId: req.user!.id,
+      biomarkers: biomarkerNames,
+      trendPoints: trends.reduce((sum, t) => sum + t.series.length, 0)
+    });
+
+    res.json({
+      success: true,
+      data: trends
+    });
+
+  } catch (error) {
+    logger.error('Error retrieving biomarker trends:', {
+      userId: req.user?.id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
+    res.status(400).json({
+      success: false,
+      error: 'Failed to retrieve biomarker trends',
+      data: []
+    });
+  }
+});
+
