@@ -1,81 +1,81 @@
 
 import React, { useMemo } from 'react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { Series } from '@/types/chart';
 
 interface BiomarkerHistoryChartProps {
-  /** Array of biomarker series to plot */
   series: Series[];
 }
 
-const CHART_CONFIG = {
-  lipid: { color: '#FF6B6B' },
-  metabolic: { color: '#4ECDC4' },
-  thyroid: { color: '#45B7D1' },
-  vitamin: { color: '#96CEB4' },
-  blood: { color: '#D4A5A5' },
-  default: { color: '#666' }
+const CHART_COLORS = {
+  lipid: '#FF6B6B',
+  metabolic: '#4ECDC4',
+  thyroid: '#45B7D1',
+  vitamin: '#96CEB4',
+  blood: '#D4A5A5',
+  default: '#666666'
 };
 
-/**
- * Renders a multi-line time-series chart of biomarker values.
- * @param series Array of Series objects (name, unit, points[])
- */
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
-  // Pivot series into a unified data array keyed by testDate
   const chartData = useMemo(() => {
     const dates = Array.from(
       new Set(series.flatMap(s => s.points.map(p => p.testDate)))
     ).sort();
+    
     return dates.map(date => {
-      const entry: Record<string, string | number> = { testDate: date };
+      const entry: Record<string, any> = { testDate: date };
       series.forEach(s => {
         const point = s.points.find(p => p.testDate === date);
-        entry[s.name] = point ? point.value : null;
+        if (point) {
+          entry[s.name] = point.value;
+        }
       });
       return entry;
     });
   }, [series]);
 
-  // Take unit from first series (assumes same unit per series)
-  const yAxisUnit = series[0]?.unit ?? '';
+  if (series.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Select biomarkers to view their trends</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-96">
-      <ChartContainer config={CHART_CONFIG}>
-        <LineChart data={chartData}>
+    <div className="w-full h-[400px] bg-white rounded-lg p-4">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="testDate"
-            tick={{ fontSize: 12 }}
+          <XAxis 
+            dataKey="testDate" 
             tickFormatter={date => new Date(date).toLocaleDateString()}
           />
-          <YAxis
-            domain={['auto', 'auto']}
-            label={{
-              value: yAxisUnit,
-              angle: -90,
+          <YAxis 
+            label={{ 
+              value: series[0]?.unit || '', 
+              angle: -90, 
               position: 'insideLeft',
-              offset: 10,
+              offset: 10
             }}
           />
-          <ChartTooltip 
-            labelFormatter={label => `Date: ${new Date(label).toLocaleDateString()}`}
+          <Tooltip
+            labelFormatter={label => new Date(label).toLocaleDateString()}
+            formatter={(value, name) => [`${value} ${series.find(s => s.name === name)?.unit || ''}`, name]}
           />
-          <ChartLegend verticalAlign="top" height={36} />
-          {series.map(s => (
+          <Legend />
+          {series.map((s, i) => (
             <Line
               key={s.name}
-              dataKey={s.name}
-              name={s.name}
               type="monotone"
-              strokeWidth={2}
+              dataKey={s.name}
+              stroke={CHART_COLORS[s.category as keyof typeof CHART_COLORS] || CHART_COLORS.default}
               dot={false}
-              data-testid="biomarker-line"
+              activeDot={{ r: 6 }}
             />
           ))}
         </LineChart>
-      </ChartContainer>
+      </ResponsiveContainer>
     </div>
   );
 }

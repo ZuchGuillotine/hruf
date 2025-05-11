@@ -1,8 +1,9 @@
+
 import React, { useMemo } from 'react';
 import { useLocation } from 'wouter';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
 import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
 export function BiomarkerFilter() {
@@ -10,8 +11,8 @@ export function BiomarkerFilter() {
   const [location, setLocation] = useLocation();
 
   const allNames = useMemo(() => {
-  return Array.from(new Set(dataPoints.map(point => point.name))).sort();
-}, [dataPoints]);
+    return Array.from(new Set(dataPoints.map(point => point.name))).sort();
+  }, [dataPoints]);
 
   const selectedNames = useMemo(() => {
     const params = new URLSearchParams(location.split('?')[1]);
@@ -21,8 +22,11 @@ export function BiomarkerFilter() {
 
   const toggleName = (name: string) => {
     const next = new Set(selectedNames);
-    if (next.has(name)) next.delete(name);
-    else next.add(name);
+    if (next.has(name)) {
+      next.delete(name);
+    } else {
+      next.add(name);
+    }
 
     const params = new URLSearchParams(location.split('?')[1]);
     if (next.size > 0) {
@@ -30,6 +34,7 @@ export function BiomarkerFilter() {
     } else {
       params.delete('biomarkers');
     }
+    
     const newSearch = params.toString();
     const basePath = location.split('?')[0];
     setLocation(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
@@ -38,35 +43,25 @@ export function BiomarkerFilter() {
   if (isLoading) {
     return (
       <Card className="p-4">
-        <div className="animate-pulse flex space-x-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-8 w-24 bg-muted rounded-full" />
-          ))}
-        </div>
+        <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
       </Card>
     );
   }
 
   return (
     <Card className="p-4">
-      <ScrollArea className="w-full" type="always">
+      <ScrollArea className="h-[200px] rounded-md border p-4">
         <div className="flex flex-wrap gap-2">
-          {allNames.map((name) => {
-            const isSelected = selectedNames.has(name);
-            return (
-              <Button
-                key={name}
-                size="sm"
-                variant={isSelected ? 'default' : 'outline'}
-                className={`rounded-full px-3 py-1 text-sm transition-all ${
-                  isSelected ? 'shadow-sm' : ''
-                }`}
-                onClick={() => toggleName(name)}
-              >
-                {name}
-              </Button>
-            );
-          })}
+          {allNames.map(name => (
+            <Button
+              key={name}
+              variant={selectedNames.has(name) ? "default" : "outline"}
+              onClick={() => toggleName(name)}
+              className="text-sm"
+            >
+              {name}
+            </Button>
+          ))}
         </div>
       </ScrollArea>
     </Card>
