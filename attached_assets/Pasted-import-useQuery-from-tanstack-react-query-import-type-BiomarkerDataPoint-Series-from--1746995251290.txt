@@ -1,0 +1,78 @@
+import { useQuery } from '@tanstack/react-query';
+import type { BiomarkerDataPoint, Series } from '@/types/chart';
+
+interface ChartData {
+  series: Series[];
+  allBiomarkers: string[];
+  categories: Record<string, string>;
+}
+
+export function useLabChartData() {
+  return useQuery<ChartData>({
+    queryKey: ['labChartData'],
+    queryFn: async () => {
+      const response = await fetch('/api/labs/chart-data', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch lab chart data');
+      }
+      const data = await response.json();
+
+      // Extract biomarkers from lab results
+      const biomarkers = new Map();
+      const categoriesMap: Record<string, string> = {};
+      
+      data.data.forEach(result => {
+        const parsedBiomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
+        parsedBiomarkers.forEach(biomarker => {
+          const series = biomarkers.get(biomarker.name) || [];
+          series.push({
+            value: biomarker.value,
+            testDate: biomarker.testDate || result.uploadedAt,
+            unit: biomarker.unit
+          });
+          biomarkers.set(biomarker.name, series);
+          
+          // Store the category for each biomarker
+          if (biomarker.category) {
+            categoriesMap[biomarker.name] = biomarker.category;
+          }
+        });
+      });
+
+      // Convert to expected format
+      const allSeries = Array.from(biomarkers.entries()).map(([name, points]) => ({
+        name,
+        points: points.sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime()),
+        unit: points[0]?.unit || '',
+        category: categoriesMap[name] || 'other'
+      }));
+
+      const result = {
+        series: allSeries,
+        allBiomarkers: allSeries.map(s => s.name),
+        categories: categoriesMap
+      };
+      console.log('Lab chart data response:', result);
+      return result;
+    },
+    staleTime: 5 * 60 * 1000
+  });
+  
+  // Add this helper method to get a specific series by name
+  const { data } = useQuery<ChartData>(['labChartData']);
+
+  const getSeriesByName = (name: string): Series | undefined => {
+    return data?.series.find(s => s.name === name);
+  };
+
+  return {
+    data,
+    getSeriesByName,
+    ...useQuery<ChartData>(['labChartData'])
+  };
+}
