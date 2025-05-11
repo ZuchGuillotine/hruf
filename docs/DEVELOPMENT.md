@@ -65,6 +65,49 @@ Example of correct ES module usage:
 ```typescript
 // Check if file is being run directly
 if (import.meta.url === process.argv[1]) {
+
+
+### Database Migration Best Practices
+
+When implementing database migrations, keep in mind these key points:
+
+1. **ES Module Compatibility**
+   - Use ES Module syntax instead of CommonJS in migration files
+   - Replace `require.main === module` with `import.meta.url === new URL(process.argv[1], 'file:').href`
+   - Use proper ES imports (e.g., `import { drizzle } from 'drizzle-orm/postgres-js'`)
+
+2. **Database Connection**
+   - Always include proper database initialization in migration files
+   - Import and use the drizzle instance correctly
+   - Handle connection cleanup in finally blocks
+   ```typescript
+   if (import.meta.url === new URL(process.argv[1], 'file:').href) {
+     import('postgres').then(async ({ default: postgres }) => {
+       const client = postgres(process.env.DATABASE_URL);
+       const db = drizzle(client);
+       try {
+         await up(db);
+       } finally {
+         await client.end();
+       }
+     });
+   }
+   ```
+
+3. **Migration Execution**
+   - Use `tsx` for running TypeScript migration files directly: `npx tsx db/migrations/your_migration.ts`
+   - Avoid using drizzle-kit for complex migrations that require custom logic
+   - Include proper error handling and logging in migration scripts
+
+4. **Common Pitfalls**
+   - Ensure all imports are ES Module compatible
+   - Always handle database connection cleanup
+   - Include proper error messages and logging
+   - Test migrations in development before running in production
+
+These practices help ensure reliable and maintainable database migrations.
+
+
   main().catch(console.error);
 }
 ```
