@@ -1,0 +1,207 @@
+```ts
+// biomarkerExtractionService.ts
+import { OpenAI } from "openai";
+import { z } from "zod";
+import { logger } from '../utils/logger';
+
+// 1. Define JSON schema for biomarkers
+const BiomarkerSchema = z.object({
+  name: z.string(),
+  value: z.union([z.string(), z.number()]),
+  unit: z.string(),
+  referenceRange: z.string().optional(),
+  testDate: z.string().optional(),
+});
+const BiomarkersArraySchema = z.array(BiomarkerSchema);
+
+// 2. JSON Schema for function-calling
+const ExtractFunction = {
+  name: "extract_biomarkers",
+  description: "Extracts lab-report biomarkers as JSON.",
+  parameters: {
+    type: "object",
+    properties: {
+      biomarkers: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["name", "value", "unit"],
+          properties: {
+            name: { type: "string" },
+            value: { type: "number" },
+            unit: { type: "string" },
+            referenceRange: { type: "string" },
+            testDate: { type: "string", format: "date" }
+          }
+        }
+      }
+    },
+    required: ["biomarkers"]
+  }
+};
+
+export class BiomarkerExtractionService {
+  private openai: OpenAI;
+  private MIN_MARKERS = Number(process.env.MIN_BIOMARKERS) || 5;
+  private extractorModel = process.env.EXTRACTOR_MODEL || "gpt-3.5-turbo-0613";
+
+  constructor(apiKey: string) {
+    if (!apiKey) throw new Error("OPENAI_API_KEY is required");
+    this.openai = new OpenAI({ apiKey });
+  }
+
+  /**
+   * Extract via regex first; fallback to LLM on leftover text
+   */
+  public async extract(text: string, reportDate?: string) {
+    // 1. Run regex extractor
+    const regexResults = this.extractWithRegex(text, reportDate);
+    if (regexResults.length >= this.MIN_MARKERS) {
+      logger.info(`Regex matched ${regexResults.length} markers; skipping LLM.`);
+      return this.normalize(regexResults);
+    }
+
+    // 2. Compute leftover text by stripping matched segments
+    let leftoverText = text;
+    regexResults.forEach((item) => {
+      const pattern = new RegExp(`${item.name}\\s*[:\\-]?\\s*${item.value}`, 'gi');
+      leftoverText = leftoverText.replace(pattern, '');
+    });
+
+    logger.info(`Regex only matched ${regexResults.length}; invoking LLM on leftover text (${leftoverText.length} chars) with model ${this.extractorModel}.`);
+    const llmResults = await this.extractWithLLM(leftoverText);
+    return this.normalize([...regexResults, ...llmResults]);
+  }
+
+  /** Placeholder: implement your existing regex logic here */
+  private extractWithRegex(text: string, reportDate?: string) {
+    // TODO: Use your BIOMARKER_DEFINITIONS to extract matches and include testDate
+    return [] as Array<z.infer<typeof BiomarkerSchema>>;
+  }
+
+  /** LLM-based extraction via function-calling */
+  private async extractWithLLM(text: string) {
+    const systemPrompt =
+      `You are a JSON-only extractor. Input is raw lab report text. ` +
+      `Output must be via calling the extract_biomarkers function with an argument 'biomarkers' as an array of objects.`;
+
+    const response = await this.openai.chat.completions.create({
+      model: this.extractorModel,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text }
+      ],
+      functions: [ExtractFunction],
+      function_call: { name: ExtractFunction.name },
+      temperature: 0
+    });
+
+    const funcCall = response.choices[0].message.function_call;
+    if (!funcCall?.arguments) {
+      logger.error("Function call arguments missing from LLM response");
+      return [];
+    }
+
+    let parsedArgs;
+    try {
+      parsedArgs = JSON.parse(funcCall.arguments);
+    } catch (err) {
+      logger.error("Failed to JSON.parse function_call.arguments", err);
+      return [];
+    }
+
+    try {
+      return BiomarkersArraySchema.parse(parsedArgs.biomarkers);
+    } catch (err) {
+      logger.error("Function call output failed schema validation", err);
+      return [];
+    }
+  }
+
+  /** Normalize & dedupe */
+  private normalize(raw: Array<z.infer<typeof BiomarkerSchema>>) {
+    const seen = new Map<string, boolean>();
+    const out: Array<z.infer<typeof BiomarkerSchema>> = [];
+    raw.forEach((item) => {
+      const parsed = BiomarkerSchema.parse(item);
+      const key = `${parsed.name}-${parsed.testDate ?? 'unknown'}`;
+      if (!seen.has(key)) {
+        seen.set(key, true);
+        out.push(parsed);
+      }
+    });
+    return out;
+  }
+}
+
+export const biomarkerService = new BiomarkerExtractionService(process.env.OPENAI_API_KEY!);
+
+```
+
+```ts
+// labSummaryService.ts (unchanged)
+import { parsePdf, parseImage } from './parsers';
+import { biomarkerService } from './biomarkerExtractionService';
+import { OpenAI } from 'openai';
+import { logger } from '../utils/logger';
+
+export class LabSummaryService {
+  private openai: OpenAI;
+  private summaryModel = process.env.SUMMARY_MODEL || "gpt-4o-mini";
+
+  constructor(apiKey: string) {
+    if (!apiKey) throw new Error("OPENAI_API_KEY is required");
+    this.openai = new OpenAI({ apiKey });
+  }
+
+  public async processFile(fileBuffer: Buffer, fileType: string) {
+    let text = '';
+    if (/pdf/.test(fileType)) text = await parsePdf(fileBuffer);
+    else if (/image/.test(fileType)) text = await parseImage(fileBuffer);
+    else if (/doc/.test(fileType)) text = this.parseDoc(fileBuffer);
+
+    const reportDate = this.extractDate(text);
+
+    // Fire both in parallel with independent error handling
+    const biomarkerPromise = biomarkerService.extract(text, reportDate)
+      .catch(err => { logger.error("Biomarker extraction failed:", err); return []; });
+    const summaryPromise = this.summarizeText(text)
+      .catch(err => { logger.error("Summary generation failed:", err); return ""; });
+
+    const [biomarkers, summary] = await Promise.all([biomarkerPromise, summaryPromise]);
+
+    // Store or forward results
+    try { await this.saveBiomarkers(biomarkers); }
+    catch (err) { logger.error("Saving biomarkers failed:", err); }
+
+    try { await this.saveSummary(summary); }
+    catch (err) { logger.error("Saving summary failed:", err); }
+
+    return { biomarkers, summary };
+  }
+
+  private extractDate(text: string) {
+    const m = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+    return m ? new Date(m[0]).toISOString().split('T')[0] : undefined;
+  }
+
+  private async summarizeText(text: string) {
+    const resp = await this.openai.chat.completions.create({
+      model: this.summaryModel,
+      system: 'Summarize this lab report in 3 bullet points.',
+      user: text,
+      temperature: 0.7,
+    });
+    return resp.choices[0].message.content;
+  }
+
+  private async saveBiomarkers(data: any[]) {
+    // implement DB or event emit
+  }
+  private async saveSummary(text: string) {
+    // implement DB or event emit
+  }
+}
+
+export const labSummaryService = new LabSummaryService(process.env.OPENAI_API_KEY!);
+```
