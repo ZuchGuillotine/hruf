@@ -98,7 +98,8 @@ class LabSummaryService {
 
           // Wait for biomarker extraction before updating metadata
           const biomarkerResults = await biomarkerPromise;
-          
+
+          // Single metadata update that includes both parsed text and biomarkers
           await db
             .update(labResults)
             .set({
@@ -111,9 +112,11 @@ class LabSummaryService {
             })
             .where(eq(labResults.id, labResultId));
 
-          logger.info(`Updated lab result ${labResultId} with biomarkers:`, {
+          // Log the update for verification
+          logger.info(`Updated lab result ${labResultId} metadata:`, {
             hasBiomarkers: !!biomarkerResults,
-            biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0
+            biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0,
+            parseDate: new Date().toISOString()
           });
 
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
@@ -142,7 +145,7 @@ class LabSummaryService {
             fileSize: fileBuffer.length
           });
 
-          const { ImageAnnotatorClient } = await import('@google-cloud/vision');
+          const { ImageAnnotatorClient } = await import('@google-cloud-vision');
           const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
           const client = new ImageAnnotatorClient({
             credentials
