@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Line } from 'recharts';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import type { Series } from '@/types/chart';
 import { ChartContainer, ChartTooltip, ChartLegend } from '@/components/ui/chart';
 
