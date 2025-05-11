@@ -57,7 +57,7 @@ const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerC
 
   // Metabolic Panel
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(?:mg\/dL|mmol\/L)/i,
+    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
     category: 'metabolic'
   },
   hemoglobinA1c: {
@@ -338,8 +338,8 @@ export class BiomarkerExtractionService {
 
       const rawArgs = completion.choices[0]?.message?.function_call?.arguments;
       logger.info('Raw LLM response:', { 
-        contentLength: rawContent?.length,
-        contentPreview: rawContent?.substring(0, 200), // Log first 200 chars
+        contentLength: rawArgs?.length,
+        contentPreview: rawArgs?.substring(0, 200), // Log first 200 chars
         finishReason: completion.choices[0]?.finish_reason,
         modelUsed: completion.model,
         promptTokens: completion.usage?.prompt_tokens,
