@@ -1,8 +1,7 @@
 
 import React, { useMemo } from 'react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { Series } from '@/types/chart';
-import { ChartContainer, ChartTooltip, ChartLegend } from '@/components/ui/chart';
 
 interface BiomarkerHistoryChartProps {
   /** Array of biomarker series to plot */
