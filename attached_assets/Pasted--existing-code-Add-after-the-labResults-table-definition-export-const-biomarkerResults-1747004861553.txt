@@ -1,0 +1,80 @@
+// ... existing code ...
+
+// Add after the labResults table definition
+export const biomarkerResults = pgTable("biomarker_results", {
+  id: serial("id").primaryKey(),
+  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "CASCADE" }).notNull(),
+  name: text("name").notNull(),
+  value: numeric("value").notNull(),
+  unit: text("unit").notNull(),
+  category: text("category").notNull(),
+  referenceRange: text("reference_range"),
+  testDate: timestamp("test_date").notNull(),
+  status: text("status"),
+  extractionMethod: text("extraction_method").notNull(),
+  confidence: numeric("confidence"),
+  metadata: jsonb("metadata").$type<{
+    sourceText?: string;
+    extractionTimestamp?: string;
+    validationStatus?: string;
+    notes?: string;
+  }>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const biomarkerProcessingStatus = pgTable("biomarker_processing_status", {
+  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "CASCADE" }).primaryKey(),
+  status: text("status").notNull(),
+  extractionMethod: text("extraction_method"),
+  biomarkerCount: integer("biomarker_count"),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  completedAt: timestamp("completed_at"),
+  metadata: jsonb("metadata").$type<{
+    regexMatches?: number;
+    llmExtractions?: number;
+    processingTime?: number;
+    retryCount?: number;
+  }>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const biomarkerReference = pgTable("biomarker_reference", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  category: text("category").notNull(),
+  defaultUnit: text("default_unit").notNull(),
+  description: text("description"),
+  metadata: jsonb("metadata").$type<{
+    commonNames?: string[];
+    normalRanges?: {
+      gender?: string;
+      ageRange?: string;
+      range: string;
+      unit: string;
+    }[];
+    importance?: number;
+  }>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Add to the type exports section
+export type InsertBiomarkerResult = typeof biomarkerResults.$inferInsert;
+export type SelectBiomarkerResult = typeof biomarkerResults.$inferSelect;
+export type InsertBiomarkerProcessingStatus = typeof biomarkerProcessingStatus.$inferInsert;
+export type SelectBiomarkerProcessingStatus = typeof biomarkerProcessingStatus.$inferSelect;
+export type InsertBiomarkerReference = typeof biomarkerReference.$inferInsert;
+export type SelectBiomarkerReference = typeof biomarkerReference.$inferSelect;
+
+// Add to the Zod schema exports
+export const insertBiomarkerResultSchema = createInsertSchema(biomarkerResults);
+export const selectBiomarkerResultSchema = createSelectSchema(biomarkerResults);
+export const insertBiomarkerProcessingStatusSchema = createInsertSchema(biomarkerProcessingStatus);
+export const selectBiomarkerProcessingStatusSchema = createSelectSchema(biomarkerProcessingStatus);
+export const insertBiomarkerReferenceSchema = createInsertSchema(biomarkerReference);
+export const selectBiomarkerReferenceSchema = createSelectSchema(biomarkerReference);
+
+// ... rest of existing code ...
