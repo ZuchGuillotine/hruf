@@ -610,7 +610,18 @@ export class BiomarkerExtractionService {
 
     // Only update if we have extracted biomarkers
     if (biomarkerResults.parsedBiomarkers.length > 0) {
-      // Ensure we preserve existing metadata structure
+      // Store biomarkers in dedicated table
+      await this.storeBiomarkers(labResultId, biomarkerResults.parsedBiomarkers.map(b => ({
+        name: b.name,
+        value: b.value,
+        unit: b.unit,
+        category: b.category || 'other',
+        testDate: labResult.collectionDate || new Date(),
+        source: 'extraction',
+        confidence: 1.0
+      })));
+
+      // Update lab result metadata
       const existingMetadata = labResult.metadata || {};
       const updatedMetadata = {
         ...existingMetadata,
@@ -621,7 +632,6 @@ export class BiomarkerExtractionService {
         }
       };
 
-      // Update the lab result with biomarker data
       await db
         .update(labResults)
         .set({ metadata: updatedMetadata })
