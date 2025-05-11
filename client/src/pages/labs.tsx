@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File, FileText, Download, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { BiomarkerFilter } from "@/components/BiomarkerFilter";
+import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
 
 interface LabFile {
   id: number;
@@ -62,6 +64,26 @@ export default function Labs() {
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
       <Header />
       <main className="container mx-auto px-4 py-6 space-y-6 flex-grow">
+        <div className="bg-[#1b4332] rounded-lg p-6">
+          <h2 className="text-3xl font-bold text-white mb-6">Biomarker Trends</h2>
+          {labFiles.length > 0 ? (
+            <>
+              <BiomarkerFilter />
+              <div className="mt-4">
+                <BiomarkerHistoryChart series={[]} /> 
+              </div>
+            </>
+          ) : (
+            <Card className="bg-white/10 border-none">
+              <CardContent className="p-6 text-center">
+                <FileText className="h-12 w-12 text-white/70 mx-auto mb-4" />
+                <p className="text-white/90 text-lg mb-2">No lab results uploaded yet</p>
+                <p className="text-white/70">Upload your first lab result to start tracking your biomarker trends</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         <div className="bg-[#1b4332] rounded-lg p-6">
           <h2 className="text-3xl font-bold text-white mb-6">Lab Results</h2>
           <LabUpload onUploadSuccess={fetchLabFiles} />
