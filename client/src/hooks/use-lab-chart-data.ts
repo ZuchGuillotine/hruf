@@ -1,68 +1,106 @@
 
 import { useQuery } from '@tanstack/react-query';
-import type { Series } from '@/types/chart';
+import type { BiomarkerDataPoint, Series } from '@/types/chart';
 
-interface ChartEntry {
-  name: string;
-  value: number;
-  unit: string;
-  testDate: string;
-  category?: string;
-}
-
-interface ChartApiResponse {
-  success: boolean;
-  data: ChartEntry[];
-  pagination: { page: number; pageSize: number; total: number };
-}
-
-export interface UseLabChartDataReturn {
+interface ChartData {
   series: Series[];
   allBiomarkers: string[];
   categories: Record<string, string>;
 }
 
+interface ApiResponse {
+  success: boolean;
+  data: Array<{
+    id: number;
+    metadata: {
+      biomarkers?: {
+        parsedBiomarkers: Array<{
+          name: string;
+          value: number;
+          unit: string;
+          testDate?: string;
+          category?: string;
+        }>;
+      };
+    };
+    uploadedAt: string;
+  }>;
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+}
+
 export function useLabChartData() {
-  return useQuery<ChartApiResponse, Error, UseLabChartDataReturn>({
+  const query = useQuery<ApiResponse, Error, ChartData>({
     queryKey: ['labChartData'],
     queryFn: async () => {
       const response = await fetch('/api/labs/chart-data', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch lab chart data');
       }
-      const json: ChartApiResponse = await response.json();
-      if (!json.success) {
-        throw new Error('API returned unsuccessful');
-      }
-
-      // Group entries by biomarker name
-      const biomarkerMap = new Map<string, { points: { testDate: string; value: number }[]; unit: string; category?: string }>();
       
-      for (const entry of json.data) {
-        const existing = biomarkerMap.get(entry.name) ?? { points: [], unit: entry.unit, category: entry.category };
-        existing.points.push({ testDate: entry.testDate, value: entry.value });
-        biomarkerMap.set(entry.name, existing);
-      }
+      return response.json();
+    },
+    select: (response) => {
+      const biomarkers = new Map<string, Array<{
+        value: number;
+        testDate: string;
+        unit: string;
+      }>>();
+      
+      const categoriesMap: Record<string, string> = {};
 
-      // Convert to series format
-      const series: Series[] = Array.from(biomarkerMap.entries()).map(([name, { points, unit, category }]) => ({
+      response.data.forEach(result => {
+        const parsedBiomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
+        parsedBiomarkers.forEach(biomarker => {
+          if (!biomarker.name || typeof biomarker.value !== 'number') return;
+
+          const series = biomarkers.get(biomarker.name) || [];
+          series.push({
+            value: biomarker.value,
+            testDate: biomarker.testDate || result.uploadedAt,
+            unit: biomarker.unit
+          });
+          biomarkers.set(biomarker.name, series);
+          
+          if (biomarker.category) {
+            categoriesMap[biomarker.name] = biomarker.category;
+          }
+        });
+      });
+
+      const allSeries = Array.from(biomarkers.entries()).map(([name, points]) => ({
         name,
-        unit,
-        category: category || 'other',
-        points: points.sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
+        points: points.sort((a, b) => 
+          new Date(a.testDate).getTime() - new Date(b.testDate).getTime()
+        ),
+        unit: points[0]?.unit || '',
+        category: categoriesMap[name] || 'other'
       }));
 
-      // Extract categories and biomarker names
-      const allBiomarkers = series.map(s => s.name);
-      const categories: Record<string, string> = Object.fromEntries(
-        series.map(s => [s.name, s.category])
-      );
-
-      return { series, allBiomarkers, categories };
+      return {
+        series: allSeries,
+        allBiomarkers: allSeries.map(s => s.name),
+        categories: categoriesMap
+      };
     },
-    staleTime: 5 * 60 * 1000,
-    keepPreviousData: true
+    staleTime: 5 * 60 * 1000
   });
+
+  const getSeriesByName = (name: string): Series | undefined => {
+    return query.data?.series.find(s => s.name === name);
+  };
+
+  return {
+    ...query,
+    getSeriesByName
+  };
 }
