@@ -260,7 +260,11 @@ class LabSummaryService {
                   extractedText: textContent,
                   extractionMethod: 'google-vision',
                   extractionDate: new Date().toISOString(),
-                  biomarkers: biomarkerResults
+                  biomarkers: {
+                    parsedBiomarkers: biomarkerResults.parsedBiomarkers,
+                    parsingErrors: biomarkerResults.parsingErrors,
+                    extractedAt: new Date().toISOString()
+                  }
                 }
               })
               .where(eq(labResults.id, labResultId));
