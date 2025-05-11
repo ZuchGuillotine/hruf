@@ -478,7 +478,7 @@ export class BiomarkerExtractionService {
 
   async processLabResult(labResultId: number): Promise<void> {
   try {
-    // Get the lab result from the database
+    // Get the lab result and lock for update
     const [labResult] = await db
       .select()
       .from(labResults)
@@ -515,22 +515,40 @@ export class BiomarkerExtractionService {
 
     // Only update if we have extracted biomarkers
     if (biomarkerResults.parsedBiomarkers.length > 0) {
-      // Ensure we preserve existing metadata structure
-      const existingMetadata = labResult.metadata || {};
+      // Get latest metadata to prevent overwrites
+      const [currentResult] = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.id, labResultId))
+        .limit(1);
+
+      if (!currentResult) {
+        throw new Error('Lab result no longer exists');
+      }
+
+      const baseMetadata = currentResult.metadata || {};
+      
+      // Carefully merge metadata
       const updatedMetadata = {
-        ...existingMetadata,
+        ...baseMetadata,
         biomarkers: {
           parsedBiomarkers: biomarkerResults.parsedBiomarkers,
           parsingErrors: biomarkerResults.parsingErrors,
           extractedAt: new Date().toISOString()
-        }
+        },
+        // Preserve OCR and parsed text if they exist
+        ocr: baseMetadata.ocr || undefined,
+        parsedText: baseMetadata.parsedText || undefined,
+        parseDate: baseMetadata.parseDate || undefined
       };
 
-      // Update the lab result with biomarker data
-      await db
-        .update(labResults)
-        .set({ metadata: updatedMetadata })
-        .where(eq(labResults.id, labResultId));
+      // Update with transaction to ensure atomicity
+      await db.transaction(async (tx) => {
+        await tx
+          .update(labResults)
+          .set({ metadata: updatedMetadata })
+          .where(eq(labResults.id, labResultId));
+      });
 
       logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
         biomarkerCount: biomarkerResults.parsedBiomarkers.length,

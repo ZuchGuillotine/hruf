@@ -83,34 +83,22 @@ class LabSummaryService {
             throw new Error('PDF parsing produced empty text content');
           }
 
-          // Extract biomarkers in parallel with other processing
-          const biomarkerPromise = biomarkerExtractionService.extractBiomarkers(textContent)
-            .then(async (biomarkerResults) => {
-              logger.info(`Extracted biomarkers for lab result ${labResultId}`, {
-                biomarkerCount: biomarkerResults.parsedBiomarkers.length
-              });
-              return biomarkerResults;
-            })
-            .catch(error => {
-              logger.error(`Error extracting biomarkers for lab result ${labResultId}:`, error);
-              return null;
-            });
-
-          // Wait for biomarker extraction before updating metadata
-          const biomarkerResults = await biomarkerPromise;
-
-          // Single metadata update that includes both parsed text and biomarkers
+          // First update with parsed text
           await db
             .update(labResults)
             .set({
               metadata: {
                 ...labResult.metadata,
                 parsedText: textContent,
-                parseDate: new Date().toISOString(),
-                biomarkers: biomarkerResults || undefined
+                parseDate: new Date().toISOString()
               }
             })
             .where(eq(labResults.id, labResultId));
+
+          // Then process biomarkers
+          await biomarkerExtractionService.processLabResult(labResultId);
+
+          logger.info(`Updated lab result ${labResultId} with parsed text and triggered biomarker extraction`);
 
           // Log the update for verification
           logger.info(`Updated lab result ${labResultId} metadata:`, {
