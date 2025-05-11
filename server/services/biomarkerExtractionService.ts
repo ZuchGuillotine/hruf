@@ -610,15 +610,18 @@ export class BiomarkerExtractionService {
 
     // Only update if we have extracted biomarkers
     if (biomarkerResults.parsedBiomarkers.length > 0) {
-      // Store biomarkers in dedicated table
+      // Store biomarkers in dedicated table with proper mapping
       await this.storeBiomarkers(labResultId, biomarkerResults.parsedBiomarkers.map(b => ({
         name: b.name,
         value: b.value,
         unit: b.unit,
         category: b.category || 'other',
+        referenceRange: b.referenceRange,
         testDate: labResult.collectionDate || new Date(),
         source: 'extraction',
-        confidence: 1.0
+        confidence: 1.0,
+        sourceText: b.sourceText,
+        extractionTimestamp: new Date().toISOString()
       })));
 
       // Update lab result metadata
