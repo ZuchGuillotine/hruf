@@ -7,12 +7,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
 export function BiomarkerFilter() {
-  const { data: dataPoints = [], isLoading } = useLabChartData();
+  const { data: biomarkerData, isLoading } = useLabChartData();
   const [location, setLocation] = useLocation();
 
   const allNames = useMemo(() => {
-    return Array.from(new Set(dataPoints.map(point => point.name))).sort();
-  }, [dataPoints]);
+    if (!biomarkerData?.series) return [];
+    return Array.from(new Set(biomarkerData.series.map(s => s.name))).sort();
+  }, [biomarkerData]);
 
   const selectedNames = useMemo(() => {
     const params = new URLSearchParams(location.split('?')[1]);
@@ -50,14 +51,15 @@ export function BiomarkerFilter() {
 
   return (
     <Card className="p-4">
-      <ScrollArea className="h-[200px] rounded-md border p-4">
-        <div className="flex flex-wrap gap-2">
-          {allNames.map(name => (
+      <ScrollArea className="h-[200px] w-full">
+        <div className="flex flex-wrap gap-2 p-2">
+          {allNames.map((name) => (
             <Button
               key={name}
               variant={selectedNames.has(name) ? "default" : "outline"}
+              size="sm"
               onClick={() => toggleName(name)}
-              className="text-sm"
+              className="rounded-full"
             >
               {name}
             </Button>
