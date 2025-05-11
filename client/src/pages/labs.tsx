@@ -10,7 +10,6 @@ import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
 import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
 import { useLabChartData } from "@/hooks/use-lab-chart-data";
 import type { Series } from "@/types/chart";
-import { Card, CardContent } from "@/components/ui/card";
 
 interface LabFile {
   id: number;
