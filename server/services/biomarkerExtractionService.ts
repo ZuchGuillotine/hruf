@@ -41,7 +41,7 @@ type BiomarkerCategory = 'lipid' | 'metabolic' | 'thyroid' | 'vitamin' | 'minera
 const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerCategory }> = {
   // Lipid Panel
   cholesterol: {
-    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(?:mg\/dL|mmol\/L)/i,
+    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
     category: 'lipid'
   },
   hdl: {
@@ -295,7 +295,7 @@ export class BiomarkerExtractionService {
   private async extractWithLLM(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     try {
       logger.info('Starting LLM extraction with text length:', { textLength: text.length });
-      
+
       const functions = [{
         name: "extract_lab_biomarkers",
         description: "Extract biomarkers from medical lab report text with precise values and units",
@@ -383,13 +383,13 @@ export class BiomarkerExtractionService {
           sampleBiomarker: parsed.biomarkers[0],
           finishReason: completion.choices[0]?.finish_reason
         });
-        
+
         const validated = BiomarkersArraySchema.parse(parsed.biomarkers);
         logger.info('Successfully validated biomarkers with Zod schema', {
           biomarkerCount: validated.length,
           sampleValidated: validated[0]
         });
-        
+
         return validated;
       } catch (error) {
         logger.error('Error processing LLM response:', {
@@ -415,7 +415,7 @@ export class BiomarkerExtractionService {
     const errors: string[] = [];
     try {
       logger.info('Starting biomarker extraction process');
-      
+
       // First try regex extraction
       const regexResults = await this.extractWithRegex(text);
       logger.info('Regex extraction results:', {
@@ -425,13 +425,13 @@ export class BiomarkerExtractionService {
 
       // Extract the text portions that weren't matched by regex
       const unmatchedText = this.getUnmatchedText(text, regexResults);
-      
+
       // If we have significant unmatched text, try LLM on just that portion
       if (unmatchedText.length > 200) { // Threshold for "significant" unmatched text
         logger.info('Found unmatched text portions, attempting LLM extraction', {
           unmatchedLength: unmatchedText.length
         });
-        
+
         const llmResults = await this.extractWithLLM(unmatchedText);
         logger.info('LLM extraction results from unmatched text:', {
           biomarkerCount: llmResults.length,
@@ -477,62 +477,82 @@ export class BiomarkerExtractionService {
   }
 
   async processLabResult(labResultId: number): Promise<void> {
-    try {
-      // Get the lab result from the database
-      const [labResult] = await db
-        .select()
-        .from(labResults)
-        .where(eq(labResults.id, labResultId))
-        .limit(1);
+  try {
+    // Get the lab result from the database
+    const [labResult] = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.id, labResultId))
+      .limit(1);
 
-      if (!labResult) {
-        logger.error(`Lab result with ID ${labResultId} not found`);
-        return;
-      }
+    if (!labResult) {
+      logger.error(`Lab result with ID ${labResultId} not found`);
+      return;
+    }
 
-      // Get the text content from metadata
-      const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
+    // Get the text content from metadata
+    const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
 
-      if (!textContent) {
-        logger.error(`No text content found for lab result ${labResultId}`);
-        return;
-      }
+    if (!textContent) {
+      logger.error(`No text content found for lab result ${labResultId}`);
+      return;
+    }
 
-      // Extract biomarkers from the text
-      const biomarkerResults = await this.extractBiomarkers(textContent);
+    // Extract biomarkers from the text
+    const biomarkerResults = await this.extractBiomarkers(textContent);
+
+    // Log the extraction results
+    logger.info(`Biomarker extraction results for lab ${labResultId}:`, {
+      biomarkerCount: biomarkerResults.parsedBiomarkers.length,
+      biomarkers: biomarkerResults.parsedBiomarkers.map(b => ({
+        name: b.name,
+        value: b.value,
+        unit: b.unit,
+        category: b.category
+      })),
+      errors: biomarkerResults.parsingErrors
+    });
+
+    // Only update if we have extracted biomarkers
+    if (biomarkerResults.parsedBiomarkers.length > 0) {
+      // Ensure we preserve existing metadata structure
+      const existingMetadata = labResult.metadata || {};
+      const updatedMetadata = {
+        ...existingMetadata,
+        biomarkers: {
+          parsedBiomarkers: biomarkerResults.parsedBiomarkers,
+          parsingErrors: biomarkerResults.parsingErrors,
+          extractedAt: new Date().toISOString()
+        }
+      };
 
       // Update the lab result with biomarker data
       await db
         .update(labResults)
-        .set({
-          metadata: {
-            ...labResult.metadata,
-            biomarkers: biomarkerResults.parsedBiomarkers.length > 0 ? {
-              parsedBiomarkers: biomarkerResults.parsedBiomarkers,
-              parsingErrors: biomarkerResults.parsingErrors,
-              extractedAt: new Date().toISOString()
-            } : undefined
-          }
-        })
+        .set({ metadata: updatedMetadata })
         .where(eq(labResults.id, labResultId));
 
-      logger.info(`Successfully extracted biomarkers for lab result ${labResultId}`, {
+      logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
         biomarkerCount: biomarkerResults.parsedBiomarkers.length,
-        errorCount: biomarkerResults.parsingErrors.length
+        labResultId
       });
-    } catch (error) {
-      logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
+    } else {
+      logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
     }
+  } catch (error) {
+    logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      labResultId
+    });
   }
+}
 private getUnmatchedText(fullText: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
     let unmatchedText = fullText;
-    
+
     // Sort regex patterns by their position in the text to process sequentially
     const matchedSegments: Array<{start: number, end: number}> = [];
-    
+
     // Find all matched segments
     for (const [name, { pattern }] of Object.entries(BIOMARKER_PATTERNS)) {
       const matches = Array.from(fullText.matchAll(new RegExp(pattern, 'gi')));
