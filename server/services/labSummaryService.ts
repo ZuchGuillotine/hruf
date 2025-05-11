@@ -98,19 +98,12 @@ class LabSummaryService {
           // Then process biomarkers
           await biomarkerExtractionService.processLabResult(labResultId);
 
-          // Get updated lab result to verify biomarkers
-          const [updatedResult] = await db
-            .select()
-            .from(labResults)
-            .where(eq(labResults.id, labResultId))
-            .limit(1);
-
           logger.info(`Updated lab result ${labResultId} with parsed text and triggered biomarker extraction`);
 
           // Log the update for verification
           logger.info(`Updated lab result ${labResultId} metadata:`, {
-            hasBiomarkers: !!updatedResult?.metadata?.biomarkers,
-            biomarkerCount: updatedResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0,
+            hasBiomarkers: !!biomarkerResults,
+            biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0,
             parseDate: new Date().toISOString()
           });
 
