@@ -9,6 +9,10 @@ export function BiomarkerFilter() {
   const { data: dataPoints = [], isLoading } = useLabChartData();
   const [location, setLocation] = useLocation();
 
+  const allNames = useMemo(() => {
+  return Array.from(new Set(dataPoints.map(point => point.name))).sort();
+}, [dataPoints]);
+
   const selectedNames = useMemo(() => {
     const params = new URLSearchParams(location.split('?')[1]);
     const param = params.get('biomarkers') ?? '';
