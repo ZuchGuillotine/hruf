@@ -1,0 +1,130 @@
+// src/server/routes/labs/chartData.ts
+import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authMiddleware } from '@/server/middleware/auth';
+import { z } from 'zod';
+
+const prisma = new PrismaClient();
+const router = Router();
+
+/**
+ * Query parameters schema
+ */
+const querySchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((val) => parseInt(val ?? '1', 10))
+    .refine((n) => n > 0, { message: 'page must be positive' }),
+  pageSize: z
+    .string()
+    .optional()
+    .transform((val) => parseInt(val ?? '50', 10))
+    .refine((n) => n > 0 && n <= 100, { message: 'pageSize must be between 1 and 100' }),
+});
+
+type ChartEntry = {
+  name: string;
+  value: number;
+  unit: string;
+  testDate: string;
+};
+
+/**
+ * GET /api/labs/chart-data
+ * Returns paginated lab chart data for parsed biomarkers.
+ */
+router.get(
+  '/chart-data',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      // Validate & coerce query params
+      const { page, pageSize } = querySchema.parse(req.query);
+      const skip = (page - 1) * pageSize;
+
+      // Fetch labs containing parsedBiomarkers
+      const labs = await prisma.lab.findMany({
+        where: {
+          metadata: {
+            path: ['biomarkers', 'parsedBiomarkers'],
+            isNot: null,
+          },
+        },
+        select: {
+          metadata: true,
+        },
+        skip,
+        take: pageSize,
+      });
+
+      // Flatten biomarkers into chart entries
+      const data: ChartEntry[] = labs.flatMap((lab) => {
+        const parsed = lab.metadata.biomarkers.parsedBiomarkers;
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map((item: any) => ({
+          name: item.name,
+          value:
+            typeof item.value === 'number'
+              ? item.value
+              : Number(item.value),
+          unit: item.unit,
+          testDate: item.testDate,
+        }));
+      });
+
+      return res.json({ success: true, data });
+    } catch (err: any) {
+      console.error('Error in GET /api/labs/chart-data', err);
+      return res.status(400).json({ success: false, data: [] });
+    }
+  }
+);
+
+export default router;
+
+
+// src/server/routes/labs/chartData.test.ts
+import request from 'supertest';
+import express from 'express';
+import chartRouter from './chartData';
+import { PrismaClient } from '@prisma/client';
+
+// Mock PrismaClient
+jest.mock('@prisma/client', () => {
+  const mockLabs = Array.from({ length: 1000 }, () => ({
+    metadata: {
+      biomarkers: {
+        parsedBiomarkers: [
+          { name: 'Test Marker', value: '1.23', unit: 'mg/dL', testDate: '2025-05-01' },
+        ],
+      },
+    },
+  }));
+  return {
+    PrismaClient: jest.fn(() => ({ lab: { findMany: jest.fn().mockResolvedValue(mockLabs) } })),
+  };
+});
+
+describe('GET /api/labs/chart-data', () => {
+  let app: express.Express;
+
+  beforeAll(() => {
+    app = express();
+    // Dummy auth that always passes
+    app.use((req, res, next) => next());
+    app.use('/api/labs', chartRouter);
+  });
+
+  it('returns paginated chart data and meets performance', async () => {
+    const start = Date.now();
+    const res = await request(app).get('/api/labs/chart-data?page=1&pageSize=50');
+    const duration = Date.now() - start;
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // 50 labs × 1 biomarker each
+    expect(res.body.data).toHaveLength(50);
+    expect(duration).toBeLessThan(200);
+  });
+});
