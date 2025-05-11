@@ -55,12 +55,25 @@ router.get('/', async (req, res) => {
       resultCount: results.length
     });
 
-    // Extract and flatten biomarkers
+    // Extract and flatten biomarkers with debug logging
     const data: ChartEntry[] = results.flatMap(lab => {
       const biomarkers = lab.metadata?.biomarkers?.parsedBiomarkers;
-      if (!Array.isArray(biomarkers)) return [];
+      logger.debug('Processing lab result biomarkers:', {
+        labId: lab.id,
+        hasBiomarkers: !!biomarkers,
+        biomarkerCount: biomarkers?.length,
+        metadata: lab.metadata
+      });
 
-      return biomarkers
+      if (!Array.isArray(biomarkers)) {
+        logger.warn('Invalid biomarkers data structure:', {
+          labId: lab.id,
+          metadata: lab.metadata
+        });
+        return [];
+      }
+
+      const entries = biomarkers
         .filter(b => !biomarker || b.name === biomarker)
         .map(b => ({
           name: b.name,
@@ -69,6 +82,13 @@ router.get('/', async (req, res) => {
           testDate: b.testDate || lab.uploadedAt.toISOString(),
           category: b.category
         }));
+
+      logger.debug('Extracted chart entries:', {
+        labId: lab.id,
+        entryCount: entries.length
+      });
+
+      return entries;
     });
 
     // Check if we have any biomarkers
