@@ -39,10 +39,12 @@ export function useLabChartData() {
         unit: points[0]?.unit || ''
       }));
 
-      return {
+      const result = {
         series: allSeries,
         allBiomarkers: allSeries.map(s => s.name)
       };
+      console.log('Lab chart data response:', result);
+      return result;
     },
     staleTime: 5 * 60 * 1000
   });
