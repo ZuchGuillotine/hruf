@@ -1,0 +1,36 @@
+Google Analytics initialized with ID: G-NGDFVQPN39
+[vite] connecting...
+[vite] connected.
+useMemo is not defined
+useMemo is not defined
+The above error occurred in the <Labs> component:
+
+    at Labs (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/pages/labs.tsx:31:35)
+    at Route (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fcfcb7e2:191:16)
+    at Switch (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fcfcb7e2:247:17)
+    at AppRouter (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/App.tsx?v=Yrmw_WrYqJ7Mydam1U48W:78:31)
+    at ErrorBoundary (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/components/ErrorBoundary.tsx:9:5)
+    at AuthProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=fcfcb7e2:2805:3)
+    at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+
+at Labs (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/pages/labs.tsx:31:35)
+at Route (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fcfcb7e2:191:16)
+at Switch (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fcfcb7e2:247:17)
+at AppRouter (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/App.tsx?v=Yrmw_WrYqJ7Mydam1U48W:78:31)
+at ErrorBoundary (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/components/ErrorBoundary.tsx:9:5)
+at AuthProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/src/hooks/use-auth.tsx:26:32)
+at QueryClientProvider (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=fcfcb7e2:2805:3)
+at App
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary.
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://cd62a484-5751-4037-9fc9-2fa4856928d4-00-3sjfe7w20140c.janeway.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Error caught by ErrorBoundary: 
+ReferenceError {}
+ 
+Object {componentStack: "↵    at Labs…"}
