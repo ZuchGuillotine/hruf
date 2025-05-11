@@ -1,32 +1,7 @@
 
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import { BiomarkerExtractionService } from '../services/biomarkerExtractionService';
 import { z } from 'zod';
-
-jest.mock('openai', () => ({
-  default: class MockOpenAI {
-    constructor() {}
-    chat = {
-      completions: {
-        create: jest.fn().mockResolvedValue({
-          choices: [{
-            message: {
-              function_call: {
-                arguments: JSON.stringify({
-                  biomarkers: [{
-                    name: 'cholesterol',
-                    value: 180,
-                    unit: 'mg/dL'
-                  }]
-                })
-              }
-            }
-          }]
-        })
-      }
-    }
-  }
-}));
 
 describe('BiomarkerExtractionService', () => {
   let service: BiomarkerExtractionService;
