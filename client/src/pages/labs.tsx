@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File, FileText, Download, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { useSearchParams } from 'wouter';
+import { useLocation } from 'wouter';
 import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
 import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
 import { useLabChartData } from "@/hooks/use-lab-chart-data";
@@ -22,12 +22,12 @@ interface LabFile {
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
   const { getSeriesByName } = useLabChartData();
-  const [searchParams] = useSearchParams();
+  const [location] = useLocation();
   const selectedNames = useMemo(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(location.split('?')[1]);
     const biomarkers = params.get('biomarkers') ?? '';
     return new Set(biomarkers.split(',').filter(Boolean));
-  }, [searchParams]);
+  }, [location]);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   const fetchLabFiles = async () => {
