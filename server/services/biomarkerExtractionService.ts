@@ -23,7 +23,13 @@ const BiomarkerSchema = z.object({
   value: z.number(),
   unit: z.string(),
   referenceRange: z.string().optional(),
-  testDate: z.string().datetime().optional(),
+  testDate: z.string().transform(date => {
+    // Handle YYYY-MM-DD format by appending time
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return `${date}T00:00:00.000Z`;
+    }
+    return date;
+  }).optional(),
   category: z.enum(['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other']).optional(),
 });
 
@@ -324,12 +330,13 @@ export class BiomarkerExtractionService {
       }];
 
       const systemPrompt = `You are a precise medical lab report parser. Extract all biomarkers with the following rules:
-- Convert all numeric values to valid numbers
+- Convert all numeric values to valid numbers (never return null values)
+- If a value is "pending" or "not available", skip that biomarker
 - Include units exactly as written
 - Capture any reference ranges
 - Note if values are marked High/Low/Normal
 - Categorize biomarkers into appropriate types
-- Format dates as ISO strings`;
+- Format dates as YYYY-MM-DD`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4-0613",
