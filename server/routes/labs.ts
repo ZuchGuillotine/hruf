@@ -12,9 +12,18 @@ import { checkLabUploadLimit } from '../middleware/tierLimitMiddleware';
 
 const router = express.Router();
 import labChartDataRouter from './labChartData';
+import { debugLabResults } from '../controllers/debugController';
 
 // Mount chart data routes
 router.use('/chart-data', labChartDataRouter);
+
+// Debug endpoint - only accessible by admins
+router.get('/debug/:labId?', (req, res, next) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  next();
+}, debugLabResults);
 
 // Configure file upload middleware
 const uploadMiddleware = fileUpload({
