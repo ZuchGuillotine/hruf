@@ -11,6 +11,10 @@ import logger from '../utils/logger';
 import { checkLabUploadLimit } from '../middleware/tierLimitMiddleware';
 
 const router = express.Router();
+import labChartDataRouter from './labChartData';
+
+// Mount chart data routes
+router.use('/chart-data', labChartDataRouter);
 
 // Configure file upload middleware
 const uploadMiddleware = fileUpload({
