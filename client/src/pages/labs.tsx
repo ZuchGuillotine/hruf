@@ -5,8 +5,12 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File, FileText, Download, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { useSearchParams } from 'wouter';
 import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
 import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
+import { useLabChartData } from "@/hooks/use-lab-chart-data";
+import type { Series } from "@/types/chart";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface LabFile {
   id: number;
@@ -18,6 +22,13 @@ interface LabFile {
 
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
+  const { getSeriesByName } = useLabChartData();
+  const [searchParams] = useSearchParams();
+  const selectedNames = useMemo(() => {
+    const params = new URLSearchParams(searchParams);
+    const biomarkers = params.get('biomarkers') ?? '';
+    return new Set(biomarkers.split(',').filter(Boolean));
+  }, [searchParams]);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   const fetchLabFiles = async () => {
@@ -70,7 +81,19 @@ export default function Labs() {
             <>
               <BiomarkerFilter />
               <div className="mt-4">
-                <BiomarkerHistoryChart series={[]} /> 
+                {selectedNames.size > 0 ? (
+                  <BiomarkerHistoryChart 
+                    series={Array.from(selectedNames).map(name => 
+                      getSeriesByName(name)
+                    ).filter(Boolean) as Series[]} 
+                  />
+                ) : (
+                  <Card className="bg-white/10 border-none">
+                    <CardContent className="p-6 text-center">
+                      <p className="text-white/70">Select biomarkers above to view their trends</p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </>
           ) : (
