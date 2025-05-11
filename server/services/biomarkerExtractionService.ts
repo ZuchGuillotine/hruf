@@ -500,12 +500,7 @@ export class BiomarkerExtractionService {
       });
     }
   }
-}
-
-export const biomarkerExtractionService = new BiomarkerExtractionService();
-export default biomarkerExtractionService;
-
-  private getUnmatchedText(fullText: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
+private getUnmatchedText(fullText: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
     let unmatchedText = fullText;
     
     // Sort regex patterns by their position in the text to process sequentially
@@ -545,3 +540,7 @@ export default biomarkerExtractionService;
 
     return result.trim();
   }
+}
+
+export const biomarkerExtractionService = new BiomarkerExtractionService();
+export default biomarkerExtractionService;
