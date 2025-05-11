@@ -123,9 +123,17 @@ class LabSummaryService {
             extractedAt: finalResult?.metadata?.biomarkers?.extractedAt
           });
 
+          // Get the latest lab result data with extracted biomarkers
+          const [currentResult] = await db
+            .select()
+            .from(labResults)
+            .where(eq(labResults.id, labResultId))
+            .limit(1);
+
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
             textLength: textContent.length,
-            hasBiomarkers: !!biomarkerResults
+            hasBiomarkers: !!currentResult?.metadata?.biomarkers,
+            biomarkerCount: currentResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0
           });
         } catch (error) {
           logger.error('Error parsing PDF:', {
@@ -309,6 +317,18 @@ class LabSummaryService {
         textContent += `\n\nUser notes: ${labResult.notes}`;
       }
 
+      // Get latest lab result with biomarkers
+      const [latestResult] = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.id, labResultId))
+        .limit(1);
+
+      // Enhanced prompt with biomarker context
+      const biomarkerContext = latestResult?.metadata?.biomarkers?.parsedBiomarkers 
+        ? `\n\nExtracted Biomarkers:\n${JSON.stringify(latestResult.metadata.biomarkers.parsedBiomarkers, null, 2)}`
+        : '';
+
       const completion = await openai.chat.completions.create({
         model: this.SUMMARY_MODEL,
         messages: [
@@ -318,10 +338,16 @@ class LabSummaryService {
           },
           {
             role: "user",
-            content: `Here is a lab result to summarize:\n\n${textContent}`
+            content: `Here is a lab result to summarize with extracted biomarkers:
+
+Lab Text:
+${textContent}
+${biomarkerContext}
+
+Please provide a comprehensive summary including analysis of the biomarker values and their implications.`
           }
         ],
-        max_tokens: 1000
+        max_tokens: 2000
       });
 
       const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
