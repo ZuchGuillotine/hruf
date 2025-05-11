@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -38,18 +37,20 @@ router.get('/', async (req, res) => {
 
     // Get lab results with biomarker data
     const results = await db
-      .select()
+      .select({
+        id: labResults.id,
+        metadata: labResults.metadata,
+        uploadedAt: labResults.uploadedAt
+      })
       .from(labResults)
       .where(eq(labResults.userId, req.user!.id))
-      .orderBy(labResults.uploadedAt)
-      .offset(offset)
-      .limit(pageSize);
+      .orderBy(labResults.uploadedAt, 'desc');
 
     // Extract and flatten biomarkers
     const data: ChartEntry[] = results.flatMap(lab => {
       const biomarkers = lab.metadata?.biomarkers?.parsedBiomarkers;
       if (!Array.isArray(biomarkers)) return [];
-      
+
       return biomarkers
         .filter(b => !biomarker || b.name === biomarker)
         .map(b => ({
@@ -102,7 +103,7 @@ export default router;
 router.get('/trends', async (req, res) => {
   try {
     const biomarkerNames = req.query.names ? String(req.query.names).split(',') : [];
-    
+
     // Get all lab results for user
     const results = await db
       .select()
@@ -156,4 +157,3 @@ router.get('/trends', async (req, res) => {
     });
   }
 });
-

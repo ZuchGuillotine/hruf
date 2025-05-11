@@ -8,7 +8,7 @@ interface ChartData {
 }
 
 export function useLabChartData() {
-  return useQuery<ChartData>({
+  return useQuery<BiomarkerData>({
     queryKey: ['labChartData'],
     queryFn: async () => {
       const response = await fetch('/api/labs/chart-data');
@@ -17,38 +17,30 @@ export function useLabChartData() {
       }
       const data = await response.json();
 
-      // Group data points by biomarker name
-      const biomarkerMap = new Map<string, BiomarkerDataPoint[]>();
-      data.data.forEach((point: BiomarkerDataPoint) => {
-        const points = biomarkerMap.get(point.name) || [];
-        points.push(point);
-        biomarkerMap.set(point.name, points);
+      // Extract biomarkers from lab results
+      const biomarkers = new Map();
+      data.data.forEach(result => {
+        const parsedBiomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
+        parsedBiomarkers.forEach(biomarker => {
+          const series = biomarkers.get(biomarker.name) || [];
+          series.push({
+            value: biomarker.value,
+            testDate: biomarker.testDate || result.uploadedAt,
+            unit: biomarker.unit
+          });
+          biomarkers.set(biomarker.name, series);
+        });
       });
 
-      // Convert to series format
-      const series: Series[] = Array.from(biomarkerMap.entries()).map(([name, points]) => ({
-        name,
-        unit: points[0].unit,
-        category: points[0].category,
-        points: points
-          .sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
-          .map(p => ({ testDate: p.testDate, value: p.value }))
-      }));
-
-      // Track categories for coloring
-      const categories: Record<string, string> = {};
-      series.forEach(s => {
-        if (s.category) {
-          categories[s.name] = s.category;
-        }
-      });
-
+      // Convert to expected format
       return {
-        series,
-        allBiomarkers: Array.from(biomarkerMap.keys()).sort(),
-        categories
+        series: Array.from(biomarkers.entries()).map(([name, points]) => ({
+          name,
+          points: points.sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime()),
+          unit: points[0]?.unit || ''
+        }))
       };
     },
-    staleTime: 5 * 60 * 1000 // Consider data stale after 5 minutes
+    staleTime: 5 * 60 * 1000
   });
 }
