@@ -1,5 +1,22 @@
 ## [Unreleased]
 
+### Added (May 11, 2025)
+- Lab Chart Data API Implementation:
+  - Added new /api/labs/chart-data endpoints:
+    - Main endpoint for biomarker time series data
+    - Trends endpoint for aggregated analysis
+  - Features:
+    - Pagination with configurable page size
+    - Optional biomarker filtering
+    - Chronological ordering
+    - Type-safe query validation
+    - Proper error boundaries
+    - Enhanced logging
+  - Integration:
+    - Connected with existing lab results system
+    - Proper authentication middleware
+    - Database integration with proper types
+
 ### Fixed (May 11, 2025)
 - Biomarker Extraction System:
   - Resolved critical extraction pipeline issues:

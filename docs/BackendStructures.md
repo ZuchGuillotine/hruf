@@ -528,6 +528,18 @@ POST /api/summaries/realtime
 
 API Routes (from routes.ts)
 #### Lab Results Routes
+GET /api/labs/chart-data
+- Retrieves time series data for lab biomarkers
+- Supports pagination and filtering
+- Returns formatted biomarker entries with metadata
+- Requires authentication
+
+GET /api/labs/chart-data/trends
+- Retrieves trend analysis for specified biomarkers
+- Accepts comma-separated biomarker names
+- Returns aggregated time series data
+- Requires authentication
+
 GET /api/labs
 - Retrieves all lab results for authenticated user
 - Returns array of lab result objects with metadata
