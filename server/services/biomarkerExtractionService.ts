@@ -571,9 +571,16 @@ export class BiomarkerExtractionService {
     }
   }
 
-      .limit(1);
+  async processLabResult(labResultId: number): Promise<void> {
+    try {
+      // Get the lab result from the database
+      const [labResult] = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.id, labResultId))
+        .limit(1);
 
-    if (!labResult) {
+      if (!labResult) {
       logger.error(`Lab result with ID ${labResultId} not found`);
       return;
     }
