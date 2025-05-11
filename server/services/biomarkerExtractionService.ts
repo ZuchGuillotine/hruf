@@ -290,30 +290,53 @@ export class BiomarkerExtractionService {
     try {
       logger.info('Starting LLM extraction with text length:', { textLength: text.length });
       
+      const functions = [{
+        name: "extract_lab_biomarkers",
+        description: "Extract biomarkers from medical lab report text",
+        parameters: {
+          type: "object",
+          properties: {
+            biomarkers: {
+              type: "array", 
+              items: {
+                type: "object",
+                required: ["name", "value", "unit"],
+                properties: {
+                  name: { type: "string" },
+                  value: { type: "number" },
+                  unit: { type: "string" },
+                  referenceRange: { type: "string" },
+                  testDate: { type: "string", format: "date" },
+                  category: { 
+                    type: "string",
+                    enum: ['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other']
+                  }
+                }
+              }
+            }
+          },
+          required: ["biomarkers"]
+        }
+      }];
+
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4-0613",
         messages: [
           {
             role: "system",
-            content: `You're a JSON‐only extractor for medical lab results. Extract every lab marker into an array of objects with fields:
-                • name (string)
-                • value (number)
-                • unit (string)
-                • referenceRange (optional string)
-                • testDate (optional ISO date)
-                • category (optional string: 'lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other')
-              Do not output any commentary—only valid JSON. If a field is missing, omit it.
-              Ensure values are numbers, not strings.`
+            content: "You are a precise medical lab report parser. Extract all biomarkers including their values, units, and any available reference ranges or test dates. Convert all values to numbers."
           },
           {
             role: "user",
             content: text
           }
         ],
-        response_format: { type: "json_object" }
+        functions,
+        function_call: { name: "extract_lab_biomarkers" },
+        temperature: 0
       });
 
-      const rawContent = completion.choices[0]?.message?.content;
+      const rawArgs = completion.choices[0]?.message?.function_call?.arguments;
       logger.info('Raw LLM response:', { 
         contentLength: rawContent?.length,
         contentPreview: rawContent?.substring(0, 200), // Log first 200 chars
@@ -323,32 +346,19 @@ export class BiomarkerExtractionService {
         completionTokens: completion.usage?.completion_tokens
       });
 
-      if (!rawContent) {
-        logger.warn('LLM returned no content');
+      if (!rawArgs) {
+        logger.error('No function_call arguments returned from LLM');
         return [];
       }
 
-      let parsedContent;
       try {
-        parsedContent = JSON.parse(rawContent);
-        logger.info('Successfully parsed LLM JSON response');
-      } catch (parseError) {
-        logger.error('Failed to parse LLM JSON response:', {
-          error: parseError instanceof Error ? parseError.message : String(parseError),
-          contentPreview: rawContent.substring(0, 500)
+        const parsed = JSON.parse(rawArgs).biomarkers;
+        logger.info('Successfully parsed LLM function response:', {
+          biomarkerCount: parsed?.length,
+          sampleBiomarker: parsed?.[0]
         });
-        return [];
-      }
-
-      // Log the structure of the parsed content
-      logger.info('Parsed LLM content structure:', {
-        hasBiomarkers: 'biomarkers' in parsedContent,
-        biomarkersLength: parsedContent.biomarkers?.length,
-        sampleBiomarker: parsedContent.biomarkers?.[0]
-      });
-
-      try {
-        const parsed = BiomarkersArraySchema.parse(parsedContent.biomarkers || []);
+        
+        const validated = BiomarkersArraySchema.parse(parsed || []);
         logger.info('Successfully validated biomarkers with Zod schema', {
           biomarkerCount: parsed.length,
           sampleValidated: parsed[0]
