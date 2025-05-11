@@ -14,8 +14,21 @@ import { z } from 'zod';
 import { openai } from '../openai';
 import logger from '../utils/logger';
 import { db } from '../../db';
-import { labResults } from '../../db/schema';
+import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../../db/schema';
 import { eq } from 'drizzle-orm';
+import type { InsertBiomarkerResult } from '../../db/schema';
+
+interface Biomarker {
+  name: string;
+  value: number;
+  unit: string;
+  category: string;
+  referenceRange?: string;
+  testDate: Date;
+  source: string;
+  confidence?: number;
+  sourceText?: string;
+}
 
 // Zod schema for biomarker validation
 const BiomarkerSchema = z.object({
@@ -483,6 +496,69 @@ export class BiomarkerExtractionService {
       .select()
       .from(labResults)
       .where(eq(labResults.id, labResultId))
+
+
+  async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
+    const trx = await db.transaction();
+    try {
+      logger.info(`Starting biomarker storage for lab result ${labResultId}`, {
+        biomarkerCount: biomarkers.length
+      });
+
+      // Update processing status
+      await trx.insert(biomarkerProcessingStatus).values({
+        labResultId,
+        status: 'processing',
+        startedAt: new Date(),
+        metadata: {
+          biomarkerCount: biomarkers.length
+        }
+      });
+
+      // Store biomarkers
+      const biomarkerInserts: InsertBiomarkerResult[] = biomarkers.map(b => ({
+        labResultId,
+        name: b.name,
+        value: b.value,
+        unit: b.unit,
+        category: b.category,
+        referenceRange: b.referenceRange,
+        testDate: b.testDate,
+        extractionMethod: b.source,
+        confidence: b.confidence,
+        metadata: {
+          sourceText: b.sourceText,
+          extractionTimestamp: new Date().toISOString()
+        }
+      }));
+
+      await trx.insert(biomarkerResults).values(biomarkerInserts);
+
+      // Update status to completed
+      await trx.update(biomarkerProcessingStatus)
+        .set({
+          status: 'completed',
+          completedAt: new Date(),
+          biomarkerCount: biomarkers.length,
+          metadata: {
+            processingTime: Date.now() - new Date().getTime(),
+            regexMatches: biomarkers.filter(b => b.source === 'regex').length,
+            llmExtractions: biomarkers.filter(b => b.source === 'llm').length
+          }
+        })
+        .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+
+      await trx.commit();
+      logger.info(`Successfully stored biomarkers for lab result ${labResultId}`);
+    } catch (error) {
+      await trx.rollback();
+      logger.error(`Failed to store biomarkers for lab result ${labResultId}`, {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  }
+
       .limit(1);
 
     if (!labResult) {
