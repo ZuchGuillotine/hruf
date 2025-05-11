@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+### Added (May 11, 2025)
+- Biomarker Tables Implementation:
+  - Added three new tables to schema:
+    - biomarkerResults: Stores individual biomarker test results
+    - biomarkerProcessingStatus: Tracks lab result processing status
+    - biomarkerReference: Reference data for biomarker ranges and metadata
+  - Features:
+    - Comprehensive schema with proper references and constraints
+    - Support for multiple biomarker categories
+    - Rich metadata storage using JSONB
+    - Foreign key relationships with lab_results table
+    - Timestamp tracking for all operations
+    - Proper indexing for efficient queries
+  - Initial reference data for common biomarkers (glucose, cholesterol)
 
 ### Added (May 11, 2025)
 - Biomarker Chart Feature Implementation (Initial):
