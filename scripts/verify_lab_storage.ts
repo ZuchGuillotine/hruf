@@ -1,4 +1,3 @@
-
 import { db } from '../db';
 import { labResults } from '../db/schema';
 import { desc } from 'drizzle-orm';
@@ -13,12 +12,12 @@ async function verifyLabStorage() {
       .limit(5);
 
     console.log('\n=== Recent Lab Results Storage Verification ===\n');
-    
+
     for (const result of results) {
       console.log(`Lab ID: ${result.id}`);
       console.log(`File: ${result.fileName}`);
       console.log(`Upload Date: ${new Date(result.uploadedAt).toLocaleString()}`);
-      
+
       // Check for summary
       console.log('Summary Status:', result.metadata?.summary ? '✅ Present' : '❌ Missing');
       if (result.metadata?.summary) {
@@ -26,13 +25,23 @@ async function verifyLabStorage() {
         console.log('Summarized At:', result.metadata?.summarizedAt);
       }
 
-      // Check for biomarkers
-      const biomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
+      // Ensure we're checking the correct metadata path
+      const biomarkerData = result.metadata?.biomarkers;
+      const biomarkers = biomarkerData?.parsedBiomarkers || [];
       const biomarkerCount = biomarkers.length;
+
       console.log('Biomarkers Status:', biomarkerCount > 0 ? '✅ Present' : '❌ Missing');
       console.log('Biomarkers Found:', biomarkerCount);
-      console.log('Extraction Date:', result.metadata?.extractedAt || 'Not available');
-      
+      console.log('Extraction Date:', biomarkerData?.extractedAt || 'Not available');
+
+      // Additional debugging info
+      console.log('\nMetadata Structure:', {
+        hasBiomarkersObject: !!result.metadata?.biomarkers,
+        hasParsedBiomarkers: !!biomarkerData?.parsedBiomarkers,
+        metadataKeys: Object.keys(result.metadata || {}),
+        biomarkerDataKeys: Object.keys(biomarkerData || {})
+      });
+
       if (biomarkers.length > 0) {
         console.log('\nBiomarker Examples:');
         biomarkers.slice(0, 3).forEach(b => {
