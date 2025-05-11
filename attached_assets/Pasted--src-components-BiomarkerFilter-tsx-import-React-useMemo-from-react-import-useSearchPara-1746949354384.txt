@@ -1,0 +1,66 @@
+// src/components/BiomarkerFilter.tsx
+import React, { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useLabChartData } from '@/hooks/useLabChartData';
+
+/**
+ * A pill‐style selector for biomarkers, driven by URL search params.
+ * Populates options from the lab chart data hook and persists selections
+ * under the `?biomarkers=` query parameter (comma‐separated names).
+ */
+export function BiomarkerFilter() {
+  const { data: dataPoints = [], isLoading } = useLabChartData();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Extract all unique biomarker names from fetched data
+  const allNames = useMemo(() => {
+    const names = new Set<string>();
+    dataPoints.forEach((dp) => names.add(dp.name));
+    return Array.from(names).sort();
+  }, [dataPoints]);
+
+  // Read selected names from URL
+  const selectedNames = useMemo(() => {
+    const param = searchParams.get('biomarkers') ?? '';
+    return new Set(param.split(',').filter(Boolean));
+  }, [searchParams]);
+
+  /** Toggle a biomarker's selection in the URL params */
+  const toggleName = (name: string) => {
+    const next = new Set(selectedNames);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+
+    const params = new URLSearchParams(searchParams);
+    if (next.size > 0) {
+      params.set('biomarkers', Array.from(next).join(','));
+    } else {
+      params.delete('biomarkers');
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  if (isLoading) {
+    return <div>Loading biomarkers…</div>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2 p-2 bg-white shadow-sm rounded-lg">
+      {allNames.map((name) => {
+        const isSelected = selectedNames.has(name);
+        return (
+          <Button
+            key={name}
+            size="sm"
+            variant={isSelected ? 'default' : 'outline'}
+            className="rounded-full px-3 py-1 text-sm hover:opacity-90"
+            onClick={() => toggleName(name)}
+          >
+            {name}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
