@@ -396,12 +396,17 @@ export class BiomarkerExtractionService {
         biomarkers: regexResults.map(r => ({ name: r.name, value: r.value, unit: r.unit }))
       });
 
-      // If we got less than 15 results or detected potential missing data,
-      // fall back to LLM
-      if (regexResults.length < 15 || text.length > 1000) {
-        logger.info('Insufficient regex results, attempting LLM extraction');
-        const llmResults = await this.extractWithLLM(text);
-        logger.info('LLM extraction results:', {
+      // Extract the text portions that weren't matched by regex
+      const unmatchedText = this.getUnmatchedText(text, regexResults);
+      
+      // If we have significant unmatched text, try LLM on just that portion
+      if (unmatchedText.length > 200) { // Threshold for "significant" unmatched text
+        logger.info('Found unmatched text portions, attempting LLM extraction', {
+          unmatchedLength: unmatchedText.length
+        });
+        
+        const llmResults = await this.extractWithLLM(unmatchedText);
+        logger.info('LLM extraction results from unmatched text:', {
           biomarkerCount: llmResults.length,
           biomarkers: llmResults.map(r => ({ name: r.name, value: r.value, unit: r.unit }))
         });
@@ -499,3 +504,44 @@ export class BiomarkerExtractionService {
 
 export const biomarkerExtractionService = new BiomarkerExtractionService();
 export default biomarkerExtractionService;
+
+  private getUnmatchedText(fullText: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
+    let unmatchedText = fullText;
+    
+    // Sort regex patterns by their position in the text to process sequentially
+    const matchedSegments: Array<{start: number, end: number}> = [];
+    
+    // Find all matched segments
+    for (const [name, { pattern }] of Object.entries(BIOMARKER_PATTERNS)) {
+      const matches = Array.from(fullText.matchAll(new RegExp(pattern, 'gi')));
+      matches.forEach(match => {
+        if (match.index !== undefined) {
+          matchedSegments.push({
+            start: match.index,
+            end: match.index + match[0].length
+          });
+        }
+      });
+    }
+
+    // Sort segments by start position
+    matchedSegments.sort((a, b) => a.start - b.start);
+
+    // Remove matched segments from the text, keeping track of unmatched portions
+    let lastEnd = 0;
+    let result = '';
+
+    matchedSegments.forEach(segment => {
+      if (segment.start > lastEnd) {
+        result += fullText.substring(lastEnd, segment.start) + ' ';
+      }
+      lastEnd = segment.end;
+    });
+
+    // Add any remaining text after the last match
+    if (lastEnd < fullText.length) {
+      result += fullText.substring(lastEnd);
+    }
+
+    return result.trim();
+  }
