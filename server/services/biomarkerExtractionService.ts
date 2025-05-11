@@ -35,7 +35,7 @@ type BiomarkerCategory = 'lipid' | 'metabolic' | 'thyroid' | 'vitamin' | 'minera
 const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerCategory }> = {
   // Lipid Panel
   cholesterol: {
-    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(?:mg\/dL|mmol\/L)/i,
     category: 'lipid'
   },
   hdl: {
@@ -57,7 +57,7 @@ const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerC
 
   // Metabolic Panel
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(?:mg\/dL|mmol\/L)/i,
     category: 'metabolic'
   },
   hemoglobinA1c: {
@@ -216,7 +216,9 @@ export class BiomarkerExtractionService {
         biomarker: name,
         pattern: pattern.toString(),
         matched: !!match,
-        matchValue: match ? match[1] : null
+        matchValue: match ? match[1] : null,
+        matchGroups: match ? match.groups : null,
+        surroundingText: match ? text.substring(Math.max(0, text.indexOf(match[0]) - 50), Math.min(text.length, text.indexOf(match[0]) + match[0].length + 50)) : null
       });
       if (match) {
         totalMatches++;
