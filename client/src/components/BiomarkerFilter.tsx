@@ -57,7 +57,7 @@ export function BiomarkerFilter() {
     <Card className="p-4">
       <ScrollArea className="h-[200px] w-full">
         <div className="flex flex-wrap gap-2 p-2">
-          {data?.allBiomarkers.map((name) => (
+          {data?.allBiomarkers?.map((name) => (
             <Button
               key={name}
               variant={selectedNames.has(name) ? "default" : "outline"}

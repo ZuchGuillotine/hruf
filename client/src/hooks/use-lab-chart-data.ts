@@ -33,12 +33,15 @@ export function useLabChartData() {
       });
 
       // Convert to expected format
+      const allSeries = Array.from(biomarkers.entries()).map(([name, points]) => ({
+        name,
+        points: points.sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime()),
+        unit: points[0]?.unit || ''
+      }));
+
       return {
-        series: Array.from(biomarkers.entries()).map(([name, points]) => ({
-          name,
-          points: points.sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime()),
-          unit: points[0]?.unit || ''
-        }))
+        series: allSeries,
+        allBiomarkers: allSeries.map(s => s.name)
       };
     },
     staleTime: 5 * 60 * 1000
