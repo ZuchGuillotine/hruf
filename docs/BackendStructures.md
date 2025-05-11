@@ -450,6 +450,27 @@ POST /api/summaries/realtime
     - Integrates with validation framework
     - Supports vector search capabilities
 
+### Biomarker Chart System
+- Service: biomarkerExtractionService.ts
+  - Purpose: Extract and validate biomarkers from lab results
+  - Features:
+    - Hybrid extraction system (regex + LLM)
+    - Proper validation and typing
+    - Enhanced error handling
+    - Metadata enrichment
+    - Comprehensive logging
+
+- API Routes:
+  - GET /api/labs/chart-data:
+    - Returns formatted biomarker time series
+    - Supports pagination and filtering
+    - Handles authentication
+    - Proper error responses
+  - GET /api/labs/chart-data/trends:
+    - Provides trend analysis
+    - Supports multiple biomarker selection
+    - Enhanced data aggregation
+
 ### Lab Results File Handling
 1. File Upload Flow:
    - Client sends multipart form data
