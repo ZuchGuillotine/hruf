@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File, FileText, Download, Trash2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
-import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
+import { BiomarkerHistoryChart } from "../../src/components/BiomarkerHistoryChart";
 
 interface LabFile {
   id: number;
