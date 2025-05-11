@@ -1,4 +1,3 @@
-
 /**
  * Single data point for a biomarker measurement
  */
@@ -57,4 +56,11 @@ export interface TrendSeries {
 export interface TrendApiResponse {
   success: boolean;
   data: TrendSeries[];
+}
+
+export interface Series {
+  name: string;
+  points: Array<{ testDate: string; value: number }>;
+  unit: string;
+  category: string;
 }
