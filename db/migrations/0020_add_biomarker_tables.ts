@@ -1,4 +1,4 @@
-import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { type PostgresJsDatabase, drizzle } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import { pgTable, serial, integer, text, timestamp, numeric, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { labResults } from "../schema";
