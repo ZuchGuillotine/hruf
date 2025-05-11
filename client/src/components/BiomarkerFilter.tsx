@@ -1,6 +1,5 @@
-
 import React, { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
@@ -8,31 +7,28 @@ import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
 export function BiomarkerFilter() {
   const { data: dataPoints = [], isLoading } = useLabChartData();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const allNames = useMemo(() => {
-    const names = new Set<string>();
-    dataPoints.forEach((dp) => names.add(dp.name));
-    return Array.from(names).sort();
-  }, [dataPoints]);
+  const [location, setLocation] = useLocation();
 
   const selectedNames = useMemo(() => {
-    const param = searchParams.get('biomarkers') ?? '';
+    const params = new URLSearchParams(location.split('?')[1]);
+    const param = params.get('biomarkers') ?? '';
     return new Set(param.split(',').filter(Boolean));
-  }, [searchParams]);
+  }, [location]);
 
   const toggleName = (name: string) => {
     const next = new Set(selectedNames);
     if (next.has(name)) next.delete(name);
     else next.add(name);
 
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(location.split('?')[1]);
     if (next.size > 0) {
       params.set('biomarkers', Array.from(next).join(','));
     } else {
       params.delete('biomarkers');
     }
-    setSearchParams(params, { replace: true });
+    const newSearch = params.toString();
+    const basePath = location.split('?')[0];
+    setLocation(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
   };
 
   if (isLoading) {
