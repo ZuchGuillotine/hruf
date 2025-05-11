@@ -154,7 +154,7 @@ export async function down(db: PostgresJsDatabase) {
 }
 
 // Execute migration if running directly
-if (require.main === module) {
+if (import.meta.url === new URL(process.argv[1], 'file:').href) {
   import('postgres').then(async ({ default: postgres }) => {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL environment variable not set');
