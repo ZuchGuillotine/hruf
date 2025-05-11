@@ -18,7 +18,7 @@ interface BiomarkerHistoryChartProps {
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
   const chartData = React.useMemo(() => {
-    // Get all unique dates
+    // Get all unique dates across all series
     const dates = Array.from(
       new Set(series.flatMap(s => s.points.map(p => p.testDate)))
     ).sort();
@@ -39,7 +39,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
 
   if (series.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-center h-64 bg-white rounded-lg">
         <p className="text-gray-500">Select biomarkers to view their trends</p>
       </div>
     );
@@ -82,9 +82,9 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
               key={s.name}
               type="monotone"
               dataKey={s.name}
-              stroke={CHART_COLORS[s.category || 'other']}
+              stroke={CHART_COLORS[s.category as keyof typeof CHART_COLORS] || CHART_COLORS.other}
               strokeWidth={2}
-              dot={false}
+              dot={true}
               activeDot={{ r: 6, strokeWidth: 1 }}
               name={`${s.name} (${s.unit})`}
             />
