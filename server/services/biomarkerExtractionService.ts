@@ -61,53 +61,53 @@ const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerC
     category: 'metabolic'
   },
   hemoglobinA1c: {
-    pattern: /(?:HbA1c|Hemoglobin A1c|A1C):\s*(\d+(?:\.\d+)?)\s*(%|mmol\/mol)/i,
+    pattern: /(?:HbA1c|Hemoglobin A1c|A1C)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(%|mmol\/mol)/i,
     category: 'metabolic'
   },
   insulin: {
-    pattern: /(?:Insulin|Fasting Insulin):\s*(\d+(?:\.\d+)?)\s*(µIU\/mL|pmol\/L)/i,
+    pattern: /(?:Insulin|Fasting Insulin)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µIU\/mL|pmol\/L)/i,
     category: 'metabolic'
   },
 
   // Thyroid Panel
   tsh: {
-    pattern: /(?:TSH|Thyroid Stimulating Hormone):\s*(\d+(?:\.\d+)?)\s*(mIU\/L|µIU\/mL)/i,
+    pattern: /(?:TSH|Thyroid Stimulating Hormone)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mIU\/L|µIU\/mL)/i,
     category: 'thyroid'
   },
   t4: {
-    pattern: /(?:T4|Free T4|Thyroxine):\s*(\d+(?:\.\d+)?)\s*(ng\/dL|pmol\/L)/i,
+    pattern: /(?:T4|Free T4|Thyroxine)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/dL|pmol\/L)/i,
     category: 'thyroid'
   },
   t3: {
-    pattern: /(?:T3|Free T3|Triiodothyronine):\s*(\d+(?:\.\d+)?)\s*(pg\/mL|pmol\/L)/i,
+    pattern: /(?:T3|Free T3|Triiodothyronine)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
     category: 'thyroid'
   },
 
   // Vitamins
   vitaminD: {
-    pattern: /(?:Vitamin D|25-OH Vitamin D|25-Hydroxyvitamin D|25(OH)D):\s*(\d+(?:\.\d+)?)\s*(ng\/mL|nmol\/L)/i,
+    pattern: /(?:Vitamin D|25-OH Vitamin D|25-Hydroxyvitamin D|25\(OH\)D)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
     category: 'vitamin'
   },
   vitaminB12: {
-    pattern: /(?:Vitamin B12|B12|Cobalamin):\s*(\d+(?:\.\d+)?)\s*(pg\/mL|pmol\/L)/i,
+    pattern: /(?:Vitamin B12|B12|Cobalamin)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
     category: 'vitamin'
   },
   folate: {
-    pattern: /(?:Folate|Folic Acid|Vitamin B9):\s*(\d+(?:\.\d+)?)\s*(ng\/mL|nmol\/L)/i,
+    pattern: /(?:Folate|Folic Acid|Vitamin B9)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
     category: 'vitamin'
   },
 
   // Minerals
   ferritin: {
-    pattern: /(?:Ferritin):\s*(\d+(?:\.\d+)?)\s*(ng\/mL|µg\/L)/i,
+    pattern: /(?:Ferritin)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|µg\/L)/i,
     category: 'mineral'
   },
   iron: {
-    pattern: /(?:Iron|Serum Iron):\s*(\d+(?:\.\d+)?)\s*(µg\/dL|µmol\/L)/i,
+    pattern: /(?:Iron|Serum Iron)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µg\/dL|µmol\/L)/i,
     category: 'mineral'
   },
   magnesium: {
-    pattern: /(?:Magnesium|Mg):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    pattern: /(?:Magnesium|Mg)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
     category: 'mineral'
   },
 
