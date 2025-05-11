@@ -542,17 +542,24 @@ export class BiomarkerExtractionService {
         parseDate: baseMetadata.parseDate || undefined
       };
 
-      // Update with transaction to ensure atomicity
-      await db.transaction(async (tx) => {
-        await tx
-          .update(labResults)
-          .set({ metadata: updatedMetadata })
-          .where(eq(labResults.id, labResultId));
-      });
+      // Direct update without transaction
+      await db
+        .update(labResults)
+        .set({ metadata: updatedMetadata })
+        .where(eq(labResults.id, labResultId));
 
-      logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
+      // Verify the update
+      const [verifyResult] = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.id, labResultId))
+        .limit(1);
+
+      logger.info(`Metadata update result for lab ${labResultId}:`, {
         biomarkerCount: biomarkerResults.parsedBiomarkers.length,
-        labResultId
+        hasBiomarkers: !!verifyResult?.metadata?.biomarkers,
+        biomarkerData: verifyResult?.metadata?.biomarkers,
+        updateTime: new Date().toISOString()
       });
     } else {
       logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
