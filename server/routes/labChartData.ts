@@ -1,13 +1,14 @@
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
-import { labResults } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { labResults, biomarkerResults } from '../../db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import logger from '../utils/logger';
 
 const router = express.Router();
 
 const querySchema = z.object({
+  biomarkers: z.string().optional().transform(val => val?.split(',').filter(Boolean) || []),
   page: z
     .string()
     .optional()
@@ -18,16 +19,28 @@ const querySchema = z.object({
     .optional()
     .transform((val) => parseInt(val ?? '50', 10))
     .refine((n) => n > 0 && n <= 100, { message: 'pageSize must be between 1 and 100' }),
-  biomarker: z.string().optional(),
 });
 
-type ChartEntry = {
-  name: string;
-  value: number;
-  unit: string;
-  testDate: string;
-  category?: string;
-};
+async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
+  return db
+    .select({
+      name: biomarkerResults.name,
+      value: biomarkerResults.value,
+      unit: biomarkerResults.unit,
+      testDate: biomarkerResults.testDate,
+      category: biomarkerResults.category,
+      status: biomarkerResults.status
+    })
+    .from(biomarkerResults)
+    .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
+    .where(
+      and(
+        eq(labResults.userId, userId),
+        biomarkerNames.length > 0 ? inArray(biomarkerResults.name, biomarkerNames) : undefined
+      )
+    )
+    .orderBy(biomarkerResults.testDate);
+}
 
 router.get('/', async (req, res) => {
   try {
@@ -39,58 +52,27 @@ router.get('/', async (req, res) => {
     }
 
     // Validate & coerce query params
-    const { page, pageSize, biomarker } = querySchema.parse(req.query);
+    const { biomarkers, page, pageSize } = querySchema.parse(req.query);
     const offset = (page - 1) * pageSize;
 
-    // Get lab results with biomarker data
-    const results = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.userId, req.user.id))
-      .orderBy(labResults.uploadedAt, 'desc');
+    // Get biomarker data
+    const data = await getBiomarkerChartData(req.user.id, biomarkers);
 
-    // Log the retrieved data for debugging
-    logger.info(`Retrieved ${results.length} lab results for user ${req.user.id}`, {
+    logger.info('Retrieved biomarker chart data:', {
       userId: req.user.id,
-      resultCount: results.length
-    });
-
-    // Extract and flatten biomarkers
-    const data: ChartEntry[] = results.flatMap(lab => {
-      const biomarkers = lab.metadata?.biomarkers?.parsedBiomarkers;
-      if (!Array.isArray(biomarkers)) return [];
-
-      return biomarkers
-        .filter(b => !biomarker || b.name === biomarker)
-        .map(b => ({
-          name: b.name,
-          value: typeof b.value === 'number' ? b.value : Number(b.value),
-          unit: b.unit,
-          testDate: b.testDate || lab.uploadedAt.toISOString(),
-          category: b.category
-        }));
-    });
-
-    // Check if we have any biomarkers
-    const hasBiomarkers = data.length > 0;
-
-    // Apply pagination after all processing
-    const paginatedData = data.slice(offset, offset + pageSize);
-
-    logger.info('Retrieved lab chart data:', {
-      userId: req.user.id,
-      resultCount: results.length,
       biomarkerCount: data.length,
-      hasBiomarkers,
+      requestedBiomarkers: biomarkers,
       page,
-      pageSize,
-      requestedBiomarker: biomarker
+      pageSize
     });
+
+    // Apply pagination
+    const paginatedData = data.slice(offset, offset + pageSize);
 
     res.json({
       success: true,
       data: paginatedData,
-      hasBiomarkers,
+      hasBiomarkers: data.length > 0,
       pagination: {
         page,
         pageSize,
@@ -99,7 +81,7 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Error retrieving lab chart data:', {
+    logger.error('Error retrieving biomarker chart data:', {
       userId: req.user?.id,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
@@ -107,42 +89,27 @@ router.get('/', async (req, res) => {
 
     res.status(400).json({
       success: false,
-      error: 'Failed to retrieve lab chart data',
+      error: 'Failed to retrieve biomarker chart data',
       data: []
     });
   }
 });
 
-export default router;
-
-
-
-// GET /api/biomarkers/trends
 router.get('/trends', async (req, res) => {
   try {
     const biomarkerNames = req.query.names ? String(req.query.names).split(',') : [];
 
-    // Get all lab results for user
-    const results = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.userId, req.user!.id))
-      .orderBy(labResults.uploadedAt);
+    const data = await getBiomarkerChartData(req.user!.id, biomarkerNames);
 
     // Process and aggregate trends
     const trends = biomarkerNames.map(name => {
-      const series = results.flatMap(lab => {
-        const biomarkers = lab.metadata?.biomarkers?.parsedBiomarkers;
-        if (!Array.isArray(biomarkers)) return [];
-
-        const biomarker = biomarkers.find(b => b.name === name);
-        if (!biomarker) return [];
-
-        return [{
-          date: biomarker.testDate || lab.uploadedAt.toISOString(),
-          value: typeof biomarker.value === 'number' ? biomarker.value : Number(biomarker.value)
-        }];
-      }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const series = data
+        .filter(b => b.name === name)
+        .map(b => ({
+          date: b.testDate.toISOString(),
+          value: b.value
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       return {
         name,
@@ -175,3 +142,5 @@ router.get('/trends', async (req, res) => {
     });
   }
 });
+
+export default router;
