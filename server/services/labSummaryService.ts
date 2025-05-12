@@ -98,6 +98,14 @@ class LabSummaryService {
 
           // Wait for biomarker extraction before updating metadata
           const biomarkerResults = await biomarkerPromise;
+          
+          // Explicitly process biomarkers and store them in the database
+          try {
+            await biomarkerExtractionService.processLabResult(labResultId);
+            logger.info(`Successfully processed biomarkers for PDF lab ${labResultId}`);
+          } catch (error) {
+            logger.error(`Error processing biomarkers for PDF lab ${labResultId}:`, error);
+          }
 
           // Single metadata update that includes both parsed text and biomarkers
           await db

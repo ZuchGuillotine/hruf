@@ -1,0 +1,1265 @@
+/**
+    * @description      : Service for extracting and validating biomarkers from lab reports
+    * @author           : 
+    * @group            : 
+    * @created          : 07/05/2025 - 22:56:18
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 07/05/2025
+    * - Author          : 
+    * - Modification    : Enhanced regex patterns and added more biomarkers
+**/
+import { z } from 'zod';
+import { openai } from '../openai';
+import logger from '../utils/logger';
+import { db } from '../../db';
+import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import type { InsertBiomarkerResult } from '../../db/schema';
+
+interface Biomarker {
+  name: string;
+  value: number | string; // Allow both number and string values for flexibility
+  unit: string;
+  category: string;
+  referenceRange?: string;
+  testDate: Date | string; // Allow both Date object and string dates
+  source?: string; // Optional source field
+  extractionMethod?: string; // Alternative field for extraction method
+  status?: string; // Add status field for High/Low/Normal
+  confidence?: number | string; // Allow both number and string for confidence
+  sourceText?: string | null; // Allow null values
+}
+
+// Zod schema for biomarker validation - More flexible to reduce validation failures
+const BiomarkerSchema = z.object({
+  name: z.string().min(1),
+  // More flexible value handling - allow string or number and convert to number
+  value: z.union([
+    z.number(),
+    z.string().transform(val => {
+      const parsed = Number(val);
+      if (isNaN(parsed)) {
+        logger.warn(`Failed to parse biomarker value as number: ${val}`);
+        return 0; // Fallback value to prevent pipeline failure
+      }
+      return parsed;
+    })
+  ]),
+  unit: z.string().min(1),
+  // More flexible category enum with proper error handling
+  category: z.string()
+    .transform(val => {
+      const validCategories = ['lipid', 'metabolic', 'thyroid', 'vitamin', 
+        'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other'];
+      if (validCategories.includes(val.toLowerCase())) {
+        return val.toLowerCase();
+      }
+      logger.warn(`Invalid biomarker category: ${val}. Defaulting to 'other'`);
+      return 'other';
+    }),
+  referenceRange: z.string().optional(),
+  // More flexible date handling with better error recovery
+  testDate: z.union([
+    z.date(),
+    z.string().transform(dateStr => {
+      try {
+        // Handle ISO strings
+        if (/^\d{4}-\d{2}-\d{2}T/.test(dateStr)) {
+          return new Date(dateStr);
+        }
+        // Handle YYYY-MM-DD format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return new Date(`${dateStr}T00:00:00.000Z`);
+        }
+        // Handle MM/DD/YYYY format
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+          const [month, day, year] = dateStr.split('/');
+          return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`);
+        }
+        // Default parsing
+        const parsed = new Date(dateStr);
+        if (isNaN(parsed.getTime())) {
+          logger.warn(`Failed to parse date: ${dateStr}. Using current date.`);
+          return new Date();
+        }
+        return parsed;
+      } catch (e) {
+        logger.warn(`Error parsing date: ${e instanceof Error ? e.message : String(e)}. Using current date.`);
+        return new Date();
+      }
+    })
+  ]),
+  // More flexible status handling
+  status: z.union([
+    z.enum(['High', 'Low', 'Normal']),
+    z.string().transform(val => {
+      const normalized = val.toLowerCase();
+      if (normalized.includes('high')) return 'High';
+      if (normalized.includes('low')) return 'Low';
+      return 'Normal';
+    })
+  ]).optional(),
+  extractionMethod: z.enum(['regex', 'llm']).default('regex'),
+  confidence: z.number().min(0).max(1).default(1.0),
+  sourceText: z.string().optional()
+});
+
+const BiomarkersArraySchema = z.array(BiomarkerSchema);
+
+type BiomarkerCategory = 'lipid' | 'metabolic' | 'thyroid' | 'vitamin' | 'mineral' | 'blood' | 'liver' | 'kidney' | 'hormone' | 'other';
+
+// Comprehensive biomarker regex patterns
+const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerCategory }> = {
+  // Lipid Panel
+  cholesterol: {
+    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
+    category: 'lipid'
+  },
+  hdl: {
+    pattern: /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    category: 'lipid'
+  },
+  ldl: {
+    pattern: /(?:LDL|LDL-C|LDL Cholesterol|Low-Density Lipoprotein):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    category: 'lipid'
+  },
+  triglycerides: {
+    pattern: /(?:Triglycerides|TG):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    category: 'lipid'
+  },
+  vldl: {
+    pattern: /(?:VLDL|VLDL-C|Very Low-Density Lipoprotein):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    category: 'lipid'
+  },
+
+  // Metabolic Panel
+  glucose: {
+    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
+    category: 'metabolic'
+  },
+  hemoglobinA1c: {
+    pattern: /(?:HbA1c|Hemoglobin A1c|A1C)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(%|mmol\/mol)/i,
+    category: 'metabolic'
+  },
+  insulin: {
+    pattern: /(?:Insulin|Fasting Insulin)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µIU\/mL|pmol\/L)/i,
+    category: 'metabolic'
+  },
+
+  // Thyroid Panel
+  tsh: {
+    pattern: /(?:TSH|Thyroid Stimulating Hormone)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mIU\/L|µIU\/mL)/i,
+    category: 'thyroid'
+  },
+  t4: {
+    pattern: /(?:T4|Free T4|Thyroxine)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/dL|pmol\/L)/i,
+    category: 'thyroid'
+  },
+  t3: {
+    pattern: /(?:T3|Free T3|Triiodothyronine)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
+    category: 'thyroid'
+  },
+
+  // Vitamins
+  vitaminD: {
+    pattern: /(?:Vitamin D|25-OH Vitamin D|25-Hydroxyvitamin D|25\(OH\)D)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
+    category: 'vitamin'
+  },
+  vitaminB12: {
+    pattern: /(?:Vitamin B12|B12|Cobalamin)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
+    category: 'vitamin'
+  },
+  folate: {
+    pattern: /(?:Folate|Folic Acid|Vitamin B9)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
+    category: 'vitamin'
+  },
+
+  // Minerals
+  ferritin: {
+    pattern: /(?:Ferritin)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|µg\/L)/i,
+    category: 'mineral'
+  },
+  iron: {
+    pattern: /(?:Iron|Serum Iron)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µg\/dL|µmol\/L)/i,
+    category: 'mineral'
+  },
+  magnesium: {
+    pattern: /(?:Magnesium|Mg)\s*(?:Normal range:[^]*?)?\s*(?:\d+(?:\.\d+)?[^]*?)?(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
+    category: 'mineral'
+  },
+
+  // Blood Count
+  hemoglobin: {
+    pattern: /(?:Hemoglobin|Hgb|Hb):\s*(\d+(?:\.\d+)?)\s*(g\/dL|g\/L)/i,
+    category: 'blood'
+  },
+  hematocrit: {
+    pattern: /(?:Hematocrit|Hct):\s*(\d+(?:\.\d+)?)\s*(%)/i,
+    category: 'blood'
+  },
+  platelets: {
+    pattern: /(?:Platelets|PLT):\s*(\d+(?:\.\d+)?)\s*(K\/µL|10³\/µL)/i,
+    category: 'blood'
+  },
+
+  // Liver Function
+  alt: {
+    pattern: /(?:ALT|Alanine Transaminase|SGPT):\s*(\d+(?:\.\d+)?)\s*(U\/L|IU\/L)/i,
+    category: 'liver'
+  },
+  ast: {
+    pattern: /(?:AST|Aspartate Transaminase|SGOT):\s*(\d+(?:\.\d+)?)\s*(U\/L|IU\/L)/i,
+    category: 'liver'
+  },
+  alkalinePhosphatase: {
+    pattern: /(?:Alkaline Phosphatase|ALP):\s*(\d+(?:\.\d+)?)\s*(U\/L|IU\/L)/i,
+    category: 'liver'
+  },
+
+  // Kidney Function
+  creatinine: {
+    pattern: /(?:Creatinine|Cr):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|µmol\/L)/i,
+    category: 'kidney'
+  },
+  bun: {
+    pattern: /(?:BUN|Blood Urea Nitrogen|Urea):\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)/i,
+    category: 'kidney'
+  },
+  egfr: {
+    pattern: /(?:eGFR|Estimated GFR|Glomerular Filtration Rate):\s*(\d+(?:\.\d+)?)\s*(mL\/min\/1.73m²)/i,
+    category: 'kidney'
+  },
+
+  // Hormones
+  cortisol: {
+    pattern: /(?:Cortisol):\s*(\d+(?:\.\d+)?)\s*(µg\/dL|nmol\/L)/i,
+    category: 'hormone'
+  },
+  testosterone: {
+    pattern: /(?:Testosterone|Total Testosterone):\s*(\d+(?:\.\d+)?)\s*(ng\/dL|nmol\/L)/i,
+    category: 'hormone'
+  },
+  estradiol: {
+    pattern: /(?:Estradiol|E2):\s*(\d+(?:\.\d+)?)\s*(pg\/mL|pmol\/L)/i,
+    category: 'hormone'
+  }
+};
+
+export class BiomarkerExtractionService {
+  private async extractWithRegex(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
+    const results: z.infer<typeof BiomarkerSchema>[] = [];
+    logger.info('Starting regex extraction with text:', { 
+      textLength: text.length,
+      textSample: text.substring(0, 500), // Log first 500 chars
+      patterns: Object.keys(BIOMARKER_PATTERNS) 
+    });
+
+    // Extract test date with more flexible patterns
+    const datePatterns = [
+      /(?:Date|Collection Date|Report Date|Test Date):\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
+      /(?:Date|Collection Date|Report Date|Test Date):\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
+      /(?:Date|Collection Date|Report Date|Test Date):\s*(\w+\s+\d{1,2},?\s+\d{4})/i
+    ];
+
+    let testDate: string | undefined;
+    for (const pattern of datePatterns) {
+      const dateMatch = text.match(pattern);
+      if (dateMatch) {
+        try {
+          testDate = new Date(dateMatch[1]).toISOString();
+          logger.info('Found test date with regex:', { date: testDate, pattern: pattern.toString() });
+          break;
+        } catch (e) {
+          logger.warn('Failed to parse date:', { date: dateMatch[1], error: e instanceof Error ? e.message : String(e) });
+        }
+      }
+    }
+
+    // Extract reference ranges
+    const referenceRangePattern = /(?:Reference Range|Normal Range|Reference Values?):\s*([^\.]+)/i;
+    const referenceRangeMatch = text.match(referenceRangePattern);
+    const referenceRange = referenceRangeMatch ? referenceRangeMatch[1].trim() : undefined;
+    if (referenceRange) {
+      logger.info('Found reference range:', { range: referenceRange });
+    }
+
+    // Track matches and validation results
+    let totalMatches = 0;
+    let validationFailures = 0;
+
+    for (const [name, { pattern, category }] of Object.entries(BIOMARKER_PATTERNS)) {
+      const match = text.match(pattern);
+      logger.debug('Pattern matching attempt:', {
+        biomarker: name,
+        pattern: pattern.toString(),
+        matched: !!match,
+        matchValue: match ? match[1] : null,
+        matchGroups: match ? match.groups : null,
+        surroundingText: match ? text.substring(Math.max(0, text.indexOf(match[0]) - 50), Math.min(text.length, text.indexOf(match[0]) + match[0].length + 50)) : null
+      });
+      if (match) {
+        totalMatches++;
+        const [_, value, unit] = match;
+        logger.info('Regex match found:', { 
+          biomarker: name,
+          rawValue: value,
+          unit: unit,
+          category
+        });
+
+        try {
+          const parsedValue = parseFloat(value);
+          if (isNaN(parsedValue)) {
+            logger.warn('Failed to parse biomarker value as number:', {
+              biomarker: name,
+              rawValue: value
+            });
+            validationFailures++;
+            continue;
+          }
+
+          const biomarker = {
+            name,
+            value: parsedValue,
+            unit,
+            testDate,
+            referenceRange,
+            category,
+            source: 'regex'
+          };
+
+          try {
+            const validated = BiomarkerSchema.parse(biomarker);
+            results.push(validated);
+            logger.info('Successfully validated biomarker:', {
+              biomarker: name,
+              value: parsedValue,
+              unit
+            });
+          } catch (validationError) {
+            validationFailures++;
+            logger.warn('Zod validation failed for biomarker:', {
+              biomarker: name,
+              error: validationError instanceof Error ? validationError.message : String(validationError),
+              issues: validationError instanceof z.ZodError ? validationError.issues : undefined
+            });
+          }
+        } catch (parseError) {
+          validationFailures++;
+          logger.warn('Error processing biomarker value:', {
+            biomarker: name,
+            error: parseError instanceof Error ? parseError.message : String(parseError)
+          });
+        }
+      }
+    }
+
+    logger.info('Regex extraction complete:', {
+      totalMatches,
+      validationFailures,
+      successfulExtractions: results.length,
+      biomarkersFound: results.map(r => r.name)
+    });
+
+    return results;
+  }
+
+  private async extractWithLLM(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
+    try {
+      logger.info('Starting LLM extraction with text length:', { textLength: text.length });
+
+      const functions = [{
+        name: "extract_lab_biomarkers",
+        description: "Extract biomarkers from medical lab report text with precise values and units",
+        parameters: {
+          type: "object",
+          properties: {
+            biomarkers: {
+              type: "array",
+              description: "Array of biomarkers extracted from lab report. Each must have name, value, unit, and category.",
+              items: {
+                type: "object",
+                required: ["name", "value", "unit", "category"],
+                properties: {
+                  name: { 
+                    type: "string",
+                    description: "Name of the biomarker (e.g., 'Glucose', 'Cholesterol')"
+                  },
+                  value: { 
+                    type: "number",
+                    description: "Numeric value of the biomarker measurement"
+                  },
+                  unit: { 
+                    type: "string",
+                    description: "Unit of measurement (e.g., 'mg/dL', 'mmol/L'). Must not be empty.",
+                    minLength: 1
+                  },
+                  referenceRange: { 
+                    type: "string",
+                    description: "Reference range for this biomarker (e.g., '70-99 mg/dL')"
+                  },
+                  testDate: { 
+                    type: "string", 
+                    description: "ISO date format (YYYY-MM-DD)",
+                    pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  category: { 
+                    type: "string", 
+                    description: "Category of biomarker",
+                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"]
+                  },
+                  status: { 
+                    type: "string",
+                    description: "Status of biomarker value relative to reference range",
+                    enum: ["High", "Low", "Normal"]
+                  }
+                }
+              }
+            }
+          },
+          required: ["biomarkers"]
+        }
+      }];
+
+      // Enhanced system prompt to ensure proper JSON output with explicit requirements
+      const systemPrompt = `You are a precise medical lab report parser. Extract biomarkers with these strict requirements:
+
+CRITICAL RULES:
+1. The "unit" field MUST NOT be empty - it must contain a valid unit string
+2. If a unit is not clearly specified, use a standard unit for that biomarker type
+3. The "value" field MUST be a valid number (integer or decimal)
+4. Skip ANY biomarker where value or unit cannot be determined
+5. Every biomarker MUST have name, value, unit, and category fields
+
+FORMAT REQUIREMENTS:
+- Convert all numeric values to valid numbers (never return null values)
+- If a value is "pending" or "not available", SKIP that biomarker entirely
+- Include units exactly as written in the document
+- Capture any reference ranges when available
+- Use only these status values: "High", "Low", "Normal"
+- Use only these category values: "lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"
+- Format dates as YYYY-MM-DD
+- If test date is not available, omit the testDate field completely
+
+COMMON UNITS TO USE WHEN NOT SPECIFIED:
+- Cholesterol, HDL, LDL: "mg/dL"
+- Glucose: "mg/dL"
+- Hemoglobin: "g/dL"
+- Sodium, Potassium: "mmol/L"
+- Vitamin D: "ng/mL" 
+- TSH: "mIU/L"
+- T3, T4: "ng/dL"
+
+Here are examples of valid biomarker formats:
+{
+  "name": "Cholesterol",
+  "value": 200,
+  "unit": "mg/dL",
+  "category": "lipid",
+  "status": "Normal", 
+  "referenceRange": "100-199 mg/dL",
+  "testDate": "2025-05-01"
+}
+
+DO NOT include any biomarker without a valid unit.
+DO NOT include biomarkers with empty strings for name, unit, or category.
+DO NOT include biomarkers with null or undefined values.
+DO NOT include any explanation text in your response - ONLY the JSON object.`;
+
+      // Use the newer model with response_format JSON option for more reliable JSON output
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-2024-11-20",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: text
+          }
+        ],
+        functions,
+        function_call: { name: "extract_lab_biomarkers" },
+        temperature: 0.3, // Lower temperature for more reliable output
+        response_format: { type: "json_object" } // Request JSON format explicitly
+      });
+
+      // Log full raw response for debugging
+      const rawArgs = completion.choices[0]?.message?.function_call?.arguments;
+      logger.info('Raw LLM response:', { 
+        contentLength: rawArgs?.length,
+        contentPreview: rawArgs?.substring(0, 400), // Log more content for debugging
+        finishReason: completion.choices[0]?.finish_reason,
+        modelUsed: completion.model,
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens
+      });
+
+      const funcCall = completion.choices[0]?.message?.function_call;
+      if (!funcCall?.arguments) {
+        logger.error('No function_call arguments returned from LLM');
+        return [];
+      }
+
+      try {
+        // Sanitize the JSON string before parsing
+        let sanitizedArgs = funcCall.arguments.trim();
+        // Handle case where the model outputs extra text around the JSON
+        if (!sanitizedArgs.startsWith('{')) {
+          const jsonStart = sanitizedArgs.indexOf('{');
+          if (jsonStart >= 0) {
+            sanitizedArgs = sanitizedArgs.substring(jsonStart);
+          }
+        }
+        
+        let parsed;
+        try {
+          parsed = JSON.parse(sanitizedArgs);
+        } catch (parseError) {
+          logger.error('JSON parse error, attempting to fix malformed JSON:', {
+            error: parseError instanceof Error ? parseError.message : String(parseError),
+            rawArgs: sanitizedArgs.substring(0, 200)
+          });
+          
+          // Try harder to extract valid JSON if parsing fails
+          const jsonMatch = sanitizedArgs.match(/\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}/);
+          if (jsonMatch) {
+            try {
+              parsed = JSON.parse(jsonMatch[0]);
+              logger.info('Successfully extracted JSON using regex');
+            } catch (regexParseError) {
+              logger.error('Failed to extract JSON with regex, trying alternative approach', {
+                error: regexParseError instanceof Error ? regexParseError.message : String(regexParseError)
+              });
+              
+              // Last resort: try to manually construct the biomarker JSON by fixing common issues
+              try {
+                // Look for a biomarkers array with a more permissive pattern
+                const biomarkersMatch = sanitizedArgs.match(/"biomarkers"\s*:\s*\[(.*?)\]/s);
+                if (biomarkersMatch && biomarkersMatch[1]) {
+                  // Extract what looks like individual biomarker objects
+                  const objectRegex = /\{[^{}]*\}/g;
+                  const biomarkerObjects = biomarkersMatch[1].match(objectRegex) || [];
+                  
+                  // Try to parse each biomarker object individually
+                  const validBiomarkers = [];
+                  for (const objStr of biomarkerObjects) {
+                    try {
+                      const biomarker = JSON.parse(objStr);
+                      // Only add if it has the minimum required fields with valid values
+                      if (biomarker.name && biomarker.value !== undefined && biomarker.unit && biomarker.category) {
+                        validBiomarkers.push(biomarker);
+                      }
+                    } catch (e) {
+                      // Skip invalid biomarker objects
+                      continue;
+                    }
+                  }
+                  
+                  if (validBiomarkers.length > 0) {
+                    parsed = { biomarkers: validBiomarkers };
+                    logger.info('Successfully reconstructed biomarkers array from fragments', {
+                      biomarkerCount: validBiomarkers.length
+                    });
+                  } else {
+                    logger.warn('No valid biomarker objects found in fragments');
+                    parsed = { biomarkers: [] };
+                  }
+                } else {
+                  logger.warn('No biomarkers array pattern found');
+                  parsed = { biomarkers: [] };
+                }
+              } catch (finalError) {
+                logger.error('All JSON recovery approaches failed', {
+                  error: finalError instanceof Error ? finalError.message : String(finalError)
+                });
+                return [];
+              }
+            }
+          } else {
+            // Final attempt: look for any array of objects that might be biomarkers
+            const arrayMatch = sanitizedArgs.match(/\[(.*)\]/s);
+            if (arrayMatch && arrayMatch[1]) {
+              try {
+                const arrayContent = '[' + arrayMatch[1] + ']';
+                const biomarkersArray = JSON.parse(arrayContent);
+                
+                if (Array.isArray(biomarkersArray) && biomarkersArray.length > 0) {
+                  parsed = { biomarkers: biomarkersArray };
+                  logger.info('Extracted biomarkers directly from array pattern', {
+                    biomarkerCount: biomarkersArray.length
+                  });
+                } else {
+                  parsed = { biomarkers: [] };
+                }
+              } catch (arrayParseError) {
+                logger.error('Failed to parse potential array content', {
+                  error: arrayParseError instanceof Error ? arrayParseError.message : String(arrayParseError)
+                });
+                parsed = { biomarkers: [] };
+              }
+            } else {
+              logger.warn('No valid JSON structure found');
+              parsed = { biomarkers: [] };
+            }
+          }
+        }
+
+        if (!parsed || !parsed.biomarkers || !Array.isArray(parsed.biomarkers)) {
+          logger.error('Invalid or missing biomarkers array in function response', {
+            parsedType: typeof parsed,
+            hasBiomarkers: parsed ? 'biomarkers' in parsed : false,
+            biomarkersType: parsed && parsed.biomarkers ? typeof parsed.biomarkers : 'undefined'
+          });
+          return [];
+        }
+
+        logger.info('Successfully parsed LLM function response:', {
+          biomarkerCount: parsed.biomarkers.length,
+          sampleBiomarker: parsed.biomarkers[0],
+          finishReason: completion.choices[0]?.finish_reason
+        });
+
+        // Pre-process biomarkers to ensure they match our schema before validation
+        // More strict preprocessing to filter out invalid entries completely
+        const preprocessedBiomarkers = parsed.biomarkers
+          .filter((b: any) => {
+            // Strictly validate required fields - all must exist and have proper values
+            if (!b.name || typeof b.name !== 'string' || b.name.trim() === '') {
+              logger.warn('Skipping biomarker with missing/invalid name', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            if (b.value === undefined || b.value === null || 
+                (typeof b.value !== 'number' && isNaN(parseFloat(String(b.value))))) {
+              logger.warn('Skipping biomarker with missing/invalid value', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            if (!b.unit || typeof b.unit !== 'string' || b.unit.trim() === '') {
+              logger.warn('Skipping biomarker with missing/invalid unit', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            if (!b.category || typeof b.category !== 'string' || b.category.trim() === '') {
+              logger.warn('Skipping biomarker with missing/invalid category', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            return true;
+          })
+          .map((b: any) => {
+            // Normalize value to number
+            let value = b.value;
+            if (typeof value === 'string') {
+              value = parseFloat(value.replace(/[^\d.-]/g, ''));
+              // Double check the value is valid after parsing
+              if (isNaN(value)) {
+                logger.warn(`Invalid numeric value even after parsing: ${b.value}, skipping biomarker`);
+                return null;
+              }
+            }
+            
+            // Normalize category to lowercase and ensure it's a valid category
+            const validCategories = ['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other'];
+            const category = (b.category && typeof b.category === 'string')
+              ? b.category.toLowerCase()
+              : 'other';
+              
+            if (!validCategories.includes(category)) {
+              logger.warn(`Invalid category "${category}" for biomarker ${b.name}, using "other" instead`);
+            }
+            
+            // Parse date or omit if invalid
+            let testDate;
+            if (b.testDate) {
+              try {
+                testDate = new Date(b.testDate);
+                if (isNaN(testDate.getTime())) {
+                  logger.warn(`Invalid date format for biomarker ${b.name}: ${b.testDate}, using current date`);
+                  testDate = new Date();
+                }
+              } catch (e) {
+                logger.warn(`Error parsing date for biomarker ${b.name}: ${e instanceof Error ? e.message : String(e)}`);
+                testDate = new Date();
+              }
+            } else {
+              // If testDate is not provided, use current date
+              testDate = new Date();
+            }
+            
+            // Ensure status is one of the allowed values if present
+            let status;
+            if (b.status) {
+              const normalizedStatus = b.status.toLowerCase();
+              if (normalizedStatus.includes('high')) {
+                status = 'High';
+              } else if (normalizedStatus.includes('low')) {
+                status = 'Low';
+              } else {
+                status = 'Normal';
+              }
+            }
+            
+            // Sanitize the unit - ensure it's not empty
+            const unit = b.unit.trim();
+            if (unit === '') {
+              logger.warn(`Empty unit after trimming for biomarker ${b.name}, skipping`);
+              return null;
+            }
+            
+            // Create a well-formatted biomarker with all required fields
+            return {
+              name: b.name.trim(),
+              value: value,
+              unit: unit,
+              category: validCategories.includes(category) ? category : 'other',
+              testDate: testDate,
+              referenceRange: b.referenceRange ? b.referenceRange.trim() : undefined,
+              status: status,
+              extractionMethod: 'llm',
+              confidence: typeof b.confidence === 'number' ? b.confidence : 0.8,
+              sourceText: b.sourceText || `${b.name}: ${b.value} ${b.unit}`
+            };
+          })
+          .filter(Boolean); // Filter out any null entries from the mapping step
+
+        if (preprocessedBiomarkers.length === 0) {
+          logger.warn('No valid biomarkers after preprocessing');
+          return [];
+        }
+
+        try {
+          // Use the more flexible schema to validate
+          const validated = BiomarkersArraySchema.parse(preprocessedBiomarkers);
+          logger.info('Successfully validated biomarkers with Zod schema', {
+            biomarkerCount: validated.length,
+            sampleValidated: validated[0]
+          });
+          return validated;
+        } catch (validationError) {
+          // If validation still fails, log the issues but return the preprocessed biomarkers anyway
+          // since our preprocessing should have already fixed most common issues
+          logger.warn('Zod validation issues with preprocessed biomarkers:', {
+            error: validationError instanceof Error ? validationError.message : String(validationError),
+            issues: validationError instanceof z.ZodError ? validationError.issues : undefined
+          });
+          
+          // Return preprocessed biomarkers even with validation errors to ensure data flow continues
+          return preprocessedBiomarkers as z.infer<typeof BiomarkerSchema>[];
+        }
+      } catch (error) {
+        logger.error('Unhandled error processing LLM response:', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          rawArgs: funcCall.arguments.substring(0, 200)
+        });
+        return [];
+      }
+    } catch (error) {
+      logger.error('Error in LLM extraction:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      return [];
+    }
+  }
+
+  async extractBiomarkers(text: string): Promise<{
+    parsedBiomarkers: z.infer<typeof BiomarkerSchema>[];
+    parsingErrors: string[];
+  }> {
+    const errors: string[] = [];
+    try {
+      logger.info('Starting biomarker extraction process');
+
+      // First try regex extraction
+      const regexResults = await this.extractWithRegex(text);
+      logger.info('Regex extraction results:', {
+        biomarkerCount: regexResults.length,
+        biomarkers: regexResults.map(r => ({ name: r.name, value: r.value, unit: r.unit }))
+      });
+
+      // Extract the text portions that weren't matched by regex
+      const unmatchedText = this.getUnmatchedText(text, regexResults);
+
+      // If we have significant unmatched text, try LLM on just that portion
+      if (unmatchedText.length > 200) { // Threshold for "significant" unmatched text
+        logger.info('Found unmatched text portions, attempting LLM extraction', {
+          unmatchedLength: unmatchedText.length
+        });
+
+        const llmResults = await this.extractWithLLM(unmatchedText);
+        logger.info('LLM extraction results from unmatched text:', {
+          biomarkerCount: llmResults.length,
+          biomarkers: llmResults.map(r => ({ name: r.name, value: r.value, unit: r.unit }))
+        });
+
+        // Merge results, preferring regex matches
+        const regexNames = new Set(regexResults.map(r => r.name));
+        const combinedResults = [
+          ...regexResults,
+          ...llmResults.filter(r => !regexNames.has(r.name))
+        ];
+
+        logger.info('Combined extraction results:', {
+          totalBiomarkers: combinedResults.length,
+          fromRegex: regexResults.length,
+          fromLLM: llmResults.length,
+          uniqueFromLLM: llmResults.filter(r => !regexNames.has(r.name)).length
+        });
+
+        return {
+          parsedBiomarkers: combinedResults,
+          parsingErrors: errors
+        };
+      }
+
+      return {
+        parsedBiomarkers: regexResults,
+        parsingErrors: errors
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      errors.push(`Failed to parse biomarkers: ${errorMessage}`);
+      logger.error('Error in biomarker extraction:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      return {
+        parsedBiomarkers: [],
+        parsingErrors: errors
+      };
+    }
+  }
+
+  async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
+    // Add debug logging before storage operation
+    logger.info(`Attempting to store ${biomarkers.length} biomarkers for lab ${labResultId}`, {
+      firstBiomarker: biomarkers[0] ? JSON.stringify({
+        name: biomarkers[0].name,
+        value: biomarkers[0].value,
+        unit: biomarkers[0].unit
+      }) : null
+    });
+    
+    try {
+      // First, make sure all existing biomarkers for this lab result are deleted
+      // This ensures we don't have conflicting or duplicate entries
+      await db.delete(biomarkerResults)
+        .where(eq(biomarkerResults.labResultId, labResultId));
+      
+      logger.info(`Deleted any existing biomarker records for lab ${labResultId}`);
+      
+      // Prepare biomarker inserts with proper data types
+      const biomarkerInserts: InsertBiomarkerResult[] = [];
+      
+      for (const b of biomarkers) {
+        try {
+          // Ensure the values are properly formatted for database
+          const numericValue = typeof b.value === 'string' ? 
+            parseFloat(b.value) : b.value;
+            
+          const numericConfidence = b.confidence !== undefined ?
+            (typeof b.confidence === 'string' ? 
+              parseFloat(b.confidence) : b.confidence) : 
+            1.0;
+          
+          // Parse test date properly ensuring a valid date object
+          let testDateValue: Date;
+          try {
+            if (b.testDate instanceof Date) {
+              testDateValue = b.testDate;
+            } else if (typeof b.testDate === 'string') {
+              testDateValue = new Date(b.testDate);
+              // Validate that the parsed date is valid
+              if (isNaN(testDateValue.getTime())) {
+                throw new Error('Invalid date string');
+              }
+            } else {
+              // Fallback to lab upload date or current date
+              testDateValue = new Date();
+            }
+          } catch (dateError) {
+            logger.warn(`Error parsing test date for biomarker ${b.name}, using current date:`, {
+              providedDate: b.testDate,
+              error: dateError instanceof Error ? dateError.message : String(dateError)
+            });
+            testDateValue = new Date();
+          }
+          
+          // Only add valid biomarkers with proper numeric values
+          if (!isNaN(numericValue) && b.name && b.unit) {
+            biomarkerInserts.push({
+              labResultId,
+              name: b.name,
+              // Convert to string for PostgreSQL numeric type
+              value: String(numericValue), 
+              unit: b.unit,
+              category: b.category || 'other',
+              referenceRange: b.referenceRange,
+              testDate: testDateValue,
+              status: b.status || null,
+              extractionMethod: b.source || 'regex',
+              // Handle confidence as numeric
+              confidence: isNaN(numericConfidence) ? null : String(numericConfidence), 
+              metadata: {
+                sourceText: b.sourceText || undefined,
+                extractionTimestamp: new Date().toISOString(),
+                validationStatus: 'validated'
+              }
+            });
+          } else {
+            logger.warn(`Skipping invalid biomarker: ${b.name} with value ${b.value}`);
+          }
+        } catch (biomarkerError) {
+          logger.error(`Error formatting biomarker for database: ${b.name}`, {
+            error: biomarkerError instanceof Error ? biomarkerError.message : String(biomarkerError),
+            value: b.value,
+            valueType: typeof b.value
+          });
+        }
+      }
+
+      if (biomarkerInserts.length === 0) {
+        logger.warn(`No valid biomarker inserts were prepared for lab ${labResultId}`);
+        return;
+      }
+
+      logger.info(`Prepared ${biomarkerInserts.length} biomarker inserts with proper conversion:`, {
+        sampleValue: biomarkerInserts[0]?.value,
+        valueType: typeof biomarkerInserts[0]?.value,
+        sampleDate: biomarkerInserts[0]?.testDate,
+        sampleDataPoint: JSON.stringify({
+          name: biomarkerInserts[0]?.name,
+          value: biomarkerInserts[0]?.value,
+          unit: biomarkerInserts[0]?.unit,
+          category: biomarkerInserts[0]?.category
+        })
+      });
+
+      // Insert biomarkers in chunks to avoid transaction timeout or payload size issues
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
+        const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
+        try {
+          await db.insert(biomarkerResults).values(chunk);
+          logger.info(`Inserted biomarker chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length/CHUNK_SIZE)}`);
+        } catch (chunkError) {
+          logger.error(`Error inserting biomarker chunk ${Math.floor(i/CHUNK_SIZE) + 1}:`, {
+            error: chunkError instanceof Error ? chunkError.message : String(chunkError),
+            firstBiomarkerInChunk: JSON.stringify({
+              name: chunk[0]?.name,
+              value: chunk[0]?.value,
+              testDate: chunk[0]?.testDate
+            })
+          });
+          throw chunkError;
+        }
+      }
+
+      logger.info(`Successfully stored all ${biomarkerInserts.length} biomarker records for lab ${labResultId}`);
+    } catch (error) {
+      // Enhanced error logging
+      logger.error(`Error storing biomarker data for lab ${labResultId}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        biomarkerCount: biomarkers.length
+      });
+      throw error;
+    }
+      logger.error(`Failed to store biomarkers for lab result ${labResultId}`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        firstBiomarkerSample: biomarkers[0] ? JSON.stringify({
+          name: biomarkers[0].name,
+          value: biomarkers[0].value,
+          unit: biomarkers[0].unit,
+          category: biomarkers[0].category
+        }) : null
+      });
+      throw error;
+    }
+  }
+
+  async processLabResult(labResultId: number): Promise<void> {
+    try {
+      logger.info(`Starting biomarker processing for lab result ${labResultId}`);
+      
+      // Get the lab result from the database
+      const [labResult] = await db
+        .select()
+        .from(labResults)
+        .where(eq(labResults.id, labResultId))
+        .limit(1);
+
+      if (!labResult) {
+        logger.error(`Lab result with ID ${labResultId} not found`);
+        return;
+      }
+
+      // Get the text content from metadata
+      const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
+
+      if (!textContent) {
+        logger.error(`No text content found for lab result ${labResultId}`);
+        // Create a processing status record with error
+        await db.insert(biomarkerProcessingStatus)
+          .values({
+            labResultId,
+            status: 'error',
+            errorMessage: 'No text content available for biomarker extraction',
+            startedAt: new Date(),
+            completedAt: new Date(),
+            metadata: {
+              processingTime: 0
+            }
+          })
+          .onConflictDoUpdate({
+            target: biomarkerProcessingStatus.labResultId,
+            set: {
+              status: 'error',
+              errorMessage: 'No text content available for biomarker extraction',
+              completedAt: new Date()
+            }
+          });
+        return;
+      }
+
+      // Create or update processing status to indicate we're starting
+      await db.insert(biomarkerProcessingStatus)
+        .values({
+          labResultId,
+          status: 'processing',
+          startedAt: new Date(),
+          metadata: {}
+        })
+        .onConflictDoUpdate({
+          target: biomarkerProcessingStatus.labResultId,
+          set: {
+            status: 'processing',
+            startedAt: new Date(),
+            errorMessage: null
+          }
+        });
+
+      // Extract biomarkers from the text
+      const startTime = Date.now();
+      const biomarkerResults = await this.extractBiomarkers(textContent);
+      const processingTime = Date.now() - startTime;
+
+      // Log the extraction results
+      logger.info(`Biomarker extraction results for lab ${labResultId}:`, {
+        biomarkerCount: biomarkerResults.parsedBiomarkers.length,
+        biomarkers: biomarkerResults.parsedBiomarkers.map(b => ({
+          name: b.name,
+          value: b.value,
+          unit: b.unit,
+          category: b.category
+        })),
+        errors: biomarkerResults.parsingErrors,
+        processingTime
+      });
+
+      // Only update if we have extracted biomarkers
+      if (biomarkerResults.parsedBiomarkers.length > 0) {
+        // Create properly formatted biomarkers with all required fields
+        const formattedBiomarkers = biomarkerResults.parsedBiomarkers.map(b => ({
+          name: b.name,
+          value: b.value,
+          unit: b.unit,
+          category: b.category || 'other',
+          referenceRange: b.referenceRange,
+          testDate: b.testDate instanceof Date ? b.testDate : 
+                    new Date(b.testDate || labResult.uploadedAt || new Date()),
+          source: b.extractionMethod || 'regex',
+          confidence: b.confidence || 1.0,
+          sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`
+        }));
+
+        // Store the biomarkers
+        try {
+          await this.storeBiomarkers(labResultId, formattedBiomarkers);
+          logger.info(`Successfully stored ${formattedBiomarkers.length} biomarkers for lab ${labResultId}`);
+        } catch (storageError) {
+          logger.error(`Failed to store biomarkers for lab ${labResultId}:`, {
+            error: storageError instanceof Error ? storageError.message : String(storageError),
+            stack: storageError instanceof Error ? storageError.stack : undefined
+          });
+          
+          // Update processing status to indicate error
+          await db.update(biomarkerProcessingStatus)
+            .set({
+              status: 'error',
+              errorMessage: storageError instanceof Error ? storageError.message : String(storageError),
+              completedAt: new Date(),
+              metadata: {
+                processingTime,
+                regexMatches: biomarkerResults.parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
+                llmExtractions: biomarkerResults.parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length
+              }
+            })
+            .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+          
+          throw storageError;
+        }
+
+        // Update lab result metadata - but keep it lightweight to avoid overloading the metadata field
+        // Store just summary information, not all the biomarker data (which is now in the biomarker tables)
+        if (labResult.metadata) {
+          // Safely construct a biomarkers metadata object that won't overwrite other properties
+          const biomarkersMetadata = {
+            parsedBiomarkers: formattedBiomarkers.map(b => ({
+              name: b.name,
+              value: b.value,
+              unit: b.unit,
+              referenceRange: b.referenceRange,
+              category: b.category
+            })).slice(0, 5), // Only store a few as samples, not the full data
+            parsingErrors: biomarkerResults.parsingErrors,
+            extractedAt: new Date().toISOString()
+          };
+          
+          // Create an update that just modifies the biomarkers field
+          await db
+            .update(labResults)
+            .set({ 
+              metadata: {
+                ...labResult.metadata,
+                biomarkers: biomarkersMetadata
+              }
+            })
+            .where(eq(labResults.id, labResultId));
+        } else {
+          // If no metadata exists, just set a minimal object
+          await db
+            .update(labResults)
+            .set({ 
+              metadata: {
+                size: 0,
+                biomarkers: {
+                  parsedBiomarkers: [],
+                  parsingErrors: biomarkerResults.parsingErrors,
+                  extractedAt: new Date().toISOString()
+                }
+              }
+            })
+            .where(eq(labResults.id, labResultId));
+        }
+
+        // Update the processing status to completed
+        await db.update(biomarkerProcessingStatus)
+          .set({
+            status: 'completed',
+            completedAt: new Date(),
+            biomarkerCount: formattedBiomarkers.length,
+            extractionMethod: formattedBiomarkers.some(b => b.source === 'llm') ? 'hybrid' : 'regex',
+            metadata: {
+              processingTime,
+              regexMatches: formattedBiomarkers.filter(b => b.source === 'regex').length,
+              llmExtractions: formattedBiomarkers.filter(b => b.source === 'llm').length
+            }
+          })
+          .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+
+        logger.info(`Successfully processed lab result ${labResultId} with biomarker data`, {
+          biomarkerCount: formattedBiomarkers.length,
+          processingTime,
+          labResultId
+        });
+      } else {
+        logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
+        
+        // Update processing status to indicate no data found
+        await db.update(biomarkerProcessingStatus)
+          .set({
+            status: 'completed',
+            completedAt: new Date(),
+            biomarkerCount: 0,
+            metadata: {
+              processingTime,
+              regexMatches: 0,
+              llmExtractions: 0,
+              retryCount: 0
+            }
+          })
+          .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+      }
+    } catch (error) {
+      logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        labResultId
+      });
+      
+      // Update processing status to indicate error
+      try {
+        await db.update(biomarkerProcessingStatus)
+          .set({
+            status: 'error',
+            errorMessage: error instanceof Error ? error.message : String(error),
+            completedAt: new Date(),
+            metadata: {
+              processingTime: 0,
+              regexMatches: 0,
+              llmExtractions: 0,
+              retryCount: 0
+            }
+          })
+          .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+      } catch (statusUpdateError) {
+        logger.error(`Failed to update processing status for ${labResultId}:`, {
+          error: statusUpdateError instanceof Error ? statusUpdateError.message : String(statusUpdateError)
+        });
+      }
+      
+      throw error;
+    }
+  }
+private getUnmatchedText(fullText: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
+    let unmatchedText = fullText;
+
+    // Sort regex patterns by their position in the text to process sequentially
+    const matchedSegments: Array<{start: number, end: number}> = [];
+
+    // Find all matched segments
+    for (const [name, { pattern }] of Object.entries(BIOMARKER_PATTERNS)) {
+      const matches = Array.from(fullText.matchAll(new RegExp(pattern, 'gi')));
+      matches.forEach(match => {
+        if (match.index !== undefined) {
+          matchedSegments.push({
+            start: match.index,
+            end: match.index + match[0].length
+          });
+        }
+      });
+    }
+
+    // Sort segments by start position
+    matchedSegments.sort((a, b) => a.start - b.start);
+
+    // Remove matched segments from the text, keeping track of unmatched portions
+    let lastEnd = 0;
+    let result = '';
+
+    matchedSegments.forEach(segment => {
+      if (segment.start > lastEnd) {
+        result += fullText.substring(lastEnd, segment.start) + ' ';
+      }
+      lastEnd = segment.end;
+    });
+
+    // Add any remaining text after the last match
+    if (lastEnd < fullText.length) {
+      result += fullText.substring(lastEnd);
+    }
+
+    return result.trim();
+  }
+}
+
+export const biomarkerExtractionService = new BiomarkerExtractionService();
+export default biomarkerExtractionService;
