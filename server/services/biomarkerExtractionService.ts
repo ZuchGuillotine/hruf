@@ -428,8 +428,13 @@ export class BiomarkerExtractionService {
 CRITICAL RULES:
 1. The "unit" field MUST NOT be empty - it must contain a valid unit string
 2. If a unit is not clearly specified, use the most appropriate standard unit (e.g., mg/dL for glucose)
-3. All "value" fields MUST be numeric only
-4. All returned data MUST comply with the function schema exactly
+3. All "value" fields MUST be numeric (convert text to numbers)
+4. Include standard reference ranges when available
+5. If the text is a summary report (already analyzed), you can still extract all valid measurements 
+6. Use the most specific biomarker name possible (e.g., "HDL" instead of just "cholesterol")
+7. For each biomarker, determine if the value is "High", "Low", or "Normal" and set the status field
+8. For testDate, use the collection date from the report when available
+9. All returned data MUST comply with the function schema exactly
 
 Extract these biomarker types:
 - Lipids: Cholesterol, LDL, HDL, Triglycerides
