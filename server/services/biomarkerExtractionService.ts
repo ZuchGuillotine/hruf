@@ -32,18 +32,21 @@ interface Biomarker {
 
 // Zod schema for biomarker validation
 const BiomarkerSchema = z.object({
-  name: z.string(),
-  value: z.number(),
-  unit: z.string(),
+  name: z.string().min(1),
+  value: z.number().or(z.string().transform(val => Number(val))),
+  unit: z.string().min(1),
+  category: z.enum(['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other']),
   referenceRange: z.string().optional(),
   testDate: z.string().transform(date => {
-    // Handle YYYY-MM-DD format by appending time
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return `${date}T00:00:00.000Z`;
     }
     return date;
-  }).optional(),
-  category: z.enum(['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other']).optional(),
+  }).pipe(z.date()),
+  status: z.enum(['High', 'Low', 'Normal']).optional(),
+  extractionMethod: z.enum(['regex', 'llm']).default('regex'),
+  confidence: z.number().min(0).max(1).default(1.0),
+  sourceText: z.string().optional()
 });
 
 const BiomarkersArraySchema = z.array(BiomarkerSchema);
