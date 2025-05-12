@@ -356,7 +356,7 @@ export class BiomarkerExtractionService {
 - Format dates as YYYY-MM-DD`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4-0613",
+        model: "gpt-4o-2024-11-20",
         messages: [
           {
             role: "system",
