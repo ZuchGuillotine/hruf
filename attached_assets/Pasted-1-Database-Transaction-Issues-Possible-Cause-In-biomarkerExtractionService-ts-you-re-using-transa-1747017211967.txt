@@ -1,0 +1,68 @@
+1. Database Transaction Issues
+Possible Cause: In biomarkerExtractionService.ts, you're using transactions when storing biomarkers. If an error occurs during the transaction, it will roll back all changes.
+Evidence:
+
+The storeBiomarkers method creates a transaction but might encounter issues during execution
+Any exceptions thrown would trigger the rollback in the catch block
+
+Solution:
+typescriptasync storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
+  // Add debug logging before transaction starts
+  logger.info(`Attempting to store ${biomarkers.length} biomarkers for lab ${labResultId}`, {
+    firstBiomarker: biomarkers[0] ? JSON.stringify(biomarkers[0]) : null
+  });
+  
+  const trx = await db.transaction();
+  try {
+    // Add more granular logging
+    logger.info(`Starting transaction for storing biomarkers for lab ${labResultId}`);
+    
+    // Check if processing status already exists
+    const [existingStatus] = await trx
+      .select()
+      .from(biomarkerProcessingStatus)
+      .where(eq(biomarkerProcessingStatus.labResultId, labResultId))
+      .limit(1);
+    
+    if (existingStatus) {
+      // Update existing status
+      await trx.update(biomarkerProcessingStatus)
+        .set({
+          status: 'processing',
+          startedAt: new Date(),
+          metadata: {
+            biomarkerCount: biomarkers.length
+          }
+        })
+        .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+    } else {
+      // Insert new status
+      await trx.insert(biomarkerProcessingStatus).values({
+        labResultId,
+        status: 'processing',
+        startedAt: new Date(),
+        metadata: {
+          biomarkerCount: biomarkers.length
+        }
+      });
+    }
+    
+    // Rest of your transaction code...
+    
+    await trx.commit();
+    logger.info(`Successfully stored biomarkers for lab result ${labResultId}`);
+  } catch (error) {
+    await trx.rollback();
+    
+    // Enhanced error logging
+    logger.error(`Failed to store biomarkers for lab result ${labResultId}`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      firstBiomarkerSample: biomarkers[0] ? JSON.stringify({
+        name: biomarkers[0].name,
+        value: biomarkers[0].value
+      }) : null
+    });
+    throw error;
+  }
+}
