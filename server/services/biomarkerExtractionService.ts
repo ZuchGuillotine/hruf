@@ -511,21 +511,48 @@ export class BiomarkerExtractionService {
   }
 
   async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
+    // Add debug logging before transaction starts
+    logger.info(`Attempting to store ${biomarkers.length} biomarkers for lab ${labResultId}`, {
+      firstBiomarker: biomarkers[0] ? JSON.stringify(biomarkers[0]) : null
+    });
+    
     const trx = await db.transaction();
     try {
-      logger.info(`Starting biomarker storage for lab result ${labResultId}`, {
-        biomarkerCount: biomarkers.length
-      });
-
-      // Update processing status
-      await trx.insert(biomarkerProcessingStatus).values({
-        labResultId,
-        status: 'processing',
-        startedAt: new Date(),
-        metadata: {
-          biomarkerCount: biomarkers.length
-        }
-      });
+      logger.info(`Starting transaction for storing biomarkers for lab ${labResultId}`);
+      
+      // Check if processing status already exists
+      const [existingStatus] = await trx
+        .select()
+        .from(biomarkerProcessingStatus)
+        .where(eq(biomarkerProcessingStatus.labResultId, labResultId))
+        .limit(1);
+      
+      if (existingStatus) {
+        // Update existing status
+        await trx.update(biomarkerProcessingStatus)
+          .set({
+            status: 'processing',
+            startedAt: new Date(),
+            metadata: {
+              biomarkerCount: biomarkers.length
+            }
+          })
+          .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+          
+        logger.info(`Updated existing processing status for lab ${labResultId}`);
+      } else {
+        // Insert new status
+        await trx.insert(biomarkerProcessingStatus).values({
+          labResultId,
+          status: 'processing',
+          startedAt: new Date(),
+          metadata: {
+            biomarkerCount: biomarkers.length
+          }
+        });
+        
+        logger.info(`Created new processing status for lab ${labResultId}`);
+      }
 
       // Store biomarkers
       const biomarkerInserts: InsertBiomarkerResult[] = biomarkers.map(b => ({
@@ -544,7 +571,9 @@ export class BiomarkerExtractionService {
         }
       }));
 
+      logger.info(`Attempting to insert ${biomarkerInserts.length} biomarker records`);
       await trx.insert(biomarkerResults).values(biomarkerInserts);
+      logger.info(`Successfully inserted biomarker records`);
 
       // Update status to completed
       await trx.update(biomarkerProcessingStatus)
@@ -561,11 +590,18 @@ export class BiomarkerExtractionService {
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
       await trx.commit();
-      logger.info(`Successfully stored biomarkers for lab result ${labResultId}`);
+      logger.info(`Successfully completed biomarker storage transaction for lab ${labResultId}`);
     } catch (error) {
       await trx.rollback();
+      
+      // Enhanced error logging
       logger.error(`Failed to store biomarkers for lab result ${labResultId}`, {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        firstBiomarkerSample: biomarkers[0] ? JSON.stringify({
+          name: biomarkers[0].name,
+          value: biomarkers[0].value
+        }) : null
       });
       throw error;
     }
