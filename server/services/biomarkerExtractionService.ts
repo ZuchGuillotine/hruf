@@ -754,7 +754,7 @@ Ignore any text not related to biomarkers.`;
       }
 
       // Get the text content from metadata
-      const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
+      const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text || labResult.metadata?.summary;
 
       if (!textContent) {
         logger.error(`No text content found for lab result ${labResultId}`);
