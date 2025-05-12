@@ -558,18 +558,23 @@ export class BiomarkerExtractionService {
       const biomarkerInserts: InsertBiomarkerResult[] = biomarkers.map(b => ({
         labResultId,
         name: b.name,
-        value: b.value,
+        value: String(b.value), // Convert to string for PostgreSQL numeric type
         unit: b.unit,
         category: b.category,
         referenceRange: b.referenceRange,
         testDate: b.testDate,
         extractionMethod: b.source,
-        confidence: b.confidence,
+        confidence: b.confidence ? String(b.confidence) : null, // Also handle confidence as numeric
         metadata: {
           sourceText: b.sourceText,
           extractionTimestamp: new Date().toISOString()
         }
       }));
+
+      logger.info(`Prepared biomarker inserts with string values:`, {
+        sampleValue: biomarkerInserts[0]?.value,
+        valueType: typeof biomarkerInserts[0]?.value
+      });
 
       logger.info(`Attempting to insert ${biomarkerInserts.length} biomarker records`);
       await trx.insert(biomarkerResults).values(biomarkerInserts);
