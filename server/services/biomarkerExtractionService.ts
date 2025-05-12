@@ -619,9 +619,7 @@ export class BiomarkerExtractionService {
         referenceRange: b.referenceRange,
         testDate: labResult.collectionDate || new Date(),
         source: 'extraction',
-        confidence: 1.0,
-        sourceText: b.sourceText,
-        extractionTimestamp: new Date().toISOString()
+        confidence: 1.0
       })));
 
       // Update lab result metadata
