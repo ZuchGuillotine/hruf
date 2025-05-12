@@ -610,17 +610,26 @@ export class BiomarkerExtractionService {
 
     // Only update if we have extracted biomarkers
     if (biomarkerResults.parsedBiomarkers.length > 0) {
-      // Store biomarkers in dedicated table with proper mapping
-      await this.storeBiomarkers(labResultId, biomarkerResults.parsedBiomarkers.map(b => ({
-        name: b.name,
-        value: b.value,
-        unit: b.unit,
-        category: b.category || 'other',
-        referenceRange: b.referenceRange,
-        testDate: labResult.collectionDate || new Date(),
-        source: 'extraction',
-        confidence: 1.0
-      })));
+      // Store biomarkers in dedicated table
+      try {
+        await this.storeBiomarkers(labResultId, biomarkerResults.parsedBiomarkers.map(b => ({
+          name: b.name,
+          value: b.value,
+          unit: b.unit,
+          category: b.category || 'other',
+          referenceRange: b.referenceRange,
+          testDate: new Date(b.testDate || labResult.collectionDate || new Date()),
+          source: b.source || 'extraction',
+          confidence: b.confidence || 1.0,
+          sourceText: b.sourceText
+        })));
+        logger.info(`Successfully stored ${biomarkerResults.parsedBiomarkers.length} biomarkers for lab ${labResultId}`);
+      } catch (error) {
+        logger.error(`Failed to store biomarkers for lab ${labResultId}:`, {
+          error: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+      }
 
       // Update lab result metadata
       const existingMetadata = labResult.metadata || {};
