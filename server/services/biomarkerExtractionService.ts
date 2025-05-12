@@ -865,6 +865,29 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
             parseFloat(b.confidence) : b.confidence) : 
           1.0;
         
+        // Parse test date properly ensuring a valid date object
+        let testDateValue: Date;
+        try {
+          if (b.testDate instanceof Date) {
+            testDateValue = b.testDate;
+          } else if (typeof b.testDate === 'string') {
+            testDateValue = new Date(b.testDate);
+            // Validate that the parsed date is valid
+            if (isNaN(testDateValue.getTime())) {
+              throw new Error('Invalid date string');
+            }
+          } else {
+            // Fallback to lab upload date or current date
+            testDateValue = new Date();
+          }
+        } catch (dateError) {
+          logger.warn(`Error parsing test date for biomarker ${b.name}, using current date:`, {
+            providedDate: b.testDate,
+            error: dateError instanceof Error ? dateError.message : String(dateError)
+          });
+          testDateValue = new Date();
+        }
+        
         return {
           labResultId,
           name: b.name,
@@ -873,14 +896,15 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
           unit: b.unit,
           category: b.category,
           referenceRange: b.referenceRange,
-          testDate: b.testDate instanceof Date ? b.testDate : new Date(),
+          testDate: testDateValue,
           status: b.status || null,
           extractionMethod: b.source || 'regex',
           // Handle confidence as numeric
           confidence: isNaN(numericConfidence) ? null : String(numericConfidence), 
           metadata: {
-            sourceText: b.sourceText || null,
-            extractionTimestamp: new Date().toISOString()
+            sourceText: b.sourceText || undefined,
+            extractionTimestamp: new Date().toISOString(),
+            validationStatus: 'validated'
           }
         };
       });
@@ -893,6 +917,7 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
       logger.info(`Prepared ${biomarkerInserts.length} biomarker inserts with proper conversion:`, {
         sampleValue: biomarkerInserts[0]?.value,
         valueType: typeof biomarkerInserts[0]?.value,
+        sampleDate: biomarkerInserts[0]?.testDate,
         sampleDataPoint: JSON.stringify({
           name: biomarkerInserts[0]?.name,
           value: biomarkerInserts[0]?.value,
@@ -905,8 +930,20 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
       const CHUNK_SIZE = 50;
       for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
         const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
-        await db.insert(biomarkerResults).values(chunk);
-        logger.info(`Inserted biomarker chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length/CHUNK_SIZE)}`);
+        try {
+          await db.insert(biomarkerResults).values(chunk);
+          logger.info(`Inserted biomarker chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length/CHUNK_SIZE)}`);
+        } catch (chunkError) {
+          logger.error(`Error inserting biomarker chunk ${Math.floor(i/CHUNK_SIZE) + 1}:`, {
+            error: chunkError instanceof Error ? chunkError.message : String(chunkError),
+            firstBiomarkerInChunk: JSON.stringify({
+              name: chunk[0]?.name,
+              value: chunk[0]?.value,
+              testDate: chunk[0]?.testDate
+            })
+          });
+          throw chunkError;
+        }
       }
 
       logger.info(`Successfully stored all ${biomarkerInserts.length} biomarker records for lab ${labResultId}`);
@@ -1080,6 +1117,7 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
             .update(labResults)
             .set({ 
               metadata: {
+                size: 0,
                 biomarkers: {
                   parsedBiomarkers: [],
                   parsingErrors: biomarkerResults.parsingErrors,
@@ -1121,7 +1159,9 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
             biomarkerCount: 0,
             metadata: {
               processingTime,
-              errorType: 'no_biomarkers_found'
+              regexMatches: 0,
+              llmExtractions: 0,
+              retryCount: 0
             }
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
@@ -1141,7 +1181,10 @@ DO NOT include any explanation text in your response - ONLY the JSON object.`;
             errorMessage: error instanceof Error ? error.message : String(error),
             completedAt: new Date(),
             metadata: {
-              errorType: 'processing_error'
+              processingTime: 0,
+              regexMatches: 0,
+              llmExtractions: 0,
+              retryCount: 0
             }
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
