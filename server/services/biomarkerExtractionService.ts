@@ -628,87 +628,92 @@ export class BiomarkerExtractionService {
         .limit(1);
 
       if (!labResult) {
-      logger.error(`Lab result with ID ${labResultId} not found`);
-      return;
-    }
+        logger.error(`Lab result with ID ${labResultId} not found`);
+        return;
+      }
 
-    // Get the text content from metadata
-    const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
+      // Get the text content from metadata
+      const textContent = labResult.metadata?.parsedText || labResult.metadata?.ocr?.text;
 
-    if (!textContent) {
-      logger.error(`No text content found for lab result ${labResultId}`);
-      return;
-    }
+      if (!textContent) {
+        logger.error(`No text content found for lab result ${labResultId}`);
+        return;
+      }
 
-    // Extract biomarkers from the text
-    const biomarkerResults = await this.extractBiomarkers(textContent);
+      // Extract biomarkers from the text
+      const biomarkerResults = await this.extractBiomarkers(textContent);
 
-    // Log the extraction results
-    logger.info(`Biomarker extraction results for lab ${labResultId}:`, {
-      biomarkerCount: biomarkerResults.parsedBiomarkers.length,
-      biomarkers: biomarkerResults.parsedBiomarkers.map(b => ({
-        name: b.name,
-        value: b.value,
-        unit: b.unit,
-        category: b.category
-      })),
-      errors: biomarkerResults.parsingErrors
-    });
+      // Log the extraction results
+      logger.info(`Biomarker extraction results for lab ${labResultId}:`, {
+        biomarkerCount: biomarkerResults.parsedBiomarkers.length,
+        biomarkers: biomarkerResults.parsedBiomarkers.map(b => ({
+          name: b.name,
+          value: b.value,
+          unit: b.unit,
+          category: b.category
+        })),
+        errors: biomarkerResults.parsingErrors
+      });
 
-    // Only update if we have extracted biomarkers
-    if (biomarkerResults.parsedBiomarkers.length > 0) {
-      // Store biomarkers in dedicated table
-      try {
-        await this.storeBiomarkers(labResultId, biomarkerResults.parsedBiomarkers.map(b => ({
+      // Only update if we have extracted biomarkers
+      if (biomarkerResults.parsedBiomarkers.length > 0) {
+        // Create properly formatted biomarkers with all required fields
+        const formattedBiomarkers = biomarkerResults.parsedBiomarkers.map(b => ({
           name: b.name,
           value: b.value,
           unit: b.unit,
           category: b.category || 'other',
           referenceRange: b.referenceRange,
-          testDate: new Date(b.testDate || labResult.collectionDate || new Date()),
-          source: b.source || 'extraction',
+          testDate: new Date(b.testDate || labResult.uploadedAt || new Date()),
+          source: b.source || (b.name.includes('LLM_') ? 'llm' : 'regex'),
           confidence: b.confidence || 1.0,
-          sourceText: b.sourceText
-        })));
-        logger.info(`Successfully stored ${biomarkerResults.parsedBiomarkers.length} biomarkers for lab ${labResultId}`);
-      } catch (error) {
-        logger.error(`Failed to store biomarkers for lab ${labResultId}:`, {
-          error: error instanceof Error ? error.message : String(error)
-        });
-        throw error;
-      }
+          sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`
+        }));
 
-      // Update lab result metadata
-      const existingMetadata = labResult.metadata || {};
-      const updatedMetadata = {
-        ...existingMetadata,
-        biomarkers: {
-          parsedBiomarkers: biomarkerResults.parsedBiomarkers,
-          parsingErrors: biomarkerResults.parsingErrors,
-          extractedAt: new Date().toISOString()
+        // Store the biomarkers
+        try {
+          await this.storeBiomarkers(labResultId, formattedBiomarkers);
+          logger.info(`Successfully stored ${formattedBiomarkers.length} biomarkers for lab ${labResultId}`);
+        } catch (storageError) {
+          logger.error(`Failed to store biomarkers for lab ${labResultId}:`, {
+            error: storageError instanceof Error ? storageError.message : String(storageError),
+            stack: storageError instanceof Error ? storageError.stack : undefined
+          });
+          throw storageError;
         }
-      };
 
-      await db
-        .update(labResults)
-        .set({ metadata: updatedMetadata })
-        .where(eq(labResults.id, labResultId));
+        // Update lab result metadata
+        const existingMetadata = labResult.metadata || {};
+        const updatedMetadata = {
+          ...existingMetadata,
+          biomarkers: {
+            parsedBiomarkers: formattedBiomarkers,
+            parsingErrors: biomarkerResults.parsingErrors,
+            extractedAt: new Date().toISOString()
+          }
+        };
 
-      logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
-        biomarkerCount: biomarkerResults.parsedBiomarkers.length,
+        await db
+          .update(labResults)
+          .set({ metadata: updatedMetadata })
+          .where(eq(labResults.id, labResultId));
+
+        logger.info(`Successfully updated lab result ${labResultId} with biomarker data`, {
+          biomarkerCount: formattedBiomarkers.length,
+          labResultId
+        });
+      } else {
+        logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
+      }
+    } catch (error) {
+      logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         labResultId
       });
-    } else {
-      logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
+      throw error;
     }
-  } catch (error) {
-    logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      labResultId
-    });
   }
-}
 private getUnmatchedText(fullText: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
     let unmatchedText = fullText;
 
