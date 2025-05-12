@@ -378,22 +378,43 @@ export class BiomarkerExtractionService {
           properties: {
             biomarkers: {
               type: "array",
+              description: "Array of biomarkers extracted from lab report. Each must have name, value, unit, and category.",
               items: {
                 type: "object",
-                required: ["name", "value", "unit"],
+                required: ["name", "value", "unit", "category"],
                 properties: {
-                  name: { type: "string" },
-                  value: { 
-                    oneOf: [
-                      { type: "number" },
-                      { type: "string" } // Allow string values that can be converted to numbers
-                    ]
+                  name: { 
+                    type: "string",
+                    description: "Name of the biomarker (e.g., 'Glucose', 'Cholesterol')"
                   },
-                  unit: { type: "string" },
-                  referenceRange: { type: "string" },
-                  testDate: { type: "string" }, // Remove format restriction for more flexibility
-                  category: { type: "string" }, // Remove enum restriction for more flexibility
-                  status: { type: "string" } // Remove enum restriction for more flexibility
+                  value: { 
+                    type: "number",
+                    description: "Numeric value of the biomarker measurement"
+                  },
+                  unit: { 
+                    type: "string",
+                    description: "Unit of measurement (e.g., 'mg/dL', 'mmol/L'). Must not be empty.",
+                    minLength: 1
+                  },
+                  referenceRange: { 
+                    type: "string",
+                    description: "Reference range for this biomarker (e.g., '70-99 mg/dL')"
+                  },
+                  testDate: { 
+                    type: "string", 
+                    description: "ISO date format (YYYY-MM-DD)",
+                    pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  category: { 
+                    type: "string", 
+                    description: "Category of biomarker",
+                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"]
+                  },
+                  status: { 
+                    type: "string",
+                    description: "Status of biomarker value relative to reference range",
+                    enum: ["High", "Low", "Normal"]
+                  }
                 }
               }
             }
@@ -402,16 +423,34 @@ export class BiomarkerExtractionService {
         }
       }];
 
-      // Enhanced system prompt to ensure proper JSON output
-      const systemPrompt = `You are a precise medical lab report parser. Extract all biomarkers with the following rules:
+      // Enhanced system prompt to ensure proper JSON output with explicit requirements
+      const systemPrompt = `You are a precise medical lab report parser. Extract biomarkers with these strict requirements:
+
+CRITICAL RULES:
+1. The "unit" field MUST NOT be empty - it must contain a valid unit string
+2. If a unit is not clearly specified, use a standard unit for that biomarker type
+3. The "value" field MUST be a valid number (integer or decimal)
+4. Skip ANY biomarker where value or unit cannot be determined
+5. Every biomarker MUST have name, value, unit, and category fields
+
+FORMAT REQUIREMENTS:
 - Convert all numeric values to valid numbers (never return null values)
-- If a value is "pending" or "not available", skip that biomarker
-- Include units exactly as written
-- Capture any reference ranges
-- Note if values are marked High/Low/Normal (use exactly these categories)
-- Categorize biomarkers into these types: lipid, metabolic, thyroid, vitamin, mineral, blood, liver, kidney, hormone, other
+- If a value is "pending" or "not available", SKIP that biomarker entirely
+- Include units exactly as written in the document
+- Capture any reference ranges when available
+- Use only these status values: "High", "Low", "Normal"
+- Use only these category values: "lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"
 - Format dates as YYYY-MM-DD
-- Ensure your output is valid JSON that can be parsed
+- If test date is not available, omit the testDate field completely
+
+COMMON UNITS TO USE WHEN NOT SPECIFIED:
+- Cholesterol, HDL, LDL: "mg/dL"
+- Glucose: "mg/dL"
+- Hemoglobin: "g/dL"
+- Sodium, Potassium: "mmol/L"
+- Vitamin D: "ng/mL" 
+- TSH: "mIU/L"
+- T3, T4: "ng/dL"
 
 Here are examples of valid biomarker formats:
 {
@@ -419,20 +458,15 @@ Here are examples of valid biomarker formats:
   "value": 200,
   "unit": "mg/dL",
   "category": "lipid",
-  "status": "Normal",
+  "status": "Normal", 
   "referenceRange": "100-199 mg/dL",
   "testDate": "2025-05-01"
 }
 
-{
-  "name": "Vitamin D",
-  "value": 35.5,
-  "unit": "ng/mL",
-  "category": "vitamin",
-  "status": "Normal",
-  "referenceRange": "30-100 ng/mL",
-  "testDate": "2025-05-01"
-}`;
+DO NOT include any biomarker without a valid unit.
+DO NOT include biomarkers with empty strings for name, unit, or category.
+DO NOT include biomarkers with null or undefined values.
+DO NOT include any explanation text in your response - ONLY the JSON object.`;
 
       // Use the newer model with response_format JSON option for more reliable JSON output
       const completion = await openai.chat.completions.create({
@@ -497,13 +531,80 @@ Here are examples of valid biomarker formats:
               parsed = JSON.parse(jsonMatch[0]);
               logger.info('Successfully extracted JSON using regex');
             } catch (regexParseError) {
-              logger.error('Failed to extract JSON with regex', {
+              logger.error('Failed to extract JSON with regex, trying alternative approach', {
                 error: regexParseError instanceof Error ? regexParseError.message : String(regexParseError)
               });
-              return [];
+              
+              // Last resort: try to manually construct the biomarker JSON by fixing common issues
+              try {
+                // Look for a biomarkers array with a more permissive pattern
+                const biomarkersMatch = sanitizedArgs.match(/"biomarkers"\s*:\s*\[(.*?)\]/s);
+                if (biomarkersMatch && biomarkersMatch[1]) {
+                  // Extract what looks like individual biomarker objects
+                  const objectRegex = /\{[^{}]*\}/g;
+                  const biomarkerObjects = biomarkersMatch[1].match(objectRegex) || [];
+                  
+                  // Try to parse each biomarker object individually
+                  const validBiomarkers = [];
+                  for (const objStr of biomarkerObjects) {
+                    try {
+                      const biomarker = JSON.parse(objStr);
+                      // Only add if it has the minimum required fields with valid values
+                      if (biomarker.name && biomarker.value !== undefined && biomarker.unit && biomarker.category) {
+                        validBiomarkers.push(biomarker);
+                      }
+                    } catch (e) {
+                      // Skip invalid biomarker objects
+                      continue;
+                    }
+                  }
+                  
+                  if (validBiomarkers.length > 0) {
+                    parsed = { biomarkers: validBiomarkers };
+                    logger.info('Successfully reconstructed biomarkers array from fragments', {
+                      biomarkerCount: validBiomarkers.length
+                    });
+                  } else {
+                    logger.warn('No valid biomarker objects found in fragments');
+                    parsed = { biomarkers: [] };
+                  }
+                } else {
+                  logger.warn('No biomarkers array pattern found');
+                  parsed = { biomarkers: [] };
+                }
+              } catch (finalError) {
+                logger.error('All JSON recovery approaches failed', {
+                  error: finalError instanceof Error ? finalError.message : String(finalError)
+                });
+                return [];
+              }
             }
           } else {
-            return [];
+            // Final attempt: look for any array of objects that might be biomarkers
+            const arrayMatch = sanitizedArgs.match(/\[(.*)\]/s);
+            if (arrayMatch && arrayMatch[1]) {
+              try {
+                const arrayContent = '[' + arrayMatch[1] + ']';
+                const biomarkersArray = JSON.parse(arrayContent);
+                
+                if (Array.isArray(biomarkersArray) && biomarkersArray.length > 0) {
+                  parsed = { biomarkers: biomarkersArray };
+                  logger.info('Extracted biomarkers directly from array pattern', {
+                    biomarkerCount: biomarkersArray.length
+                  });
+                } else {
+                  parsed = { biomarkers: [] };
+                }
+              } catch (arrayParseError) {
+                logger.error('Failed to parse potential array content', {
+                  error: arrayParseError instanceof Error ? arrayParseError.message : String(arrayParseError)
+                });
+                parsed = { biomarkers: [] };
+              }
+            } else {
+              logger.warn('No valid JSON structure found');
+              parsed = { biomarkers: [] };
+            }
           }
         }
 
@@ -523,52 +624,108 @@ Here are examples of valid biomarker formats:
         });
 
         // Pre-process biomarkers to ensure they match our schema before validation
-        const preprocessedBiomarkers = parsed.biomarkers.map((b: any) => {
-          // Ensure required fields exist
-          if (!b.name || (b.value === undefined || b.value === null) || !b.unit) {
-            logger.warn('Skipping biomarker with missing required fields', { biomarker: b });
-            return null;
-          }
-          
-          // Normalize value to number
-          let value = b.value;
-          if (typeof value === 'string') {
-            value = parseFloat(value.replace(/[^\d.-]/g, ''));
-            if (isNaN(value)) {
-              logger.warn(`Invalid numeric value: ${b.value}, using default value`);
-              value = 0;
+        // More strict preprocessing to filter out invalid entries completely
+        const preprocessedBiomarkers = parsed.biomarkers
+          .filter((b: any) => {
+            // Strictly validate required fields - all must exist and have proper values
+            if (!b.name || typeof b.name !== 'string' || b.name.trim() === '') {
+              logger.warn('Skipping biomarker with missing/invalid name', { biomarker: JSON.stringify(b) });
+              return false;
             }
-          }
-          
-          // Set default category if missing
-          const category = (b.category && typeof b.category === 'string')
-            ? b.category.toLowerCase()
-            : 'other';
             
-          // Ensure valid date or use current date
-          let testDate;
-          try {
-            testDate = b.testDate ? new Date(b.testDate) : new Date();
-            if (isNaN(testDate.getTime())) {
+            if (b.value === undefined || b.value === null || 
+                (typeof b.value !== 'number' && isNaN(parseFloat(String(b.value))))) {
+              logger.warn('Skipping biomarker with missing/invalid value', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            if (!b.unit || typeof b.unit !== 'string' || b.unit.trim() === '') {
+              logger.warn('Skipping biomarker with missing/invalid unit', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            if (!b.category || typeof b.category !== 'string' || b.category.trim() === '') {
+              logger.warn('Skipping biomarker with missing/invalid category', { biomarker: JSON.stringify(b) });
+              return false;
+            }
+            
+            return true;
+          })
+          .map((b: any) => {
+            // Normalize value to number
+            let value = b.value;
+            if (typeof value === 'string') {
+              value = parseFloat(value.replace(/[^\d.-]/g, ''));
+              // Double check the value is valid after parsing
+              if (isNaN(value)) {
+                logger.warn(`Invalid numeric value even after parsing: ${b.value}, skipping biomarker`);
+                return null;
+              }
+            }
+            
+            // Normalize category to lowercase and ensure it's a valid category
+            const validCategories = ['lipid', 'metabolic', 'thyroid', 'vitamin', 'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other'];
+            const category = (b.category && typeof b.category === 'string')
+              ? b.category.toLowerCase()
+              : 'other';
+              
+            if (!validCategories.includes(category)) {
+              logger.warn(`Invalid category "${category}" for biomarker ${b.name}, using "other" instead`);
+            }
+            
+            // Parse date or omit if invalid
+            let testDate;
+            if (b.testDate) {
+              try {
+                testDate = new Date(b.testDate);
+                if (isNaN(testDate.getTime())) {
+                  logger.warn(`Invalid date format for biomarker ${b.name}: ${b.testDate}, using current date`);
+                  testDate = new Date();
+                }
+              } catch (e) {
+                logger.warn(`Error parsing date for biomarker ${b.name}: ${e instanceof Error ? e.message : String(e)}`);
+                testDate = new Date();
+              }
+            } else {
+              // If testDate is not provided, use current date
               testDate = new Date();
             }
-          } catch (e) {
-            testDate = new Date();
-          }
-          
-          return {
-            name: b.name,
-            value: value,
-            unit: b.unit,
-            category: category,
-            testDate: testDate,
-            referenceRange: b.referenceRange || undefined,
-            status: b.status || undefined,
-            extractionMethod: 'llm',
-            confidence: typeof b.confidence === 'number' ? b.confidence : 0.8,
-            sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`
-          };
-        }).filter(Boolean);
+            
+            // Ensure status is one of the allowed values if present
+            let status;
+            if (b.status) {
+              const normalizedStatus = b.status.toLowerCase();
+              if (normalizedStatus.includes('high')) {
+                status = 'High';
+              } else if (normalizedStatus.includes('low')) {
+                status = 'Low';
+              } else {
+                status = 'Normal';
+              }
+            }
+            
+            // Sanitize the unit - ensure it's not empty
+            const unit = b.unit.trim();
+            if (unit === '') {
+              logger.warn(`Empty unit after trimming for biomarker ${b.name}, skipping`);
+              return null;
+            }
+            
+            // Create a well-formatted biomarker with all required fields
+            return {
+              name: b.name.trim(),
+              value: value,
+              unit: unit,
+              category: validCategories.includes(category) ? category : 'other',
+              testDate: testDate,
+              referenceRange: b.referenceRange ? b.referenceRange.trim() : undefined,
+              status: status,
+              extractionMethod: 'llm',
+              confidence: typeof b.confidence === 'number' ? b.confidence : 0.8,
+              sourceText: b.sourceText || `${b.name}: ${b.value} ${b.unit}`
+            };
+          })
+          .filter(Boolean); // Filter out any null entries from the mapping step
 
         if (preprocessedBiomarkers.length === 0) {
           logger.warn('No valid biomarkers after preprocessing');
