@@ -203,18 +203,33 @@ class LabSummaryService {
             fullLength: text.length
           });
 
-          // Extract biomarkers in parallel with OCR processing
-          const biomarkerPromise = biomarkerExtractionService.extractBiomarkers(textContent)
-            .then(async (biomarkerResults) => {
-              logger.info(`Extracted biomarkers from OCR for lab result ${labResultId}`, {
-                biomarkerCount: biomarkerResults.parsedBiomarkers.length
-              });
-              return biomarkerResults;
+          // First update the metadata with text content
+          await db
+            .update(labResults)
+            .set({
+              metadata: {
+                ...labResult.metadata,
+                ocr: {
+                  text: textContent,
+                  processedAt: new Date().toISOString(),
+                  confidence: confidence * 100,
+                  engineVersion: 'google-vision',
+                  parameters: {
+                    language: 'en',
+                    mode: 'document'
+                  }
+                }
+              }
             })
-            .catch(error => {
-              logger.error(`Error extracting biomarkers from OCR for lab result ${labResultId}:`, error);
-              return null;
-            });
+            .where(eq(labResults.id, labResultId));
+
+          // Then explicitly process biomarkers and await it
+          try {
+            await biomarkerExtractionService.processLabResult(labResultId);
+            logger.info(`Successfully processed biomarkers for lab ${labResultId}`);
+          } catch (error) {
+            logger.error(`Error processing biomarkers for lab ${labResultId}:`, error);
+          }
 
           // Store OCR text in metadata with standardized structure
           await db
