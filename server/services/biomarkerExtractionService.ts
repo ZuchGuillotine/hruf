@@ -266,7 +266,8 @@ export class BiomarkerExtractionService {
             unit,
             testDate,
             referenceRange,
-            category
+            category,
+            source: 'regex'
           };
 
           try {
@@ -397,7 +398,12 @@ export class BiomarkerExtractionService {
           finishReason: completion.choices[0]?.finish_reason
         });
 
-        const validated = BiomarkersArraySchema.parse(parsed.biomarkers);
+        const validated = BiomarkersArraySchema.parse(
+          parsed.biomarkers.map(b => ({
+            ...b,
+            source: 'llm'
+          }))
+        );
         logger.info('Successfully validated biomarkers with Zod schema', {
           biomarkerCount: validated.length,
           sampleValidated: validated[0]
