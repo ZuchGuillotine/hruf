@@ -58,18 +58,14 @@ export function useLLM() {
                   const data: ChatResponse = JSON.parse(line.slice(6));
                   console.log('Parsed SSE data:', data);
 
-                  // Check if the user has reached their daily limit
-                  if (data.limitReached) {
-                    setLimitReached(true);
-                    onStream?.('', data); // Pass empty response chunk but include the full data
-                    return { response: '' };
-                  }
-
                   if (data.response) {
                     fullResponse += data.response;
                     onStream?.(data.response, data);
                   } else if (data.error) {
-                    onStream?.('', data);
+                    throw new Error(data.error);
+                  } else if (data.limitReached) {
+                    setLimitReached(true);
+                    throw new Error('Usage limit reached');
                   }
                 } catch (e) {
                   console.error('Error parsing SSE data:', e);
