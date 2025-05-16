@@ -53,9 +53,9 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       throw new Error('User not found');
     }
 
-    // Monthly limits are now handled by tierLimitService
-    if (!userRecord[0]) {
-      throw new Error('User not found');
+    const canUseAI = await tierLimitService.canUseAI(userId);
+    if (!canUseAI) {
+      throw new Error('Monthly chat limit reached. Please upgrade your plan to continue using AI features.');
     }
 
     // Define the correct model for qualitative chat

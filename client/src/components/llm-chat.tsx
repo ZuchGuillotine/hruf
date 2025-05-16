@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +23,7 @@ export default function LLMChat() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -66,6 +66,7 @@ export default function LLMChat() {
     setInput('');
     setStreamingResponse('');
     setIsLoading(true);
+    setError(null);
 
     try {
       // Add initial empty assistant message
@@ -98,7 +99,7 @@ export default function LLMChat() {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
@@ -126,7 +127,7 @@ export default function LLMChat() {
                 { role: 'assistant', content: fullResponse }
               ];
               setMessages(updatedMessages);
-              
+
               // Automatically save the chat
               (async () => {
                 try {
@@ -151,7 +152,7 @@ export default function LLMChat() {
                 { role: 'assistant', content: "I don't have a response for that." }
               ]);
             }
-            
+
             setStreamingResponse('');
           } else {
             const newContent = data.response || '';
@@ -169,26 +170,26 @@ export default function LLMChat() {
 
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
-        
+
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
           eventSourceRef.current = null;
         }
-        
+
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
-        
+
         setIsLoading(false);
 
         // Preserve user message and handle error state
         const errorMessage = "I apologize, but there was an error connecting to the AI service. Please try again.";
-        
+
         setMessages((prev) => {
           const userMessages = prev.filter(msg => msg.role === 'user');
           const lastUserMessage = userMessages[userMessages.length - 1];
-          
+
           return [
             ...prev.filter(msg => msg.role === 'user'),
             { role: 'assistant', content: fullResponse || errorMessage }
@@ -204,7 +205,7 @@ export default function LLMChat() {
         ...prev.slice(0, prev.length - 1),
         { role: 'assistant', content: "I'm sorry, an unexpected error occurred. Please try again." }
       ]);
-      
+
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -248,6 +249,15 @@ export default function LLMChat() {
     <div className="flex flex-col h-full">
       {limitReached && (
         <LimitReachedNotification onClose={resetLimitReached} />
+      )}
+      {error && error.includes('monthly chat limit') ? (
+        <LimitReachedNotification message={error} onClose={() => setError(null)} />
+      ) : (
+        error && (
+          <div className="text-red-500 mb-4">
+            {error}
+          </div>
+        )
       )}
       <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
