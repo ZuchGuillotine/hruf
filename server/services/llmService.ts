@@ -53,11 +53,9 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       throw new Error('User not found');
     }
 
-    const chatCount = await getUserDailyChatCount(userId);
-    console.log('Daily chat count:', { userId, chatCount, isPro: userRecord[0].isPro });
-
-    if (!userRecord[0].isPro && chatCount >= 5) {
-      throw new Error('Daily chat limit reached. Please upgrade to Pro to continue.');
+    // Monthly limits are now handled by tierLimitService
+    if (!userRecord[0]) {
+      throw new Error('User not found');
     }
 
     // Define the correct model for qualitative chat
