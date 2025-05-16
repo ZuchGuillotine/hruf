@@ -1,5 +1,20 @@
 
-## Latest Status (May 11, 2025)
+## Latest Status (May 12, 2025)
+
+### Biomarker Extraction Fix
+- Successfully fixed biomarker extraction pipeline issues:
+  - ✅ Identified root cause: extraction service was looking for data in wrong metadata fields
+  - ✅ Modified biomarkerExtractionService.ts to use metadata.summary as additional source
+  - ✅ Enhanced LLM extraction prompts to better handle summary-formatted lab data
+  - ✅ Successfully extracted and stored 5 key biomarkers from lab results (Glucose, BUN, Creatinine, ALT, AST)
+  - ✅ Verified data storage in biomarker_results table with proper validation and reference ranges
+  - ✅ Complete extraction-to-storage pipeline now functioning correctly
+- Technical Improvements:
+  - Added better handling of various text source locations (raw OCR, parsed text, summaries)
+  - Enhanced validation before database insertion
+  - Fixed system prompt in LLM extraction to provide clearer guidance
+  - Improved error handling throughout extraction pipeline
+  - Added proper logging for extraction methods and results
 
 ## Latest Status (May 11, 2025)
 

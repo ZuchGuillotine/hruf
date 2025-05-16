@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+### Fixed (May 12, 2025)
+- Biomarker Extraction Pipeline Issue:
+  - Fixed critical issue with biomarker extraction service not finding text content
+  - Modified biomarkerExtractionService.ts to use metadata.summary as additional data source
+  - Enhanced LLM extraction prompt to better handle summary-formatted lab data
+  - Successfully extracted and stored biomarkers from lab summaries (vs. 0 previously)
+  - Fixed system prompt formatting error in extraction template
+  - Improved logging throughout extraction pipeline for better debugging
+  - Enhanced validation checks before database insertion
+  - Added better detection of various text content locations (OCR, parsed text, summaries)
+  - Successfully verified complete extraction-to-storage pipeline functionality
+
 ### Added (May 11, 2025)
 - Biomarker Tables Implementation:
   - Added three new tables to schema:
