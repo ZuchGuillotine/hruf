@@ -67,9 +67,8 @@ export default function LLMChat() {
     setIsLoading(true);
 
     try {
-      // Add initial empty assistant message that will be updated during streaming
-      const updatedMessages = [...messages, userMessage, { role: 'assistant', content: '' }];
-      setMessages(updatedMessages);
+      // Add user message and initial empty assistant message
+      setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
 
       const encodedMessage = encodeURIComponent(userMessage.content);
       const eventSource = new EventSource(`/api/chat?message=${encodedMessage}`);
@@ -156,8 +155,10 @@ export default function LLMChat() {
             const newContent = data.response || '';
             fullResponse += newContent;
             setStreamingResponse((prev) => prev + newContent);
-            const assistantMessage = { role: 'assistant', content: fullResponse };
-            setMessages((prev) => [...prev.slice(0, prev.length - 1), assistantMessage]);
+            setMessages((prev) => [
+              ...prev.slice(0, prev.length - 1),
+              { role: 'assistant', content: fullResponse }
+            ]);
           }
         } catch (parseError) {
           console.error('Error parsing SSE data:', parseError, 'raw data:', event.data);
