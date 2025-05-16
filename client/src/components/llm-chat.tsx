@@ -60,12 +60,14 @@ export default function LLMChat() {
       content: input.trim(),
     };
 
+    // Add user message to chat history
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setStreamingResponse('');
     setIsLoading(true);
 
     try {
+      // Add initial empty assistant message that will be updated during streaming
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
       const encodedMessage = encodeURIComponent(userMessage.content);
