@@ -60,15 +60,17 @@ export default function LLMChat() {
       content: input.trim(),
     };
 
-    // Add user message to chat history only once
-    setMessages((prev) => [...prev, userMessage]);
+    // Create a stable message array with user message
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput('');
     setStreamingResponse('');
     setIsLoading(true);
 
     try {
       // Add initial empty assistant message
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+      const assistantMessage = { role: 'assistant', content: '' };
+      setMessages([...updatedMessages, assistantMessage]);
 
       const encodedMessage = encodeURIComponent(userMessage.content);
       const eventSource = new EventSource(`/api/chat?message=${encodedMessage}`);
@@ -180,26 +182,18 @@ export default function LLMChat() {
         
         setIsLoading(false);
 
-        // Keep existing messages and add error message if no response received
-        if (!fullResponse) {
-          const errorMessage = "I apologize, but there was an error connecting to the AI service. Please try again.";
-          setMessages((prev) => {
-            const lastMessage = prev[prev.length - 1];
-            if (lastMessage.role === 'assistant' && !lastMessage.content) {
-              return [...prev.slice(0, -1), { role: 'assistant', content: errorMessage }];
-            }
-            return [...prev, { role: 'assistant', content: errorMessage }];
-          });
-        } else {
-          // Ensure partial response is preserved
-          setMessages((prev) => {
-            const lastMessage = prev[prev.length - 1];
-            if (lastMessage.role === 'assistant') {
-              return [...prev.slice(0, -1), { role: 'assistant', content: fullResponse }];
-            }
-            return [...prev, { role: 'assistant', content: fullResponse }];
-          });
-        }
+        // Preserve user message and handle error state
+        const errorMessage = "I apologize, but there was an error connecting to the AI service. Please try again.";
+        
+        setMessages((prev) => {
+          const userMessages = prev.filter(msg => msg.role === 'user');
+          const lastUserMessage = userMessages[userMessages.length - 1];
+          
+          return [
+            ...prev.filter(msg => msg.role === 'user'),
+            { role: 'assistant', content: fullResponse || errorMessage }
+          ];
+        });
       };
 
     } catch (error: any) {
