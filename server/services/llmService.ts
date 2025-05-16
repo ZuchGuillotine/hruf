@@ -5,6 +5,7 @@ import { eq, gte, and } from 'drizzle-orm/expressions';
 import { db } from '../../db';
 import { qualitativeLogs, users } from '../../db/schema';
 import { chatWithAI as openAIChatWithAI, MODELS } from "../openai";
+import { tierLimitService } from './tierLimitService';
 
 /**
  * Get the count of chat interactions for a user for the current day
