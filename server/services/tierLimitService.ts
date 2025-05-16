@@ -12,11 +12,11 @@ interface TierLimits {
 
 const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   free: {
-    aiInteractions: 0,
+    aiInteractions: 100, // 100 chats per month for free tier
     labUploads: 0
   },
   core: {
-    aiInteractions: 100,
+    aiInteractions: 100, // 100 chats per month for core tier
     labUploads: 3
   },
   pro: {
@@ -44,17 +44,20 @@ export const tierLimitService = {
     // Check if we need to reset the monthly counter
     const now = new Date();
     const resetDate = user.aiInteractionsReset ? new Date(user.aiInteractionsReset) : null;
-    if (!resetDate || now > resetDate) {
-      await db.update(users)
-        .set({ 
-          aiInteractionsCount: 0,
-          aiInteractionsReset: new Date(now.getFullYear(), now.getMonth() + 1, 1)
-        })
-        .where(eq(users.id, userId));
-      return true;
-    }
+    // Set reset date to first day of next month if not set
+  if (!resetDate || now > resetDate) {
+    const firstDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    await db.update(users)
+      .set({ 
+        aiInteractionsCount: 0,
+        aiInteractionsReset: firstDayNextMonth
+      })
+      .where(eq(users.id, userId));
+    return true;
+  }
 
-    return (user.aiInteractionsCount || 0) < tierLimits.aiInteractions;
+  // Check against monthly limit based on subscription tier
+  return (user.aiInteractionsCount || 0) < tierLimits.aiInteractions;
   },
 
   async incrementAICount(userId: number): Promise<void> {
