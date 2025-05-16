@@ -60,15 +60,15 @@ export default function LLMChat() {
       content: input.trim(),
     };
 
-    // Add user message to chat history
+    // Add user message to chat history only once
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setStreamingResponse('');
     setIsLoading(true);
 
     try {
-      // Add user message and initial empty assistant message
-      setMessages((prev) => [...prev, userMessage, { role: 'assistant', content: '' }]);
+      // Add initial empty assistant message
+      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
       const encodedMessage = encodeURIComponent(userMessage.content);
       const eventSource = new EventSource(`/api/chat?message=${encodedMessage}`);
@@ -180,16 +180,25 @@ export default function LLMChat() {
         
         setIsLoading(false);
 
+        // Keep existing messages and add error message if no response received
         if (!fullResponse) {
-          setMessages((prev) => [
-            ...prev.slice(0, prev.length - 1),
-            { role: 'assistant', content: "I apologize, but there was an error connecting to the AI service. Please try again." }
-          ]);
+          const errorMessage = "I apologize, but there was an error connecting to the AI service. Please try again.";
+          setMessages((prev) => {
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage.role === 'assistant' && !lastMessage.content) {
+              return [...prev.slice(0, -1), { role: 'assistant', content: errorMessage }];
+            }
+            return [...prev, { role: 'assistant', content: errorMessage }];
+          });
         } else {
-          setMessages((prev) => [
-            ...prev.slice(0, prev.length - 1),
-            { role: 'assistant', content: fullResponse }
-          ]);
+          // Ensure partial response is preserved
+          setMessages((prev) => {
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage.role === 'assistant') {
+              return [...prev.slice(0, -1), { role: 'assistant', content: fullResponse }];
+            }
+            return [...prev, { role: 'assistant', content: fullResponse }];
+          });
         }
       };
 
