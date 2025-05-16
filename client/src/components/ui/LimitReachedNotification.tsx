@@ -1,14 +1,15 @@
+
 import React from 'react';
+import { useLocation } from 'wouter';
 import { Alert, AlertTitle, AlertDescription } from './alert';
 import { Button } from './button';
-import { useNavigate } from 'react-router-dom';
 
 interface LimitReachedNotificationProps {
   message: string;
 }
 
 export function LimitReachedNotification({ message }: LimitReachedNotificationProps) {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   return (
     <Alert variant="warning" className="mb-4">
@@ -16,7 +17,7 @@ export function LimitReachedNotification({ message }: LimitReachedNotificationPr
       <AlertDescription className="mt-2">
         <p>{message}</p>
         <Button
-          onClick={() => navigate('/subscription-page')}
+          onClick={() => setLocation('/subscription-page')}
           variant="outline"
           className="mt-2"
         >
