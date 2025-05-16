@@ -8,7 +8,7 @@ interface LimitReachedNotificationProps {
   message: string;
 }
 
-export function LimitReachedNotification({ message }: LimitReachedNotificationProps) {
+const LimitReachedNotification = ({ message }: LimitReachedNotificationProps) => {
   const [, setLocation] = useLocation();
 
   return (
@@ -26,4 +26,6 @@ export function LimitReachedNotification({ message }: LimitReachedNotificationPr
       </AlertDescription>
     </Alert>
   );
-}
+};
+
+export default LimitReachedNotification;
