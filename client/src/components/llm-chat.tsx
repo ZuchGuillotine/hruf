@@ -69,9 +69,9 @@ export default function LLMChat() {
     setError(null);
 
     try {
-      // Add initial empty assistant message
+      // Add initial empty assistant message while preserving user message
       const assistantMessage = { role: 'assistant', content: '' };
-      setMessages([...updatedMessages, assistantMessage]);
+      setMessages([...messages, userMessage, assistantMessage]);
 
       const encodedMessage = encodeURIComponent(userMessage.content);
       const eventSource = new EventSource(`/api/chat?message=${encodedMessage}`);
@@ -307,3 +307,4 @@ export default function LLMChat() {
     </div>
   );
 }
+```
