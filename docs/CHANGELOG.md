@@ -918,3 +918,21 @@ No database migration required. These changes are purely logical and affect only
   - Environment-aware debug configuration
   - Non-blocking error handling
   - Integration with qualitative and query services
+
+### Local Development & Testing Migration (May 2025)
+- Migrated project from Replit to local development environment
+- Transferred environment variables from Replit Secrets to a local .env file (root directory, gitignored)
+- Verified .env encoding (UTF-8, no BOM) and formatting (no quotes around values)
+- Ensured dotenv is loaded at the very top of the entry point (server/index.ts)
+- Discovered ESM import order can cause env vars to be undefined if db/index.ts is imported before dotenv.config() runs
+- As a workaround, added dotenv.config() to db/index.ts to guarantee env vars are loaded for local dev
+- Documented this workaround and recommended future refactor for single-source env loading
+- Successfully started dev server and connected to database locally
+
+### Changed (May 17, 2025)
+- Google OAuth Configuration:
+  - Modified OAuth setup to use production credentials for both environments
+  - Updated callback URL handling to use 127.0.0.1 instead of 0.0.0.0 for local development
+  - Enhanced server configuration to listen on appropriate host based on environment
+  - Improved logging for OAuth configuration and callback handling
+  - Fixed Google OAuth redirect URI compatibility issues

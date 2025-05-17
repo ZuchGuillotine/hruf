@@ -1,11 +1,23 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 17/05/2025 - 00:17:24
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 17/05/2025
+    * - Author          : 
+    * - Modification    : 
+**/
+import dotenv from 'dotenv';
+dotenv.config();
+console.log("DATABASE_URL after dotenv.config():", process.env.DATABASE_URL);
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { db } from '../db';
@@ -23,7 +35,17 @@ import path from "path";
 import stripeRoutes from './routes/stripe';
 import adminRoutes from './routes/admin';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const app = express();
+
+// Add type for custom error
+interface CustomError extends Error {
+  status?: number;
+  statusCode?: number;
+  code?: string;
+}
 
 // Essential middleware
 app.set('trust proxy', 1);
@@ -124,7 +146,7 @@ app.use('/api/admin', adminRoutes);
 const server = registerRoutes(app);
 
 // Global error handling middleware
-app.use('/api', (err: any, _req: Request, res: Response, _next: NextFunction) => {
+app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
@@ -172,21 +194,22 @@ async function initializeAndStart() {
 // Start server with improved error handling and retries
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
 
 async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
+  const host = app.get('env') === 'production' ? '0.0.0.0' : '127.0.0.1';
   for (let port = startPort; port < startPort + maxRetries; port++) {
     try {
-      await new Promise((resolve, reject) => {
-        const testServer = server.listen(port, "0.0.0.0", () => {
+      await new Promise<void>((resolve, reject) => {
+        const testServer = server.listen(port, host, () => {
           testServer.close();
-          resolve(port);
+          resolve();
         });
         testServer.on('error', reject);
       });
       return port;
-    } catch (err) {
-      if (err.code !== 'EADDRINUSE' || port === startPort + maxRetries - 1) {
+    } catch (err: unknown) {
+      const error = err as { code?: string };
+      if (error.code !== 'EADDRINUSE' || port === startPort + maxRetries - 1) {
         throw err;
       }
       console.log(`Port ${port} is in use, trying next port...`);
@@ -198,17 +221,19 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 async function startServer() {
   try {
     const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
-    server.listen(port, "0.0.0.0", () => {
-      log(`Server started successfully on port ${port}`);
+    const host = app.get('env') === 'production' ? '0.0.0.0' : '127.0.0.1';
+    server.listen(port, host, () => {
+      log(`Server started successfully on ${host}:${port}`);
     });
 
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
     process.on('SIGINT', handleShutdown);
-  } catch (err) {
+  } catch (err: unknown) {
+    const error = err as { message?: string; code?: string };
     console.error('Failed to start server:', {
-      error: err.message,
-      code: err.code,
+      error: error.message || 'Unknown error',
+      code: error.code || 'UNKNOWN',
       timestamp: new Date().toISOString()
     });
     process.exit(1);
@@ -234,8 +259,8 @@ async function handleShutdown() {
       console.error('Forced shutdown due to timeout');
       process.exit(1);
     }, 10000); // 10 seconds timeout
-  } catch (error) {
-    console.error('Error during shutdown:', error);
+  } catch (error: unknown) {
+    console.error('Error during shutdown:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
 }

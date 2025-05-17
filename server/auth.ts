@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 17/05/2025 - 01:14:44
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 17/05/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { type Express } from "express";
@@ -18,7 +30,7 @@ const getCallbackURL = () => {
   const baseUrl = process.env.BASE_URL || 
                  (process.env.REPL_SLUG && process.env.REPL_OWNER 
                   ? `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER}.repl.co` 
-                  : 'http://0.0.0.0:5000');
+                  : 'http://127.0.0.1:5000');
 
   return `${baseUrl}/auth/google/callback`;
 };
@@ -133,9 +145,9 @@ export function setupAuth(app: Express) {
 
   // Google OAuth Strategy Configuration
   const isProd = app.get("env") === "production";
-  const GOOGLE_CLIENT_ID = isProd ? process.env.GOOGLE_CLIENT_ID_PROD : process.env.GOOGLE_CLIENT_ID_TEST;
-  const GOOGLE_CLIENT_SECRET = isProd ? process.env.GOOGLE_CLIENT_SECRET_PROD : process.env.GOOGLE_CLIENT_SECRET_TEST;
-  //const CALLBACK_URL = getCallbackURL(app);
+  // Use production credentials for both environments
+  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID_PROD;
+  const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET_PROD;
   const CALLBACK_URL = getCallbackURL();
 
   // Enhanced logging for OAuth configuration

@@ -1,4 +1,3 @@
-
 # Development Guide
 
 ## Testing Framework
@@ -134,29 +133,15 @@ These practices help ensure reliable and maintainable database migrations.
 1. Install dependencies: `npm install`
 2. Set up environment variables
 
-
-## Testing Troubleshooting Guide
-
-### Common Test Issues and Solutions
-
-#### OpenAI Integration Testing
-When testing OpenAI integration:
-- Use `import OpenAI from "openai"` (default import) instead of named imports to avoid constructor errors
-- Set `NODE_ENV=test` to use mock keys in test environment
-- Use Jest's `mockImplementation` for embedding generation and API calls
-
-#### Embedding Service Testing
-For embedding service tests:
-- Mock the `initialize` method before testing other functionality
-- Ensure embedding dimensions match OpenAI's expected format (1536 for text-embedding-ada-002)
-- Clean up test embeddings from the database after tests complete
-
-#### Service Initialization Testing
-When testing service initialization:
-- Mock all dependent services with proper initialize/shutdown methods
-- Verify environment-specific behavior (production vs. development)
-- Test startup sequence and graceful shutdown separately
-
+## Local Development & Testing Migration (May 2025)
+- Migrated from Replit to local development
+- Transferred environment variables from Replit Secrets to a .env file (root, gitignored)
+- Ensured .env is UTF-8 encoded (no BOM) and values are unquoted
+- Placed dotenv.config() at the very top of server/index.ts
+- Noted that ESM import order can cause env vars to be undefined if db/index.ts is imported before dotenv.config()
+- As a workaround, added dotenv.config() to db/index.ts for local dev
+- Documented this workaround and recommend future refactor for single-source env loading
+- Successfully started dev server and verified DB connection
 
 3. Start development server: `npm run dev`
 
