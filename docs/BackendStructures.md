@@ -609,7 +609,7 @@ POST /api/auth/2fa/send
 Initiates the two-factor authentication process.
 Supplement Routes
 GET /api/supplements
-Retrieves a list of the user’s supplements.
+Retrieves a list of the user's supplements.
 POST /api/supplements
 Adds a new supplement.
 PUT /api/supplements/:id
@@ -620,9 +620,9 @@ GET /api/supplements/search
 Searches for supplements in the supplement_refference table from the rds database.
 Health Stats Routes
 GET /api/health-stats
-Retrieves the user’s health data.
+Retrieves the user's health data.
 POST /api/health-stats
-Updates the user’s health data.
+Updates the user's health data.
 AI Integration Routes
 POST /api/chat
 Sends a chat message to the AI assistant.
@@ -966,3 +966,85 @@ The context building service implements a sophisticated approach:
    - Maintains conversation history when relevant
    - Optimizes context for token efficiency
    - Ensures proper content ordering
+
+## Lab Results Processing Pipeline
+
+### Lab Text Preprocessing Service (`services/labTextPreprocessingService.ts`)
+Handles the extraction and normalization of text from various lab file formats.
+
+#### Key Components:
+- **File Type Support**:
+  - PDF files (using pdf-parse and Google Vision OCR)
+  - DOCX files (using mammoth)
+  - Image files (using Google Vision OCR)
+  - Text files (direct processing)
+
+- **Processing Pipeline**:
+  1. File Type Detection
+  2. Format-Specific Extraction
+  3. OCR Processing (if needed)
+  4. Text Normalization
+  5. Quality Assessment
+  6. Metadata Generation
+
+- **Quality Metrics**:
+  - OCR Confidence Scores
+  - Text Completeness
+  - Formatting Preservation
+  - Processing Time
+  - Error Rates
+
+### Database Schema Updates
+
+#### Lab Results Table (`labResults`)
+Enhanced metadata structure for pre-processed text:
+
+```typescript
+interface LabResultMetadata {
+  // ... existing fields ...
+  preprocessedText: {
+    rawText: string;          // Original extracted text
+    normalizedText: string;   // Cleaned and standardized text
+    processingMetadata: {
+      fileType: string;       // Detected file type
+      processingSteps: string[];  // Applied processing steps
+      qualityMetrics: {
+        ocrConfidence?: number;   // OCR confidence score
+        textCompleteness: number; // Text completeness score
+        processingTime: number;   // Processing duration
+        errorCount: number;       // Number of processing errors
+      };
+      ocrCorrections?: {         // OCR-specific corrections
+        original: string;
+        corrected: string;
+        confidence: number;
+      }[];
+      standardizationRules?: {    // Applied standardization rules
+        pattern: string;
+        replacement: string;
+        count: number;
+      }[];
+    };
+  };
+}
+```
+
+### Integration Points
+
+#### Lab Results Service
+- Handles file upload and initial processing
+- Integrates with pre-processing service
+- Manages database operations
+- Coordinates with biomarker extraction
+
+#### Biomarker Extraction Service
+- Uses pre-processed text for improved accuracy
+- Leverages normalized text for consistent parsing
+- Benefits from quality metrics for confidence scoring
+
+#### File Upload Flow
+1. File Upload → Lab Results Service
+2. Pre-processing → Lab Text Preprocessing Service
+3. Text Storage → Database
+4. Biomarker Extraction → Biomarker Extraction Service
+5. Results Storage → Database

@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 17/05/2025 - 13:58:39
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 17/05/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -22,24 +34,72 @@ const querySchema = z.object({
 });
 
 async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
-  return db
-    .select({
-      name: biomarkerResults.name,
-      value: biomarkerResults.value,
-      unit: biomarkerResults.unit,
-      testDate: biomarkerResults.testDate,
-      category: biomarkerResults.category,
-      status: biomarkerResults.status
-    })
-    .from(biomarkerResults)
-    .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
-    .where(
-      and(
-        eq(labResults.userId, userId),
-        biomarkerNames.length > 0 ? inArray(biomarkerResults.name, biomarkerNames) : undefined
+  try {
+    logger.info('Retrieving biomarker chart data', {
+      userId,
+      biomarkerCount: biomarkerNames.length,
+      biomarkers: biomarkerNames
+    });
+
+    const results = await db
+      .select({
+        name: biomarkerResults.name,
+        value: biomarkerResults.value,
+        unit: biomarkerResults.unit,
+        testDate: biomarkerResults.testDate,
+        category: biomarkerResults.category,
+        status: biomarkerResults.status,
+        labResultId: biomarkerResults.labResultId // Add labResultId for debugging
+      })
+      .from(biomarkerResults)
+      .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
+      .where(
+        and(
+          eq(labResults.userId, userId),
+          biomarkerNames.length > 0 ? inArray(biomarkerResults.name, biomarkerNames) : undefined
+        )
       )
-    )
-    .orderBy(biomarkerResults.testDate);
+      .orderBy(biomarkerResults.testDate);
+
+    // Log retrieval results
+    logger.info('Retrieved biomarker data', {
+      userId,
+      resultCount: results.length,
+      uniqueBiomarkers: [...new Set(results.map(r => r.name))],
+      dateRange: results.length > 0 ? {
+        start: results[0].testDate,
+        end: results[results.length - 1].testDate
+      } : null
+    });
+
+    // Validate data integrity
+    const invalidResults = results.filter(r => {
+      const value = parseFloat(r.value);
+      return isNaN(value) || !r.unit || !r.testDate;
+    });
+
+    if (invalidResults.length > 0) {
+      logger.warn('Found invalid biomarker results', {
+        invalidCount: invalidResults.length,
+        examples: invalidResults.slice(0, 3).map(r => ({
+          name: r.name,
+          value: r.value,
+          unit: r.unit,
+          testDate: r.testDate,
+          labResultId: r.labResultId
+        }))
+      });
+    }
+
+    return results;
+  } catch (error) {
+    logger.error('Error retrieving biomarker chart data', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
+  }
 }
 
 router.get('/', async (req, res) => {

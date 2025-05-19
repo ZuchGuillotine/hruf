@@ -2,8 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { sendEmail } from '../services/emailService';
 import { db } from '@db/index';
-import { users } from '../db/neon-schema';
+import { users } from '@db/schema';
 import { eq } from 'drizzle-orm';
+import stripeService from '../services/stripe';
 
 export async function signup(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -33,10 +34,6 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
     // Generate verification token
     const verificationToken = crypto.randomBytes(20).toString('hex');
 
-    // Set initial trial period (28 days)
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 28);
-
     // Create new user with trial status
     const [user] = await db.insert(users).values({
       email,
@@ -44,10 +41,8 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       username: email.split('@')[0],
       verificationToken,
       emailVerified: false,
-      isPro: false,
       isAdmin: false,
       subscriptionTier: 'trial',
-      trialEndsAt: trialEndsAt.toISOString(),
       subscriptionId: null, // Explicitly set to null for trial users
       createdAt: new Date(),
       updatedAt: new Date()

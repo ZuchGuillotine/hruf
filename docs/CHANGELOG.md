@@ -1,5 +1,52 @@
 ## [Unreleased]
 
+### Changed (May 17, 2025)
+- Enhanced Biomarker Extraction Pipeline:
+  - Improved biomarker extraction accuracy:
+    - Increased successful extractions from 9 to 19 biomarkers
+    - Enhanced LLM extraction prompt for better accuracy
+    - Added more flexible regex patterns for fragmented text
+    - Improved preprocessing of lab result text
+  - Enhanced Metadata Handling:
+    - Added new metadata fields for better tracking:
+      - textLength: Track length of processed text
+      - errorDetails: Store detailed error information
+      - biomarkerCount: Track number of biomarkers found
+      - source: Track data source (parsedText/ocrText/summary)
+    - Updated biomarker_processing_status table schema
+    - Added proper migration with backup and rollback support
+  - Technical Improvements:
+    - Added row-level locking to prevent concurrent processing
+    - Enhanced validation of text content sources
+    - Improved error handling and recovery
+    - Added detailed logging throughout pipeline
+    - Fixed race conditions in metadata updates
+  - Known Issues:
+    - Regex extraction still needs improvement (0% recall)
+    - LLM extraction working well (19 biomarkers found)
+    - Need to investigate potential race condition in lab result retrieval
+
+### Changed (May 17, 2025)
+- Enhanced OCR and Biomarker Extraction Pipeline:
+  - Improved Google Vision OCR configuration for medical documents:
+    - Added advanced OCR options for medical document processing
+    - Implemented crop hints for better aspect ratio handling
+    - Enhanced medical-specific OCR error corrections
+  - Enhanced Biomarker Pattern Service:
+    - Added pattern tiers (high/medium/low) with confidence scoring
+    - Implemented unit standardization and validation
+    - Added comprehensive unit mappings for common variations
+    - Enhanced value transformation for unit conversions
+  - Improved Type Safety:
+    - Fixed UploadedFile type definition in labUploadService
+    - Added proper type interfaces for quality metrics
+    - Enhanced validation schema for biomarker extraction
+  - Technical Improvements:
+    - Added detailed quality metrics calculation
+    - Enhanced logging throughout the pipeline
+    - Improved error handling and recovery
+    - Added validation rules for biomarker values and units
+
 ### Fixed (May 12, 2025)
 - Biomarker Extraction Pipeline Issue:
   - Fixed critical issue with biomarker extraction service not finding text content
@@ -762,177 +809,50 @@ If similar issues occur in the future, here's how to fix them:
    - Use UTC day boundaries for date range queries
    - Calculate start/end of day in UTC:
      ```typescript
-     const startOfDay = new Date(`${date}T00:00:00.000Z`);
-     const endOfDay = new Date(`${date}T23:59:59.999Z`);
-     ```
-   - Use direct timestamp comparisons instead of DATE() casting
-
-3. Common Pitfalls to Avoid:
-   - Don't use DATE() casting for timestamp comparisons
-   - Avoid timezone conversion in SQL queries
-   - Don't normalize timestamps to fixed times
-   - Preserve original timestamps throughout the application
-
-### Migration Guide
-No database migration required. These changes are purely logical and affect only how dates are handled in the application code.
-
-## [Unreleased]
-### Fixed
-- Enhanced chat summary display in supplement history:
-  - Improved formatting of chat summaries
-  - Added combined user and assistant message display
-  - Removed unnecessary JSON syntax from visible text
-  - Improved truncation handling to show both messages
-### Changed
-- Simplified chat storage system:
-  - Removed sentiment analysis requirements
-  - Updated chat save functionality
-  - Improved error handling in chat interactions
-  - Enhanced chat interface responsiveness
-- Resolved timezone handling in supplement logs
-  - Fixed date mismatch between saving and retrieving logs
-  - Implemented proper UTC conversion in both client and server
-  - Added timezone offset adjustment for accurate date display
-
-### Changed
-- Consolidated all database operations to NeonDB
-  - Migrated supplement_logs table from RDS to NeonDB
-  - Migrated qualitative_logs table from RDS to NeonDB
-  - Migrated supplement_reference table from RDS to NeonDB
-  - Removed AWS RDS dependencies and connections
-  - Updated all database queries to use NeonDB schemas
-  - Simplified database connection management
-
-### Removed
-- AWS RDS integration and dependencies
-- RDS-specific schema definitions
-- Dual-database architecture
+     const startOfDay = new Date(`
 
 ### Added
-- Reorganized database schemas into dedicated files
-- Enhanced database integration
-- Verified complete database functionality
-- Enhanced navigation in supplement history page
-- Blog post management system
-- Rich text editing capabilities
-- Thumbnail URL support for blog posts
-- Responsive grid layout for blog listing
-- Loading states and error handling
-- Protected admin routes
-- Blog post schema with proper timestamps
-- Supplemental RDS database integration
-- Google OAuth authentication system (in progress)
+- New debug endpoint for comparing biomarker data from both storage locations
+- Comprehensive biomarker processing status tracking
+- Quality metrics for text processing and biomarker extraction
+- Transaction-based atomic updates for biomarker storage
 
 ### Changed
-- Improved public pages routing and layout
-- Updated frontend routing to include blog management
-- Enhanced admin dashboard layout
-- Improved data consistency between admin and public views
-- Modified authentication system to support multiple strategies
-- Updated database connection to use supplemental RDS
+- Refactored biomarker ETL pipeline to ensure data consistency
+- Updated biomarker storage to use atomic transactions
+- Enhanced error handling and progress tracking in lab upload service
+- Improved type safety with comprehensive TypeScript interfaces
+- Modified biomarker extraction to use both regex and LLM-based approaches
 
 ### Fixed
-- Public routes accessibility issues
-- Blog post schema implementation
-- Data synchronization between admin dashboard and public views
-- API endpoint authentication checks
+- Resolved data synchronization issues between biomarker table and metadata
+- Fixed transaction handling to prevent partial updates
+- Improved error recovery in biomarker processing
+- Added proper type definitions for biomarker data structures
 
-### Known Issues
-- Google OAuth authentication failing despite correct client credentials
-- Environment URL configuration may need adjustment for development environment
-- Callback URL verified but authorization still failing
-- Logging shows credentials exist but authentication flow incomplete
-
-## [0.1.0] - 2025-02-09
-### Added
-- Initial release with core functionality
-- User authentication system
-- Supplement tracking basics
-- Background animated text
-- Basic admin dashboard
-
-### Changed
-- Enhanced security measures
-- Improved UI components
-
-### Fixed
-- Various routing issues
-- Authentication edge cases
-
-## [0.0.1] - 2025-02-01
-### Added
-- Project initialization
-- Basic project structure
-- Initial database setup
-
-### Needed Improvements
-- Type Safety Enhancements Required:
-  1. Date Handling:
-     - Add null checks for takenAt and loggedAt fields
-     - Implement safe Date object creation
-     - Update type definitions for date fields
-  2. Database Types:
-     - Add proper type definitions for NeonHttpQueryResult
-     - Implement iterator interface for query results
-     - Add length property to query result types
-  3. Schema Alignment:
-     - Update InsertLogSummary type definition
-     - Add missing metadata properties
-     - Consider database migration for naming consistency
-  4. Error Prevention:
-     - Add runtime checks for null values
-     - Implement proper type guards
-     - Enhance error logging for type-related issues
-
-### Added
-- New `dateUtils.ts` module for centralized date handling
-  - Safe date parsing with error handling
-  - UTC-aware date boundary calculations
-  - Standardized date formatting
-  - Date range validation and calculations
-  - SQL helpers for date queries
-
-### Changed
-- Updated schema timestamp fields with improved type safety
-  - Added `{ mode: 'date' }` to all timestamp fields
-  - Standardized `CURRENT_TIMESTAMP` defaults
-  - Made critical timestamp fields non-nullable
-  - Added proper type definitions for metadata date fields
-
-### Fixed
-- Addressed date handling inconsistencies in context services
-  - Improved UTC boundary handling
-  - Added proper null checking for dates
-  - Fixed timezone-related comparison issues
-
-### Technical Debt
-- Context services require updates to use new date utilities
-- Migration needed for existing date fields
-- Additional tests required for date handling edge cases
-
-### Added
-- Context Debugger System
-  - Comprehensive debug logging for LLM context analysis
-  - Token usage estimation and optimization tools
-  - Context component tracking and validation
-  - Environment-aware debug configuration
-  - Non-blocking error handling
-  - Integration with qualitative and query services
-
-### Local Development & Testing Migration (May 2025)
-- Migrated project from Replit to local development environment
-- Transferred environment variables from Replit Secrets to a local .env file (root directory, gitignored)
-- Verified .env encoding (UTF-8, no BOM) and formatting (no quotes around values)
-- Ensured dotenv is loaded at the very top of the entry point (server/index.ts)
-- Discovered ESM import order can cause env vars to be undefined if db/index.ts is imported before dotenv.config() runs
-- As a workaround, added dotenv.config() to db/index.ts to guarantee env vars are loaded for local dev
-- Documented this workaround and recommended future refactor for single-source env loading
-- Successfully started dev server and connected to database locally
+### Technical Details
+- Implemented chunked biomarker inserts to prevent transaction timeouts
+- Added comprehensive metadata tracking including processing steps
+- Enhanced logging for better debugging and monitoring
+- Updated schema to support both primary and cached biomarker storage
 
 ### Changed (May 17, 2025)
-- Google OAuth Configuration:
-  - Modified OAuth setup to use production credentials for both environments
-  - Updated callback URL handling to use 127.0.0.1 instead of 0.0.0.0 for local development
-  - Enhanced server configuration to listen on appropriate host based on environment
-  - Improved logging for OAuth configuration and callback handling
-  - Fixed Google OAuth redirect URI compatibility issues
+- Enhanced PDF Text Extraction Pipeline:
+  - Implemented robust fallback chain for PDF text extraction:
+    1. Enhanced pdf-parse with custom renderer for text-based PDFs
+    2. Basic pdf-parse for simpler PDFs
+    3. Google Vision OCR for image-based PDFs
+  - Improved text extraction reliability:
+    - Added detailed logging for each extraction attempt
+    - Implemented proper error tracking and reporting
+    - Enhanced quality metrics for extracted text
+  - Technical Improvements:
+    - Leveraged existing Google Vision OCR infrastructure
+    - Added PDF-specific OCR options
+    - Enhanced medical document processing
+    - Improved text normalization pipeline
+  - Quality Metrics:
+    - Added confidence scoring for each extraction method
+    - Enhanced medical term detection
+    - Improved unit consistency checking
+    - Added comprehensive quality metrics calculation

@@ -12,7 +12,7 @@ class StripeService {
 
   constructor() {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-02-24.acacia',
     });
   }
 
@@ -112,6 +112,58 @@ class StripeService {
     };
 
     return PRODUCT_MAP[productId] || 'free';
+  }
+
+  /**
+   * Update a user's trial status
+   * @param {number} userId - The user ID
+   * @returns {Promise<any>} - The updated user
+   */
+  async updateTrialStatus(userId: number) {
+    // Get the user's current subscription status
+    const [user] = await db
+      .select({
+        id: users.id,
+        subscriptionId: users.subscriptionId,
+        subscriptionTier: users.subscriptionTier
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // If user has no subscription ID and is not on trial, set them to trial
+    if (!user.subscriptionId && user.subscriptionTier !== 'trial') {
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          subscriptionTier: 'trial',
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    }
+
+    // If user has a subscription ID but is still on trial, update to their actual tier
+    if (user.subscriptionId && user.subscriptionTier === 'trial') {
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          subscriptionTier: 'free', // Default to free if we can't determine the actual tier
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updatedUser;
+    }
+
+    return user;
   }
 }
 

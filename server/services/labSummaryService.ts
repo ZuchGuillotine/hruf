@@ -443,5 +443,6 @@ class LabSummaryService {
   }
 }
 
+// Export a singleton instance with consistent naming
 export const labSummaryService = new LabSummaryService();
 export default labSummaryService;

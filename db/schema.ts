@@ -128,7 +128,7 @@ export const queryChatLogs = pgTable("query_chat_logs", {
 // Biomarker results storage
 export const biomarkerResults = pgTable("biomarker_results", {
   id: serial("id").primaryKey(),
-  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "CASCADE" }).notNull(),
+  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   value: numeric("value").notNull(),
   unit: text("unit").notNull(),
@@ -149,7 +149,7 @@ export const biomarkerResults = pgTable("biomarker_results", {
 });
 
 export const biomarkerProcessingStatus = pgTable("biomarker_processing_status", {
-  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "CASCADE" }).primaryKey(),
+  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "cascade" }).primaryKey(),
   status: text("status").notNull(),
   extractionMethod: text("extraction_method"),
   biomarkerCount: integer("biomarker_count"),
@@ -161,6 +161,10 @@ export const biomarkerProcessingStatus = pgTable("biomarker_processing_status", 
     llmExtractions?: number;
     processingTime?: number;
     retryCount?: number;
+    textLength?: number;
+    errorDetails?: string;
+    biomarkerCount?: number;
+    source?: string;
   }>(),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -249,6 +253,27 @@ export const labResults = pgTable("lab_results", {
     extractionDate?: string;
     summary?: string;
     summarizedAt?: string;
+    preprocessedText?: {
+      rawText: string;
+      normalizedText: string;
+      processingMetadata: {
+        originalFormat: string;
+        processingSteps: string[];
+        confidence?: number;
+        ocrEngine?: string;
+        processingTimestamp: string;
+        textLength: number;
+        lineCount: number;
+        hasHeaders: boolean;
+        hasFooters: boolean;
+        qualityMetrics?: {
+          whitespaceRatio: number;
+          specialCharRatio: number;
+          numericRatio: number;
+          potentialOcrErrors: number;
+        };
+      };
+    };
     biomarkers?: {
       parsedBiomarkers: Array<{
         name: string;

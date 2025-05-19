@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { db } from '@db';
 import { labResults } from '@db/schema';
@@ -7,6 +6,7 @@ import fileUpload from 'express-fileupload';
 import path from 'path';
 import fs from 'fs';
 import { labSummaryService } from '../services/labSummaryService';
+import { labTextPreprocessingService } from '../services/labTextPreprocessingService';
 import logger from '../utils/logger';
 import { checkLabUploadLimit } from '../middleware/tierLimitMiddleware';
 
@@ -82,6 +82,28 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
     // Move file to uploads directory
     await file.mv(filePath);
     logger.info(`File moved to ${filePath}`);
+
+    // Pre-process the file content
+    let preprocessedText;
+    try {
+      const fileBuffer = fs.readFileSync(filePath);
+      preprocessedText = await labTextPreprocessingService.preprocessLabText(fileBuffer, file.mimetype);
+      
+      logger.info('Lab text pre-processing complete', {
+        fileName: file.name,
+        mimeType: file.mimetype,
+        textLength: preprocessedText.normalizedText.length,
+        qualityMetrics: preprocessedText.metadata.qualityMetrics
+      });
+    } catch (preprocessError) {
+      logger.error('Error pre-processing lab text:', {
+        fileName: file.name,
+        error: preprocessError instanceof Error ? preprocessError.message : String(preprocessError),
+        stack: preprocessError instanceof Error ? preprocessError.stack : undefined
+      });
+      // Continue with upload even if pre-processing fails
+      preprocessedText = null;
+    }
     
     // Save file info to database with enhanced metadata
     const [result] = await db
@@ -99,7 +121,15 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
           relativePath: relativeUrl,
           uploadTimestamp: Date.now(),
           mimeType: file.mimetype,
-          md5: file.md5
+          md5: file.md5,
+          // Add pre-processed text data if available
+          ...(preprocessedText ? {
+            preprocessedText: {
+              rawText: preprocessedText.rawText,
+              normalizedText: preprocessedText.normalizedText,
+              processingMetadata: preprocessedText.metadata
+            }
+          } : {})
         }
       })
       .returning();
@@ -109,12 +139,15 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
       fileName: file.name,
       fileUrl: relativeUrl,
       userId: req.user!.id,
-      fileSize: file.size
+      fileSize: file.size,
+      hasPreprocessedText: !!preprocessedText
     });
 
-    // Trigger background summarization
+    // Trigger background summarization with pre-processed text if available
     try {
-      labSummaryService.summarizeLabResult(result.id)
+      const textToSummarize = preprocessedText?.normalizedText || preprocessedText?.rawText;
+      
+      labSummaryService.summarizeLabResult(result.id, textToSummarize)
         .then((summary) => {
           if (summary) {
             logger.info(`Background summary generation completed for lab ID ${result.id}`);

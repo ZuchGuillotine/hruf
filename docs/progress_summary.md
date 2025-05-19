@@ -1,5 +1,43 @@
 ## Latest Status (May 17, 2025)
 
+### Biomarker Extraction Pipeline Enhancement
+- Successfully improved biomarker extraction system:
+  - Extraction Performance:
+    - ✅ Increased successful extractions from 9 to 19 biomarkers
+    - ✅ Enhanced LLM extraction accuracy with improved prompts
+    - ✅ Added more flexible regex patterns for fragmented text
+    - ⚠️ Regex extraction still needs improvement (0% recall)
+    - ✅ Improved preprocessing of lab result text
+  - Metadata and Schema Updates:
+    - ✅ Added new metadata fields for better tracking:
+      - textLength: Track length of processed text
+      - errorDetails: Store detailed error information
+      - biomarkerCount: Track number of biomarkers found
+      - source: Track data source (parsedText/ocrText/summary)
+    - ✅ Updated biomarker_processing_status table schema
+    - ✅ Added proper migration with backup and rollback support
+  - Technical Improvements:
+    - ✅ Added row-level locking to prevent concurrent processing
+    - ✅ Enhanced validation of text content sources
+    - ✅ Improved error handling and recovery
+    - ✅ Added detailed logging throughout pipeline
+    - ✅ Fixed race conditions in metadata updates
+  - Current Metrics:
+    - Total biomarkers found: 19
+    - Regex matches: 0 (needs improvement)
+    - LLM extractions: 19 (working well)
+    - Processing time: ~30-40 seconds
+  - Known Issues:
+    - Regex extraction not performing (0% recall)
+    - Potential race condition in lab result retrieval
+    - Need to investigate text content preservation
+  - Next Steps:
+    1. Investigate and fix regex extraction patterns
+    2. Address potential race condition in lab result retrieval
+    3. Enhance text content preservation in preprocessing
+    4. Optimize processing time
+    5. Add more comprehensive validation
+
 ### Google OAuth Configuration Update
 - Successfully modified OAuth setup for better development experience:
   - ✅ Consolidated to use production credentials for both environments
@@ -1545,3 +1583,49 @@ A persistent issue was encountered with the query interface not properly recogni
 - Workaround: added dotenv.config() to db/index.ts for local dev reliability
 - Documented this and recommended future refactor for single-source env loading
 - Confirmed dev server and DB connection work locally
+
+## Latest Status (May 17, 2025)
+
+### Lab ETL Pipeline Improvements
+- Successfully implemented pre-processing service for lab results:
+  - Created `labTextPreprocessingService.ts` for handling multiple file formats
+  - Implemented robust text extraction from PDFs, DOCX, and images
+  - Added OCR error correction and text normalization
+  - Enhanced metadata tracking for processing steps
+  - Implemented quality metrics for text extraction
+  - Added comprehensive logging throughout the pipeline
+
+- Database Schema Updates:
+  - Added preprocessed text fields to labResults metadata
+  - Created migration script (20240517_add_preprocessed_text.ts)
+  - Successfully executed migration with proper error handling
+  - Enhanced schema with quality metrics and processing metadata
+  - Maintained backward compatibility with existing data
+
+- Current Implementation Status:
+  ✅ Pre-processing service implementation
+  ✅ Database schema updates
+  ✅ Migration script creation and execution
+  ⏳ Lab results service integration
+  ⏳ Upload flow integration
+
+### Next Steps for Lab ETL Pipeline
+1. Update lab results service to handle pre-processed text:
+   - Modify existing upload endpoint to use pre-processing service
+   - Update biomarker extraction to use normalized text
+   - Enhance error handling for pre-processing failures
+   - Add validation for pre-processed text quality
+
+2. Integrate pre-processing with upload flow:
+   - Update file upload middleware to handle multiple formats
+   - Implement proper MIME type detection
+   - Add progress tracking for large files
+   - Enhance user feedback during processing
+   - Implement proper cleanup of temporary files
+
+3. Testing and Validation:
+   - Create comprehensive test suite for pre-processing
+   - Validate OCR accuracy across different file types
+   - Test error handling and recovery
+   - Verify biomarker extraction with pre-processed text
+   - Performance testing for large files
