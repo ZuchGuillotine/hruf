@@ -1,0 +1,101 @@
+2025-05-20T08:14:09Z info: Deployment: 8c19b3e2-8943-47ed-8f35-1301e8f029cb
+2025-05-20T08:14:09Z info: Connecting to builder
+2025-05-20T08:14:14Z info: Builder connected
+2025-05-20T08:14:15Z info: Installing packages
+--> npm install
+
+
+up to date, audited 1009 packages in 4s
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+npm notice
+npm notice New minor version of npm available! 11.3.0 -> 11.4.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.0
+npm notice To update run: npm install -g npm@11.4.0
+npm notice
+
+2025-05-20T08:14:22Z info: Starting Build
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server
+
+
+vite v5.4.19 building for production...
+
+transforming...
+
+✓ 2903 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+../dist/public/index.html                      3.90 kB │ gzip:   1.37 kB
+
+../dist/public/assets/index-B8R4JAcF.js        0.90 kB │ gzip:   0.42 kB
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+✓ built in 8.22s
+
+▲ [WARNING] Duplicate member "startLabProcessingTask" in class body [duplicate-class-member]
+
+    server/cron/summaryManager.ts:227:2:
+      227 │   startLabProcessingTask(hour: number = 3): void {
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "startLabProcessingTask" is here:
+
+    server/cron/summaryManager.ts:166:2:
+      166 │   startLabProcessingTask(hour: number = 2): void {
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+
+1 warning
+
+
+  dist/server/index.js  341.7kb
+
+⚡ Done in 276ms
+
+2025-05-20T08:14:36Z info: Pushing pid1 binary layer...
+2025-05-20T08:14:38Z info: Pushing Repl layer...
+2025-05-20T08:14:38Z info: Pushing hosting layer...
+2025-05-20T08:14:38Z info: Retrieved cached nix layer
+2025-05-20T08:14:38Z info: Created pid1 binary layer
+2025-05-20T08:14:39Z info: Created hosting layer
+2025-05-20T08:15:09Z info: Created Repl layer
+2025-05-20T08:15:09Z info: Pushed image manifest
+2025-05-20T08:15:10Z info: Pushed soci index manifest
+2025-05-20T08:15:14Z info: Creating Autoscale service
+info: Embedding service initialized with LRU cache {"timestamp":"2025-05-20T08:15:42.409Z"}
+    DRIP_3: 'd-xxxxxxxxxxxxx'
+    hasCustomDomain: true,
+info: Weekly summary task will first run in 114 hours {"timestamp":"2025-05-20T08:15:42.455Z"}
+info: Service initialization completed successfully {"timestamp":"2025-05-20T08:15:44.574Z"}
+info: Starting service initialization... {"timestamp":"2025-05-20T08:15:44.130Z"}
+info: Initializing PGVector services... {"timestamp":"2025-05-20T08:15:44.130Z"}
+Adding supplement: Acai (General)
+Adding supplement: Creatine
+Adding supplement: Andrographis (General)
+Adding supplement: Ginger Extract
+Adding supplement: Alpha Lipoic Acid (R-ALA)
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Bromelain Extract
+    category: 'metabolic',
+  {
+2025-05-20T08:16:26Z error: The deployment is failing health checks. This can happen if the application isn't responding, responds with an error, or doesn't respond in time. Health checks are sent to the / endpoint by default and must respond as soon as possible. Make sure that the / endpoint is implemented and returns a 200 status code in a timely manner. Avoid doing expensive or long running operations on the / endpoint, prefer deferring them to a different route. Check the logs for more information.
