@@ -1,3 +1,4 @@
+
 import { db } from '../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../db/schema';
 import { eq, isNull, or, and } from 'drizzle-orm';
@@ -6,9 +7,66 @@ import logger from '../server/utils/logger';
 
 async function checkAndReprocessBiomarkers() {
   try {
+    // First check processing status and storage details
+    const labId = 97; // Latest lab ID from your example
+    
+    // Get processing status
+    const [status] = await db
+      .select()
+      .from(biomarkerProcessingStatus)
+      .where(eq(biomarkerProcessingStatus.labResultId, labId));
+
+    console.log('\nProcessing Status:');
+    console.log('------------------');
+    console.log('Status:', status?.status);
+    console.log('Started At:', status?.startedAt?.toLocaleString());
+    console.log('Completed At:', status?.completedAt?.toLocaleString());
+    console.log('Biomarker Count:', status?.biomarkerCount);
+
+    // Get storage comparison
+    const biomarkerCount = await db
+      .select({ count: sql`count(*)` })
+      .from(biomarkerResults)
+      .where(eq(biomarkerResults.labResultId, labId))
+      .then(res => Number(res[0]?.count || 0));
+
+    const [labResult] = await db
+      .select()
+      .from(labResults)
+      .where(eq(labResults.id, labId));
+
+    const metadataBiomarkers = labResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0;
+
+    console.log('\nStorage Comparison:');
+    console.log('-------------------');
+    console.log('Biomarkers in dedicated table:', biomarkerCount);
+    console.log('Biomarkers in metadata:', metadataBiomarkers);
+
+    // Sample data
+    const biomarkerSamples = await db
+      .select()
+      .from(biomarkerResults)
+      .where(eq(biomarkerResults.labResultId, labId))
+      .limit(3);
+
+    console.log('\nSample from biomarker_results table:');
+    console.log('----------------------------------');
+    console.log(biomarkerSamples);
+
+    console.log('\nSample from metadata:');
+    console.log('--------------------');
+    console.log(labResult?.metadata?.biomarkers?.parsedBiomarkers?.slice(0, 3));
+
+    console.log('\nStorage Details:');
+    console.log('----------------');
+    console.log('Lab ID:', labId);
+    console.log('Upload Date:', labResult?.uploadedAt?.toLocaleString());
+    console.log('Has Preprocessed Text:', !!labResult?.metadata?.preprocessedText);
+    console.log('Processing Metadata:', status?.metadata);
+
+    // Now check for labs needing reprocessing
     logger.info('Starting biomarker data check and reprocessing');
 
-    // Find labs with missing biomarker data
     const labsWithoutBiomarkers = await db
       .select({
         id: labResults.id,
@@ -20,18 +78,14 @@ async function checkAndReprocessBiomarkers() {
       .leftJoin(biomarkerProcessingStatus, eq(biomarkerProcessingStatus.labResultId, labResults.id))
       .where(
         and(
-          // No biomarker results
           isNull(biomarkerResults.id),
           or(
-            // No processing status
             isNull(biomarkerProcessingStatus.labResultId),
-            // Or processing never completed/failed
             or(
               eq(biomarkerProcessingStatus.status, 'error'),
               eq(biomarkerProcessingStatus.status, 'processing')
             )
           ),
-          // Only check labs from last 30 days to limit scope
           labResults.uploadedAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         )
       );
@@ -47,22 +101,7 @@ async function checkAndReprocessBiomarkers() {
     for (const lab of labsWithoutBiomarkers) {
       try {
         logger.info(`Processing lab ${lab.id} (${lab.fileName})`);
-
-        // Check if already attempted
-        const [processingStatus] = await db
-          .select()
-          .from(biomarkerProcessingStatus)
-          .where(eq(biomarkerProcessingStatus.labResultId, lab.id))
-          .limit(1);
-
-        if (processingStatus?.metadata?.retryCount > 0) {
-          logger.info(`Skipping lab ${lab.id} - already attempted reprocessing`);
-          continue;
-        }
-
-        // Attempt processing
         await biomarkerExtractionService.processLabResult(lab.id);
-
         logger.info(`Successfully processed lab ${lab.id}`);
       } catch (error) {
         logger.error(`Failed to process lab ${lab.id}:`, {
@@ -72,8 +111,6 @@ async function checkAndReprocessBiomarkers() {
         });
       }
     }
-
-    logger.info('Completed biomarker reprocessing check');
 
   } catch (error) {
     logger.error('Error in biomarker reprocessing script:', {
