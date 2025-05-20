@@ -31,18 +31,21 @@ export function useLabChartData() {
     retryDelay: 1000,
     queryFn: async () => {
       try {
-      const response = await fetch('/api/labs/chart-data', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
+        const response = await fetch('/api/labs/chart-data', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch lab chart data');
         }
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch lab chart data');
+        return response.json();
+      } catch (error) {
+        throw error;
       }
-
-      return response.json();
     },
     select: (response) => {
       const biomarkers = new Map<string, Array<{
