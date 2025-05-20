@@ -1,7 +1,7 @@
 
 import { db } from '../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../db/schema';
-import { eq, isNull, or, and } from 'drizzle-orm';
+import { eq, isNull, or, and, sql } from 'drizzle-orm';
 import { biomarkerExtractionService } from '../server/services/biomarkerExtractionService';
 import logger from '../server/utils/logger';
 
@@ -86,6 +86,7 @@ async function checkAndReprocessBiomarkers() {
               eq(biomarkerProcessingStatus.status, 'processing')
             )
           ),
+          // Only check labs from last 30 days
           labResults.uploadedAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         )
       );
