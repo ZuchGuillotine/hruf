@@ -35,7 +35,7 @@ import path from "path";
 import stripeRoutes from './routes/stripe';
 import adminRoutes from './routes/admin';
 import { summaryTaskManager } from './cron/summaryManager';
-import updateTrialStatusesCron from './cron/updateTrialStatuses';
+import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
 
 const __filename = fileURLToPath(import.meta.url);
