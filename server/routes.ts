@@ -1385,7 +1385,9 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get('/api/health-check', healthCheck);
+  // Health check endpoints
+app.get('/', healthCheck); // Root endpoint for deployment health checks
+app.get('/api/health-check', healthCheck); // API health check endpoint
 
   // Add the ChatGPT endpoint
   app.post('/api/chat', async (req, res) => {
