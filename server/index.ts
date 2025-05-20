@@ -34,7 +34,7 @@ import { serviceInitializer } from './services/serviceInitializer';
 import path from "path";
 import stripeRoutes from './routes/stripe';
 import adminRoutes from './routes/admin';
-import summaryManagerCron from './cron/summaryManager';
+import { summaryTaskManager } from './cron/summaryManager';
 import updateTrialStatusesCron from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
 
@@ -172,7 +172,8 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
 // Start cron jobs
-summaryManagerCron.start();
+summaryTaskManager.startDailySummaryTask();
+summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
