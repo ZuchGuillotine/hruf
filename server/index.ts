@@ -97,23 +97,6 @@ if (app.get('env') === 'production' && sessionConfig.cookie.sameSite === 'none')
   sessionConfig.cookie.secure = true; // Must be secure if sameSite is none
 }
 
-// Log session configuration (excluding secret)
-console.log('Session configuration:', {
-  environment: app.get('env'),
-  secureCookies: sessionConfig.cookie.secure,
-  sameSite: sessionConfig.cookie.sameSite,
-  cookieMaxAge: sessionConfig.cookie.maxAge,
-  sessionTTL: sessionConfig.store.ttl,
-  timestamp: new Date().toISOString()
-});
-
-console.log('Session configuration:', {
-  secure: app.get('env') === 'production',
-  environment: app.get('env'),
-  sessionSecretLength: (process.env.SESSION_SECRET || 'your-secret-key').length,
-  timestamp: new Date().toISOString()
-});
-
 // Core middleware setup - order is important
 app.use(session(sessionConfig));
 setupAuth(app);
