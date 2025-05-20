@@ -974,6 +974,21 @@ Ignore any text not related to biomarkers.`;
       // Commit the transaction
       await trx.commit();
       
+      // Verify storage
+      const verificationCount = await db
+        .select({ count: sql`count(*)` })
+        .from(biomarkerResults)
+        .where(eq(biomarkerResults.labResultId, labResultId))
+        .then(res => Number(res[0]?.count || 0));
+
+      if (verificationCount !== biomarkerInserts.length) {
+        logger.error(`Storage verification failed for lab ${labResultId}`, {
+          expected: biomarkerInserts.length,
+          found: verificationCount
+        });
+        throw new Error('Storage verification failed');
+      }
+      
       logger.info(`Successfully completed atomic storage of ${biomarkerInserts.length} biomarkers for lab ${labResultId}`, {
         processingTime: Date.now() - startTime.getTime(),
         biomarkerCount: biomarkerInserts.length

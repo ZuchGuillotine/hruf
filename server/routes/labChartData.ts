@@ -104,7 +104,8 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
 
 router.get('/', async (req, res) => {
   try {
-    if (!req.user) {
+    if (!req.user?.id) {
+      logger.warn('Unauthorized biomarker data access attempt');
       return res.status(401).json({ 
         success: false, 
         error: 'Authentication required'
