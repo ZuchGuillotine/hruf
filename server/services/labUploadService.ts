@@ -310,17 +310,24 @@ export class LabUploadService {
             message: 'Extracting biomarkers...'
           });
 
-          // Extract biomarkers using the instance
-          const extractionResults = await this.biomarkerExtractionService.extractBiomarkers(preprocessedText.normalizedText) as BiomarkerExtractionResults;
-          
-          // Update progress
+          // Extract and store biomarkers first
+          this.updateProgress(labResultId, {
+            status: 'extracting',
+            progress: 60,
+            message: 'Processing biomarkers...'
+          });
+
+          // Process biomarkers with dedicated transaction
+          await this.biomarkerExtractionService.processLabResult(labResultId);
+
+          // Update progress for summary generation
           this.updateProgress(labResultId, {
             status: 'summarizing',
             progress: 80,
             message: 'Generating summary...'
           });
 
-          // Generate summary
+          // Generate summary after biomarker processing is complete
           const summary = await labSummaryService.summarizeLabResult(labResultId);
 
           // Get current metadata to preserve required fields
