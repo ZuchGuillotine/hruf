@@ -1,5 +1,5 @@
 
-import { CronJob } from 'cron';
+import { CronJob } from 'node-cron';
 import { checkAndReprocessBiomarkers } from '../../scripts/check-biomarkers';
 import logger from '../utils/logger';
 
