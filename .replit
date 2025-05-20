@@ -8,7 +8,7 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "cloudrun"
 build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "node server/index.js"]
+run = ["sh", "-c", "node dist/server/index.js"]
 
 [[ports]]
 localPort = 3001
@@ -17,6 +17,7 @@ externalPort = 3001
 [[ports]]
 localPort = 5000
 externalPort = 80
+exposeLocalhost = true
 
 [[ports]]
 localPort = 5001
