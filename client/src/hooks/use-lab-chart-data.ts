@@ -27,19 +27,25 @@ interface ApiResponse {
 export function useLabChartData() {
   const query = useQuery<ApiResponse, Error, ChartData>({
     queryKey: ['labChartData'],
+    retry: 2,
+    retryDelay: 1000,
     queryFn: async () => {
-      const response = await fetch('/api/labs/chart-data', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
+      try {
+        const response = await fetch('/api/labs/chart-data', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch lab chart data');
         }
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch lab chart data');
+        return response.json();
+      } catch (error) {
+        throw error;
       }
-
-      return response.json();
     },
     select: (response) => {
       const biomarkers = new Map<string, Array<{
