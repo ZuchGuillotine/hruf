@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "server-dist",
+    "noEmit": false,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "declaration": false,
+    "baseUrl": ".",
+    "paths": {
+      "@db": ["./db/index.ts"],
+      "@db/*": ["./db/*"]
+    }
+  },
+  "include": ["server/**/*", "db/**/*"],
+  "exclude": ["node_modules", "dist", "client", "**/*.test.ts"]
+}
