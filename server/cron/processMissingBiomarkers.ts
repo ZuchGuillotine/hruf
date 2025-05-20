@@ -1,9 +1,10 @@
-import { CronJob } from 'node-cron';
+
+import cron from 'node-cron';
 import { checkAndReprocessBiomarkers } from '../../scripts/check-biomarkers';
 import logger from '../utils/logger';
 
 // Run daily at 2 AM
-const processMissingBiomarkersCron = new CronJob('0 2 * * *', async () => {
+const processMissingBiomarkersCron = cron.schedule('0 2 * * *', async () => {
   try {
     logger.info('Starting scheduled biomarker reprocessing check');
     await checkAndReprocessBiomarkers();
