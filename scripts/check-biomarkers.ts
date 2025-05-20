@@ -71,25 +71,21 @@ async function checkAndReprocessBiomarkers() {
       .select({
         id: labResults.id,
         uploadedAt: labResults.uploadedAt,
-        fileName: labResults.fileName
+        fileName: labResults.fileName,
+        biomarkerCount: sql`count(${biomarkerResults.id})`
       })
       .from(labResults)
       .leftJoin(biomarkerResults, eq(biomarkerResults.labResultId, labResults.id))
       .leftJoin(biomarkerProcessingStatus, eq(biomarkerProcessingStatus.labResultId, labResults.id))
       .where(
-        and(
-          isNull(biomarkerResults.id),
-          or(
-            isNull(biomarkerProcessingStatus.labResultId),
-            or(
-              eq(biomarkerProcessingStatus.status, 'error'),
-              eq(biomarkerProcessingStatus.status, 'processing')
-            )
-          ),
-          // Only check labs from last 30 days
-          labResults.uploadedAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        or(
+          isNull(biomarkerProcessingStatus.labResultId),
+          eq(biomarkerProcessingStatus.status, 'error'),
+          eq(biomarkerProcessingStatus.status, 'processing')
         )
-      );
+      )
+      .groupBy(labResults.id)
+      .having(sql`count(${biomarkerResults.id}) = 0`);
 
     if (labsWithoutBiomarkers.length === 0) {
       logger.info('No labs found requiring biomarker reprocessing');
