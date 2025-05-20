@@ -34,6 +34,9 @@ import { serviceInitializer } from './services/serviceInitializer';
 import path from "path";
 import stripeRoutes from './routes/stripe';
 import adminRoutes from './routes/admin';
+import summaryManagerCron from './cron/summaryManager';
+import updateTrialStatusesCron from './cron/updateTrialStatuses';
+import processMissingBiomarkersCron from './cron/processMissingBiomarkers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -167,6 +170,11 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
+
+// Start cron jobs
+summaryManagerCron.start();
+updateTrialStatusesCron.start();
+processMissingBiomarkersCron.start();
 
 // Setup Vite last
 if (app.get("env") === "development") {
