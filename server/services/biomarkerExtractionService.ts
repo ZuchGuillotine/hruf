@@ -21,6 +21,7 @@ import { BiomarkerPatternService, type PatternMatch } from './biomarkerPatternSe
 import { type NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { type PostgresJsTransaction } from 'drizzle-orm/postgres-js';
 import type * as schema from '../../db/schema';
+import { sql } from 'drizzle-orm';
 
 interface Biomarker {
   name: string;
@@ -511,7 +512,7 @@ export class BiomarkerExtractionService {
                   category: { 
                     type: "string", 
                     description: "Category of biomarker",
-                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"]
+                    enum: ["lipid", "metabolic", "thyroid", "vitamin","mineral", "blood", "liver", "kidney", "hormone", "other"]
                   },
                   status: { 
                     type: "string",
@@ -789,19 +790,18 @@ Ignore any text not related to biomarkers.`;
       ${text}`;
   }
 
+  // Modified storeBiomarkers to handle storage without transactions
   async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
-  const startTime = new Date();
-  logger.info(`Starting biomarker storage transaction`, {
-    labResultId,
-    biomarkerCount: biomarkers.length,
-    timestamp: startTime.toISOString()
-  });
+    const startTime = new Date();
+    logger.info(`Starting biomarker storage`, {
+      labResultId,
+      biomarkerCount: biomarkers.length,
+      timestamp: startTime.toISOString()
+    });
 
-    // Start transaction with proper type
-    const trx = await db.transaction();
     try {
       // Initialize or update processing status
-      const [existingStatus] = await trx
+      const [existingStatus] = await db
         .select()
         .from(biomarkerProcessingStatus)
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId))
@@ -813,7 +813,7 @@ Ignore any text not related to biomarkers.`;
       };
 
       if (existingStatus) {
-        await trx
+        await db
           .update(biomarkerProcessingStatus)
           .set({
             status: 'processing' as const,
@@ -825,7 +825,7 @@ Ignore any text not related to biomarkers.`;
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
       } else {
-        await trx
+        await db
           .insert(biomarkerProcessingStatus)
           .values({
             labResultId,
@@ -835,8 +835,8 @@ Ignore any text not related to biomarkers.`;
           });
       }
 
-      // Delete existing biomarkers within the same transaction
-      await trx
+      // Delete existing biomarkers
+      await db
         .delete(biomarkerResults)
         .where(eq(biomarkerResults.labResultId, labResultId));
 
@@ -911,12 +911,12 @@ Ignore any text not related to biomarkers.`;
       const CHUNK_SIZE = 50;
       for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
         const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
-        await trx.insert(biomarkerResults).values(chunk);
-        logger.info(`Inserted biomarker chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length/CHUNK_SIZE)}`);
+        await db.insert(biomarkerResults).values(chunk);
+        logger.info(`Inserted biomarker chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length / CHUNK_SIZE)}`);
       }
 
-      // Update lab result metadata within the same transaction
-      const [labResult] = await trx
+      // Update lab result metadata
+      const [labResult] = await db
         .select()
         .from(labResults)
         .where(eq(labResults.id, labResultId))
@@ -940,7 +940,7 @@ Ignore any text not related to biomarkers.`;
         extractedAt: new Date().toISOString()
       };
 
-      await trx
+      await db
         .update(labResults)
         .set({
           metadata: {
@@ -958,7 +958,7 @@ Ignore any text not related to biomarkers.`;
         llmExtractions: biomarkerInserts.filter(b => b.extractionMethod === 'llm').length
       };
 
-      await trx
+      await db
         .update(biomarkerProcessingStatus)
         .set({
           status: 'completed' as const,
@@ -968,9 +968,6 @@ Ignore any text not related to biomarkers.`;
           metadata: completionMetadata
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
-
-      // Commit the transaction
-      await trx.commit();
 
       // Verify storage
       const verificationCount = await db
@@ -993,9 +990,6 @@ Ignore any text not related to biomarkers.`;
       });
 
     } catch (error) {
-      // Rollback transaction on any error
-      await trx.rollback();
-
       // Update processing status to error state
       const errorMetadata = {
         processingTime: Date.now() - startTime.getTime(),
@@ -1013,7 +1007,7 @@ Ignore any text not related to biomarkers.`;
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
       } catch (statusError) {
-        logger.error('Failed to update error status after rollback:', {
+        logger.error('Failed to update error status after storage failure:', {
           originalError: error instanceof Error ? error.message : String(error),
           statusError: statusError instanceof Error ? statusError.message : String(statusError)
         });
@@ -1094,10 +1088,10 @@ Ignore any text not related to biomarkers.`;
           sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`
         }));
 
-        // Store biomarkers - this will now use a transaction
+        // Store biomarkers - this will now use sequential operations
         await this.storeBiomarkers(labResultId, formattedBiomarkers);
 
-        // Update lab metadata in a separate transaction to preserve atomicity
+        // Update lab metadata in a separate operation
         const existingMetadata = (labResult.metadata || {}) as LabMetadata;
         const biomarkerMetadata: BiomarkerMetadata = {
           parsedBiomarkers: formattedBiomarkers.map(b => ({
