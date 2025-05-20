@@ -511,7 +511,7 @@ export class BiomarkerExtractionService {
                   category: { 
                     type: "string", 
                     description: "Category of biomarker",
-                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver",kidney", "hormone", "other"]
+                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"]
                   },
                   status: { 
                     type: "string",
