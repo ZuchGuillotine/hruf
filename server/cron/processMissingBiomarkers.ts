@@ -4,7 +4,7 @@ import { checkAndReprocessBiomarkers } from '../../scripts/check-biomarkers';
 import logger from '../utils/logger';
 
 // Run daily at 2 AM
-const processMissingBiomarkersCron = cron.schedule('0 2 * * *', async () => {
+export const processMissingBiomarkersCron = cron.schedule('0 2 * * *', async () => {
   try {
     logger.info('Starting scheduled biomarker reprocessing check');
     await checkAndReprocessBiomarkers();
@@ -15,5 +15,3 @@ const processMissingBiomarkersCron = cron.schedule('0 2 * * *', async () => {
     });
   }
 });
-
-export default processMissingBiomarkersCron;
