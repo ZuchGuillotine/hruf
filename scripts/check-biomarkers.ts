@@ -84,7 +84,7 @@ async function checkAndReprocessBiomarkers() {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   checkAndReprocessBiomarkers()
     .then(() => process.exit(0))
     .catch(error => {
