@@ -1,71 +1,109 @@
+
 import { db } from '../db';
-import { labResults, biomarkerResults } from '../db/schema';
+import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import logger from '../server/utils/logger';
 
 async function checkBiomarkerData(labResultId: number) {
   try {
-    // Check lab results metadata
+    // First check the lab result and its metadata
     const [labResult] = await db
-      .select({
-        id: labResults.id,
-        metadata: labResults.metadata,
-        biomarkers: biomarkerResults
-      })
+      .select()
       .from(labResults)
-      .leftJoin(biomarkerResults, eq(biomarkerResults.labResultId, labResults.id))
-      .where(eq(labResults.id, labResultId));
+      .where(eq(labResults.id, labResultId))
+      .limit(1);
 
     if (!labResult) {
       console.log('Lab result not found');
       return;
     }
 
-    // Log metadata content
-    console.log('\nLab Result Metadata:');
-    console.log('--------------------');
-    console.log('ID:', labResult.id);
-    console.log('Has Biomarkers in Metadata:', !!labResult.metadata?.biomarkers);
-    console.log('Has PreprocessedText:', !!labResult.metadata?.preprocessedText);
-    console.log('Biomarker JSON:', JSON.stringify(labResult.metadata?.biomarkers, null, 2));
+    // Check processing status
+    const [processingStatus] = await db
+      .select()
+      .from(biomarkerProcessingStatus)
+      .where(eq(biomarkerProcessingStatus.labResultId, labResultId))
+      .limit(1);
 
-    // Get all biomarker results
-    const biomarkers = await db
+    console.log('\nProcessing Status:');
+    console.log('------------------');
+    console.log('Status:', processingStatus?.status);
+    console.log('Started At:', processingStatus?.startedAt);
+    console.log('Completed At:', processingStatus?.completedAt);
+    console.log('Biomarker Count:', processingStatus?.biomarkerCount);
+
+    // Get biomarkers from dedicated table
+    const storedBiomarkers = await db
       .select()
       .from(biomarkerResults)
-      .where(eq(biomarkerResults.labResultId, labResultId))
-      .orderBy(biomarkerResults.name);
+      .where(eq(biomarkerResults.labResultId, labResultId));
 
-    console.log('\nBiomarker Results:');
-    console.log('-----------------');
-    console.log('Total Biomarkers:', biomarkers.length);
-    console.log('Unique Biomarkers:', new Set(biomarkers.map(b => b.name)).size);
-    
-    // Group by category
-    const byCategory = biomarkers.reduce((acc, b) => {
-      acc[b.category] = (acc[b.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    console.log('\nBiomarkers by Category:');
-    console.log('---------------------');
-    Object.entries(byCategory).forEach(([category, count]) => {
-      console.log(`${category}: ${count}`);
-    });
+    // Get biomarkers from metadata
+    const metadataBiomarkers = labResult.metadata?.biomarkers?.parsedBiomarkers || [];
 
-    // Sample of first few biomarkers
-    console.log('\nSample Biomarkers:');
-    console.log('-----------------');
-    biomarkers.slice(0, 5).forEach(b => {
+    console.log('\nStorage Comparison:');
+    console.log('-------------------');
+    console.log('Biomarkers in dedicated table:', storedBiomarkers.length);
+    console.log('Biomarkers in metadata:', metadataBiomarkers.length);
+
+    // Check for mismatches
+    if (storedBiomarkers.length !== metadataBiomarkers.length) {
+      console.log('\n⚠️ Warning: Mismatch between storage locations!');
+      console.log('This indicates a potential issue in the storage process.');
+    }
+
+    // Show sample of biomarkers from both locations
+    console.log('\nSample from biomarker_results table:');
+    console.log('----------------------------------');
+    storedBiomarkers.slice(0, 3).forEach(b => {
       console.log(`${b.name}: ${b.value} ${b.unit} (${b.status || 'No Status'})`);
     });
 
+    console.log('\nSample from metadata:');
+    console.log('--------------------');
+    metadataBiomarkers.slice(0, 3).forEach(b => {
+      console.log(`${b.name}: ${b.value} ${b.unit}`);
+    });
+
+    // Show storage details
+    console.log('\nStorage Details:');
+    console.log('----------------');
+    console.log('Lab ID:', labResult.id);
+    console.log('Upload Date:', new Date(labResult.uploadedAt).toLocaleString());
+    console.log('Has Preprocessed Text:', !!labResult.metadata?.preprocessedText);
+    console.log('Processing Metadata:', JSON.stringify(processingStatus?.metadata, null, 2));
+
   } catch (error) {
     console.error('Error checking biomarker data:', error);
+  }
+}
+
+// Run check for provided lab result ID or default to most recent
+async function main() {
+  try {
+    const labId = process.argv[2] ? parseInt(process.argv[2]) : undefined;
+    
+    if (!labId) {
+      // Get most recent lab result
+      const [mostRecent] = await db
+        .select()
+        .from(labResults)
+        .orderBy(labResults.uploadedAt, "desc")
+        .limit(1);
+        
+      if (mostRecent) {
+        await checkBiomarkerData(mostRecent.id);
+      } else {
+        console.log('No lab results found');
+      }
+    } else {
+      await checkBiomarkerData(labId);
+    }
+  } catch (err) {
+    console.error('Failed to run biomarker check:', err);
   } finally {
     process.exit(0);
   }
 }
 
-// Run check for lab result 92
-checkBiomarkerData(92); 
+main();
