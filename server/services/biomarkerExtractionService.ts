@@ -377,17 +377,17 @@ export class BiomarkerExtractionService {
     for (const [name, { pattern, category, defaultUnit }] of Object.entries(BIOMARKER_PATTERNS)) {
       // Ensure pattern is global
       const globalPattern = new RegExp(pattern.source, pattern.flags + (pattern.global ? '' : 'g'));
-      
+
       const matches = preprocessedText.matchAll(globalPattern);
-      
+
       for (const match of matches) {
         totalMatches++;
-        
+
         // Handle both ordering patterns (value-unit and unit-value)
         const value = match[1] || match[3]; // First or third capture group
         const unit = match[2] || match[4] || defaultUnit; // Second or fourth capture group or default
         const status = match[0].match(/(?:High|Low|Normal|H|L|N)/i)?.[0];
-        
+
         if (!value) {
           logger.warn('No value found in match:', { biomarker: name, match: match[0] });
           continue;
@@ -445,7 +445,7 @@ export class BiomarkerExtractionService {
     // Calculate recall percentage
     const expectedBiomarkers = Object.keys(BIOMARKER_PATTERNS).length;
     const recallPercentage = (successfulExtractions / expectedBiomarkers) * 100;
-    
+
     if (recallPercentage < 60) {
       logger.warn('Low regex recall detected:', {
         recallPercentage,
@@ -511,7 +511,7 @@ export class BiomarkerExtractionService {
                   category: { 
                     type: "string", 
                     description: "Category of biomarker",
-                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "other"]
+                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver",kidney", "hormone", "other"]
                   },
                   status: { 
                     type: "string",
@@ -577,7 +577,7 @@ Ignore any text not related to biomarkers.`;
         try {
           const parsedFunction = JSON.parse(toolCall.function.arguments);
           const biomarkers = parsedFunction.biomarkers;
-          
+
           logger.info('LLM extraction extracted biomarkers:', { 
             count: biomarkers.length,
             firstBiomarker: biomarkers.length > 0 ? 
@@ -596,7 +596,7 @@ Ignore any text not related to biomarkers.`;
                 confidence: 0.9,
                 testDate: b.testDate || new Date().toISOString().split('T')[0]
               };
-              
+
               // Validate
               const validated = BiomarkerSchema.parse(biomarker);
               validatedBiomarkers.push(validated);
@@ -608,12 +608,12 @@ Ignore any text not related to biomarkers.`;
               });
             }
           }
-          
+
           logger.info('LLM extraction validation complete:', {
             originalCount: biomarkers.length,
             validCount: validatedBiomarkers.length
           });
-          
+
           return validatedBiomarkers;
         } catch (parseError) {
           logger.error('Failed to parse LLM function response:', {
@@ -624,7 +624,7 @@ Ignore any text not related to biomarkers.`;
       } else {
         logger.warn('LLM extraction did not return expected tool call');
       }
-      
+
       return [];
     } catch (error) {
       logger.error('LLM extraction failed:', {
@@ -639,7 +639,7 @@ Ignore any text not related to biomarkers.`;
     try {
       const patternService = new BiomarkerPatternService();
       const patternMatches = await patternService.extractPatterns(text);
-      
+
       // Convert pattern matches to biomarker format with proper typing
       return patternMatches.map((match: PatternMatch) => ({
         name: match.name,
@@ -667,12 +667,12 @@ Ignore any text not related to biomarkers.`;
     patternResults: Biomarker[]
   ): Biomarker[] {
     const mergedMap = new Map<string, Biomarker>();
-    
+
     // Helper function to add or update biomarker in map
     const addOrUpdateBiomarker = (biomarker: Biomarker) => {
       const key = biomarker.name.toLowerCase();
       const existing = mergedMap.get(key);
-      
+
       if (!existing || (biomarker.confidence && biomarker.confidence > (existing.confidence || 0))) {
         mergedMap.set(key, biomarker);
       }
@@ -697,10 +697,10 @@ Ignore any text not related to biomarkers.`;
       try {
         // Validate using our schema
         const validated = BiomarkerSchema.parse(biomarker);
-        
+
         // Standardize units if needed
         const standardized = this.standardizeUnit(validated);
-        
+
         validatedBiomarkers.push(standardized);
       } catch (error) {
         errors.push(`Validation failed for ${biomarker.name}: ${error instanceof Error ? error.message : String(error)}`);
@@ -718,26 +718,26 @@ Ignore any text not related to biomarkers.`;
       'lipid', 'metabolic', 'thyroid', 'vitamin', 
       'mineral', 'blood', 'liver', 'kidney', 'hormone'
     ];
-    
+
     const existingCategories = new Set(
       existingResults.map(r => r.category?.toLowerCase() as BiomarkerCategory)
     );
-    
+
     const missingCategories = allCategories.filter(
       cat => !existingCategories.has(cat)
     );
-    
+
     return missingCategories.join(', ');
   }
 
   private standardizeUnit(biomarker: Biomarker): Biomarker {
     // Create a new instance of BiomarkerPatternService to access public methods
     const patternService = new BiomarkerPatternService();
-    
+
     // Convert value to number if it's a string
     const numericValue = typeof biomarker.value === 'string' ? 
       parseFloat(biomarker.value) : biomarker.value;
-    
+
     // Use the public extractPatterns method instead of private standardizeUnit
     const standardized = {
       ...biomarker,
@@ -754,21 +754,21 @@ Ignore any text not related to biomarkers.`;
   }> {
     // 1. First pass: Quick regex extraction for high-confidence matches
     const regexResults = await this.extractWithRegex(text);
-    
+
     // 2. Second pass: Use regex results to guide LLM extraction
     const llmPrompt = this.buildEnhancedPrompt(text, regexResults);
     const llmResults = await this.extractWithLLM(llmPrompt);
-    
+
     // 3. Third pass: Pattern-based extraction for specific formats
     const patternResults = await this.extractWithPatterns(text);
-    
+
     // 4. Merge results with confidence scoring
     const mergedResults = this.mergeResultsWithConfidence(
       regexResults,
       llmResults,
       patternResults
     );
-    
+
     // 5. Validate and standardize
     return this.validateAndStandardizeResults(mergedResults);
   }
@@ -779,25 +779,23 @@ Ignore any text not related to biomarkers.`;
       I've already found these high-confidence biomarkers: ${JSON.stringify(regexResults)}
       Please focus on finding additional biomarkers, especially in these categories:
       ${this.getMissingCategories(regexResults)}
-      
+
       Pay special attention to:
       1. Values near reference ranges
       2. Abnormal values (marked High/Low)
       3. Values in tables or structured sections
-      
+
       Original text:
       ${text}`;
   }
 
   async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
-    const startTime = new Date();
-    logger.info(`Starting atomic storage of ${biomarkers.length} biomarkers for lab ${labResultId}`, {
-      firstBiomarker: biomarkers[0] ? {
-        name: biomarkers[0].name,
-        value: biomarkers[0].value,
-        unit: biomarkers[0].unit
-      } : null
-    });
+  const startTime = new Date();
+  logger.info(`Starting biomarker storage transaction`, {
+    labResultId,
+    biomarkerCount: biomarkers.length,
+    timestamp: startTime.toISOString()
+  });
 
     // Start transaction with proper type
     const trx = await db.transaction();
@@ -973,7 +971,7 @@ Ignore any text not related to biomarkers.`;
 
       // Commit the transaction
       await trx.commit();
-      
+
       // Verify storage
       const verificationCount = await db
         .select({ count: sql`count(*)` })
@@ -988,7 +986,7 @@ Ignore any text not related to biomarkers.`;
         });
         throw new Error('Storage verification failed');
       }
-      
+
       logger.info(`Successfully completed atomic storage of ${biomarkerInserts.length} biomarkers for lab ${labResultId}`, {
         processingTime: Date.now() - startTime.getTime(),
         biomarkerCount: biomarkerInserts.length
@@ -997,7 +995,7 @@ Ignore any text not related to biomarkers.`;
     } catch (error) {
       // Rollback transaction on any error
       await trx.rollback();
-      
+
       // Update processing status to error state
       const errorMetadata = {
         processingTime: Date.now() - startTime.getTime(),
@@ -1035,7 +1033,7 @@ Ignore any text not related to biomarkers.`;
   async processLabResult(labResultId: number): Promise<void> {
     const startTime = new Date();
     let textContent: string | undefined;
-    
+
     try {
       // Get the lab result with metadata
       const [labResult] = await db
@@ -1128,7 +1126,7 @@ Ignore any text not related to biomarkers.`;
         logger.info(`Successfully updated metadata for lab result ${labResultId}`);
       } else {
         logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
-        
+
         // Update processing status to indicate no data found
         await db.update(biomarkerProcessingStatus)
           .set({
@@ -1146,7 +1144,7 @@ Ignore any text not related to biomarkers.`;
       }
     } catch (error) {
       const processingTime = Date.now() - startTime.getTime();
-      
+
       // Update processing status to error
       await db.update(biomarkerProcessingStatus)
         .set({
@@ -1160,13 +1158,13 @@ Ignore any text not related to biomarkers.`;
           }
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
-      
+
       logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         textLength: textContent?.length || 0
       });
-      
+
       throw error; // Propagate the error to be handled by the caller
     }
   }

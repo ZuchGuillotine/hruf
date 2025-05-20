@@ -7,7 +7,11 @@ import logger from '../server/utils/logger';
 async function checkBiomarkerData(labResultId: number) {
   try {
     // First check the lab result and its metadata
-    const [labResult] = await db
+    console.log('\nExecution Flow:');
+console.log('---------------');
+console.log('1. Checking extraction process...');
+
+const [labResult] = await db
       .select()
       .from(labResults)
       .where(eq(labResults.id, labResultId))
@@ -71,6 +75,23 @@ async function checkBiomarkerData(labResultId: number) {
     console.log('Lab ID:', labResult.id);
     console.log('Upload Date:', new Date(labResult.uploadedAt).toLocaleString());
     console.log('Has Preprocessed Text:', !!labResult.metadata?.preprocessedText);
+console.log('\nText Content Sample:');
+console.log('------------------');
+console.log(labResult.metadata?.preprocessedText?.normalizedText?.substring(0, 200) || 'No text found');
+
+// Check extraction service state
+const extractionStatus = await db
+  .select()
+  .from(biomarkerProcessingStatus)
+  .where(eq(biomarkerProcessingStatus.labResultId, labResult.id))
+  .limit(1);
+
+console.log('\nExtraction Status:', {
+  status: extractionStatus[0]?.status,
+  method: extractionStatus[0]?.extractionMethod,
+  count: extractionStatus[0]?.biomarkerCount,
+  error: extractionStatus[0]?.errorMessage
+});
     console.log('Processing Metadata:', JSON.stringify(processingStatus?.metadata, null, 2));
 
   } catch (error) {
