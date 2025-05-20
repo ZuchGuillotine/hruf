@@ -1,7 +1,7 @@
 
 import { db } from '../../db';
 import { users } from '../../db/schema';
-import { stripeService } from '../services/stripe';
+import stripeService from '../services/stripe';
 import { eq } from 'drizzle-orm';
 
 export async function updateTrialStatuses() {
