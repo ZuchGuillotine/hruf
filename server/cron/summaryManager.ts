@@ -12,7 +12,7 @@ import logger from '../utils/logger';
 class SummaryTaskManager {
   private dailyInterval: NodeJS.Timeout | null = null;
   private weeklyInterval: NodeJS.Timeout | null = null;
-  private labProcessingTask: cron.ScheduledTask | null = null;
+  private labProcessingTask: ReturnType<typeof cron.schedule> | null = null;
 
   /**
    * Start the daily summary task
