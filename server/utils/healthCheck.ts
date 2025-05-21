@@ -8,8 +8,8 @@ import { version } from '../../package.json';
  * Verifies critical service dependencies and returns detailed status
  */
 export const healthCheck = async (req: Request, res: Response) => {
-  // Only respond with health check data if specifically requesting /health
-  if (req.path === '/health' || req.path === '/api/health') {
+  // Respond to all health check paths including root
+  if (req.path === '/' || req.path === '/health' || req.path === '/api/health') {
     try {
       // Basic server check - if we get here, server is running
       const serverOk = true;

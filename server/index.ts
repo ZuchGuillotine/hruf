@@ -217,13 +217,14 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 async function startServer() {
   try {
     // Cloud Run injects the PORT environment variable
-    const port = parseInt(process.env.PORT || '3001', 10);
+    const port = parseInt(process.env.PORT || '5000', 10);
     const host = '0.0.0.0'; // Required for Cloud Run
 
     server.listen(port, host, () => {
       log(`Server started successfully on ${host}:${port}`);
       log(`Environment: ${process.env.NODE_ENV}`);
-      log('Health check endpoints available at /');
+      log('Health check endpoints available at /, /health, and /api/health');
+      log(`Using port ${port} for ${process.env.NODE_ENV === 'production' ? 'production' : 'development'}`);
     });
 
     // Handle graceful shutdown
