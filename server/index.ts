@@ -36,6 +36,7 @@ import adminRoutes from './routes/admin';
 import { summaryTaskManager } from './cron/summaryManager';
 import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
+import { healthCheck } from './utils/healthCheck';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -86,7 +87,7 @@ const sessionConfig = {
     secure: app.get('env') === 'production', // HTTPS only in production
     httpOnly: true, // Prevent JavaScript access to cookies
     maxAge: DAY_IN_MS,
-    sameSite: app.get('env') === 'production' ? 'none' : 'lax', // Allow cross-site requests in production with HTTPS
+    sameSite: app.get('env') === 'production' ? 'none' as const : 'lax' as const, // Allow cross-site requests in production with HTTPS
     path: '/'
   },
   name: 'stacktracker.sid' // Custom name to avoid default "connect.sid"
@@ -123,9 +124,24 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Add health check endpoint for root
+// Add simplified health check endpoint for root - critical for deployments
 app.get('/', (req, res) => {
-  res.status(200).send('Health check OK');
+  res.status(200).send('OK');
+});
+
+// Add dedicated health check endpoints
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Setup routes and error handling
@@ -216,10 +232,29 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    // Cloud Run injects the PORT environment variable
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+    // Get base port from environment or default
+    const basePort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     const host = '0.0.0.0'; // Required for Cloud Run
 
+    // Try to find an available port
+    let port: number;
+    try {
+      port = await findAvailablePort(basePort, MAX_RETRIES);
+      console.log(`Found available port: ${port}`);
+    } catch (portError) {
+      // If finding a port fails, try one last approach with a different port range
+      console.warn(`Port finding failed, trying alternative port range. Error: ${portError}`);
+      // Try a completely different port range as a last resort
+      const fallbackPort = 3000;
+      try {
+        port = await findAvailablePort(fallbackPort, MAX_RETRIES);
+      } catch (fallbackError) {
+        console.error(`Failed to find any available port: ${fallbackError}`);
+        throw fallbackError;
+      }
+    }
+
+    // Start server on the available port
     server.listen(port, host, () => {
       console.log(`Server started successfully on ${host}:${port}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
