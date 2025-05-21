@@ -211,10 +211,11 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
+    const port = process.env.PORT || 5000;
     const host = '0.0.0.0'; // Always bind to all interfaces
     server.listen(port, host, () => {
       log(`Server started successfully on ${host}:${port}`);
+      log('Health check endpoints available at /, /health, and /api/health');
     });
 
     // Handle graceful shutdown
