@@ -124,8 +124,23 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Add dedicated health check endpoints - but NOT for the root path
-// Since we want the React app to render at the root path
+// Add health check endpoints
+// The root path is a special case - it needs to be lightweight for Cloud Run but still serve the app
+app.get('/', (req, res, next) => {
+  // Special handling for health checks from Cloud Run
+  const isHealthCheck = req.headers['user-agent']?.includes('GoogleHC') || 
+                        req.query.health === 'check';
+  
+  if (isHealthCheck) {
+    // Respond immediately to health checks with 200 OK
+    return res.status(200).send('OK');
+  }
+  
+  // For regular users, continue to the next middleware (which will serve the React app)
+  next();
+});
+
+// Additional health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -229,33 +244,43 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 async function startServer() {
   try {
     // Get base port from environment or default
+    // Cloud Run injects PORT=8080 for production deployments
     const basePort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     const host = '0.0.0.0'; // Required for Cloud Run
+    
+    console.log(`Attempting to start server on ${host}:${basePort} (environment: ${process.env.NODE_ENV || 'development'})`);
 
-    // Try to find an available port
-    let port: number;
-    try {
-      port = await findAvailablePort(basePort, MAX_RETRIES);
-      console.log(`Found available port: ${port}`);
-    } catch (portError) {
-      // If finding a port fails, try one last approach with a different port range
-      console.warn(`Port finding failed, trying alternative port range. Error: ${portError}`);
-      // Try a completely different port range as a last resort
-      const fallbackPort = 3000;
+    // In production, always use the specified port (Cloud Run expects this)
+    if (process.env.NODE_ENV === 'production') {
+      server.listen(basePort, host, () => {
+        console.log(`Production server started on ${host}:${basePort}`);
+        console.log('Health check endpoints available at /, /health, and /api/health');
+      });
+    } else {
+      // In development, try to find an available port
+      let port: number;
       try {
-        port = await findAvailablePort(fallbackPort, MAX_RETRIES);
-      } catch (fallbackError) {
-        console.error(`Failed to find any available port: ${fallbackError}`);
-        throw fallbackError;
+        port = await findAvailablePort(basePort, MAX_RETRIES);
+        console.log(`Found available port: ${port}`);
+      } catch (portError) {
+        // If finding a port fails, try one last approach with a different port range
+        console.warn(`Port finding failed, trying alternative port range. Error: ${portError}`);
+        // Try a completely different port range as a last resort
+        const fallbackPort = 3000;
+        try {
+          port = await findAvailablePort(fallbackPort, MAX_RETRIES);
+        } catch (fallbackError) {
+          console.error(`Failed to find any available port: ${fallbackError}`);
+          throw fallbackError;
+        }
       }
-    }
 
-    // Start server on the available port
-    server.listen(port, host, () => {
-      console.log(`Server started successfully on ${host}:${port}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
-      console.log('Health check endpoints available at /, /health, and /api/health');
-    });
+      // Start development server on the available port
+      server.listen(port, host, () => {
+        console.log(`Development server started on ${host}:${port}`);
+        console.log('Health check endpoints available at /, /health, and /api/health');
+      });
+    }
 
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
