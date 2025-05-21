@@ -123,6 +123,11 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
+// Add health check endpoint for root
+app.get('/', (req, res) => {
+  res.status(200).send('Health check OK');
+});
+
 // Setup routes and error handling
 setupQueryRoutes(app);
 setupSummaryRoutes(app);
