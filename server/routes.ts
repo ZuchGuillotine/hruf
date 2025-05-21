@@ -1385,7 +1385,15 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Health check endpoints
+  // Health check endpoints - Cloud Run specific handler first
+app.get('/', (req, res, next) => {
+  if (req.headers['user-agent']?.includes('GoogleHC')) {
+    return res.status(200).send('OK');
+  }
+  next(); // Pass to next handler if not a health check
+});
+
+// Additional health check endpoints
 app.get('/_health', healthCheck);
 app.get('/health', healthCheck);
 app.get('/api/health', healthCheck);

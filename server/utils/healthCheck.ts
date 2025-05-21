@@ -8,6 +8,10 @@ import { version } from '../../package.json';
  * Optimized to minimize resource usage while providing adequate status
  */
 export const healthCheck = async (req: Request, res: Response) => {
+  // Quick response for Google Cloud Run health checks
+  if (req.headers['user-agent']?.includes('GoogleHC')) {
+    return res.status(200).send('OK');
+  }
   // Simple health check for deployment pings
   if (req.query.mode === 'simple' || req.path === '/_health') {
     return res.status(200).send('OK');
