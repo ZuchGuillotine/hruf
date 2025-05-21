@@ -124,12 +124,8 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Add simplified health check endpoint for root - critical for deployments
-app.get('/', (req, res) => {
-  res.status(200).send('OK');
-});
-
-// Add dedicated health check endpoints
+// Add dedicated health check endpoints - but NOT for the root path
+// Since we want the React app to render at the root path
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
