@@ -237,22 +237,22 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 async function startServer() {
   try {
     // Cloud Run requires port 5000 which gets mapped to 80
-const port = process.env.NODE_ENV === 'production' ? 5000 : (process.env.PORT ? parseInt(process.env.PORT) : 3000);
-const host = '0.0.0.0'; // Required for Cloud Run
-    
-    console.log(`Attempting to start server on ${host}:${basePort} (environment: ${process.env.NODE_ENV || 'development'})`);
+    const port = process.env.NODE_ENV === 'production' ? 5000 : (process.env.PORT ? parseInt(process.env.PORT) : 3000);
+    const host = '0.0.0.0'; // Required for Cloud Run
+
+    console.log(`Attempting to start server on ${host}:${port} (environment: ${process.env.NODE_ENV || 'development'})`);
 
     // In production, always use the specified port (Cloud Run expects this)
     if (process.env.NODE_ENV === 'production') {
-      server.listen(basePort, host, () => {
-        console.log(`Production server started on ${host}:${basePort}`);
+      server.listen(port, host, () => {
+        console.log(`Production server started on ${host}:${port}`);
         console.log('Health check endpoints available at /, /health, and /api/health');
       });
     } else {
       // In development, try to find an available port
       let port: number;
       try {
-        port = await findAvailablePort(basePort, MAX_RETRIES);
+        port = await findAvailablePort(PORT, MAX_RETRIES);
         console.log(`Found available port: ${port}`);
       } catch (portError) {
         // If finding a port fails, try one last approach with a different port range
@@ -269,7 +269,7 @@ const host = '0.0.0.0'; // Required for Cloud Run
 
       // Start development server on the available port
       server.listen(port, host, () => {
-        console.log(`Development server started on ${host}:${port}`);
+        console.log(`Server started on ${host}:${port} (${process.env.NODE_ENV || 'development'} mode)`);
         console.log('Health check endpoints available at /, /health, and /api/health');
       });
     }
