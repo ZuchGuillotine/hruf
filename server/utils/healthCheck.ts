@@ -9,7 +9,7 @@ import { version } from '../../package.json';
  */
 export const healthCheck = async (req: Request, res: Response) => {
   // Simple health check for deployment pings
-  if (req.query.mode === 'simple' || req.path === '/') {
+  if (req.query.mode === 'simple' || req.path === '/_health') {
     return res.status(200).send('OK');
   }
   

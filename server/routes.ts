@@ -1386,7 +1386,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Health check endpoints
-app.get('/', healthCheck);
+app.get('/_health', healthCheck);
 app.get('/health', healthCheck);
 app.get('/api/health', healthCheck);
 
