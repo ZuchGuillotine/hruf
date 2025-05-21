@@ -124,19 +124,12 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Add health check endpoints
-// The root path is a special case - it needs to be lightweight for Cloud Run but still serve the app
+// Simplified health check endpoint for Cloud Run
 app.get('/', (req, res, next) => {
-  // Special handling for health checks from Cloud Run
-  const isHealthCheck = req.headers['user-agent']?.includes('GoogleHC') || 
-                        req.query.health === 'check';
-  
-  if (isHealthCheck) {
-    // Respond immediately to health checks with 200 OK
+  // Quick response for health checks
+  if (req.headers['user-agent']?.includes('GoogleHC')) {
     return res.status(200).send('OK');
   }
-  
-  // For regular users, continue to the next middleware (which will serve the React app)
   next();
 });
 
@@ -215,7 +208,7 @@ async function initializeAndStart() {
 }
 
 // Start server with improved error handling and retries
-const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 const MAX_RETRIES = 3;
 
 async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
