@@ -163,12 +163,16 @@ class SummaryTaskManager {
    * Start lab results processing task
    * @param hour Hour of the day to run the task (0-23)
    */
-  startLabProcessingTask(hour: number = 2): void {
-    const cronExpression = `0 0 ${hour} * * *`; // Run at the specified hour every day
+  /**
+   * Start lab results processing task
+   * @param hour Hour of the day to run the task (0-23)
+   */
+  startLabProcessingTask(hour: number = 3): void {
+    const cronSchedule = `0 0 ${hour} * * *`; // Run at specified hour daily
     
     logger.info(`Scheduling lab processing task to run at ${hour}:00 AM daily`);
     
-    this.labProcessingTask = cron.schedule(cronExpression, async () => {
+    this.labProcessingTask = cron.schedule(cronSchedule, async () => {
       try {
         logger.info('Running scheduled lab processing task');
         await this.processUnprocessedLabResults();
@@ -222,15 +226,6 @@ class SummaryTaskManager {
     } catch (error) {
       logger.error('Error in processing unprocessed lab results:', error);
     }
-  }
-
-  startLabProcessingTask(hour: number = 3): void {
-    const cronSchedule = `0 0 ${hour} * * *`; // Run at specified hour daily
-    this.labProcessingTask = cron.schedule(cronSchedule, async () => {
-      logger.info('Starting scheduled lab results processing');
-      await this.processUnprocessedLabResults();
-    });
-    logger.info(`Lab processing task scheduled for ${hour}:00 AM daily`);
   }
 
   stopAllTasks(): void {
