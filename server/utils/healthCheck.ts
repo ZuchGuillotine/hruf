@@ -1,22 +1,43 @@
 
 import { Request, Response } from 'express';
 import { db } from '@db';
+import { redis } from '../services/redis';
+import { version } from '../../package.json';
 
 /**
- * Health check endpoint handler
- * Verifies database connection and returns service status
+ * Enhanced health check endpoint handler 
+ * Verifies critical service dependencies and returns detailed status
  */
 export const healthCheck = async (req: Request, res: Response) => {
   try {
     // Check database connection
-    await db.query.users.findFirst();
+    const dbConnected = await db.query.users.findFirst()
+      .then(() => true)
+      .catch(() => false);
+
+    // Memory usage check
+    const memoryUsage = process.memoryUsage();
+    const memoryThreshold = 1024 * 1024 * 1024; // 1GB
+    const memoryOk = memoryUsage.heapUsed < memoryThreshold;
+
+    // Overall health status
+    const isHealthy = dbConnected && memoryOk;
     
-    res.status(200).json({
-      status: 'ok',
-      message: 'Service is healthy',
+    const healthStatus = {
+      status: isHealthy ? 'ok' : 'degraded',
+      version,
       timestamp: new Date().toISOString(),
-      database: 'connected'
-    });
+      checks: {
+        database: dbConnected ? 'connected' : 'disconnected',
+        memory: {
+          status: memoryOk ? 'ok' : 'warning',
+          used: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
+          total: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB'
+        }
+      }
+    };
+
+    res.status(isHealthy ? 200 : 503).json(healthStatus);
   } catch (error) {
     console.error('Health check failed:', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -28,7 +49,6 @@ export const healthCheck = async (req: Request, res: Response) => {
       status: 'error',
       message: 'Service is unhealthy',
       timestamp: new Date().toISOString(),
-      database: 'disconnected',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
