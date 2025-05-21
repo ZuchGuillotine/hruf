@@ -236,10 +236,9 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    // Get base port from environment or default
-    // Cloud Run injects PORT=8080 for production deployments
-    const basePort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-    const host = '0.0.0.0'; // Required for Cloud Run
+    // Cloud Run requires port 5000 which gets mapped to 80
+const port = process.env.NODE_ENV === 'production' ? 5000 : (process.env.PORT ? parseInt(process.env.PORT) : 3000);
+const host = '0.0.0.0'; // Required for Cloud Run
     
     console.log(`Attempting to start server on ${host}:${basePort} (environment: ${process.env.NODE_ENV || 'development'})`);
 
