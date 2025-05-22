@@ -44,17 +44,9 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
-// IMMEDIATE health check - before any middleware or initialization
+// Base application endpoint
 app.get('/', (req, res) => {
-  res.status(200).send('OK');
-});
-
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
-
-app.get('/_health', (req, res) => {
-  res.status(200).send('OK');
+  res.status(200).send('Welcome to Stack Tracker');
 });
 
 // Add type for custom error

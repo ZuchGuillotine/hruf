@@ -1377,21 +1377,9 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Bare minimum health check endpoints - immediate response, no async operations
+  // Base route
   app.get('/', (req, res) => {
-    res.status(200).send('OK');
-  });
-
-  app.get('/_health', (req, res) => {
-    res.status(200).send('OK');
-  });
-
-  app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-  });
-
-  app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.status(200).send('Welcome to Stack Tracker API');
   });
 
   // Add the ChatGPT endpoint
