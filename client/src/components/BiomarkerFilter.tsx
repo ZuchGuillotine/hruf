@@ -18,6 +18,7 @@ const CATEGORY_COLORS = {
 export function BiomarkerFilter() {
   const { data, isLoading } = useLabChartData();
   const [location, setLocation] = useLocation();
+const { data: chartData, isLoading } = useLabChartData();
 
   const selectedNames = React.useMemo(() => {
     const params = new URLSearchParams(location.split('?')[1]);
