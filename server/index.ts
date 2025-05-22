@@ -125,19 +125,21 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Consolidated health check endpoints using our staged approach
-app.get('/', (req, res, next) => {
-  // Only intercept at root for Google health checks
-  if (req.headers['user-agent']?.includes('GoogleHC')) {
+// Health checks must come before static file handling
+app.get(['/', '/health', '/api/health', '/_health'], (req, res, next) => {
+  // Fast path for Google Cloud Run health checks
+  if (req.path === '/' && req.headers['user-agent']?.includes('GoogleHC')) {
     return res.status(200).send('OK');
   }
+  
+  // For non-root health endpoints, use full health check
+  if (req.path !== '/') {
+    return healthCheck(req, res);
+  }
+  
+  // For root path but not health check, continue to static handling
   next();
 });
-
-// Use a single health check handler for all health endpoints
-app.get('/health', healthCheck);
-app.get('/api/health', healthCheck);
-app.get('/_health', healthCheck);
 
 // Setup routes and error handling
 setupQueryRoutes(app);
