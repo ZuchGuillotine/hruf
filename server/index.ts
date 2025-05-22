@@ -133,9 +133,9 @@ app.get(['/', '/health', '/api/health'], (req, res) => {
   }
   
   // For non-root health endpoints, use full health check
-  if (req.path !== '/') {
-    return healthCheck(req, res);
-  }
+ if (req.path !== '/') {
+  return healthCheck(req, res);
+        }
   
   // For root path but not health check, continue to static handling
   next();
