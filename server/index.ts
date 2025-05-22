@@ -126,10 +126,10 @@ app.use('/api', slowDown({
 }));
 
 // Health checks must come before static file handling
-app.get(['/', '/health', '/api/health'], (req, res, next) => {
-  // Fast path for Google Cloud Run health checks
-  if (req.path === '/' && req.headers['user-agent']?.includes('GoogleHC')) {
-    return res.status(200).send('OK');
+// Health check endpoints must be first and fast
+app.get(['/', '/health', '/api/health'], (req, res) => {
+  // Quick response for all health checks
+  return res.status(200).send('OK');
   }
   
   // For non-root health endpoints, use full health check
