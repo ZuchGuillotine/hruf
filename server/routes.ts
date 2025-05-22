@@ -35,6 +35,8 @@ import setupSummaryRoutes from './routes/summaryRoutes';
 import { healthCheck } from './utils/healthCheck';
 
 export function registerRoutes(app: Express): Server {
+  // Health check endpoint
+  app.get('/health', healthCheck);
   // Setup authentication first
   setupAuth(app);
 

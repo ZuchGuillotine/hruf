@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import { db } from '../../db';
-import { version } from '../../package.json';
 
-// Placeholder to prevent import errors
-export const healthCheck = () => {};
+import { Request, Response } from 'express';
+
+export const healthCheck = (req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok' });
+};
