@@ -44,6 +44,19 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
+// IMMEDIATE health check - before any middleware or initialization
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.get('/_health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // Add type for custom error
 interface CustomError extends Error {
   status?: number;
@@ -167,32 +180,41 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
-// Start cron jobs
-summaryTaskManager.startDailySummaryTask();
-summaryTaskManager.startWeeklySummaryTask();
-updateTrialStatusesCron.start();
-processMissingBiomarkersCron.start();
-
-// Setup Vite last
-if (app.get("env") === "development") {
-  await setupVite(app, server);
-} else {
-  serveStatic(app);
-}
-
-// Initialize services before starting the server
+// Minimal startup - start server immediately
 async function initializeAndStart() {
   try {
-    // Initialize our services
-    await serviceInitializer.initializeServices();
-    console.log('Services initialized successfully');
-
-    // Start server with improved error handling and retries
+    // Start server immediately to meet port opening requirements
+    console.log('Starting server immediately for deployment health checks...');
     await startServer();
+    
+    // Initialize everything else in background after server is running
+    setTimeout(async () => {
+      try {
+        console.log('Starting background initialization...');
+        
+        // Setup Vite after server is running
+        if (app.get("env") === "development") {
+          await setupVite(app, server);
+        } else {
+          serveStatic(app);
+        }
+        
+        // Start cron jobs in background
+        summaryTaskManager.startDailySummaryTask();
+        summaryTaskManager.startWeeklySummaryTask();
+        updateTrialStatusesCron.start();
+        processMissingBiomarkersCron.start();
+        
+        // Initialize services after server is running
+        await serviceInitializer.initializeServices();
+        console.log('Background initialization completed successfully');
+      } catch (error) {
+        console.error('Failed to initialize background services:', error);
+      }
+    }, 1000);
   } catch (error) {
-    console.error('Failed to initialize services:', error);
-    // Start server anyway, with reduced capabilities
-    await startServer();
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
 }
 
