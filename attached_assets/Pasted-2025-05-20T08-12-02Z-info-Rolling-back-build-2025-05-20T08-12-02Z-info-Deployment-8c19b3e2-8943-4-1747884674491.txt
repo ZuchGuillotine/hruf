@@ -1,0 +1,497 @@
+2025-05-20T08:12:02Z info: Rolling back build
+2025-05-20T08:12:02Z info: Deployment: 8c19b3e2-8943-47ed-8f35-1301e8f029cb
+2025-05-20T08:12:02Z info: Build: ecad9445-d4aa-4b37-ad68-9b9512d9e8ac
+2025-05-20T08:12:02Z info: Rollback source build: aa62a597-b05b-4e29-aab4-571cd9187f69
+2025-05-20T08:12:06Z info: Creating Autoscale service
+forwarding local port 5000 to external port 80 (mapped as 1104)
+    DRIP_2: 'd-xxxxxxxxxxxxx',
+starting up user application
+  cookieMaxAge: 86400000,
+SendGrid Configuration: {
+  sessionTTL: undefined,
+  fromEmail: 'accounts@stacktracker.io',
+  apiKeyExists: true,
+Session configuration: {
+  environment: 'production',
+  }
+  environment: 'production',
+  hasClientSecret: true,
+    DRIP_1: 'd-xxxxxxxxxxxxx',
+}
+  secure: true,
+  timestamp: '2025-05-20T08:12:23.617Z'
+info: Embedding service initialized with LRU cache {"timestamp":"2025-05-20T08:12:23.572Z"}
+}
+    hasReplOwner: true,
+Google OAuth Configuration: {
+  isProd: true,
+Session configuration: {
+    hasReplOwner: true,
+    WELCOME: 'd-fe1c448989a34f4697885de8d504b960',
+  envVars: {
+  hasClientSecret: true,
+    PASSWORD_RESET: 'd-xxxxxxxxxxxxx',
+    hasCustomDomain: true,
+}
+    TWO_FACTOR: 'd-xxxxxxxxxxxxx',
+  callbackUrl: 'https://workspace.BenjaminCox.repl.co/auth/google/callback',
+  sessionSecretLength: 32,
+  envVars: {
+Loading 405 supplements into service
+  hasClientId: true,
+Google OAuth Configuration: {
+info: Starting service initialization... {"timestamp":"2025-05-20T08:12:23.631Z"}
+  timestamp: '2025-05-20T08:12:23.618Z'
+  secureCookies: true,
+  },
+  callbackUrl: 'https://workspace.BenjaminCox.repl.co/auth/google/callback',
+    hasReplSlug: true,
+Loading 405 supplements into trie
+Adding supplement: Vitamin A
+Initializing supplement service...
+}
+  },
+Adding supplement: Vitamin B9
+    hasBaseUrl: false
+Adding supplement: Vitamin B3 (Niacin)
+Adding supplement: Vitamin B3
+  environment: 'production',
+  environment: 'production',
+info: Initializing EmbeddingService... {"timestamp":"2025-05-20T08:12:23.632Z"}
+Adding supplement: Vitamin D
+  templateIds: {
+Adding supplement: Vitamin B6 (Pyridoxal)
+info: Initializing PGVector services... {"timestamp":"2025-05-20T08:12:23.631Z"}
+Adding supplement: Vitamin E
+    hasReplSlug: true,
+Adding supplement: Iron
+Adding supplement: Calcium
+Adding supplement: Vitamin K1 (Phylloquinone)
+Adding supplement: Selenium
+    hasCustomDomain: true,
+Adding supplement: Omega-3
+Adding supplement: Vitamin C (Ascorbic Acid)
+Adding supplement: Probiotics
+Adding supplement: Magnesium (Citrate)
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Vitamin B7
+Adding supplement: Vitamin A (Retinyl Palmitate)
+Adding supplement: Creatine
+Adding supplement: Vitamin A (Retinol)
+Adding supplement: Vitamin C
+Adding supplement: Vitamin B7 (Biotin)
+Adding supplement: Vitamin B5
+  hasClientId: true,
+    hasBaseUrl: false
+Adding supplement: Vitamin B12 (Methylcobalamin)
+Adding supplement: L-Theanine
+  timestamp: '2025-05-20T08:12:23.619Z'
+Adding supplement: Vitamin K
+Adding supplement: Vitamin B6
+Adding supplement: Vitamin D2 (Ergocalciferol)
+Adding supplement: Vitamin B6 (Pyridoxamine)
+Adding supplement: Turmeric (Curcumin)
+Adding supplement: Ginger
+Adding supplement: Vitamin B1 (Thiamine)
+}
+Adding supplement: Vitamin B1 (Thiamine)
+Adding supplement: Vitamin B1 (Thiamin)
+Adding supplement: Vitamin B3 (Nicotinic Acid)
+Adding supplement: Iron (Ferrous Sulfate)
+  isProd: true,
+Adding supplement: Ginger Extract
+Adding supplement: Vitamin B6 (Pyridoxine)
+Adding supplement: Vitamin B6 (Pyridoxal)
+Adding supplement: Vitamin B2 (Riboflavin)
+Adding supplement: Vitamin B2 (Riboflavin)
+  timestamp: '2025-05-20T08:12:23.627Z'
+Adding supplement: Vitamin B3 (Nicotinamide)
+Adding supplement: Vitamin D3 (Cholecalciferol)
+Adding supplement: Vitamin B9 (Folic Acid)
+    DRIP_3: 'd-xxxxxxxxxxxxx'
+Adding supplement: Vitamin E (Alpha-tocopherol)
+Adding supplement: Vitamin B5 (Pantothenic Acid)
+Adding supplement: Iron (Ferric Citrate)
+Adding supplement: Vitamin D3 (Cholecalciferol)
+Adding supplement: Magnesium
+Adding supplement: Iron (Ferrous Gluconate)
+Adding supplement: Magnesium (Glycinate)
+Adding supplement: Calcium (Gluconate)
+Adding supplement: Calcium (Carbonate)
+Adding supplement: Turmeric Root
+Adding supplement: Vitamin B5 (Calcium Pantothenate)
+Adding supplement: Zinc
+Adding supplement: Echinacea Extract
+Adding supplement: Vitamin A (Beta Carotene)
+Adding supplement: Zinc (Picolinate)
+Adding supplement: Echinacea Purpurea Root
+Adding supplement: Acai Berry Extract
+Adding supplement: Vitamin B12
+Adding supplement: Selenium (Selenomethionine)
+Adding supplement: Vitamin K2 (Menaquinone)
+Adding supplement: Calcium (Citrate)
+Adding supplement: Magnesium (Glycinate)
+Adding supplement: Vitamin B7 (Biotin)
+Adding supplement: Echinacea Purpurea Root
+Adding supplement: Calcium (Carbonate)
+Adding supplement: Vitamin B6 (Pyridoxamine)
+Adding supplement: Vitamin E (Alpha-tocopherol)
+Adding supplement: Ashwagandha Root Powder
+Adding supplement: Vitamin B12 (Cyanocobalamin)
+Adding supplement: Vitamin B9 (Methylfolate)
+Adding supplement: Magnesium (Oxide)
+Adding supplement: Vitamin B2
+Adding supplement: Andrographis (General)
+Adding supplement: Vitamin B3 (Niacin)
+Adding supplement: Vitamin B5 (Pantothenic Acid)
+Adding supplement: Vitamin B12 (Methylcobalamin)
+Adding supplement: Arginine (General)
+Adding supplement: Zinc (Gluconate)
+Adding supplement: Creatine Monohydrate
+Adding supplement: Vitamin C (Ascorbic Acid)
+Adding supplement: Creatine HCL
+Adding supplement: Vitamin A (Retinyl Palmitate)
+Adding supplement: Vitamin B12 (Cyanocobalamin)
+Adding supplement: Turmeric (Curcumin)
+Adding supplement: Vitamin B9 (Folate)
+Adding supplement: Vitamin B9 (Methylfolate)
+Adding supplement: Vitamin B3 (Niacin)
+Adding supplement: Vitamin B9 (Folate)
+Adding supplement: Aged Garlic Extract (General)
+Adding supplement: Vitamin E (Mixed Tocopherols)
+  sameSite: 'none',
+Adding supplement: Vitamin B6 (Pyridoxine)
+Adding supplement: Ginger Extract
+Adding supplement: Iron (Ferric Citrate)
+Adding supplement: Vitamin B1 (Thiamin)
+Adding supplement: Vitamin B5 (Calcium Pantothenate)
+Adding supplement: Aged Garlic Extract Powder
+Adding supplement: Vitamin B1 (Thiamine)
+Adding supplement: Calcium (Carbonate)
+Adding supplement: Echinacea Extract
+Adding supplement: Vitamin B5 (Pantothenic Acid)
+Adding supplement: Iron (Ferrous Gluconate)
+Adding supplement: Vitamin B9 (Folic Acid)
+Adding supplement: Vitamin B3 (Nicotinic Acid)
+Adding supplement: Ashwagandha Extract (Sensoril)
+Adding supplement: L-Glutamine
+Adding supplement: Magnesium (Oxide)
+Adding supplement: Magnesium (Citrate)
+Adding supplement: Alpha Lipoic Acid (General)
+Adding supplement: Ginger Root
+Adding supplement: Vitamin A (Beta Carotene)
+Adding supplement: Acai (General)
+Adding supplement: Echinacea
+Adding supplement: Zinc (Citrate)
+Adding supplement: Arginine Alpha-Ketoglutarate
+Adding supplement: Turmeric Root
+Adding supplement: Zinc (Picolinate)
+Adding supplement: Agmatine (General)
+Adding supplement: Vitamin B9 (Folic Acid)
+Adding supplement: Creatine Monohydrate
+Adding supplement: Magnesium (Glycinate)
+Adding supplement: Turmeric Root
+Adding supplement: Calcium (Gluconate)
+Adding supplement: Vitamin B3 (Nicotinamide)
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Vitamin K1 (Phylloquinone)
+Adding supplement: Ashwagandha Extract (KSM-66)
+Adding supplement: Ginger Root
+Adding supplement: Zinc (Citrate)
+Adding supplement: Alfalfa (General)
+Adding supplement: Selenium (Selenomethionine)
+Adding supplement: Ginger Root
+Adding supplement: Vitamin K2 (Menaquinone)
+Adding supplement: Zinc (Picolinate)
+Adding supplement: L-Glutamine
+Adding supplement: Aged Garlic Extract (General)
+Adding supplement: Allicin (General)
+Adding supplement: Vitamin K1 (Phylloquinone)
+Adding supplement: Astaxanthin (Haematococcus pluvialis)
+Adding supplement: Acetyl-L-Carnitine HCL
+Adding supplement: Vitamin B12 (Methylcobalamin)
+Adding supplement: L-Glutamine
+Adding supplement: Magnesium (Oxide)
+Adding supplement: Vitamin B6 (Pyridoxamine)
+Adding supplement: Vitamin B5 (Pantothenic Acid)
+Adding supplement: Ashwagandha Extract (Sensoril)
+Adding supplement: Alpha Lipoic Acid (Racemic)
+Adding supplement: Iron (Ferrous Sulfate)
+Adding supplement: Calcium (Citrate)
+Adding supplement: Vitamin B1
+Adding supplement: Vitamin B5 (Calcium Pantothenate)
+Adding supplement: Andrographis Paniculata Extract
+Adding supplement: Algae Oil (General)
+Adding supplement: L-Theanine
+Adding supplement: Alpha GPC (General)
+Adding supplement: Vitamin B7 (Biotin)
+Adding supplement: Vitamin A (Retinol)
+Adding supplement: Vitamin B3 (Nicotinamide)
+Adding supplement: Vitamin B2 (Riboflavin)
+Adding supplement: Alpha Lipoic Acid (R-ALA)
+Adding supplement: Vitamin B3 (Niacin)
+Adding supplement: Zinc (Citrate)
+Adding supplement: Vitamin E (Mixed Tocopherols)
+Adding supplement: Iron (Ferrous Sulfate)
+Adding supplement: Magnesium (Citrate)
+Adding supplement: Vitamin B9 (Folate)
+Adding supplement: Ashwagandha (General)
+Adding supplement: Vitamin B1 (Thiamin)
+Adding supplement: Vitamin B6 (Pyridoxine)
+Adding supplement: Zinc (Gluconate)
+Adding supplement: Vitamin E (Mixed Tocopherols)
+Adding supplement: Vitamin B2 (Riboflavin)
+Adding supplement: Alpha GPC (General)
+Adding supplement: Arginine (General)
+Adding supplement: Iron (Ferrous Gluconate)
+Adding supplement: Vitamin D3 (Cholecalciferol)
+Adding supplement: L-Arginine
+Adding supplement: Calcium (Gluconate)
+Adding supplement: Acetyl-L-Carnitine (General)
+Adding supplement: Acai Berry Powder
+Adding supplement: Selenium (Selenomethionine)
+Adding supplement: Calcium (Gluconate)
+Adding supplement: Acai Berry Powder
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Vitamin K2 (Menaquinone)
+Adding supplement: Astaxanthin (Haematococcus pluvialis)
+Adding supplement: Magnesium (Glycinate)
+Adding supplement: Vitamin C (Ascorbic Acid)
+Adding supplement: Andrographis (General)
+Adding supplement: Ashwagandha (General)
+Adding supplement: Aged Garlic Extract Powder
+Adding supplement: Vitamin B3 (Niacin)
+Adding supplement: Creatine Monohydrate
+Adding supplement: Acetyl-L-Carnitine HCL
+Adding supplement: Vitamin B3 (Nicotinamide)
+Adding supplement: Turmeric
+Adding supplement: Echinacea Purpurea Root
+Adding supplement: Echinacea Extract
+Adding supplement: Acai Berry Extract
+Adding supplement: Creatine HCL
+Adding supplement: Vitamin B12 (Cyanocobalamin)
+Adding supplement: Agmatine Sulfate
+Adding supplement: Astaxanthin (General)
+Adding supplement: Algae Oil (General)
+Adding supplement: Allicin (General)
+Adding supplement: Ashwagandha Extract (KSM-66)
+Adding supplement: Ashwagandha Root Powder
+Adding supplement: Vitamin B1 (Thiamine)
+Adding supplement: Turmeric (Curcumin)
+Adding supplement: Echinacea Purpurea Root
+Adding supplement: Vitamin B9 (Folic Acid)
+Adding supplement: Zinc (Gluconate)
+Adding supplement: Algae Oil (General)
+Adding supplement: Vitamin B9 (Methylfolate)
+Adding supplement: Iron (Ferric Citrate)
+Adding supplement: L-Theanine
+Adding supplement: Ashwagandha Extract (KSM-66)
+Adding supplement: Ashwagandha Root Powder
+Adding supplement: Andrographis Paniculata Extract
+Adding supplement: Vitamin D2 (Ergocalciferol)
+Adding supplement: Vitamin B12 (Cyanocobalamin)
+Adding supplement: Echinacea Extract
+Adding supplement: Agmatine Sulfate
+Adding supplement: Calcium (Citrate)
+Adding supplement: Alpha GPC (General)
+Adding supplement: L-Theanine
+Adding supplement: Magnesium (Citrate)
+Adding supplement: Alpha Lipoic Acid (Racemic)
+Adding supplement: Vitamin A (Retinyl Palmitate)
+Adding supplement: L-Glutamine
+Adding supplement: L-Theanine
+Adding supplement: Bacopa (General)
+Adding supplement: Vitamin E (Alpha-tocopherol)
+Adding supplement: Vitamin B5 (Calcium Pantothenate)
+Adding supplement: Betaine HCl
+Adding supplement: Vitamin B12 (Cyanocobalamin)
+Adding supplement: Alpha Lipoic Acid (General)
+Adding supplement: Astaxanthin (General)
+Adding supplement: Calcium (Carbonate)
+Adding supplement: Black Cohosh (General)
+Adding supplement: Magnesium (Oxide)
+Adding supplement: Zinc (Gluconate)
+Adding supplement: L-Glutamine
+Adding supplement: Arginine Alpha-Ketoglutarate
+Adding supplement: Vitamin B12 (Methylcobalamin)
+Adding supplement: Vitamin B7 (Biotin)
+Adding supplement: Calcium (Carbonate)
+Adding supplement: L-Glutamine
+Adding supplement: Aged Garlic Extract Powder
+Adding supplement: Bacopa Monnieri (General)
+Adding supplement: Vitamin B6 (Pyridoxine)
+Adding supplement: Vitamin A (Beta Carotene)
+Adding supplement: Creatine Monohydrate
+Adding supplement: Agmatine (General)
+Adding supplement: Zinc (Gluconate)
+Adding supplement: Allicin (General)
+Adding supplement: Vitamin B3 (Nicotinic Acid)
+Adding supplement: Vitamin B3 (Nicotinic Acid)
+Adding supplement: Vitamin B3 (Nicotinic Acid)
+info: Lab results services initialized successfully {"timestamp":"2025-05-20T08:12:24.194Z"}
+Adding supplement: L-Arginine
+Adding supplement: Ginger Extract
+Adding supplement: Selenium (Selenomethionine)
+Adding supplement: Vitamin B6 (Pyridoxamine)
+Adding supplement: Turmeric (Curcumin)
+Adding supplement: Agmatine Sulfate
+Adding supplement: Vitamin K1 (Phylloquinone)
+Adding supplement: Vitamin A (Retinyl Palmitate)
+Adding supplement: Acetyl-L-Carnitine (General)
+Adding supplement: Calcium (Citrate)
+Adding supplement: Beta Alanine Capsules
+Adding supplement: Leucine (BCAA)
+Adding supplement: Borage Oil (GLA)
+Adding supplement: Vitamin C (Ascorbic Acid)
+Adding supplement: Bitter Melon Extract
+Adding supplement: Black Seed Oil (General)
+Adding supplement: Vitamin A (Beta Carotene)
+Adding supplement: Vitamin D2 (Ergocalciferol)
+Adding supplement: Zinc (Picolinate)
+Adding supplement: Andrographis (General)
+Adding supplement: Valine (BCAA)
+Adding supplement: Vitamin B6 (Pyridoxamine)
+Adding supplement: Creatine HCL
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Beetroot Powder
+Adding supplement: Vitamin B7 (Biotin)
+Adding supplement: Beta Glucan (General)
+Adding supplement: Acai Berry Extract
+Adding supplement: Vitamin B9 (Folic Acid)
+Adding supplement: Isoleucine (BCAA)
+Adding supplement: Vitamin B12 (Methylcobalamin)
+Adding supplement: Vitamin E (Mixed Tocopherols)
+Adding supplement: Bilberry (General)
+Adding supplement: Ginger Root
+Adding supplement: Vitamin A (Beta Carotene)
+Adding supplement: Vitamin B6 (Pyridoxine)
+Adding supplement: Iron (Ferric Citrate)
+8:12:24 AM [express] Server started successfully on port 5000
+Adding supplement: Ashwagandha Extract (Sensoril)
+Adding supplement: Creatine HCL
+Adding supplement: Vitamin K1 (Phylloquinone)
+Adding supplement: Acetyl-L-Carnitine HCL
+Adding supplement: Bacillus Coagulans (General)
+Adding supplement: Vitamin B6 (Pyridoxal)
+info: Daily summary task will first run in 1008 minutes {"timestamp":"2025-05-20T08:12:24.195Z"}
+Adding supplement: Zinc (Citrate)
+Adding supplement: Beta Sitosterol Capsules
+Adding supplement: Ginger Extract
+Adding supplement: Ginger Extract
+Adding supplement: Vitamin B6 (Pyridoxal)
+Adding supplement: Vitamin E (Mixed Tocopherols)
+Adding supplement: Magnesium (Citrate)
+Adding supplement: Vitamin E (Alpha-tocopherol)
+Adding supplement: Acai (General)
+Adding supplement: Vitamin B6 (Pyridoxal)
+Adding supplement: Iron (Ferrous Gluconate)
+info: Starting daily summary task to run at 1:00 AM daily {"timestamp":"2025-05-20T08:12:24.194Z"}
+Adding supplement: Vitamin B1 (Thiamin)
+Adding supplement: Turmeric (Curcumin)
+Adding supplement: Vitamin B9 (Folate)
+Adding supplement: B-Complex with B1, B2, B3, B5, B6, B7, B9, B12
+Adding supplement: Ashwagandha (General)
+Adding supplement: Acai (General)
+Adding supplement: Ginger Root
+Adding supplement: L-Arginine
+Adding supplement: Vitamin D2 (Ergocalciferol)
+Adding supplement: Agmatine (General)
+Adding supplement: Magnesium (Glycinate)
+Adding supplement: Creatine HCL
+Adding supplement: Aged Garlic Extract (General)
+Adding supplement: Vitamin C (Ascorbic Acid)
+Adding supplement: Iron (Ferrous Sulfate)
+Adding supplement: Alfalfa (General)
+Adding supplement: Boron (General)
+Adding supplement: Boron Glycinate
+Adding supplement: Acai Berry Powder
+Adding supplement: Alfalfa (General)
+Adding supplement: Vitamin B5 (Calcium Pantothenate)
+Adding supplement: Creatine Monohydrate
+Adding supplement: Arginine (General)
+Adding supplement: Black Seed Oil (Nigella Sativa)
+Adding supplement: Iron (Ferrous Sulfate)
+Adding supplement: Bacillus Coagulans Probiotic
+Adding supplement: Alpha Lipoic Acid (General)
+Adding supplement: Turmeric Root
+Adding supplement: Acetyl-L-Carnitine (General)
+Adding supplement: Vitamin B3 (Nicotinamide)
+Adding supplement: Betaine Anhydrous
+info: Scheduled tasks started successfully {"timestamp":"2025-05-20T08:12:24.199Z"}
+Adding supplement: Selenium (Selenomethionine)
+Adding supplement: Calcium (Gluconate)
+Adding supplement: Alpha Lipoic Acid (R-ALA)
+Adding supplement: Arginine Alpha-Ketoglutarate
+Adding supplement: Zinc (Picolinate)
+Adding supplement: Beetroot (General)
+Adding supplement: Vitamin D2 (Ergocalciferol)
+Adding supplement: Bacopa Monnieri Powder
+Finished loading supplements into trie
+info: Initializing summarization services... {"timestamp":"2025-05-20T08:12:23.868Z"}
+Adding supplement: Astaxanthin (Haematococcus pluvialis)
+Adding supplement: Beta Sitosterol (General)
+Adding supplement: Bitter Orange (General)
+Adding supplement: Vitamin B1 (Thiamine)
+Adding supplement: Vitamin A (Retinyl Palmitate)
+Adding supplement: Bitter Orange Extract
+Adding supplement: Vitamin D3 (Cholecalciferol)
+Adding supplement: Magnesium (Oxide)
+Adding supplement: Bitter Melon (General)
+Adding supplement: Vitamin B1 (Thiamin)
+Adding supplement: L-Theanine
+Adding supplement: Vitamin B2 (Riboflavin)
+Adding supplement: Calcium (Citrate)
+Adding supplement: Astaxanthin (General)
+Adding supplement: Boswellia (General)
+Adding supplement: Vitamin K2 (Menaquinone)
+Adding supplement: Bromelain (General)
+Adding supplement: Vitamin B9 (Methylfolate)
+Adding supplement: Vitamin B5 (Pantothenic Acid)
+info: Lab processing task scheduled for 3:00 AM daily {"timestamp":"2025-05-20T08:12:24.199Z"}
+Adding supplement: Bilberry Extract
+Services initialized successfully
+Adding supplement: Bilberry Powder
+Adding supplement: Beta Alanine (General)
+Adding supplement: Turmeric Root
+Supplement service initialized with common supplements
+Adding supplement: Borage Oil (General)
+info: Starting scheduled tasks... {"timestamp":"2025-05-20T08:12:24.194Z"}
+Adding supplement: Beetroot Juice
+info: PDF processing module loaded successfully {"timestamp":"2025-05-20T08:12:24.249Z"}
+info: Preloading PDF processing modules... {"timestamp":"2025-05-20T08:12:24.190Z"}
+Adding supplement: Andrographis Paniculata Extract
+Adding supplement: Black Cohosh Extract
+Adding supplement: Vitamin B9 (Folate)
+Adding supplement: Black Pepper (General)
+info: Initializing lab results services... {"timestamp":"2025-05-20T08:12:24.189Z"}
+Adding supplement: Echinacea Purpurea Root
+info: Weekly summary task will first run in 114 hours {"timestamp":"2025-05-20T08:12:24.195Z"}
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Zinc (Citrate)
+info: Summarization services initialized successfully {"timestamp":"2025-05-20T08:12:24.189Z"}
+info: EmbeddingService initialized successfully {"timestamp":"2025-05-20T08:12:23.867Z"}
+Adding supplement: Vitamin B9 (Methylfolate)
+Adding supplement: Bacopa Monnieri Extract
+Adding supplement: Vitamin E (Alpha-tocopherol)
+Adding supplement: Piperine (General)
+Adding supplement: Black Pepper Extract
+Adding supplement: B-Complex Vitamins (General)
+Adding supplement: Betaine (General)
+info: OpenAI embedding generation verified successfully {"timestamp":"2025-05-20T08:12:24.188Z"}
+Adding supplement: Vitamin K2 (Menaquinone)
+Adding supplement: Vitamin D3 (Cholecalciferol)
+Adding supplement: Boswellia Serrata Powder
+Adding supplement: Boswellia Serrata Extract
+info: PGVector services initialized successfully {"timestamp":"2025-05-20T08:12:23.867Z"}
+Adding supplement: Echinacea Extract
+info: Service initialization completed successfully {"timestamp":"2025-05-20T08:12:24.199Z"}
+info: Uploads directory verified with correct permissions {"timestamp":"2025-05-20T08:12:24.190Z"}
+Adding supplement: Alpha Lipoic Acid (R-ALA)
+Adding supplement: Alpha Lipoic Acid (Racemic)
+Adding supplement: Iron (Ferrous Gluconate)
+Adding supplement: Iron (Ferric Citrate)
+Adding supplement: Branched-Chain Amino Acids (BCAAs) (General)
+Adding supplement: Bromelain Extract
+info: Starting weekly summary task to run on Sunday at 2:00 AM {"timestamp":"2025-05-20T08:12:24.195Z"}
+2025-05-20T08:12:28Z info: Waiting for service to be ready
+2025-05-20T08:12:31Z info: Deployment successful
