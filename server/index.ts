@@ -210,44 +210,17 @@ async function initializeAndStart() {
   }
 }
 
-// Start server with improved error handling and retries
+// Use consistent port 5000 for deployment compatibility
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-const MAX_RETRIES = 3;
-
-async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
-  const host = '0.0.0.0'; // Always bind to all interfaces
-  for (let port = startPort; port < startPort + maxRetries; port++) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const testServer = server.listen(port, host, () => {
-          testServer.close();
-          resolve();
-        });
-        testServer.on('error', reject);
-      });
-      return port;
-    } catch (err: unknown) {
-      const error = err as { code?: string };
-      if (error.code !== 'EADDRINUSE' || port === startPort + maxRetries - 1) {
-        throw err;
-      }
-      console.log(`Port ${port} is in use, trying next port...`);
-    }
-  }
-  throw new Error(`Could not find an available port after ${maxRetries} attempts`);
-}
+const HOST = '0.0.0.0'; // Required for Replit deployments
 
 async function startServer() {
   try {
-    // Use configured PORT for deployment compatibility
-    const port = PORT;
-    const host = '0.0.0.0'; // Required for Replit deployments
+    console.log(`Starting server on ${HOST}:${PORT}`);
 
-    console.log(`Attempting to start server on ${host}:${port} (environment: ${process.env.NODE_ENV || 'development'})`);
-
-    // Use configured port for deployment
-    server.listen(port, host, () => {
-      console.log(`Server started on ${host}:${port} (${process.env.NODE_ENV || 'development'} mode)`);
+    // Use port 5000 consistently as in successful deployment
+    server.listen(PORT, HOST, () => {
+      console.log(`Server started on ${HOST}:${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
       console.log('Health check endpoints available at /, /health, and /api/health');
       
       // Log where the static files are expected to be found in production
