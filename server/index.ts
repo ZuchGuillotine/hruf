@@ -127,17 +127,13 @@ app.use('/api', slowDown({
 
 // Health checks must come before static file handling
 // Health check endpoints must be first and fast
-app.get(['/', '/health', '/api/health'], (req, res) => {
-  // Quick response for all health checks
-  return res.status(200).send('OK');
+app.get(['/', '/health', '/api/health'], (req, res, next) => {
+  // For health check endpoints, use full health check
+  if (req.path !== '/') {
+    return healthCheck(req, res);
   }
   
-  // For non-root health endpoints, use full health check
- if (req.path !== '/') {
-  return healthCheck(req, res);
-        }
-  
-  // For root path but not health check, continue to static handling
+  // For root path, continue to static handling
   next();
 });
 
