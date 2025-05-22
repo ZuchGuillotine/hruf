@@ -124,29 +124,19 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Simplified health check endpoint for Cloud Run
+// Consolidated health check endpoints using our staged approach
 app.get('/', (req, res, next) => {
-  // Quick response for health checks
+  // Only intercept at root for Google health checks
   if (req.headers['user-agent']?.includes('GoogleHC')) {
     return res.status(200).send('OK');
   }
   next();
 });
 
-// Additional health check endpoints
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
-});
+// Use a single health check handler for all health endpoints
+app.get('/health', healthCheck);
+app.get('/api/health', healthCheck);
+app.get('/_health', healthCheck);
 
 // Setup routes and error handling
 setupQueryRoutes(app);
