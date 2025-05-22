@@ -37,6 +37,7 @@ import { summaryTaskManager } from './cron/summaryManager';
 import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
 import { healthCheck } from './utils/healthCheck';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -226,43 +227,32 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    // Cloud Run requires port 5000 which gets mapped to 80
-    const port = process.env.NODE_ENV === 'production' ? 5000 : (process.env.PORT ? parseInt(process.env.PORT) : 3000);
-    const host = '0.0.0.0'; // Required for Cloud Run
+    // Always use port 5000 for Replit deployments
+    const port = 5000;
+    const host = '0.0.0.0'; // Required for Replit deployments
 
     console.log(`Attempting to start server on ${host}:${port} (environment: ${process.env.NODE_ENV || 'development'})`);
 
-    // In production, always use the specified port (Cloud Run expects this)
-    if (process.env.NODE_ENV === 'production') {
-      server.listen(port, host, () => {
-        console.log(`Production server started on ${host}:${port}`);
-        console.log('Health check endpoints available at /, /health, and /api/health');
-      });
-    } else {
-      // In development, try to find an available port
-      let port: number;
-      try {
-        port = await findAvailablePort(PORT, MAX_RETRIES);
-        console.log(`Found available port: ${port}`);
-      } catch (portError) {
-        // If finding a port fails, try one last approach with a different port range
-        console.warn(`Port finding failed, trying alternative port range. Error: ${portError}`);
-        // Try a completely different port range as a last resort
-        const fallbackPort = 3000;
+    // Simplified port binding - always listen on 5000 (Replit expects this for deployment)
+    server.listen(port, host, () => {
+      console.log(`Server started on ${host}:${port} (${process.env.NODE_ENV || 'development'} mode)`);
+      console.log('Health check endpoints available at /, /health, and /api/health');
+      
+      // Log where the static files are expected to be found in production
+      if (process.env.NODE_ENV === 'production') {
+        const publicPath = path.join(__dirname, 'public');
+        console.log('In production mode, looking for static files at:', publicPath);
         try {
-          port = await findAvailablePort(fallbackPort, MAX_RETRIES);
-        } catch (fallbackError) {
-          console.error(`Failed to find any available port: ${fallbackError}`);
-          throw fallbackError;
+          if (fs.existsSync(publicPath)) {
+            console.log('Static directory exists and contents:', fs.readdirSync(publicPath));
+          } else {
+            console.warn('Static directory does not exist:', publicPath);
+          }
+        } catch (error) {
+          console.error('Error checking static directory:', error);
         }
       }
-
-      // Start development server on the available port
-      server.listen(port, host, () => {
-        console.log(`Server started on ${host}:${port} (${process.env.NODE_ENV || 'development'} mode)`);
-        console.log('Health check endpoints available at /, /health, and /api/health');
-      });
-    }
+    });
 
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
