@@ -225,13 +225,13 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    // Always use port 5000 for Replit deployments
-    const port = 5000;
+    // Use configured PORT for deployment compatibility
+    const port = PORT;
     const host = '0.0.0.0'; // Required for Replit deployments
 
     console.log(`Attempting to start server on ${host}:${port} (environment: ${process.env.NODE_ENV || 'development'})`);
 
-    // Simplified port binding - always listen on 5000 (Replit expects this for deployment)
+    // Use configured port for deployment
     server.listen(port, host, () => {
       console.log(`Server started on ${host}:${port} (${process.env.NODE_ENV || 'development'} mode)`);
       console.log('Health check endpoints available at /, /health, and /api/health');

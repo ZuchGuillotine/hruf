@@ -7,11 +7,11 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "cloudrun"
-build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "node dist/server/index.js"]
+build = ["sh", "-c", "npm run build && mkdir -p dist/server && cp -r server/* dist/server && ls -la dist/server"]
+run = ["sh", "-c", "ls -la dist/server && node dist/server/index.js"]
 
 [[ports]]
-localPort = 5000
+localPort = 3001
 externalPort = 80
 
 [workflows]
