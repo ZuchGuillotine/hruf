@@ -1379,10 +1379,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Base route
-  app.get('/', (req, res) => {
-    res.status(200).send('Welcome to Stack Tracker API');
-  });
+  // Remove base route - let Vite serve the React application
 
   // Add the ChatGPT endpoint
   app.post('/api/chat', async (req, res) => {
