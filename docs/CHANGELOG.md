@@ -1,5 +1,32 @@
 ## [Unreleased]
 
+## Added (May 23, 2025)
+Biomarker Visualization Implementation:
+Added BiomarkerHistoryChart component with Recharts integration
+Implemented BiomarkerFilter component for data selection
+Created useLabChartData hook for data fetching
+Added chart data transformation logic
+Implemented proper error boundaries
+Enhanced layout with responsive design
+Fixed (May 23, 2025)
+Chart Component Issues:
+Resolved initial rendering issues
+Fixed filter component data reference
+Corrected chart container sizing
+Enhanced error handling for data loading
+Improved component organization
+Known Issues (May 23, 2025)
+Chart data display not functioning:
+Component renders without data
+Data fetching appears successful
+Transform or display logic needs investigation
+Chart configuration may need adjustment
+
+
+advanced
+Claude 3.5 Sonnet V2
+
+
 ### Changed (May 17, 2025)
 - Enhanced Biomarker Extraction Pipeline:
   - Improved biomarker extraction accuracy:
