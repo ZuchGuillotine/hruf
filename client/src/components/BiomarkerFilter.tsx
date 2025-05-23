@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
@@ -39,7 +38,7 @@ export function BiomarkerFilter() {
     } else {
       params.delete('biomarkers');
     }
-    
+
     const newSearch = params.toString();
     const basePath = location.split('?')[0];
     setLocation(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
@@ -57,7 +56,7 @@ export function BiomarkerFilter() {
     <Card className="p-4">
       <ScrollArea className="h-[200px] w-full">
         <div className="flex flex-wrap gap-2 p-2">
-          {data?.allBiomarkers?.map((name) => (
+          {chartData?.allBiomarkers?.map((name) => (
             <Button
               key={name}
               variant={selectedNames.has(name) ? "default" : "outline"}
@@ -66,7 +65,7 @@ export function BiomarkerFilter() {
               className={`rounded-full ${
                 selectedNames.has(name) 
                   ? '' 
-                  : CATEGORY_COLORS[data.categories[name] || 'other']
+                  : CATEGORY_COLORS[chartData.categories[name] || 'other']
               }`}
             >
               {name}
@@ -77,3 +76,4 @@ export function BiomarkerFilter() {
     </Card>
   );
 }
+```
