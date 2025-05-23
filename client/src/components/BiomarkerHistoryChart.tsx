@@ -41,7 +41,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
 
   // Always render the container, but show a message if no biomarkers are selected
   return (
-    <div className="w-full h-[600px] bg-white rounded-lg p-4 shadow-sm">
+    <div className="w-full h-[400px] bg-white rounded-lg p-4 shadow-sm mb-4">
       {series.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-500">Select biomarkers to view their trends</p>
