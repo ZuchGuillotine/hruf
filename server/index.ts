@@ -44,10 +44,7 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
-// Base application endpoint
-app.get('/', (req, res) => {
-  res.status(200).send('Welcome to Stack Tracker');
-});
+// Remove the immediate "/" route - let Vite/static serving handle the React app
 
 // Add type for custom error
 interface CustomError extends Error {
@@ -131,15 +128,9 @@ app.use('/api', slowDown({
 }));
 
 // Health checks must come before static file handling
-// Health check endpoints must be first and fast
-app.get(['/', '/health', '/api/health'], (req, res, next) => {
-  // For health check endpoints, use full health check
-  if (req.path !== '/') {
-    return healthCheck(req, res);
-  }
-  
-  // For root path, continue to static handling
-  next();
+// Health check endpoints - excluding root path which should serve React app
+app.get(['/health', '/api/health'], (req, res) => {
+  return healthCheck(req, res);
 });
 
 // Setup routes and error handling
@@ -172,24 +163,28 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
-// Minimal startup - start server immediately
+// Initialize and start server with proper React app serving
 async function initializeAndStart() {
   try {
-    // Start server immediately to meet port opening requirements
-    console.log('Starting server immediately for deployment health checks...');
+    console.log('Initializing application...');
+    
+    // Start server first, then setup Vite/static serving
+    console.log('Starting server...');
     await startServer();
     
-    // Initialize everything else in background after server is running
+    // Setup Vite/static serving AFTER server is running
+    if (app.get("env") === "development") {
+      console.log('Setting up Vite development server...');
+      await setupVite(app, server);
+    } else {
+      console.log('Setting up static file serving...');
+      serveStatic(app);
+    }
+    
+    // Initialize background services after server is running
     setTimeout(async () => {
       try {
         console.log('Starting background initialization...');
-        
-        // Setup Vite after server is running
-        if (app.get("env") === "development") {
-          await setupVite(app, server);
-        } else {
-          serveStatic(app);
-        }
         
         // Start cron jobs in background
         summaryTaskManager.startDailySummaryTask();
