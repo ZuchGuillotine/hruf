@@ -33,9 +33,30 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
   const chartData = React.useMemo(() => {
     if (!series?.length) return [];
     
+    // Get all unique dates
     const dates = Array.from(
       new Set(series.flatMap(s => s.points.map(p => p.testDate)))
     ).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+    // Create data points for each date
+    return dates.map(date => {
+      const dataPoint: Record<string, any> = {
+        testDate: date,
+        formattedDate: new Date(date).toLocaleDateString()
+      };
+
+      // Add values for each series
+      series.forEach(s => {
+        const point = s.points.find(p => p.testDate === date);
+        if (point) {
+          dataPoint[s.name] = point.value;
+          dataPoint[`${s.name}_unit`] = s.unit;
+          dataPoint[`${s.name}_status`] = point.status;
+        }
+      });
+
+      return dataPoint;
+    });
     
     return dates.map(date => {
       const entry: Record<string, any> = { 
