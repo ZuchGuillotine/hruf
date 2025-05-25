@@ -31,7 +31,10 @@ export function useLabChartData() {
     retry: 2,
     retryDelay: 1000,
     queryFn: async () => {
-      const response = await fetch('/api/labs/chart-data', {
+      const searchParams = new URLSearchParams(window.location.search);
+      const biomarkers = searchParams.get('biomarkers')?.split(',').filter(Boolean) || [];
+      
+      const response = await fetch(`/api/labs/chart-data${biomarkers.length ? `?biomarkers=${biomarkers.join(',')}` : ''}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'

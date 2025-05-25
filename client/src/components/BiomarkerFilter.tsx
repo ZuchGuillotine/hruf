@@ -31,19 +31,15 @@ export function BiomarkerFilter() {
     return biomarkersParam ? new Set(biomarkersParam.split(',').filter(Boolean)) : new Set<string>();
   }, [location]);
 
-  // Trigger initial selection state on mount
+  // Initialize selection state from URL params
   React.useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const biomarkersParam = searchParams.get('biomarkers');
     if (biomarkersParam) {
       const biomarkers = biomarkersParam.split(',').filter(Boolean);
-      biomarkers.forEach(name => {
-        if (chartData?.allBiomarkers?.includes(name)) {
-          toggleName(name);
-        }
-      });
+      setLocation(`${window.location.pathname}?biomarkers=${biomarkers.join(',')}`, { replace: true });
     }
-  }, []);
+  }, [setLocation]);
 
   const toggleName = React.useCallback((name: string) => {
     const newSelected = new Set(selectedNames);
