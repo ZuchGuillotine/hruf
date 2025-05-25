@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { useLocation } from 'wouter';
 import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
 import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
+import type { ApiError } from "@/lib/types";
 import { useLabChartData } from "@/hooks/use-lab-chart-data";
 import type { Series } from "@/types/chart";
 

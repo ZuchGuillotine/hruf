@@ -25,7 +25,7 @@ interface ApiResponse {
 }
 
 export function useLabChartData() {
-  const query = useQuery<ApiResponse, Error, ChartData>({
+  const query = useQuery<ApiResponse, ApiError, ChartData>({
     queryKey: ['labChartData'],
     retry: 2,
     retryDelay: 1000,
