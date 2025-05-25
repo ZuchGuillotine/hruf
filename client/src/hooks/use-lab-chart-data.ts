@@ -57,17 +57,26 @@ export function useLabChartData() {
         value: number;
         testDate: string;
         unit: string;
+        status?: string;
       }>>();
 
       const categoriesMap: Record<string, string> = {};
+
+      console.log('Raw API response:', response);
 
       // First pass: Validate and convert data
       const validData = response.data.filter(biomarker => {
         const value = typeof biomarker.value === 'string' 
           ? parseFloat(biomarker.value) 
           : biomarker.value;
-        return !isNaN(value) && biomarker.name && biomarker.unit;
+        const isValid = !isNaN(value) && biomarker.name && biomarker.unit;
+        if (!isValid) {
+          console.warn('Invalid biomarker data:', biomarker);
+        }
+        return isValid;
       });
+
+      console.log('Valid data after filtering:', validData);
 
       // Second pass: Group by biomarker name
       validData.forEach(biomarker => {
@@ -90,6 +99,8 @@ export function useLabChartData() {
         }
       });
 
+      console.log('Grouped biomarkers:', biomarkers);
+
       const allSeries = Array.from(biomarkers.entries()).map(([name, points]) => {
         // Sort points by date
         const sortedPoints = points.sort((a, b) => 
@@ -105,7 +116,7 @@ export function useLabChartData() {
           maxValue + (maxValue - minValue) * 0.1
         ];
 
-        return {
+        const series = {
           name,
           points: sortedPoints,
           unit: points[0]?.unit || '',
@@ -113,13 +124,19 @@ export function useLabChartData() {
           yAxisDomain,
           latestValue: sortedPoints[sortedPoints.length - 1]?.value
         };
+
+        console.log(`Series for ${name}:`, series);
+        return series;
       });
 
-      return {
+      const result = {
         series: allSeries,
         allBiomarkers: allSeries.map(s => s.name),
         categories: categoriesMap
       };
+
+      console.log('Final transformed data:', result);
+      return result;
     },
     staleTime: 5 * 60 * 1000
   });

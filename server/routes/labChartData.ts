@@ -50,6 +50,16 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
       )
       .orderBy(biomarkerResults.testDate);
 
+    logger.info('Raw database query results:', {
+      resultCount: results.length,
+      sampleResults: results.slice(0, 5),
+      distinctBiomarkers: [...new Set(results.map(r => r.name))],
+      dateRange: results.length > 0 ? {
+        earliest: results[0].testDate,
+        latest: results[results.length - 1].testDate
+      } : null
+    });
+
     logger.info('Retrieved biomarker data', {
       userId,
       resultCount: results.length,
@@ -146,7 +156,8 @@ router.get('/', async (req, res) => {
       uniqueBiomarkers: [...new Set(data.map(d => d.name))],
       requestedBiomarkers: biomarkers,
       page,
-      pageSize
+      pageSize,
+      sampleData: data.slice(0, 3) // Log first 3 records for debugging
     });
 
     const paginatedData = data.slice(offset, offset + pageSize);

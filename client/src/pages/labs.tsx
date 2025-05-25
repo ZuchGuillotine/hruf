@@ -72,9 +72,14 @@ export default function Labs() {
   };
 
   const chartData = useMemo(() => {
-      return Array.from(selectedNames).map(name =>
-          getSeriesByName(name)
-      ).filter(Boolean) as Series[];
+      console.log('Computing chart data with selectedNames:', selectedNames);
+      const result = Array.from(selectedNames).map(name => {
+        const series = getSeriesByName(name);
+        console.log(`Series for ${name}:`, series);
+        return series;
+      }).filter(Boolean) as Series[];
+      console.log('Final chart data:', result);
+      return result;
   }, [selectedNames, getSeriesByName]);
 
   return (

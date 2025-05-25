@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   LineChart, 
@@ -30,9 +29,22 @@ interface BiomarkerHistoryChartProps {
 }
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
+  console.log('BiomarkerHistoryChart received series:', series);
+
+  if (!series || series.length === 0) {
+    console.log('No series data available for chart');
+    return (
+      <Card className="p-6">
+        <div className="text-center text-gray-500">
+          <p>No biomarker data selected for visualization</p>
+        </div>
+      </Card>
+    );
+  }
+
   const chartData = React.useMemo(() => {
     if (!series?.length) return [];
-    
+
     // Get all unique dates
     const dates = Array.from(
       new Set(series.flatMap(s => s.points.map(p => p.testDate)))
@@ -57,7 +69,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
 
       return dataPoint;
     });
-    
+
     return dates.map(date => {
       const entry: Record<string, any> = { 
         testDate: date,
@@ -67,7 +79,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
           year: 'numeric'
         })
       };
-      
+
       series.forEach(s => {
         if (s && s.points) {
           const point = s.points.find(p => p.testDate === date);
@@ -87,19 +99,19 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
 
   const yAxisDomain = React.useMemo(() => {
     if (series.length === 0) return ['auto', 'auto'];
-    
+
     const allValues = series.flatMap(s => s.points.map(p => p.value));
     const min = Math.min(...allValues);
     const max = Math.max(...allValues);
     const padding = (max - min) * 0.1;
-    
+
     return [Math.max(0, min - padding), max + padding];
   }, [series]);
 
   const formatTooltipValue = (value: any, name: string, props: any) => {
     const unit = props.payload[`${name}_unit`];
     const status = props.payload[`${name}_status`];
-    
+
     return [
       `${value} ${unit || ''}`,
       name,
@@ -149,7 +161,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
           )}
         </p>
       </div>
-      
+
       <ResponsiveContainer width="100%" height="90%">
         <LineChart 
           data={chartData} 
@@ -201,7 +213,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
               paddingBottom: '20px'
             }}
           />
-          
+
           {series.map((s) => {
             const color = CHART_COLORS[s.category as keyof typeof CHART_COLORS] || CHART_COLORS.other;
             return (
