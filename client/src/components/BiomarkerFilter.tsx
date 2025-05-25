@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
@@ -6,73 +7,134 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
 const CATEGORY_COLORS = {
-  lipid: 'bg-red-100 hover:bg-red-200',
-  metabolic: 'bg-blue-100 hover:bg-blue-200',
-  thyroid: 'bg-green-100 hover:bg-green-200',
-  vitamin: 'bg-yellow-100 hover:bg-yellow-200',
-  blood: 'bg-purple-100 hover:bg-purple-200',
-  other: 'bg-gray-100 hover:bg-gray-200'
-};
+  lipid: 'bg-red-100 hover:bg-red-200 border-red-300',
+  metabolic: 'bg-blue-100 hover:bg-blue-200 border-blue-300',
+  thyroid: 'bg-green-100 hover:bg-green-200 border-green-300',
+  vitamin: 'bg-yellow-100 hover:bg-yellow-200 border-yellow-300',
+  blood: 'bg-purple-100 hover:bg-purple-200 border-purple-300',
+  liver: 'bg-orange-100 hover:bg-orange-200 border-orange-300',
+  kidney: 'bg-teal-100 hover:bg-teal-200 border-teal-300',
+  hormone: 'bg-pink-100 hover:bg-pink-200 border-pink-300',
+  mineral: 'bg-indigo-100 hover:bg-indigo-200 border-indigo-300',
+  other: 'bg-gray-100 hover:bg-gray-200 border-gray-300'
+} as const;
+
+type CategoryType = keyof typeof CATEGORY_COLORS;
 
 export function BiomarkerFilter() {
   const { data: chartData, isLoading } = useLabChartData();
   const [location, setLocation] = useLocation();
 
   const selectedNames = React.useMemo(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
-    const param = params.get('biomarkers') ?? '';
-    return new Set(param.split(',').filter(Boolean));
+    const searchParams = new URLSearchParams(window.location.search);
+    const biomarkersParam = searchParams.get('biomarkers');
+    return biomarkersParam ? new Set(biomarkersParam.split(',').filter(Boolean)) : new Set<string>();
   }, [location]);
 
-  const toggleName = (name: string) => {
-    const next = new Set(selectedNames);
-    if (next.has(name)) {
-      next.delete(name);
+  const toggleName = React.useCallback((name: string) => {
+    const newSelected = new Set(selectedNames);
+    if (newSelected.has(name)) {
+      newSelected.delete(name);
     } else {
-      next.add(name);
+      newSelected.add(name);
     }
 
-    const params = new URLSearchParams(location.split('?')[1]);
-    if (next.size > 0) {
-      params.set('biomarkers', Array.from(next).join(','));
+    const searchParams = new URLSearchParams(window.location.search);
+    if (newSelected.size > 0) {
+      searchParams.set('biomarkers', Array.from(newSelected).join(','));
     } else {
-      params.delete('biomarkers');
+      searchParams.delete('biomarkers');
     }
 
-    const newSearch = params.toString();
-    const basePath = location.split('?')[0];
-    setLocation(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
-  };
+    const newSearch = searchParams.toString();
+    const basePath = window.location.pathname;
+    const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
+    
+    setLocation(newUrl, { replace: true });
+  }, [selectedNames, setLocation]);
+
+  const clearAll = React.useCallback(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.delete('biomarkers');
+    const newSearch = searchParams.toString();
+    const basePath = window.location.pathname;
+    const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
+    setLocation(newUrl, { replace: true });
+  }, [setLocation]);
 
   if (isLoading) {
     return (
       <Card className="p-4">
-        <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+        <div className="space-y-2">
+          <div className="animate-pulse h-6 bg-gray-200 rounded w-48"></div>
+          <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!chartData?.allBiomarkers?.length) {
+    return (
+      <Card className="p-4">
+        <div className="text-center text-gray-500">
+          <p>No biomarkers found. Upload lab results to see available biomarkers.</p>
+        </div>
       </Card>
     );
   }
 
   return (
     <Card className="p-4">
-      <ScrollArea className="h-[200px] w-full">
-        <div className="flex flex-wrap gap-2 p-2">
-          {chartData?.allBiomarkers?.map((name) => (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Select Biomarkers</h3>
+          {selectedNames.size > 0 && (
             <Button
-              key={name}
-              variant={selectedNames.has(name) ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={() => toggleName(name)}
-              className={`rounded-full ${
-                selectedNames.has(name) 
-                  ? '' 
-                  : CATEGORY_COLORS[chartData.categories[name] || 'other']
-              }`}
+              onClick={clearAll}
+              className="text-xs"
             >
-              {name}
+              Clear All ({selectedNames.size})
             </Button>
-          ))}
+          )}
         </div>
-      </ScrollArea>
+        
+        <ScrollArea className="h-[200px] w-full">
+          <div className="flex flex-wrap gap-2 p-2">
+            {chartData.allBiomarkers.map((name) => {
+              const isSelected = selectedNames.has(name);
+              const category = (chartData.categories[name] || 'other') as CategoryType;
+              const colorClass = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
+              
+              return (
+                <Button
+                  key={name}
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleName(name)}
+                  className={`rounded-full transition-all duration-200 ${
+                    isSelected 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                      : `${colorClass} text-gray-700 border`
+                  }`}
+                >
+                  {name}
+                  {isSelected && (
+                    <span className="ml-1 text-xs" aria-hidden="true">✓</span>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </ScrollArea>
+        
+        {selectedNames.size > 0 && (
+          <div className="text-sm text-gray-600">
+            {selectedNames.size} biomarker{selectedNames.size === 1 ? '' : 's'} selected
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
