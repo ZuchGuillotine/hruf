@@ -31,7 +31,7 @@ interface BiomarkerHistoryChartProps {
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
   const chartData = React.useMemo(() => {
-    if (series.length === 0) return [];
+    if (!series?.length) return [];
     
     const dates = Array.from(
       new Set(series.flatMap(s => s.points.map(p => p.testDate)))
@@ -48,11 +48,12 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
       };
       
       series.forEach(s => {
-        const point = s.points.find(p => p.testDate === date);
-        if (point) {
-          entry[s.name] = point.value;
-          entry[`${s.name}_unit`] = s.unit;
-          entry[`${s.name}_status`] = point.status || 'Normal';
+        if (s && s.points) {
+          const point = s.points.find(p => p.testDate === date);
+          if (point) {
+            entry[s.name] = point.value;
+            entry[`${s.name}_unit`] = s.unit;
+          }
         }
       });
       return entry;

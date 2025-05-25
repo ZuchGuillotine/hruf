@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import type { BiomarkerDataPoint, Series } from '@/types/chart';
 
@@ -11,7 +12,7 @@ interface ApiResponse {
   success: boolean;
   data: Array<{
     name: string;
-    value: number;
+    value: number | string;
     unit: string;
     testDate: string;
     category: string;
@@ -25,27 +26,23 @@ interface ApiResponse {
 }
 
 export function useLabChartData() {
-  const query = useQuery<ApiResponse, ApiError, ChartData>({
+  const query = useQuery<ApiResponse, Error, ChartData>({
     queryKey: ['labChartData'],
     retry: 2,
     retryDelay: 1000,
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/labs/chart-data', {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch lab chart data');
+      const response = await fetch('/api/labs/chart-data', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
         }
+      });
 
-        return response.json();
-      } catch (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error('Failed to fetch lab chart data');
       }
+
+      return response.json();
     },
     select: (response) => {
       const biomarkers = new Map<string, Array<{
@@ -57,16 +54,23 @@ export function useLabChartData() {
       const categoriesMap: Record<string, string> = {};
 
       response.data.forEach(biomarker => {
-        const series = biomarkers.get(biomarker.name) || [];
-        series.push({
-          value: biomarker.value,
-          testDate: biomarker.testDate,
-          unit: biomarker.unit
-        });
-        biomarkers.set(biomarker.name, series);
+        // Convert string values to numbers and validate
+        const numericValue = typeof biomarker.value === 'string' 
+          ? parseFloat(biomarker.value)
+          : biomarker.value;
 
-        if (biomarker.category) {
-          categoriesMap[biomarker.name] = biomarker.category;
+        if (!isNaN(numericValue)) {
+          const series = biomarkers.get(biomarker.name) || [];
+          series.push({
+            value: numericValue,
+            testDate: biomarker.testDate,
+            unit: biomarker.unit
+          });
+          biomarkers.set(biomarker.name, series);
+
+          if (biomarker.category) {
+            categoriesMap[biomarker.name] = biomarker.category;
+          }
         }
       });
 
