@@ -27,22 +27,16 @@ import { sendWelcomeEmail } from './services/emailService';
 import { type SelectSupplement } from "@db/schema";
 import { constructUserContext } from './services/llmContextService';
 import { constructQueryContext } from './services/llmContextService_query';
-import { registerUser, loginUser, logoutUser, verifyEmail } from "./controllers/authController";
-import { getHealthStats, updateHealthStats } from "./controllers/healthStatsController";
-import { getSupplements, createSupplement, updateSupplement, deleteSupplement, searchSupplements } from "./controllers/supplementController";
-import { getSupplementLogs, createSupplementLog, getSupplementLogsByDate } from "./controllers/supplementLogController";
-import { createQualitativeLog, getQualitativeLogs } from "./controllers/qualitativeLogController";
-import { chat } from "./controllers/chatController";
-import { query } from "./controllers/queryController";
+// Removed problematic controller imports temporarily
 import supplementsRouter from './routes/supplements';
-import stripeRouter from './routes/stripe';  // Import Stripe routes
-import postPaymentRouter from './routes/post-payment';  // Import post-payment routes
-import setupSummaryRoutes from './routes/summaryRoutes'; // Import summary routes
-import { generateResearch, getResearch, updateResearch, deleteResearch, getResearchBySlug } from './controllers/researchController';
-import { getFoodSensitivity, updateFoodSensitivity } from './controllers/foodSensitivityController';
+import stripeRouter from './routes/stripe';
+import postPaymentRouter from './routes/post-payment';
+import setupSummaryRoutes from './routes/summaryRoutes';
 import { healthCheck } from './utils/healthCheck';
 
 export function registerRoutes(app: Express): Server {
+  // Health check endpoint
+  app.get('/health', healthCheck);
   // Setup authentication first
   setupAuth(app);
 
@@ -1385,18 +1379,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Health check endpoints - Cloud Run specific handler first
-app.get('/', (req, res, next) => {
-  if (req.headers['user-agent']?.includes('GoogleHC')) {
-    return res.status(200).send('OK');
-  }
-  next(); // Pass to next handler if not a health check
-});
-
-// Additional health check endpoints
-app.get('/_health', healthCheck);
-app.get('/health', healthCheck);
-app.get('/api/health', healthCheck);
+  // Remove base route - let Vite serve the React application
 
   // Add the ChatGPT endpoint
   app.post('/api/chat', async (req, res) => {

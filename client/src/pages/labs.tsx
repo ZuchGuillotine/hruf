@@ -84,13 +84,12 @@ export default function Labs() {
           <h2 className="text-3xl font-bold text-white mb-6">Biomarker Trends</h2>
           {labFiles.length > 0 ? (
             <>
-              <BiomarkerFilter />
+              <div className="space-y-4">
+                <BiomarkerHistoryChart series={chartData} />
+                <BiomarkerFilter />
+              </div>
               <div className="mt-4">
-                {selectedNames.size > 0 ? (
-                  <div className="w-full max-w-[95vw] mx-auto">
-                    <BiomarkerHistoryChart series={chartData} />
-                  </div>
-                ) : (
+                {selectedNames.size === 0 && (
                   <Card className="bg-white/10 border-none">
                     <CardContent className="p-6 text-center">
                       <p className="text-white/70">Select biomarkers above to view their trends</p>
