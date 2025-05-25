@@ -2,6 +2,28 @@
 
 ## Added (May 23, 2025)
 Biomarker Visualization Implementation:
+
+### Enhanced (May 25, 2025)
+- Biomarker Visualization Color Scheme:
+  - Implemented consistent color scheme for biomarker categories:
+    - Lipids (cholesterol, etc.) -> Red (#ef4444)
+    - Metabolic (glucose, etc.) -> Blue (#3b82f6) 
+    - Thyroid -> Green (#10b981)
+    - Vitamins -> Amber (#f59e0b)
+    - Blood -> Violet (#8b5cf6)
+    - Liver -> Orange (#f97316)
+    - Kidney -> Cyan (#06b6d4)
+    - Hormones -> Pink (#ec4899)
+    - Minerals -> Indigo (#6366f1)
+    - Other -> Gray (#6b7280)
+  - Added visual consistency across components:
+    - BiomarkerFilter buttons
+    - BiomarkerHistoryChart lines
+    - Category indicators in UI
+  - Enhanced readability with color-coded grouping
+  - Improved accessibility with distinct color choices
+  - Added consistent color mapping in shared constants
+
 Added BiomarkerHistoryChart component with Recharts integration
 Implemented BiomarkerFilter component for data selection
 Created useLabChartData hook for data fetching
