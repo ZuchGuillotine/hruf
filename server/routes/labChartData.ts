@@ -1,15 +1,4 @@
-/**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 17/05/2025 - 13:58:39
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 17/05/2025
-    * - Author          : 
-    * - Modification    : 
-**/
+
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -49,7 +38,7 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
         testDate: biomarkerResults.testDate,
         category: biomarkerResults.category,
         status: biomarkerResults.status,
-        labResultId: biomarkerResults.labResultId // Add labResultId for debugging
+        labResultId: biomarkerResults.labResultId
       })
       .from(biomarkerResults)
       .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
@@ -61,7 +50,6 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
       )
       .orderBy(biomarkerResults.testDate);
 
-    // Log retrieval results
     logger.info('Retrieved biomarker data', {
       userId,
       resultCount: results.length,
@@ -72,26 +60,46 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
       } : null
     });
 
+    // Process and validate data
+    const processedResults = results.map(result => {
+      const numericValue = typeof result.value === 'string' ? parseFloat(result.value) : result.value;
+      
+      return {
+        name: result.name,
+        value: numericValue,
+        unit: result.unit || '',
+        testDate: result.testDate.toISOString(),
+        category: result.category || 'other',
+        status: result.status || null,
+        labResultId: result.labResultId
+      };
+    });
+
     // Validate data integrity
-    const invalidResults = results.filter(r => {
-      const value = parseFloat(r.value);
-      return isNaN(value) || !r.unit || !r.testDate;
+    const invalidResults = processedResults.filter(r => {
+      return isNaN(r.value) || !r.unit || !r.testDate || !r.name;
     });
 
     if (invalidResults.length > 0) {
       logger.warn('Found invalid biomarker results', {
         invalidCount: invalidResults.length,
-        examples: invalidResults.slice(0, 3).map(r => ({
-          name: r.name,
-          value: r.value,
-          unit: r.unit,
-          testDate: r.testDate,
-          labResultId: r.labResultId
-        }))
+        examples: invalidResults.slice(0, 3)
       });
     }
 
-    return results;
+    // Filter out invalid results
+    const validResults = processedResults.filter(r => 
+      !isNaN(r.value) && r.unit && r.testDate && r.name
+    );
+
+    logger.info('Processed biomarker data', {
+      originalCount: results.length,
+      processedCount: processedResults.length,
+      validCount: validResults.length,
+      invalidCount: invalidResults.length
+    });
+
+    return validResults;
   } catch (error) {
     logger.error('Error retrieving biomarker chart data', {
       userId,
@@ -108,36 +116,59 @@ router.get('/', async (req, res) => {
       logger.warn('Unauthorized biomarker data access attempt');
       return res.status(401).json({ 
         success: false, 
-        error: 'Authentication required'
+        error: 'Authentication required',
+        data: []
       });
     }
 
-    // Validate & coerce query params
-    const { biomarkers, page, pageSize } = querySchema.parse(req.query);
+    const validationResult = querySchema.safeParse(req.query);
+    if (!validationResult.success) {
+      logger.warn('Invalid query parameters', {
+        errors: validationResult.error.issues,
+        query: req.query
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid query parameters',
+        details: validationResult.error.issues,
+        data: []
+      });
+    }
+
+    const { biomarkers, page, pageSize } = validationResult.data;
     const offset = (page - 1) * pageSize;
 
-    // Get biomarker data
     const data = await getBiomarkerChartData(req.user.id, biomarkers);
 
     logger.info('Retrieved biomarker chart data:', {
       userId: req.user.id,
       biomarkerCount: data.length,
+      uniqueBiomarkers: [...new Set(data.map(d => d.name))],
       requestedBiomarkers: biomarkers,
       page,
       pageSize
     });
 
-    // Apply pagination
     const paginatedData = data.slice(offset, offset + pageSize);
+    const hasBiomarkers = data.length > 0;
 
     res.json({
       success: true,
       data: paginatedData,
-      hasBiomarkers: data.length > 0,
+      hasBiomarkers,
       pagination: {
         page,
         pageSize,
-        total: data.length
+        total: data.length,
+        totalPages: Math.ceil(data.length / pageSize)
+      },
+      metadata: {
+        uniqueBiomarkers: [...new Set(data.map(d => d.name))].length,
+        categories: [...new Set(data.map(d => d.category))],
+        dateRange: data.length > 0 ? {
+          earliest: Math.min(...data.map(d => new Date(d.testDate).getTime())),
+          latest: Math.max(...data.map(d => new Date(d.testDate).getTime()))
+        } : null
       }
     });
 
@@ -148,58 +179,38 @@ router.get('/', async (req, res) => {
       stack: error instanceof Error ? error.stack : undefined
     });
 
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to retrieve biomarker chart data',
-      data: []
+      data: [],
+      hasBiomarkers: false
     });
   }
 });
 
-router.get('/trends', async (req, res) => {
+router.get('/debug', async (req, res) => {
   try {
-    const biomarkerNames = req.query.names ? String(req.query.names).split(',') : [];
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
-    const data = await getBiomarkerChartData(req.user!.id, biomarkerNames);
-
-    // Process and aggregate trends
-    const trends = biomarkerNames.map(name => {
-      const series = data
-        .filter(b => b.name === name)
-        .map(b => ({
-          date: b.testDate.toISOString(),
-          value: b.value
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-      return {
-        name,
-        series
-      };
-    });
-
-    logger.info('Retrieved biomarker trends:', {
-      userId: req.user!.id,
-      biomarkers: biomarkerNames,
-      trendPoints: trends.reduce((sum, t) => sum + t.series.length, 0)
-    });
+    const rawResults = await db
+      .select()
+      .from(biomarkerResults)
+      .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
+      .where(eq(labResults.userId, req.user.id))
+      .limit(10);
 
     res.json({
       success: true,
-      data: trends
+      userId: req.user.id,
+      rawDataSample: rawResults,
+      totalCount: rawResults.length
     });
-
   } catch (error) {
-    logger.error('Error retrieving biomarker trends:', {
-      userId: req.user?.id,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-
-    res.status(400).json({
+    res.status(500).json({
       success: false,
-      error: 'Failed to retrieve biomarker trends',
-      data: []
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
