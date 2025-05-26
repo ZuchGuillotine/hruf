@@ -22,11 +22,11 @@ interface LabFile {
 
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
-  const { getSeriesByName } = useLabChartData();
+  const { data: chartDataResponse, getSeriesByName } = useLabChartData();
   const [location] = useLocation();
   const selectedNames = useMemo(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
-    const biomarkers = params.get('biomarkers') ?? '';
+    const searchParams = new URLSearchParams(window.location.search);
+    const biomarkers = searchParams.get('biomarkers') ?? '';
     return new Set(biomarkers.split(',').filter(Boolean));
   }, [location]);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
@@ -73,14 +73,21 @@ export default function Labs() {
 
   const chartData = useMemo(() => {
       console.log('Computing chart data with selectedNames:', selectedNames);
+      console.log('Chart data response available:', !!chartDataResponse);
+      
+      if (!chartDataResponse?.series) {
+        console.log('No chart data response or series available');
+        return [];
+      }
+      
       const result = Array.from(selectedNames).map(name => {
-        const series = getSeriesByName(name);
+        const series = chartDataResponse.series.find(s => s.name === name);
         console.log(`Series for ${name}:`, series);
         return series;
       }).filter(Boolean) as Series[];
       console.log('Final chart data:', result);
       return result;
-  }, [selectedNames, getSeriesByName]);
+  }, [selectedNames, chartDataResponse]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
