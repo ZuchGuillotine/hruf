@@ -167,11 +167,11 @@ app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 async function initializeAndStart() {
   try {
     console.log('Initializing application...');
-    
+
     // Start server first, then setup Vite/static serving
     console.log('Starting server...');
     await startServer();
-    
+
     // Setup Vite/static serving AFTER server is running
     if (app.get("env") === "development") {
       console.log('Setting up Vite development server...');
@@ -180,18 +180,18 @@ async function initializeAndStart() {
       console.log('Setting up static file serving...');
       serveStatic(app);
     }
-    
+
     // Initialize background services after server is running
     setTimeout(async () => {
       try {
         console.log('Starting background initialization...');
-        
+
         // Start cron jobs in background
         summaryTaskManager.startDailySummaryTask();
         summaryTaskManager.startWeeklySummaryTask();
         updateTrialStatusesCron.start();
         processMissingBiomarkersCron.start();
-        
+
         // Initialize services after server is running
         await serviceInitializer.initializeServices();
         console.log('Background initialization completed successfully');
@@ -217,19 +217,41 @@ async function startServer() {
     server.listen(PORT, HOST, () => {
       console.log(`Server started on ${HOST}:${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
       console.log('Health check endpoints available at /, /health, and /api/health');
-      
+
       // Log where the static files are expected to be found in production
       if (process.env.NODE_ENV === 'production') {
         const publicPath = path.join(__dirname, 'public');
         console.log('In production mode, looking for static files at:', publicPath);
+        console.log('Current working directory:', process.cwd());
+        console.log('__dirname:', __dirname);
+
         try {
-          if (fs.existsSync(publicPath)) {
-            console.log('Static directory exists and contents:', fs.readdirSync(publicPath));
-          } else {
-            console.warn('Static directory does not exist:', publicPath);
+          // Check multiple possible locations
+          const possiblePaths = [
+            publicPath,
+            path.join(__dirname, '..', 'dist', 'server', 'public'),
+            path.join(process.cwd(), 'dist', 'server', 'public'),
+            path.join(process.cwd(), 'dist', 'public')
+          ];
+
+          for (const checkPath of possiblePaths) {
+            if (fs.existsSync(checkPath)) {
+              console.log(`Found static files at: ${checkPath}`);
+              console.log('Contents:', fs.readdirSync(checkPath));
+
+              // Check for index.html specifically
+              const indexPath = path.join(checkPath, 'index.html');
+              if (fs.existsSync(indexPath)) {
+                console.log('✅ index.html found at:', indexPath);
+              } else {
+                console.log('❌ index.html NOT found at:', indexPath);
+              }
+            } else {
+              console.log(`Static files NOT found at: ${checkPath}`);
+            }
           }
         } catch (error) {
-          console.error('Error checking static directory:', error);
+          console.error('Error checking static directories:', error);
         }
       }
     });
