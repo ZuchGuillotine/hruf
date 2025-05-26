@@ -178,7 +178,11 @@ async function initializeAndStart() {
       await setupVite(app, server);
     } else {
       console.log('Setting up static file serving...');
-      serveStatic(app);
+      app.use(express.static(path.join(__dirname, 'public')));
+      // Serve index.html for all routes not explicitly handled
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+      });
     }
 
     // Initialize background services after server is running
@@ -205,8 +209,8 @@ async function initializeAndStart() {
   }
 }
 
-// Use consistent port 5000 for deployment compatibility
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+// Use port 3001 for deployment compatibility (mapped to port 80)
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 const HOST = '0.0.0.0'; // Required for Replit deployments
 
 async function startServer() {
