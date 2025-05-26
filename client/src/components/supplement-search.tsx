@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 26/05/2025 - 12:54:24
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 26/05/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import * as React from "react";
 import {
   Command,
@@ -15,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { useSupplements } from "@/hooks/use-supplements";
 
 interface Supplement {
   id: number;
@@ -33,33 +46,55 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [customValue, setCustomValue] = React.useState(value);
+  const { supplements: cachedSupplements } = useSupplements();
 
   // Update customValue when value prop changes
   React.useEffect(() => {
     setCustomValue(value);
   }, [value]);
 
-  const { data: suggestions = [], isLoading } = useQuery<Supplement[]>({
+  // First try to find matches in the cached supplements
+  const cachedMatches = React.useMemo(() => {
+    if (!search) return [];
+    const searchLower = search.toLowerCase();
+    return cachedSupplements
+      .filter(supp => supp.name.toLowerCase().includes(searchLower))
+      .map(supp => ({
+        id: supp.id,
+        name: supp.name,
+        category: supp.category || '',
+        description: supp.description
+      }));
+  }, [search, cachedSupplements]);
+
+  // Only search API if we don't have enough matches in cache
+  const { data: apiSuggestions = [], isLoading } = useQuery<Supplement[]>({
     queryKey: ['/api/supplements/search', search],
-    enabled: search.length > 0,
+    enabled: search.length > 0 && cachedMatches.length < 3,
     queryFn: async () => {
-      console.log('Fetching suggestions for:', search);
-      const res = await fetch(`/api/supplements/search?q=${encodeURIComponent(search)}&limit=20`);
+      console.log('Fetching additional suggestions for:', search);
+      const res = await fetch(`/api/supplements/search?q=${encodeURIComponent(search)}`);
       if (!res.ok) {
         throw new Error('Failed to fetch suggestions');
       }
       const data = await res.json();
-      // Remove duplicates based on supplement ID
+      // Remove duplicates based on supplement ID and filter out already cached matches
       const uniqueData = data.reduce((acc: Supplement[], curr: Supplement) => {
-        if (!acc.find(item => item.id === curr.id)) {
+        if (!acc.find(item => item.id === curr.id) && 
+            !cachedMatches.find(item => item.id === curr.id)) {
           acc.push(curr);
         }
         return acc;
       }, []);
-      console.log('Received suggestions:', uniqueData);
+      console.log('Received additional suggestions:', uniqueData);
       return uniqueData;
     },
   });
+
+  // Combine cached and API results
+  const suggestions = React.useMemo(() => {
+    return [...cachedMatches, ...apiSuggestions];
+  }, [cachedMatches, apiSuggestions]);
 
   const handleInputChange = (value: string) => {
     setSearch(value);
@@ -83,7 +118,14 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0" 
+        align="start"
+        aria-describedby="supplement-search-description"
+      >
+        <div id="supplement-search-description" className="sr-only">
+          Search for supplements or type a custom supplement name
+        </div>
         <Command className="bg-white text-[#1b4332]">
           <CommandInput
             placeholder="Search or type supplement name..."
@@ -92,7 +134,7 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
             className="h-9"
           />
           {isLoading ? (
-            <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+            <div className="p-4 text-sm text-muted-foreground">Loading additional suggestions...</div>
           ) : suggestions.length === 0 ? (
             <CommandEmpty>No matches found. You can use this custom name.</CommandEmpty>
           ) : (

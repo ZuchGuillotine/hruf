@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 26/05/2025 - 12:56:05
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 26/05/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import express from 'express';
 import { db } from '../../db';
 import { supplements, supplementLogs } from '../../db/schema';

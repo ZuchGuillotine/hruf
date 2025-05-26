@@ -1,4 +1,3 @@
-
 import { supplementReference } from "@db/schema";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -96,14 +95,14 @@ class SupplementService {
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
-      // Try trie search first
+      // Try trie search first - this is very fast as it's in-memory
       const trieResults = this.trie.search(query, limit);
       
       if (trieResults.length >= limit) {
-        return trieResults;
+        return trieResults;  // Return immediately if we have enough results from fast trie search
       }
 
-      // Fall back to database search for incomplete results
+      // Only fall back to slower database search if we need more results
       const dbResults = await db
         .select({
           id: supplementReference.id,
