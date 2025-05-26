@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## Fixed (May 26, 2025)
+- Biomarker Chart Data Issues:
+  - Fixed selector refresh issue by correcting URL parameter parsing in labs.tsx
+  - Resolved chart data population by properly accessing chartDataResponse.series
+  - Enhanced query key in useLabChartData to include URL parameters for proper invalidation
+  - Fixed chart component to display biomarker data with functional selection
+  - Improved error handling and data validation throughout the chart pipeline
+  - Successfully achieved end-to-end biomarker visualization functionality
+
 ## Added (May 23, 2025)
 Biomarker Visualization Implementation:
 
