@@ -9,6 +9,7 @@ import {
   Legend, 
   ResponsiveContainer
 } from 'recharts';
+import { Card } from '@/components/ui/card';
 import type { Series } from '@/types/chart';
 
 const CHART_COLORS = {
