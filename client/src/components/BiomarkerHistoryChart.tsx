@@ -70,28 +70,6 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
 
       return dataPoint;
     });
-
-    return dates.map(date => {
-      const entry: Record<string, any> = { 
-        testDate: date,
-        formattedDate: new Date(date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        })
-      };
-
-      series.forEach(s => {
-        if (s && s.points) {
-          const point = s.points.find(p => p.testDate === date);
-          if (point) {
-            entry[s.name] = point.value;
-            entry[`${s.name}_unit`] = s.unit;
-          }
-        }
-      });
-      return entry;
-    });
   }, [series]);
 
   const uniqueUnits = React.useMemo(() => {
