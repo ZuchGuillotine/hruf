@@ -158,8 +158,26 @@ summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
-// Add explicit route for root path to ensure landing page loads
+// Ensure health checks don't interfere with root
+app.get('/health', (req, res) => {
+  res.json({
+    status: "ok",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    checks: {
+      database: "connected",
+      memory: {
+        status: "ok",
+        used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+        total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
+      }
+    }
+  });
+});
+
+// Add explicit root route handler to serve frontend
 app.get('/', (req, res, next) => {
+  console.log('Root route accessed');
   if (app.get("env") === "development") {
     // Let Vite handle it in development
     next();

@@ -70,55 +70,55 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/supplements', supplementsRouter);
   app.use('/api/labs', requireAuth, labsRouter);
   app.use('/api', postPaymentRouter);
-  
+
   // Legacy post-payment registration route
   app.use('/api', express.Router().post('/register-post-payment', async (req, res) => {
     try {
       // Validate request data
       const { username, email, password, sessionId, subscriptionTier, purchaseId } = req.body;
-      
+
       if (!username || !email || !password || !sessionId) {
         return res.status(400).json({ 
           message: 'Invalid registration data', 
           errors: 'Missing required fields'
         });
       }
-      
+
       // Check if user already exists
       const existingUserCount = await db
         .select({ count: sql`count(*)` })
         .from(users)
         .where(eq(users.email, email))
         .then(rows => Number(rows[0]?.count || '0'));
-        
+
       if (existingUserCount > 0) {
         return res.status(400).json({ message: 'User with this email already exists' });
       }
-      
+
       // Verify Stripe session exists and is valid
       let stripeSubscriptionId = null;
       let verified = false;
       let verifiedTier = subscriptionTier || 'starter';
-      
+
       try {
         if (sessionId) {
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
           const session = await stripe.checkout.sessions.retrieve(sessionId);
-          
+
           if (session && session.payment_status === 'paid') {
             verified = true;
-            
+
             // Set subscription ID if available
             if (session.subscription) {
               stripeSubscriptionId = session.subscription as string;
-              
+
               // Get more details about the subscription
               const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-              
+
               // Set the verified tier based on the product
               if (subscription && subscription.items?.data[0]?.price?.product) {
                 const productId = subscription.items.data[0].price.product;
-                
+
                 // Map product IDs to subscription tiers
                 if (typeof productId === 'string') {
                   if (productId === 'prod_SF40NCVtZWsX05') {
@@ -137,12 +137,12 @@ export function registerRoutes(app: Express): Server {
         verified = false;
         verifiedTier = 'free';
       }
-      
+
       // Create the user account with crypto for password hashing
       const salt = crypto.randomBytes(16).toString('hex');
       const buf = crypto.scryptSync(password, salt, 64);
       const hashedPassword = `${buf.toString('hex')}.${salt}`;
-      
+
       // Create the user account
       const [newUser] = await db
         .insert(users)
@@ -158,18 +158,18 @@ export function registerRoutes(app: Express): Server {
           emailVerified: true // Auto-verify post-payment users
         })
         .returning();
-      
+
       if (!newUser) {
         return res.status(500).json({ message: 'Failed to create user account' });
       }
-      
+
       // Log the user in (create a session)
       req.login(newUser, (err) => {
         if (err) {
           console.error('Error logging in after registration:', err);
           return res.status(500).json({ message: 'Account created but login failed' });
         }
-        
+
         // Return success with user data (excluding sensitive fields)
         const { password, ...userWithoutPassword } = newUser;
         return res.status(201).json({ 
@@ -1386,7 +1386,9 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Health check endpoints
-app.get('/', healthCheck); // Root endpoint for deployment health checks
+app.get('/', (req, res) => {
+    res.send('Hello from the server!');
+});
 app.get('/api/health-check', healthCheck); // API health check endpoint
 
   // Add the ChatGPT endpoint
