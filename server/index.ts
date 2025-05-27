@@ -158,6 +158,17 @@ summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
+// Add explicit route for root path to ensure landing page loads
+app.get('/', (req, res, next) => {
+  if (app.get("env") === "development") {
+    // Let Vite handle it in development
+    next();
+  } else {
+    // In production, serve the static file
+    res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
+  }
+});
+
 // Setup Vite AFTER all API routes are registered
 if (app.get("env") === "development") {
   await setupVite(app, server);
