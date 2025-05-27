@@ -203,16 +203,20 @@ if (app.get("env") === "development") {
 // Initialize services before starting the server
 async function initializeAndStart() {
   try {
-    // Initialize our services
-    await serviceInitializer.initializeServices();
-    console.log('Services initialized successfully');
-
-    // Start server with improved error handling and retries
+    // Start server immediately for health checks
     await startServer();
+    
+    // Initialize services in background after server is running
+    console.log('Server started, initializing services in background...');
+    serviceInitializer.initializeServices().then(() => {
+      console.log('Background service initialization completed successfully');
+    }).catch((error) => {
+      console.error('Background service initialization failed (non-fatal):', error);
+    });
+    
   } catch (error) {
-    console.error('Failed to initialize services:', error);
-    // Start server anyway, with reduced capabilities
-    await startServer();
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
 }
 

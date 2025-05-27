@@ -5,6 +5,7 @@ import embeddingService from './embeddingService';
 import { advancedSummaryService } from './advancedSummaryService';
 import { summaryTaskManager } from '../cron/summaryManager';
 import { labSummaryService } from './labSummaryService';
+import { supplementService } from './supplements';
 import logger from '../utils/logger';
 
 /**
@@ -12,38 +13,42 @@ import logger from '../utils/logger';
  */
 class ServiceInitializer {
   /**
-   * Initialize all services in the correct order
+   * Initialize all services in the correct order (non-blocking)
    */
   async initializeServices(): Promise<void> {
+    logger.info('Starting background service initialization...');
+
+    // Initialize services with individual error handling to prevent one failure from stopping others
+    const initPromises = [
+      this.initializePGVector().catch(error => {
+        logger.error('PGVector initialization failed (continuing):', error);
+      }),
+      this.initializeSummarization().catch(error => {
+        logger.error('Summarization initialization failed (continuing):', error);
+      }),
+      this.initializeLabServices().catch(error => {
+        logger.error('Lab services initialization failed (continuing):', error);
+      }),
+      this.initializeSupplementService().catch(error => {
+        logger.error('Supplement service initialization failed (continuing):', error);
+      })
+    ];
+
+    // Wait for all services to attempt initialization
+    await Promise.allSettled(initPromises);
+
+    // Start scheduled tasks if in production mode
     try {
-      logger.info('Starting service initialization...');
-
-      // Initialize PGVector services first
-      await this.initializePGVector();
-
-      // Initialize summarization services
-      await this.initializeSummarization();
-
-      // Initialize lab results services
-      await this.initializeLabServices();
-
-      // Start scheduled tasks if in production mode
       if (process.env.NODE_ENV === 'production') {
         this.startScheduledTasks();
       } else {
         logger.info('Scheduled tasks not started in development mode');
       }
-
-      logger.info('Service initialization completed successfully');
     } catch (error) {
-      logger.error('Service initialization failed:', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-
-      // Even if initialization fails, we'll continue running the app
-      // This allows the app to function with reduced capabilities
+      logger.error('Failed to start scheduled tasks (continuing):', error);
     }
+
+    logger.info('Background service initialization completed');
   }
 
   /**
@@ -131,6 +136,23 @@ class ServiceInitializer {
     } catch (error) {
       logger.error('Lab services initialization failed:', error);
       // Continue even if lab services fail to initialize
+    }
+  }
+
+  /**
+   * Initialize supplement services
+   */
+  private async initializeSupplementService(): Promise<void> {
+    try {
+      logger.info('Initializing supplement services...');
+      
+      // Initialize supplement service (this will start background loading)
+      await supplementService.initialize();
+      
+      logger.info('Supplement services initialized successfully');
+    } catch (error) {
+      logger.error('Supplement service initialization failed:', error);
+      // Continue even if supplement service fails to initialize
     }
   }
 

@@ -23,7 +23,25 @@ class SupplementService {
 
   async initialize() {
     try {
-      console.log("Initializing supplement service...");
+      console.log("Starting supplement service initialization...");
+      
+      // Initialize empty trie first for immediate availability
+      this.trie = new Trie();
+      this.initialized = true;
+      
+      // Load supplements in background
+      this.loadSupplementsInBackground();
+      
+      console.log("Supplement service initialized (loading data in background)");
+    } catch (error) {
+      console.error("Error initializing supplement service:", error);
+      // Don't throw error - allow service to work with reduced capabilities
+    }
+  }
+
+  private async loadSupplementsInBackground() {
+    try {
+      console.log("Loading supplements in background...");
       
       // Load most frequently accessed supplements first
       const commonSupplements = await db
@@ -35,19 +53,17 @@ class SupplementService {
         .from(supplementReference)
         .limit(this.PAGE_SIZE);
 
-      this.trie = new Trie();
       this.loadSupplements(commonSupplements);
-      
-      this.initialized = true;
       this.scheduleCacheRefresh();
       
-      // Load remaining supplements in background
-      this.loadRemainingSupplements();
+      console.log("Common supplements loaded, loading remaining supplements...");
       
-      console.log("Supplement service initialized with common supplements");
+      // Load remaining supplements
+      await this.loadRemainingSupplements();
+      
+      console.log("All supplements loaded successfully");
     } catch (error) {
-      console.error("Error initializing supplement service:", error);
-      throw error;
+      console.error("Error loading supplements in background (non-fatal):", error);
     }
   }
 
@@ -90,20 +106,21 @@ class SupplementService {
   async search(query: string, limit: number = 4) {
     try {
       if (!this.initialized) {
-        console.warn("Supplement service not initialized, initializing now...");
-        await this.initialize();
+        console.warn("Supplement service not initialized, starting initialization...");
+        // Start initialization but don't wait for it
+        this.initialize();
       }
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
-      // Try trie search first
+      // Try trie search first (may be empty if still loading)
       const trieResults = this.trie.search(query, limit);
       
       if (trieResults.length >= limit) {
         return trieResults;
       }
 
-      // Fall back to database search for incomplete results
+      // Always fall back to database search to ensure results
       const dbResults = await db
         .select({
           id: supplementReference.id,
@@ -112,9 +129,20 @@ class SupplementService {
         })
         .from(supplementReference)
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
-        .limit(limit - trieResults.length);
+        .limit(limit);
 
-      return [...trieResults, ...dbResults];
+      // Combine results, preferring trie results but ensuring we have data
+      const combinedResults = [...trieResults];
+      const remainingSlots = limit - combinedResults.length;
+      
+      if (remainingSlots > 0) {
+        const additionalResults = dbResults
+          .filter(dbResult => !combinedResults.some(trieResult => trieResult.id === dbResult.id))
+          .slice(0, remainingSlots);
+        combinedResults.push(...additionalResults);
+      }
+
+      return combinedResults;
     } catch (error) {
       console.error("Error in supplement search:", error);
       return [];
