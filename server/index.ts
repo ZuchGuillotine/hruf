@@ -310,6 +310,7 @@ async function initializeAndStart() {
 // Start server with improved error handling and retries
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 const MAX_RETRIES = 3;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
   const host = '0.0.0.0'; // Always use 0.0.0.0 for Replit
@@ -336,11 +337,21 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 
 async function startServer() {
   try {
-    const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
     const host = '0.0.0.0'; // Always bind to 0.0.0.0 for Replit
-    server.listen(port, host, () => {
-      log(`Server started successfully on ${host}:${port}`);
-    });
+    
+    // In production deployment, use the exact PORT provided by environment
+    // In development, use port finding logic
+    if (IS_PRODUCTION && process.env.PORT) {
+      const port = parseInt(process.env.PORT);
+      server.listen(port, host, () => {
+        log(`Server started successfully on ${host}:${port} (production)`);
+      });
+    } else {
+      const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
+      server.listen(port, host, () => {
+        log(`Server started successfully on ${host}:${port} (development)`);
+      });
+    }
 
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
