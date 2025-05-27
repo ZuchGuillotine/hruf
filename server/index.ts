@@ -152,28 +152,105 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
-// Enhanced health check endpoints - respond immediately
+// Root endpoint health check for deployment platforms - must be before Vite setup
+app.get('/', (req: Request, res: Response, next: NextFunction) => {
+  // Check if this is a health check request
+  const userAgent = req.get('User-Agent') || '';
+  const acceptHeader = req.get('Accept') || '';
+  
+  // Health check detection for deployment platforms
+  const isHealthCheck = userAgent.includes('kube-probe') || 
+                        userAgent.includes('GoogleHC') || 
+                        userAgent.includes('health-check') ||
+                        userAgent.includes('HealthCheck') ||
+                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
+  
+  if (isHealthCheck) {
+    return res.status(200).json({
+      status: "ok",
+      service: "StackTracker Health Platform", 
+      timestamp: new Date().toISOString(),
+      environment: app.get('env'),
+      uptime: process.uptime(),
+      version: "1.0.0"
+    });
+  }
+  
+  // For normal browser requests in development, let Vite handle it
+  if (app.get('env') === 'development') {
+    return next();
+  }
+  
+  // In production, serve the built frontend
+  try {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  } catch (error) {
+    res.status(200).json({
+      status: "ok",
+      service: "StackTracker Health Platform", 
+      timestamp: new Date().toISOString(),
+      environment: app.get('env'),
+      uptime: process.uptime()
+    });
+  }
+});
+
+// Multiple health check endpoints for different deployment platforms
+const healthResponse = {
+  status: "ok",
+  service: "StackTracker Health Platform",
+  timestamp: new Date().toISOString(),
+  environment: app.get('env') || 'production',
+  uptime: process.uptime(),
+  version: "1.0.0"
+};
+
+// Standard health endpoints
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    environment: app.get('env'),
-    uptime: process.uptime()
-  });
+  res.status(200).json(healthResponse);
+});
+
+app.get('/healthz', (req, res) => {
+  res.status(200).json(healthResponse);
+});
+
+app.get('/health-check', (req, res) => {
+  res.status(200).json(healthResponse);
+});
+
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+app.get('/status', (req, res) => {
+  res.status(200).json(healthResponse);
 });
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-    environment: app.get('env'),
-    uptime: process.uptime()
-  });
+  res.status(200).json(healthResponse);
+});
+
+app.get('/api/healthz', (req, res) => {
+  res.status(200).json(healthResponse);
 });
 
 // Readiness check for when services are fully loaded
 let servicesReady = false;
 app.get('/ready', (req, res) => {
+  if (servicesReady) {
+    res.status(200).json({
+      status: "ready",
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    res.status(503).json({
+      status: "loading",
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.get('/readiness', (req, res) => {
   if (servicesReady) {
     res.status(200).json({
       status: "ready",
