@@ -123,14 +123,14 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Setup routes and error handling
+// Register all API routes first
 setupQueryRoutes(app);
 setupSummaryRoutes(app);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/admin', adminRoutes);
 const server = registerRoutes(app);
 
-// Global error handling middleware
+// Global error handling middleware for API routes
 app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
@@ -149,7 +149,6 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
-
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
@@ -159,7 +158,7 @@ summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
-// Setup Vite last
+// Setup Vite AFTER all API routes are registered
 if (app.get("env") === "development") {
   await setupVite(app, server);
 } else {
