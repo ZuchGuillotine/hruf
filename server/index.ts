@@ -74,7 +74,7 @@ if (!sessionSecret || sessionSecret.length < 32) {
   });
 }
 
-const sessionConfig = {
+const sessionConfig: session.SessionOptions = {
   secret: sessionSecret || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false, // Don't create sessions until something is stored
@@ -86,15 +86,15 @@ const sessionConfig = {
     secure: app.get('env') === 'production', // HTTPS only in production
     httpOnly: true, // Prevent JavaScript access to cookies
     maxAge: DAY_IN_MS,
-    sameSite: app.get('env') === 'production' ? 'none' : 'lax', // Allow cross-site requests in production with HTTPS
+    sameSite: app.get('env') === 'production' ? 'none' : 'lax',
     path: '/'
   },
   name: 'stacktracker.sid' // Custom name to avoid default "connect.sid"
 };
 
 // Apply secure cookies only with HTTPS in production
-if (app.get('env') === 'production' && sessionConfig.cookie.sameSite === 'none') {
-  sessionConfig.cookie.secure = true; // Must be secure if sameSite is none
+if (app.get('env') === 'production') {
+  sessionConfig.cookie!.secure = true; // Must be secure if sameSite is none
 }
 
 // Core middleware setup - order is important
@@ -152,25 +152,39 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
-// Start cron jobs
-summaryTaskManager.startDailySummaryTask();
-summaryTaskManager.startWeeklySummaryTask();
-updateTrialStatusesCron.start();
-processMissingBiomarkersCron.start();
-
-// Simple health check endpoints
+// Enhanced health check endpoints - respond immediately
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: "ok",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: app.get('env'),
+    uptime: process.uptime()
   });
 });
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: "ok", 
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: app.get('env'),
+    uptime: process.uptime()
   });
+});
+
+// Readiness check for when services are fully loaded
+let servicesReady = false;
+app.get('/ready', (req, res) => {
+  if (servicesReady) {
+    res.status(200).json({
+      status: "ready",
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    res.status(503).json({
+      status: "loading",
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Setup Vite AFTER all API routes are registered
@@ -187,13 +201,28 @@ async function initializeAndStart() {
     await startServer();
 
     // Initialize services in background - don't block server startup
-    setTimeout(() => {
-      serviceInitializer.initializeServices().then(() => {
+    setTimeout(async () => {
+      try {
+        console.log('Starting background service initialization...');
+        await serviceInitializer.initializeServices();
+        
+        // Start cron jobs only after services are ready
+        if (app.get('env') === 'production') {
+          summaryTaskManager.startDailySummaryTask();
+          summaryTaskManager.startWeeklySummaryTask();
+          updateTrialStatusesCron.start();
+          processMissingBiomarkersCron.start();
+          console.log('Cron jobs started');
+        }
+        
+        servicesReady = true;
         console.log('Background service initialization completed successfully');
-      }).catch((error) => {
+      } catch (error) {
         console.error('Background service initialization failed (non-fatal):', error);
-      });
-    }, 1000); // 1 second delay to ensure server is fully up
+        // Mark as ready anyway to prevent blocking
+        servicesReady = true;
+      }
+    }, 2000); // 2 second delay to ensure server is fully up
 
   } catch (error) {
     console.error('Failed to start server:', error);
