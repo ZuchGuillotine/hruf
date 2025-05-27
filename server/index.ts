@@ -191,7 +191,35 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Root route will be handled by Vite middleware in development
+// Add root health check middleware for deployment health checks
+// This must come before Vite/static serving
+app.use('/', (req, res, next) => {
+  // Only handle GET requests to the root path
+  if (req.method === 'GET' && req.path === '/') {
+    const userAgent = req.get('User-Agent') || '';
+    const accept = req.get('Accept') || '';
+
+    // Health check requests typically:
+    // - Don't include browser User-Agent strings
+    // - Don't request HTML content
+    // - Come from deployment infrastructure
+    const isLikelyHealthCheck = 
+      !userAgent.includes('Mozilla') && 
+      !userAgent.includes('Chrome') && 
+      !userAgent.includes('Safari') &&
+      !accept.includes('text/html');
+
+    if (isLikelyHealthCheck) {
+      return res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  // Continue to next middleware (Vite or static serving)
+  next();
+});
 
 // Setup Vite AFTER all API routes are registered
 if (app.get("env") === "development") {
@@ -205,7 +233,7 @@ async function initializeAndStart() {
   try {
     // Start server immediately for health checks
     await startServer();
-    
+
     // Initialize services in background after server is running
     console.log('Server started, initializing services in background...');
     serviceInitializer.initializeServices().then(() => {
@@ -213,7 +241,7 @@ async function initializeAndStart() {
     }).catch((error) => {
       console.error('Background service initialization failed (non-fatal):', error);
     });
-    
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
