@@ -11,21 +11,9 @@ build = ["sh", "-c", "npm run build"]
 run = ["sh", "-c", "node dist/server/index.js"]
 
 [[ports]]
-localPort = 3001
-externalPort = 3001
-
-[[ports]]
 localPort = 5000
 externalPort = 80
 exposeLocalhost = true
-
-[[ports]]
-localPort = 5001
-externalPort = 3000
-
-[[ports]]
-localPort = 5002
-externalPort = 3002
 
 [workflows]
 runButton = "Start application"

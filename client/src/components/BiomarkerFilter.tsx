@@ -7,13 +7,19 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLabChartData } from '@/hooks/use-lab-chart-data';
 
 const CATEGORY_COLORS = {
-  lipid: 'bg-red-100 hover:bg-red-200',
-  metabolic: 'bg-blue-100 hover:bg-blue-200',
-  thyroid: 'bg-green-100 hover:bg-green-200',
-  vitamin: 'bg-yellow-100 hover:bg-yellow-200',
-  blood: 'bg-purple-100 hover:bg-purple-200',
-  other: 'bg-gray-100 hover:bg-gray-200'
-};
+  lipid: 'bg-red-100 hover:bg-red-200 border-red-300',
+  metabolic: 'bg-blue-100 hover:bg-blue-200 border-blue-300',
+  thyroid: 'bg-green-100 hover:bg-green-200 border-green-300',
+  vitamin: 'bg-yellow-100 hover:bg-yellow-200 border-yellow-300',
+  blood: 'bg-purple-100 hover:bg-purple-200 border-purple-300',
+  liver: 'bg-orange-100 hover:bg-orange-200 border-orange-300',
+  kidney: 'bg-teal-100 hover:bg-teal-200 border-teal-300',
+  hormone: 'bg-pink-100 hover:bg-pink-200 border-pink-300',
+  mineral: 'bg-indigo-100 hover:bg-indigo-200 border-indigo-300',
+  other: 'bg-gray-100 hover:bg-gray-200 border-gray-300'
+} as const;
+
+type CategoryType = keyof typeof CATEGORY_COLORS;
 
 export function BiomarkerFilter() {
   const { data, isLoading } = useLabChartData();

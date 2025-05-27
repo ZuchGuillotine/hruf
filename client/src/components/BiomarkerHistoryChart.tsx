@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { Series } from '@/types/chart';
@@ -9,6 +10,10 @@ const CHART_COLORS = {
   thyroid: '#45B7D1',
   vitamin: '#96CEB4',
   blood: '#D4A5A5',
+  liver: '#FFA07A',
+  kidney: '#20B2AA',
+  hormone: '#FFB6C1',
+  mineral: '#9370DB',
   other: '#666666'
 };
 
@@ -94,3 +99,4 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
     </div>
   );
 }
+
