@@ -187,7 +187,7 @@ const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 const MAX_RETRIES = 3;
 
 async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
-  const host = app.get('env') === 'production' ? '0.0.0.0' : '127.0.0.1';
+  const host = '0.0.0.0'; // Always use 0.0.0.0 for Replit
   for (let port = startPort; port < startPort + maxRetries; port++) {
     try {
       await new Promise<void>((resolve, reject) => {
@@ -212,7 +212,7 @@ async function findAvailablePort(startPort: number, maxRetries: number): Promise
 async function startServer() {
   try {
     const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
-    const host = app.get('env') === 'production' ? '0.0.0.0' : '127.0.0.1';
+    const host = '0.0.0.0'; // Always bind to 0.0.0.0 for Replit
     server.listen(port, host, () => {
       log(`Server started successfully on ${host}:${port}`);
     });
