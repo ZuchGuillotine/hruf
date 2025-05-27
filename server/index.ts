@@ -158,67 +158,28 @@ summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
-// Health check endpoints - both for API and deployment
+// Simple health check endpoints
 app.get('/health', (req, res) => {
-  res.json({
+  res.status(200).json({
     status: "ok",
-    version: "1.0.0",
-    timestamp: new Date().toISOString(),
-    checks: {
-      database: "connected",
-      memory: {
-        status: "ok",
-        used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
-        total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
-      }
-    }
+    timestamp: new Date().toISOString()
   });
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: "ok",
-    version: "1.0.0",
-    timestamp: new Date().toISOString(),
-    checks: {
-      database: "connected",
-      memory: {
-        status: "ok",
-        used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
-        total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
-      }
-    }
+  res.status(200).json({
+    status: "ok", 
+    timestamp: new Date().toISOString()
   });
 });
 
-// Add root health check middleware for deployment health checks
-// This must come before Vite/static serving
-app.use('/', (req, res, next) => {
-  // Only handle GET requests to the root path
-  if (req.method === 'GET' && req.path === '/') {
-    const userAgent = req.get('User-Agent') || '';
-    const accept = req.get('Accept') || '';
-
-    // Health check requests typically:
-    // - Don't include browser User-Agent strings
-    // - Don't request HTML content
-    // - Come from deployment infrastructure
-    const isLikelyHealthCheck = 
-      !userAgent.includes('Mozilla') && 
-      !userAgent.includes('Chrome') && 
-      !userAgent.includes('Safari') &&
-      !accept.includes('text/html');
-
-    if (isLikelyHealthCheck) {
-      return res.status(200).json({
-        status: "ok",
-        timestamp: new Date().toISOString()
-      });
-    }
-  }
-
-  // Continue to next middleware (Vite or static serving)
-  next();
+// Simple health check for deployment - must respond immediately
+app.get('/', (req, res, next) => {
+  // Always respond with 200 for root path - deployment health checks
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Setup Vite AFTER all API routes are registered
@@ -228,19 +189,20 @@ if (app.get("env") === "development") {
   serveStatic(app);
 }
 
-// Initialize services before starting the server
+// Initialize services after starting the server
 async function initializeAndStart() {
   try {
     // Start server immediately for health checks
     await startServer();
 
-    // Initialize services in background after server is running
-    console.log('Server started, initializing services in background...');
-    serviceInitializer.initializeServices().then(() => {
-      console.log('Background service initialization completed successfully');
-    }).catch((error) => {
-      console.error('Background service initialization failed (non-fatal):', error);
-    });
+    // Initialize services in background - don't block server startup
+    setTimeout(() => {
+      serviceInitializer.initializeServices().then(() => {
+        console.log('Background service initialization completed successfully');
+      }).catch((error) => {
+        console.error('Background service initialization failed (non-fatal):', error);
+      });
+    }, 1000); // 1 second delay to ensure server is fully up
 
   } catch (error) {
     console.error('Failed to start server:', error);
