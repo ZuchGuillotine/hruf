@@ -173,13 +173,27 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Simple health check for deployment - must respond immediately
+// Health check for deployment infrastructure only
 app.get('/', (req, res, next) => {
-  // Always respond with 200 for root path - deployment health checks
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString()
-  });
+  const userAgent = req.get('User-Agent') || '';
+  const accept = req.get('Accept') || '';
+
+  // Check if this is a health check request (not a browser)
+  const isHealthCheck = 
+    !userAgent.includes('Mozilla') && 
+    !userAgent.includes('Chrome') && 
+    !userAgent.includes('Safari') &&
+    !accept.includes('text/html');
+
+  if (isHealthCheck) {
+    return res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Let the request continue to Vite/static serving for browsers
+  next();
 });
 
 // Setup Vite AFTER all API routes are registered
