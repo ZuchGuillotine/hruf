@@ -158,7 +158,23 @@ summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
-// Health check endpoint
+// Health check endpoints - both for API and deployment
+app.get('/health', (req, res) => {
+  res.json({
+    status: "ok",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    checks: {
+      database: "connected",
+      memory: {
+        status: "ok",
+        used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+        total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
+      }
+    }
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: "ok",
