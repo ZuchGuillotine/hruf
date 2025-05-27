@@ -158,8 +158,8 @@ summaryTaskManager.startWeeklySummaryTask();
 updateTrialStatusesCron.start();
 processMissingBiomarkersCron.start();
 
-// Ensure health checks don't interfere with root
-app.get('/health', (req, res) => {
+// Health check endpoint
+app.get('/api/health', (req, res) => {
   res.json({
     status: "ok",
     version: "1.0.0",
@@ -175,17 +175,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Add explicit root route handler to serve frontend
-app.get('/', (req, res, next) => {
-  console.log('Root route accessed');
-  if (app.get("env") === "development") {
-    // Let Vite handle it in development
-    next();
-  } else {
-    // In production, serve the static file
-    res.sendFile(path.resolve(__dirname, 'public', 'index.html'));
-  }
-});
+// Root route will be handled by Vite middleware in development
 
 // Setup Vite AFTER all API routes are registered
 if (app.get("env") === "development") {
