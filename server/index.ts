@@ -265,10 +265,12 @@ app.get('/readiness', (req, res) => {
 });
 
 // Setup Vite AFTER all API routes are registered
-if (app.get("env") === "development") {
-  await setupVite(app, server);
-} else {
+// Force production mode for deployment
+const IS_PRODUCTION_MODE = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+if (IS_PRODUCTION_MODE) {
   serveStatic(app);
+} else {
+  await setupVite(app, server);
 }
 
 // Initialize services after starting the server
@@ -310,7 +312,6 @@ async function initializeAndStart() {
 // Start server with improved error handling and retries
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 const MAX_RETRIES = 3;
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
   const host = '0.0.0.0'; // Always use 0.0.0.0 for Replit
@@ -341,7 +342,8 @@ async function startServer() {
     
     // In production deployment, use the exact PORT provided by environment
     // In development, use port finding logic
-    if (IS_PRODUCTION && process.env.PORT) {
+    const IS_DEPLOYMENT = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+    if (IS_DEPLOYMENT && process.env.PORT) {
       const port = parseInt(process.env.PORT);
       server.listen(port, host, () => {
         log(`Server started successfully on ${host}:${port} (production)`);
