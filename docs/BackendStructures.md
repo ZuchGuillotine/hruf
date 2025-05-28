@@ -4,6 +4,34 @@
 
 ### Enhanced Service Architecture
 
+#### Elastic Beanstalk Environment Configuration
+- Environment: stacktracker-env-v3
+  - Platform: Docker (Amazon Linux 2023 v4.5.2)
+  - Configuration:
+    - VPC: vpc-0bfbc6bce446d4ced (stacktracker-vpc-v3)
+    - Subnet placement:
+      - Public subnets (10.0.0.0/24, 10.0.1.0/24) for load balancers
+      - Private subnets (10.0.2.0/24, 10.0.3.0/24) for application servers
+      - Isolated subnets (10.0.4.0/24, 10.0.5.0/24) for databases
+    - IAM roles and instance profile
+    - Environment variables:
+      - RDS endpoint and credentials (stacktracker-migration-db)
+      - S3 bucket configuration
+      - Application settings
+    - Health check endpoint: /_health
+    - Load balancer configuration
+    - Auto-scaling settings
+  - Security:
+    - Instance security group
+    - IAM role permissions
+    - Secrets Manager access
+    - S3 bucket access
+  - Integration:
+    - RDS connection through VPC
+    - S3 access via VPC endpoint
+    - Secrets Manager integration
+    - CloudWatch logging
+
 #### Context Building System
 - Service: llmContextService.ts and llmContextService_query.ts
   - Purpose: Builds intelligent context for different interaction types
@@ -46,16 +74,19 @@
     - `initializeSummarization()`: Initializes summarization services
     - `startScheduledTasks()`: Configures automated summary generation
     - `shutdownServices()`: Provides graceful shutdown of all services
+    - `initializeEnvironment()`: Loads EB environment variables
   - Integration:
     - Integrated with server startup in index.ts
     - Environment-aware scheduling (only in production)
     - Robust error handling to prevent startup failures
     - Graceful shutdown with proper cleanup
+    - Elastic Beanstalk environment variable support
 
 ### Initialization Flow
 1. Server Startup:
    - Express server initialization and middleware setup
    - Database connection establishment
+   - Environment variable loading (including EB variables)
    - Service initialization via `initializeAndStart()` function:
      - Calls serviceInitializer.initializeServices()
      - Continues server startup even if services fail
@@ -64,10 +95,12 @@
    - Proper signal handling for graceful shutdown
 
 2. Service Initialization:
+   - Environment variable verification
    - PGVector services verification
    - OpenAI API connectivity check
    - Summarization service setup
    - Automated task scheduling (production only)
+   - Elastic Beanstalk environment validation
 
 3. Shutdown Process:
    - Dedicated `handleShutdown()` function for clean termination
@@ -79,9 +112,16 @@
 
 ## Database Structure
 
-### Primary Database (NeonDB)
-- Location: Neon PostgreSQL
-- Purpose: All application data storage
+### Primary Database (AWS RDS PostgreSQL)
+- Location: AWS RDS PostgreSQL 17.5
+- Instance: stacktracker-migration-db
+- Configuration:
+  - Subnet Group: stacktracker-migration-subnet-group
+  - Parameter Group: stacktracker-migration-param-group
+  - Security Group: sg-033417a7d86b9a062
+  - Storage: 20GB (auto-scaling to 100GB)
+  - Backups: 7-day retention
+  - Maintenance Window: Mon 04:00-05:00 UTC
 - Tables:
   - users: User authentication and profiles
   - supplements: User's persistent supplement selections
@@ -92,7 +132,6 @@
   - supplementReference: Autocomplete and search functionality
   - query_chats: General query chat interactions
   - labResults: User's uploaded lab test results and reports
-
 
 ### Data Flow
 1. Chat Systems:
@@ -1048,3 +1087,19 @@ interface LabResultMetadata {
 3. Text Storage → Database
 4. Biomarker Extraction → Biomarker Extraction Service
 5. Results Storage → Database
+
+### Security Groups and Network Configuration
+- VPC: vpc-0bfbc6bce446d4ced (stacktracker-vpc-v3)
+- Public Subnets:
+  - subnet-0a4c0264355eda44e (us-west-2a)
+  - subnet-04b101642ee61aa20 (us-west-2b)
+- Private Subnets:
+  - 10.0.2.0/24 (us-west-2a)
+  - 10.0.3.0/24 (us-west-2b)
+- Isolated Subnets:
+  - 10.0.4.0/24 (us-west-2a)
+  - 10.0.5.0/24 (us-west-2b)
+- Security Groups:
+  - Application SG: Allows outbound traffic for app servers
+  - Database SG (sg-033417a7d86b9a062): Only allows inbound 5432 from Application SG
+  - VPC Endpoints: Secure access to AWS services without internet

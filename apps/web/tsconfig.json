@@ -1,0 +1,36 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@db": ["../core/db"],
+      "@db/*": ["../core/db/*"],
+      "@/*": ["./client/src/*"],
+      "@stacktracker/ui": ["../../packages/ui/src"],
+      "@stacktracker/ui/*": ["../../packages/ui/src/*"],
+      "@stacktracker/core": ["../../packages/core/src"],
+      "@stacktracker/core/*": ["../../packages/core/src/*"]
+    },
+    "types": ["node", "vite/client", "jest"],
+    "outDir": "./dist",
+    "rootDir": ".",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "composite": true
+  },
+  "include": [
+    "client/**/*",
+    "server/**/*",
+    "../../packages/ui/src/**/*",
+    "../../packages/core/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ],
+  "references": [
+    { "path": "../../packages/ui", "composite": true },
+    { "path": "../../packages/core", "composite": true }
+  ]
+} 

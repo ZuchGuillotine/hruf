@@ -1,25 +1,26 @@
 {
-  "include": ["client/src/**/*", "db/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "target": "es2022",
-    "noEmit": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "emitDeclarationOnly": true,
+    "tsBuildInfoFile": "./.tsbuildinfo",
     "baseUrl": ".",
-    "types": ["jest", "node", "vite/client"],
-    "paths": {
-      "@db": ["./db/index.ts"],
-      "@db/*": ["./db/*"],
-      "@/*": ["./client/src/*"]
-    }
-  }
+    "types": ["jest", "node", "vite/client"]
+  },
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
+  "files": []
 }

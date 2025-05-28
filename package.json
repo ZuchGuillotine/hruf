@@ -20,6 +20,11 @@
     "test:verbose": "jest --config=jest.config.cjs --verbose",
     "test:debug": "NODE_OPTIONS=--inspect-brk jest --config=jest.config.cjs --runInBand"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/mobile-ui"
+  ],
   "dependencies": {
     "@google-cloud/vision": "^5.1.0",
     "@hookform/resolvers": "^3.9.1",
@@ -137,7 +142,9 @@
     "ts-jest": "^29.2.6",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
-    "vite": "^5.4.14"
+    "vite": "^5.4.14",
+    "turbo": "^1.12.4",
+    "prettier": "^3.2.5"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

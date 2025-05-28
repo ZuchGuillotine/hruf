@@ -914,3 +914,28 @@ If similar issues occur in the future, here's how to fix them:
     - Enhanced medical term detection
     - Improved unit consistency checking
     - Added comprehensive quality metrics calculation
+
+### Added (May 27, 2025)
+- Mobile App Core Screens Implementation:
+  - Enhanced HomeScreen with modern UI and navigation:
+    - Implemented proper navigation structure using RootStackParamList
+    - Added welcome message with user name integration
+    - Created action cards for key features:
+      - Add Supplement
+      - Add Biomarker
+      - View Supplements
+      - View Biomarkers
+    - Added pull-to-refresh functionality
+    - Implemented proper styling with mobile-ui components
+  - Implemented AddSupplementScreen with comprehensive form:
+    - Created form with supplement name, dosage, and notes
+    - Added unit selection (mg, g, IU) with proper styling
+    - Implemented keyboard handling with KeyboardAvoidingView
+    - Added loading states and validation
+    - Enhanced UI with proper spacing and typography
+  - Mobile UI Component Library Updates:
+    - Enhanced Input component with multiline support
+    - Added proper style handling for form inputs
+    - Implemented consistent spacing and typography
+    - Added proper keyboard type handling
+    - Enhanced component props for better flexibility
