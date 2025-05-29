@@ -269,8 +269,10 @@ app.get('/readiness', (req, res) => {
 const IS_PRODUCTION_MODE = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
 if (IS_PRODUCTION_MODE) {
   serveStatic(app);
+  console.log('Running in production mode - serving static files');
 } else {
   await setupVite(app, server);
+  console.log('Running in development mode - using Vite');
 }
 
 // Initialize services after starting the server
@@ -343,14 +345,25 @@ async function startServer() {
     // In production deployment, use the exact PORT provided by environment
     // In development, use port finding logic
     const IS_DEPLOYMENT = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+    
+    console.log('Server startup configuration:', {
+      nodeEnv: process.env.NODE_ENV,
+      replitDeployment: process.env.REPLIT_DEPLOYMENT,
+      port: process.env.PORT,
+      isDeployment: IS_DEPLOYMENT,
+      host: host
+    });
+    
     if (IS_DEPLOYMENT && process.env.PORT) {
       const port = parseInt(process.env.PORT);
       server.listen(port, host, () => {
+        console.log(`🚀 Production server running on ${host}:${port}`);
         log(`Server started successfully on ${host}:${port} (production)`);
       });
     } else {
       const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
       server.listen(port, host, () => {
+        console.log(`🚀 Development server running on ${host}:${port}`);
         log(`Server started successfully on ${host}:${port} (development)`);
       });
     }
@@ -358,6 +371,21 @@ async function startServer() {
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
     process.on('SIGINT', handleShutdown);
+
+    // Add error handler for server
+    server.on('error', (error: any) => {
+      console.error('Server error:', {
+        message: error.message,
+        code: error.code,
+        port: error.port,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${error.port} is already in use`);
+      }
+    });
+
   } catch (err: unknown) {
     const error = err as { message?: string; code?: string };
     console.error('Failed to start server:', {
