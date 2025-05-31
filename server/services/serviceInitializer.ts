@@ -1,4 +1,3 @@
-
 import path from 'path';
 import fs from 'fs';
 import embeddingService from './embeddingService';
@@ -110,11 +109,11 @@ class ServiceInitializer {
           fs.mkdirSync(uploadsDir, { recursive: true });
           logger.info('Created uploads directory at:', uploadsDir);
         }
-        
+
         // Verify directory permissions
         fs.accessSync(uploadsDir, fs.constants.R_OK | fs.constants.W_OK);
         logger.info('Uploads directory verified with correct permissions');
-        
+
         // Pre-load required modules for lab processing to avoid initialization issues
         logger.info('Preloading PDF processing modules...');
         try {
@@ -145,10 +144,10 @@ class ServiceInitializer {
   private async initializeSupplementService(): Promise<void> {
     try {
       logger.info('Initializing supplement services...');
-      
-      // Initialize supplement service (this will start background loading)
-      await supplementService.initialize();
-      
+
+      // Initialize supplement service (non-blocking)
+      supplementService.initialize(); // Don't await - let it run in background
+
       logger.info('Supplement services initialized successfully');
     } catch (error) {
       logger.error('Supplement service initialization failed:', error);

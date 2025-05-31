@@ -29,10 +29,15 @@ class SupplementService {
       this.trie = new Trie();
       this.initialized = true;
       
-      // Load supplements in background
-      this.loadSupplementsInBackground();
+      console.log("Supplement service initialized (will load data in background)");
       
-      console.log("Supplement service initialized (loading data in background)");
+      // Start background loading without awaiting
+      setImmediate(() => {
+        this.loadSupplementsInBackground().catch(error => {
+          console.error("Background supplement loading failed (non-fatal):", error);
+        });
+      });
+      
     } catch (error) {
       console.error("Error initializing supplement service:", error);
       // Don't throw error - allow service to work with reduced capabilities
@@ -43,7 +48,7 @@ class SupplementService {
     try {
       console.log("Loading supplements in background...");
       
-      // Load most frequently accessed supplements first
+      // Load common supplements first in smaller batch
       const commonSupplements = await db
         .select({
           id: supplementReference.id,
@@ -51,14 +56,15 @@ class SupplementService {
           category: supplementReference.category
         })
         .from(supplementReference)
-        .limit(this.PAGE_SIZE);
+        .limit(100); // Smaller initial batch
 
       this.loadSupplements(commonSupplements);
+      console.log(`Loaded ${commonSupplements.length} common supplements`);
+      
+      // Schedule cache refresh
       this.scheduleCacheRefresh();
       
-      console.log("Common supplements loaded, loading remaining supplements...");
-      
-      // Load remaining supplements
+      // Load remaining supplements with longer delays
       await this.loadRemainingSupplements();
       
       console.log("All supplements loaded successfully");
@@ -75,7 +81,8 @@ class SupplementService {
   }
 
   private async loadRemainingSupplements() {
-    let offset = this.PAGE_SIZE;
+    let offset = 100; // Start after the initial common supplements
+    const BATCH_SIZE = 50; // Smaller batches for background loading
     
     while (true) {
       const supplements = await db
@@ -86,15 +93,15 @@ class SupplementService {
         })
         .from(supplementReference)
         .offset(offset)
-        .limit(this.PAGE_SIZE);
+        .limit(BATCH_SIZE);
 
       if (supplements.length === 0) break;
       
       this.loadSupplements(supplements);
-      offset += this.PAGE_SIZE;
+      offset += BATCH_SIZE;
       
-      // Small delay to prevent overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Longer delay to be gentle on system resources
+      await new Promise(resolve => setTimeout(resolve, 250));
     }
   }
 
@@ -107,8 +114,7 @@ class SupplementService {
     try {
       if (!this.initialized) {
         console.warn("Supplement service not initialized, starting initialization...");
-        // Start initialization but don't wait for it
-        this.initialize();
+        this.initialize(); // Don't await
       }
 
       console.log(`Searching for "${query}" with limit ${limit}`);
@@ -116,11 +122,7 @@ class SupplementService {
       // Try trie search first (may be empty if still loading)
       const trieResults = this.trie.search(query, limit);
       
-      if (trieResults.length >= limit) {
-        return trieResults;
-      }
-
-      // Always fall back to database search to ensure results
+      // Always use database search as primary when trie is empty/loading
       const dbResults = await db
         .select({
           id: supplementReference.id,
@@ -131,18 +133,23 @@ class SupplementService {
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
         .limit(limit);
 
-      // Combine results, preferring trie results but ensuring we have data
-      const combinedResults = [...trieResults];
-      const remainingSlots = limit - combinedResults.length;
-      
-      if (remainingSlots > 0) {
-        const additionalResults = dbResults
-          .filter(dbResult => !combinedResults.some(trieResult => trieResult.id === dbResult.id))
-          .slice(0, remainingSlots);
-        combinedResults.push(...additionalResults);
+      // If trie has results, prefer them but fill gaps with DB results
+      if (trieResults.length > 0) {
+        const combinedResults = [...trieResults];
+        const remainingSlots = limit - combinedResults.length;
+        
+        if (remainingSlots > 0) {
+          const additionalResults = dbResults
+            .filter(dbResult => !combinedResults.some(trieResult => trieResult.id === dbResult.id))
+            .slice(0, remainingSlots);
+          combinedResults.push(...additionalResults);
+        }
+        
+        return combinedResults;
       }
 
-      return combinedResults;
+      // Return database results when trie is empty/loading
+      return dbResults;
     } catch (error) {
       console.error("Error in supplement search:", error);
       return [];
