@@ -149,7 +149,10 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
-// Serve static files (images)
+// Serve static files - production build and public assets
+if (IS_PRODUCTION_MODE) {
+  app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
+}
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
 // Immediate health check responses - must be first
@@ -228,7 +231,7 @@ app.get('/', (req: Request, res: Response, next: NextFunction) => {
   
   // In production, serve the built frontend
   try {
-    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    const indexPath = path.join(__dirname, '..', '..', 'dist', 'index.html');
     console.log('Serving production index.html from:', indexPath);
     res.sendFile(indexPath);
   } catch (error) {
