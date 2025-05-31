@@ -153,26 +153,26 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
 // Immediate health check responses - must be first
-const healthResponse = {
+const getHealthResponse = () => ({
   status: "ok",
   service: "StackTracker Health Platform", 
   timestamp: new Date().toISOString(),
   environment: app.get('env') || 'production',
   uptime: process.uptime(),
   version: "1.0.0"
-};
+});
 
 // Health check endpoints with immediate response
 app.get('/health', (req, res) => {
-  res.status(200).json(healthResponse);
+  res.status(200).json(getHealthResponse());
 });
 
 app.get('/healthz', (req, res) => {
-  res.status(200).json(healthResponse);
+  res.status(200).json(getHealthResponse());
 });
 
 app.get('/health-check', (req, res) => {
-  res.status(200).json(healthResponse);
+  res.status(200).json(getHealthResponse());
 });
 
 app.get('/ping', (req, res) => {
@@ -180,15 +180,15 @@ app.get('/ping', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-  res.status(200).json(healthResponse);
+  res.status(200).json(getHealthResponse());
 });
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json(healthResponse);
+  res.status(200).json(getHealthResponse());
 });
 
 app.get('/api/healthz', (req, res) => {
-  res.status(200).json(healthResponse);
+  res.status(200).json(getHealthResponse());
 });
 
 // Root endpoint for deployment platforms
@@ -196,29 +196,44 @@ app.get('/', (req: Request, res: Response, next: NextFunction) => {
   const userAgent = req.get('User-Agent') || '';
   const acceptHeader = req.get('Accept') || '';
   
+  console.log('Root endpoint hit:', {
+    userAgent: userAgent.substring(0, 50),
+    acceptHeader: acceptHeader.substring(0, 50),
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
   // Detect health check requests
   const isHealthCheck = userAgent.includes('kube-probe') || 
                         userAgent.includes('GoogleHC') || 
                         userAgent.includes('health-check') ||
                         userAgent.includes('HealthCheck') ||
                         userAgent.includes('curl') ||
+                        userAgent.includes('Replit') ||
                         (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
   
   if (isHealthCheck) {
-    return res.status(200).json(healthResponse);
+    console.log('Health check detected, responding immediately');
+    return res.status(200).json(getHealthResponse());
   }
   
+  // Check if we're in production mode
+  const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+  
   // For development, let Vite handle it
-  if (app.get('env') === 'development') {
+  if (!IS_PRODUCTION) {
+    console.log('Development mode, passing to Vite');
     return next();
   }
   
   // In production, serve the built frontend
   try {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    console.log('Serving production index.html from:', indexPath);
+    res.sendFile(indexPath);
   } catch (error) {
     console.error('Error serving index.html:', error);
-    res.status(200).json(healthResponse);
+    res.status(200).json(getHealthResponse());
   }
 });
 
@@ -257,6 +272,12 @@ app.get('/readiness', (req, res) => {
 // Setup Vite AFTER all API routes are registered
 // Force production mode for deployment
 const IS_PRODUCTION_MODE = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+console.log('Production mode check:', {
+  NODE_ENV: process.env.NODE_ENV,
+  REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+  IS_PRODUCTION_MODE
+});
+
 if (IS_PRODUCTION_MODE) {
   serveStatic(app);
   console.log('Running in production mode - serving static files');
@@ -346,15 +367,23 @@ async function startServer() {
     
     if (IS_DEPLOYMENT && process.env.PORT) {
       const port = parseInt(process.env.PORT);
-      server.listen(port, host, () => {
-        console.log(`🚀 Production server running on ${host}:${port}`);
-        log(`Server started successfully on ${host}:${port} (production)`);
+      await new Promise<void>((resolve, reject) => {
+        server.listen(port, host, () => {
+          console.log(`🚀 Production server running on ${host}:${port}`);
+          log(`Server started successfully on ${host}:${port} (production)`);
+          resolve();
+        });
+        server.on('error', reject);
       });
     } else {
       const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
-      server.listen(port, host, () => {
-        console.log(`🚀 Development server running on ${host}:${port}`);
-        log(`Server started successfully on ${host}:${port} (development)`);
+      await new Promise<void>((resolve, reject) => {
+        server.listen(port, host, () => {
+          console.log(`🚀 Development server running on ${host}:${port}`);
+          log(`Server started successfully on ${host}:${port} (development)`);
+          resolve();
+        });
+        server.on('error', reject);
       });
     }
 
