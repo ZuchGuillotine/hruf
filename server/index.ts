@@ -188,6 +188,33 @@ app.get('/api/healthz', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
 
+// Root endpoint for deployment health checks
+app.get('/', (req, res) => {
+  // Check if this is a health check request
+  const userAgent = req.get('User-Agent') || '';
+  const acceptHeader = req.get('Accept') || '';
+  const isHealthCheck = userAgent.includes('kube-probe') || 
+                        userAgent.includes('GoogleHC') || 
+                        userAgent.includes('health-check') ||
+                        userAgent.includes('HealthCheck') ||
+                        userAgent.includes('curl') ||
+                        userAgent.includes('Replit') ||
+                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
+
+  if (isHealthCheck || !IS_PRODUCTION) {
+    return res.status(200).json(getHealthResponse());
+  }
+
+  // For production web requests, serve the frontend
+  if (IS_PRODUCTION) {
+    const indexPath = path.join(__dirname, '..', 'index.html');
+    return res.sendFile(indexPath);
+  }
+
+  // In development, let Vite handle it
+  res.status(200).json(getHealthResponse());
+});
+
 // Readiness check for when services are fully loaded
 let servicesReady = false;
 app.get('/ready', (req, res) => {
@@ -287,7 +314,11 @@ async function initializeAndStart() {
 
         // Start background supplement loading after all services are initialized
         const { supplementService } = await import('./services/supplements.js');
-        supplementService.startBackgroundLoading();
+        
+        // Use setTimeout to ensure this doesn't block the event loop
+        setTimeout(() => {
+          supplementService.startBackgroundLoading();
+        }, 1000);
 
         // Start cron jobs only after services are ready
         if (IS_PRODUCTION) {
@@ -391,4 +422,7 @@ async function handleShutdown() {
 }
 
 // Start services and server
-initializeAndStart().catch(console.error);
+initializeAndStart().catch((error) => {
+  console.error('Failed to initialize and start:', error);
+  process.exit(1);
+});

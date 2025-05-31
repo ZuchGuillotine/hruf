@@ -133,22 +133,22 @@ class SummaryTaskManager {
 
       // Today's date
       const today = new Date();
-      
+
       // Also look at recent days to ensure we have sufficient data
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      
+
       // Generate summary for today's data
       const todaySummaryId = await advancedSummaryService.generateDailySummary(userId, today);
-      
+
       // Also generate or ensure yesterday's summary exists
       const yesterdaySummaryId = await advancedSummaryService.generateDailySummary(userId, yesterday);
-      
+
       logger.info(`Real-time summary completed for user ${userId}:`, {
         todaySummaryId,
         yesterdaySummaryId
       });
-      
+
       return;
     } catch (error) {
       logger.error(`Error running real-time summary for user ${userId}:`, error);
@@ -163,67 +163,6 @@ class SummaryTaskManager {
    * Start lab results processing task
    * @param hour Hour of the day to run the task (0-23)
    */
-  startLabProcessingTask(hour: number = 2): void {
-    const cronExpression = `0 0 ${hour} * * *`; // Run at the specified hour every day
-    
-    logger.info(`Scheduling lab processing task to run at ${hour}:00 AM daily`);
-    
-    this.labProcessingTask = cron.schedule(cronExpression, async () => {
-      try {
-        logger.info('Running scheduled lab processing task');
-        await this.processUnprocessedLabResults();
-      } catch (error) {
-        logger.error('Error in scheduled lab processing task:', error);
-      }
-    });
-  }
-
-  /**
-   * Process all lab results that haven't been summarized yet
-   */
-  async processUnprocessedLabResults(): Promise<void> {
-    try {
-      // Find all lab results without a summary
-      const unprocessedLabs = await db
-        .select()
-        .from(labResults)
-        .where(
-          sql`metadata->>'summary' IS NULL OR metadata->>'summary' = ''`
-        );
-      
-      logger.info(`Found ${unprocessedLabs.length} unprocessed lab results`);
-      
-      const failures: number[] = [];
-      
-      // Process each unprocessed lab
-      for (const lab of unprocessedLabs) {
-        try {
-          const summary = await labSummaryService.summarizeLabResult(lab.id);
-          if (summary) {
-            logger.info(`Successfully processed lab result ${lab.id}`);
-          } else {
-            failures.push(lab.id);
-            logger.error(`Failed to generate summary for lab ${lab.id}`);
-          }
-          
-          // Add a small delay to avoid API rate limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          failures.push(lab.id);
-          logger.error(`Error processing lab result ${lab.id}:`, error);
-        }
-      }
-
-      if (failures.length > 0) {
-        logger.error(`Failed to process ${failures.length} labs: ${failures.join(', ')}`);
-      }
-      
-      logger.info('Completed processing of unprocessed lab results');
-    } catch (error) {
-      logger.error('Error in processing unprocessed lab results:', error);
-    }
-  }
-
   startLabProcessingTask(hour: number = 3): void {
     const cronSchedule = `0 0 ${hour} * * *`; // Run at specified hour daily
     this.labProcessingTask = cron.schedule(cronSchedule, async () => {

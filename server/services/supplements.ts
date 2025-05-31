@@ -51,42 +51,6 @@ class SupplementService {
 
   private async loadSupplementsInBackground() {
     try {
-      console.log("Loading supplements in background...");
-      
-      // Load common supplements first in smaller batch
-      const commonSupplements = await db
-        .select({
-          id: supplementReference.id,
-          name: supplementReference.name,
-          category: supplementReference.category
-        })
-        .from(supplementReference)
-        .limit(100); // Smaller initial batch
-
-      this.loadSupplements(commonSupplements);
-      console.log(`Loaded ${commonSupplements.length} common supplements`);
-      
-      // Schedule cache refresh
-      this.scheduleCacheRefresh();
-      
-      // Load remaining supplements with longer delays
-      await this.loadRemainingSupplements();
-      
-      console.log("All supplements loaded successfully");
-    } catch (error) {
-      console.error("Error loading supplements in background (non-fatal):", error);
-    }
-  }
-
-  private scheduleCacheRefresh() {
-    if (this.cacheTimeout) {
-      clearTimeout(this.cacheTimeout);
-    }
-    this.cacheTimeout = setTimeout(() => this.initialize(), this.CACHE_DURATION);
-  }
-
-  private async loadSupplementsInBackground() {
-    try {
       console.log("Background loading: Starting to load supplements into trie...");
       
       let offset = 0;
@@ -126,6 +90,47 @@ class SupplementService {
   private loadSupplements(supplements: any[]) {
     console.log(`Loading ${supplements.length} supplements into service`);
     this.trie.loadSupplements(supplements);
+  }
+
+  private async loadRemainingSupplements() {
+    try {
+      let offset = 100; // Start after the initial batch
+      const BATCH_SIZE = 100;
+      
+      while (true) {
+        const supplements = await db
+          .select({
+            id: supplementReference.id,
+            name: supplementReference.name,
+            category: supplementReference.category
+          })
+          .from(supplementReference)
+          .offset(offset)
+          .limit(BATCH_SIZE);
+
+        if (supplements.length === 0) {
+          console.log('All supplements loaded successfully');
+          break;
+        }
+        
+        this.loadSupplements(supplements);
+        offset += BATCH_SIZE;
+        
+        console.log(`Background loading: Processed ${offset} supplements so far...`);
+        
+        // Small delay to prevent overwhelming the system
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      console.error("Error loading remaining supplements:", error);
+    }
+  }
+
+  private scheduleCacheRefresh() {
+    if (this.cacheTimeout) {
+      clearTimeout(this.cacheTimeout);
+    }
+    this.cacheTimeout = setTimeout(() => this.initialize(), this.CACHE_DURATION);
   }
 
   async search(query: string, limit: number = 4) {
