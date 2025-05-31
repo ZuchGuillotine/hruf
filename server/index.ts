@@ -152,60 +152,17 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
-// Root endpoint health check for deployment platforms - must be before Vite setup
-app.get('/', (req: Request, res: Response, next: NextFunction) => {
-  // Check if this is a health check request
-  const userAgent = req.get('User-Agent') || '';
-  const acceptHeader = req.get('Accept') || '';
-  
-  // Health check detection for deployment platforms
-  const isHealthCheck = userAgent.includes('kube-probe') || 
-                        userAgent.includes('GoogleHC') || 
-                        userAgent.includes('health-check') ||
-                        userAgent.includes('HealthCheck') ||
-                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
-  
-  if (isHealthCheck) {
-    return res.status(200).json({
-      status: "ok",
-      service: "StackTracker Health Platform", 
-      timestamp: new Date().toISOString(),
-      environment: app.get('env'),
-      uptime: process.uptime(),
-      version: "1.0.0"
-    });
-  }
-  
-  // For normal browser requests in development, let Vite handle it
-  if (app.get('env') === 'development') {
-    return next();
-  }
-  
-  // In production, serve the built frontend
-  try {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-  } catch (error) {
-    res.status(200).json({
-      status: "ok",
-      service: "StackTracker Health Platform", 
-      timestamp: new Date().toISOString(),
-      environment: app.get('env'),
-      uptime: process.uptime()
-    });
-  }
-});
-
-// Multiple health check endpoints for different deployment platforms
+// Immediate health check responses - must be first
 const healthResponse = {
   status: "ok",
-  service: "StackTracker Health Platform",
+  service: "StackTracker Health Platform", 
   timestamp: new Date().toISOString(),
   environment: app.get('env') || 'production',
   uptime: process.uptime(),
   version: "1.0.0"
 };
 
-// Standard health endpoints
+// Health check endpoints with immediate response
 app.get('/health', (req, res) => {
   res.status(200).json(healthResponse);
 });
@@ -233,6 +190,39 @@ app.get('/api/health', (req, res) => {
 app.get('/api/healthz', (req, res) => {
   res.status(200).json(healthResponse);
 });
+
+// Root endpoint for deployment platforms
+app.get('/', (req: Request, res: Response, next: NextFunction) => {
+  const userAgent = req.get('User-Agent') || '';
+  const acceptHeader = req.get('Accept') || '';
+  
+  // Detect health check requests
+  const isHealthCheck = userAgent.includes('kube-probe') || 
+                        userAgent.includes('GoogleHC') || 
+                        userAgent.includes('health-check') ||
+                        userAgent.includes('HealthCheck') ||
+                        userAgent.includes('curl') ||
+                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
+  
+  if (isHealthCheck) {
+    return res.status(200).json(healthResponse);
+  }
+  
+  // For development, let Vite handle it
+  if (app.get('env') === 'development') {
+    return next();
+  }
+  
+  // In production, serve the built frontend
+  try {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  } catch (error) {
+    console.error('Error serving index.html:', error);
+    res.status(200).json(healthResponse);
+  }
+});
+
+
 
 // Readiness check for when services are fully loaded
 let servicesReady = false;
@@ -281,8 +271,8 @@ async function initializeAndStart() {
     // Start server immediately for health checks
     await startServer();
 
-    // Initialize services in background - don't block server startup
-    setTimeout(async () => {
+    // Initialize services in background - completely non-blocking
+    process.nextTick(async () => {
       try {
         console.log('Starting background service initialization...');
         await serviceInitializer.initializeServices();
@@ -303,7 +293,7 @@ async function initializeAndStart() {
         // Mark as ready anyway to prevent blocking
         servicesReady = true;
       }
-    }, 2000); // 2 second delay to ensure server is fully up
+    });
 
   } catch (error) {
     console.error('Failed to start server:', error);
