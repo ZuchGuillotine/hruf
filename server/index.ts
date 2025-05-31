@@ -149,18 +149,12 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
-// Serve static files - production build and public assets
-if (IS_PRODUCTION_MODE) {
-  app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
-}
-app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
-
 // Immediate health check responses - must be first
 const getHealthResponse = () => ({
   status: "ok",
   service: "StackTracker Health Platform", 
   timestamp: new Date().toISOString(),
-  environment: app.get('env') || 'production',
+  environment: process.env.NODE_ENV || 'production',
   uptime: process.uptime(),
   version: "1.0.0"
 });
@@ -194,54 +188,6 @@ app.get('/api/healthz', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
 
-// Root endpoint for deployment platforms
-app.get('/', (req: Request, res: Response, next: NextFunction) => {
-  const userAgent = req.get('User-Agent') || '';
-  const acceptHeader = req.get('Accept') || '';
-  
-  console.log('Root endpoint hit:', {
-    userAgent: userAgent.substring(0, 50),
-    acceptHeader: acceptHeader.substring(0, 50),
-    method: req.method,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Detect health check requests
-  const isHealthCheck = userAgent.includes('kube-probe') || 
-                        userAgent.includes('GoogleHC') || 
-                        userAgent.includes('health-check') ||
-                        userAgent.includes('HealthCheck') ||
-                        userAgent.includes('curl') ||
-                        userAgent.includes('Replit') ||
-                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
-  
-  if (isHealthCheck) {
-    console.log('Health check detected, responding immediately');
-    return res.status(200).json(getHealthResponse());
-  }
-  
-  // Check if we're in production mode
-  const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
-  
-  // For development, let Vite handle it
-  if (!IS_PRODUCTION) {
-    console.log('Development mode, passing to Vite');
-    return next();
-  }
-  
-  // In production, serve the built frontend
-  try {
-    const indexPath = path.join(__dirname, '..', '..', 'dist', 'index.html');
-    console.log('Serving production index.html from:', indexPath);
-    res.sendFile(indexPath);
-  } catch (error) {
-    console.error('Error serving index.html:', error);
-    res.status(200).json(getHealthResponse());
-  }
-});
-
-
-
 // Readiness check for when services are fully loaded
 let servicesReady = false;
 app.get('/ready', (req, res) => {
@@ -272,21 +218,59 @@ app.get('/readiness', (req, res) => {
   }
 });
 
-// Setup Vite AFTER all API routes are registered
 // Force production mode for deployment
-const IS_PRODUCTION_MODE = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
-console.log('Production mode check:', {
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+console.log('Environment check:', {
   NODE_ENV: process.env.NODE_ENV,
   REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
-  IS_PRODUCTION_MODE
+  IS_PRODUCTION
 });
 
-if (IS_PRODUCTION_MODE) {
-  serveStatic(app);
-  console.log('Running in production mode - serving static files');
+// Setup Vite or static serving based on environment
+if (IS_PRODUCTION) {
+  // Calculate the correct dist path relative to the compiled server location
+  // When compiled, server files are in dist/server/, so we need to go up to dist/
+  const distPath = path.join(__dirname, '..');
+
+  console.log('Production mode - serving static files from:', distPath);
+
+  // Serve static files from the dist directory
+  app.use(express.static(distPath));
+
+  // Serve public assets
+  app.use(express.static(path.join(__dirname, '..', '..', 'client', 'public')));
+
+  // SPA fallback - must be after all other routes
+  app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API route not found' });
+    }
+
+    // Check for health check requests
+    const userAgent = req.get('User-Agent') || '';
+    const acceptHeader = req.get('Accept') || '';
+    const isHealthCheck = userAgent.includes('kube-probe') || 
+                          userAgent.includes('GoogleHC') || 
+                          userAgent.includes('health-check') ||
+                          userAgent.includes('HealthCheck') ||
+                          userAgent.includes('curl') ||
+                          userAgent.includes('Replit') ||
+                          (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
+
+    if (isHealthCheck) {
+      return res.status(200).json(getHealthResponse());
+    }
+
+    // Serve the index.html for all other routes
+    const indexPath = path.join(distPath, 'index.html');
+    console.log('Serving index.html from:', indexPath);
+    res.sendFile(indexPath);
+  });
 } else {
+  // Development mode - use Vite
+  console.log('Development mode - using Vite');
   await setupVite(app, server);
-  console.log('Running in development mode - using Vite');
 }
 
 // Initialize services after starting the server
@@ -300,16 +284,16 @@ async function initializeAndStart() {
       try {
         console.log('Starting background service initialization...');
         await serviceInitializer.initializeServices();
-        
+
         // Start cron jobs only after services are ready
-        if (app.get('env') === 'production') {
+        if (IS_PRODUCTION) {
           summaryTaskManager.startDailySummaryTask();
           summaryTaskManager.startWeeklySummaryTask();
           updateTrialStatusesCron.start();
           processMissingBiomarkersCron.start();
           console.log('Cron jobs started');
         }
-        
+
         servicesReady = true;
         console.log('Background service initialization completed successfully');
       } catch (error) {
@@ -325,70 +309,28 @@ async function initializeAndStart() {
   }
 }
 
-// Start server with improved error handling and retries
-const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-const MAX_RETRIES = 3;
-
-async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
-  const host = '0.0.0.0'; // Always use 0.0.0.0 for Replit
-  for (let port = startPort; port < startPort + maxRetries; port++) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const testServer = server.listen(port, host, () => {
-          testServer.close();
-          resolve();
-        });
-        testServer.on('error', reject);
-      });
-      return port;
-    } catch (err: unknown) {
-      const error = err as { code?: string };
-      if (error.code !== 'EADDRINUSE' || port === startPort + maxRetries - 1) {
-        throw err;
-      }
-      console.log(`Port ${port} is in use, trying next port...`);
-    }
-  }
-  throw new Error(`Could not find an available port after ${maxRetries} attempts`);
-}
-
+// Start server with improved error handling
 async function startServer() {
   try {
     const host = '0.0.0.0'; // Always bind to 0.0.0.0 for Replit
-    
-    // In production deployment, use the exact PORT provided by environment
-    // In development, use port finding logic
-    const IS_DEPLOYMENT = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
-    
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+
     console.log('Server startup configuration:', {
       nodeEnv: process.env.NODE_ENV,
       replitDeployment: process.env.REPLIT_DEPLOYMENT,
-      port: process.env.PORT,
-      isDeployment: IS_DEPLOYMENT,
-      host: host
+      port: port,
+      host: host,
+      isProduction: IS_PRODUCTION
     });
-    
-    if (IS_DEPLOYMENT && process.env.PORT) {
-      const port = parseInt(process.env.PORT);
-      await new Promise<void>((resolve, reject) => {
-        server.listen(port, host, () => {
-          console.log(`🚀 Production server running on ${host}:${port}`);
-          log(`Server started successfully on ${host}:${port} (production)`);
-          resolve();
-        });
-        server.on('error', reject);
+
+    await new Promise<void>((resolve, reject) => {
+      server.listen(port, host, () => {
+        console.log(`🚀 Server running on ${host}:${port} (${IS_PRODUCTION ? 'production' : 'development'})`);
+        log(`Server started successfully on ${host}:${port}`);
+        resolve();
       });
-    } else {
-      const port = await findAvailablePort(BASE_PORT, MAX_RETRIES);
-      await new Promise<void>((resolve, reject) => {
-        server.listen(port, host, () => {
-          console.log(`🚀 Development server running on ${host}:${port}`);
-          log(`Server started successfully on ${host}:${port} (development)`);
-          resolve();
-        });
-        server.on('error', reject);
-      });
-    }
+      server.on('error', reject);
+    });
 
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);
@@ -402,7 +344,7 @@ async function startServer() {
         port: error.port,
         timestamp: new Date().toISOString()
       });
-      
+
       if (error.code === 'EADDRINUSE') {
         console.error(`Port ${error.port} is already in use`);
       }

@@ -1,46 +1,41 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
-hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
-
-[nix]
-channel = "stable-24_05"
+modules = ["nodejs-20"]
+hidden = [".config", "package-lock.json"]
 
 [deployment]
-deploymentTarget = "cloudrun"
-build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "NODE_ENV=production npm start"]
+build = ["sh", "-c", "npm install && npm run build"]
+run = ["sh", "-c", "npm run start"]
+ignorePorts = false
+deploymentTarget = "gce"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5001
-externalPort = 3000
+localPort = 5173
+externalPort = 5173
 
-[workflows]
-runButton = "Start application"
+[nix]
+channel = "stable-24_05"
 
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
+[env]
+PATH = "/home/runner/$REPL_SLUG/.config/npm/node_global/bin:/home/runner/$REPL_SLUG/node_modules/.bin:$PATH"
+npm_config_prefix = "/home/runner/$REPL_SLUG/.config/npm/node_global"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
+[packager]
+language = "nodejs"
 
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
+[packager.features]
+packageSearch = true
+guessImports = true
+enabledForHosting = false
 
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
+[languages]
+[languages.javascript]
+pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
+[languages.javascript.languageServer]
+start = "typescript-language-server --stdio"
 
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
