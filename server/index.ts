@@ -286,7 +286,7 @@ async function initializeAndStart() {
         await serviceInitializer.initializeServices();
 
         // Start background supplement loading after all services are initialized
-        import { supplementService } from './services/supplements';
+        const { supplementService } = await import('./services/supplements.js');
         supplementService.startBackgroundLoading();
 
         // Start cron jobs only after services are ready
