@@ -285,6 +285,10 @@ async function initializeAndStart() {
         console.log('Starting background service initialization...');
         await serviceInitializer.initializeServices();
 
+        // Start background supplement loading after all services are initialized
+        import { supplementService } from './services/supplements';
+        supplementService.startBackgroundLoading();
+
         // Start cron jobs only after services are ready
         if (IS_PRODUCTION) {
           summaryTaskManager.startDailySummaryTask();
