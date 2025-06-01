@@ -6,7 +6,7 @@ import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
 import * as rds from 'aws-cdk-lib/aws-rds';
 
 interface MonitoringStackProps extends cdk.StackProps {
-  dbInstance: rds.DatabaseInstance;
+  dbInstance: rds.IDatabaseInstance;
   ebEnvironment: elasticbeanstalk.CfnEnvironment;
 }
 

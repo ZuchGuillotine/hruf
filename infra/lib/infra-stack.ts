@@ -23,8 +23,8 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 export class InfraStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
   public readonly appSecurityGroup: ec2.SecurityGroup;
-  public readonly dbInstance: rds.DatabaseInstance;
-  public readonly dbSecret: secretsmanager.Secret;
+  public readonly dbInstance: rds.IDatabaseInstance;
+  public readonly dbSecret: secretsmanager.ISecret;
   public readonly ebApplication: elasticbeanstalk.CfnApplication;
   public readonly ebEnvironment: elasticbeanstalk.CfnEnvironment;
 
@@ -58,18 +58,6 @@ export class InfraStack extends cdk.Stack {
       enableDnsSupport: true,
     });
 
-    // Create new subnet group for isolated subnets
-    const subnetGroupName = 'stacktracker-db-isolated-v3';
-    const dbSubnetGroup = new rds.CfnDBSubnetGroup(this, 'DatabaseSubnetGroup', {
-      dbSubnetGroupName: subnetGroupName,
-      dbSubnetGroupDescription: 'Isolated subnets for StackTracker RDS instance V3',
-      subnetIds: this.vpc.isolatedSubnets.map(subnet => subnet.subnetId),
-    });
-
-    // Add import instruction as a comment for the first deployment
-    // To import the existing subnet group, run this command before deploying:
-    // aws cloudformation import-resources --stack-name StackTrackerInfraStackV2 --resource-type "AWS::RDS::DBSubnetGroup" --resources '{"DatabaseSubnetGroup":{"Properties":{"DBSubnetGroupName":"stacktracker-db-isolated","DBSubnetGroupDescription":"Isolated subnets for StackTracker RDS instance","SubnetIds":["subnet-0a4c0264355eda44e","subnet-04b101642ee61aa20"]}}}'
-
     // Create application security group
     this.appSecurityGroup = new ec2.SecurityGroup(this, 'ApplicationSecurityGroup', {
       vpc: this.vpc,
@@ -92,66 +80,90 @@ export class InfraStack extends cdk.Stack {
       'Allow application to connect to database'
     );
 
-    // Create a secret for the database credentials
-    this.dbSecret = new secretsmanager.Secret(this, 'DatabaseSecret', {
-      secretName: 'stacktracker/db-credentials-v3',
-      generateSecretString: {
+    // Allow access from your development IP (replace with your actual IP)
+    dbSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4('73.97.54.60/32'), // Your current public IP address
+      ec2.Port.tcp(5432),
+      'Allow PostgreSQL access from development machine'
+    );
+
+    // Create DB subnet group that includes both public and private subnets for flexibility
+    const dbSubnetGroup = new rds.SubnetGroup(this, 'DatabaseSubnetGroup', {
+      vpc: this.vpc,
+      subnetGroupName: 'stacktracker-mixed-subnet-group-v3',
+      description: 'Mixed subnet group for StackTracker database with public access capability',
+      vpcSubnets: {
+        subnets: [
+          ...this.vpc.publicSubnets,
+          ...this.vpc.privateSubnets,
+        ],
+      },
+    });
+
+    // Use the secret for the existing v3 database
+    this.dbSecret = new secretsmanager.Secret(this, 'DatabaseSecretV3', {
+      secretName: 'stacktracker/db-credentials-v3', // Targeting existing v3 secret
+      generateSecretString: { // This will only take effect if the secret doesn't exist
         secretStringTemplate: JSON.stringify({ username: 'stacktracker_admin' }),
         generateStringKey: 'password',
         excludePunctuation: true,
         passwordLength: 16,
       },
+      description: 'Database credentials for StackTracker v3',
     });
 
-    // Create parameter group for database with pgvector support
-    const parameterGroup = new rds.ParameterGroup(this, 'DatabaseParameterGroup', {
+    // Create parameter group for pgvector support (matching current setup)
+    const parameterGroup = new rds.ParameterGroup(this, 'DatabaseParameterGroupV3', {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_8,
+        version: rds.PostgresEngineVersion.VER_17_5, // Ensure this matches stacktracker-db-v3 or is an intended upgrade
       }),
       parameters: {
         'max_connections': '100',
       },
+      description: 'Parameter group for StackTracker PostgreSQL v3 with pgvector support',
     });
 
-    // Create a new RDS instance with the new subnet group
-    const newDbInstance = new rds.DatabaseInstance(this, 'NewDatabase', {
-      engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_8,
-      }),
-      vpc: this.vpc,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-      },
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      allocatedStorage: 20,
-      maxAllocatedStorage: 100,
-      securityGroups: [dbSecurityGroup],
-      credentials: rds.Credentials.fromSecret(this.dbSecret),
-      databaseName: 'stacktracker',
-      backupRetention: cdk.Duration.days(7),
-      preferredBackupWindow: '03:00-04:00',
-      preferredMaintenanceWindow: 'Mon:04:00-Mon:05:00',
-      parameterGroup: parameterGroup,
-      subnetGroup: rds.SubnetGroup.fromSubnetGroupName(this, 'ImportedSubnetGroup', subnetGroupName),
-      // Add a unique identifier to the instance name
+    // Import the existing RDS instance stacktracker-db-v3
+    const dbInstanceEndpointAddress = 'stacktracker-db-v3.clcggkmq0zdo.us-west-2.rds.amazonaws.com';
+    const dbInstanceEndpointPort = '5432';
+
+    this.dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'StackTrackerDBImport', {
+      instanceEndpointAddress: dbInstanceEndpointAddress,
       instanceIdentifier: 'stacktracker-db-v3',
+      port: parseInt(dbInstanceEndpointPort, 10), // Port needs to be a number
+      securityGroups: [dbSecurityGroup], // We are managing this SG in this stack
+      engine: rds.DatabaseInstanceEngine.postgres({ // Still useful for type checking and some operations
+        version: rds.PostgresEngineVersion.VER_16_9, // IMPORTANT: Ensure this matches the actual version of stacktracker-db-v3
+      }),
+      // The following properties are not part of fromDatabaseInstanceAttributes for an imported instance,
+      // as they are inherent to the existing instance's configuration.
+      // vpc: this.vpc,
+      // subnetGroup: dbSubnetGroup,
+      // instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+      // allocatedStorage: 20,
+      // maxAllocatedStorage: 100,
+      // credentials: rds.Credentials.fromSecret(this.dbSecret),
+      // databaseName: 'stacktracker',
+      // backupRetention: cdk.Duration.days(7),
+      // preferredBackupWindow: '03:00-04:00',
+      // preferredMaintenanceWindow: 'Mon:04:00-Mon:05:00',
+      // publiclyAccessible: true,
+      // removalPolicy: cdk.RemovalPolicy.RETAIN,
+      // parameterGroup: parameterGroup,
     });
 
-    // Keep the old instance reference for now
-    this.dbInstance = newDbInstance;
-
-    // Output the new database endpoint
-    new cdk.CfnOutput(this, 'NewDatabaseEndpoint', {
-      value: newDbInstance.dbInstanceEndpointAddress,
-      description: 'New database endpoint',
-      exportName: 'StackTrackerNewDatabaseEndpointV3',
+    // Output the database endpoint
+    new cdk.CfnOutput(this, 'DatabaseEndpoint', {
+      value: this.dbInstance.dbInstanceEndpointAddress,
+      description: 'Database endpoint',
+      exportName: 'StackTrackerDatabaseEndpointV3',
     });
 
-    // Add a note about migration steps
-    new cdk.CfnOutput(this, 'MigrationNote', {
-      value: 'After verifying the new database is working, update the application to use the new endpoint and then delete the old database instance.',
-      description: 'Migration instructions',
-      exportName: 'StackTrackerMigrationNoteV3',
+    // Add a note about the current setup
+    new cdk.CfnOutput(this, 'DatabaseNote', {
+      value: 'RDS instance stacktracker-db-v3 is configured with public access capability. You can connect directly from your local machine.',
+      description: 'Database setup instructions',
+      exportName: 'StackTrackerDatabaseNoteV3',
     });
 
     // Add VPC endpoints for AWS services to reduce NAT Gateway costs
@@ -218,11 +230,11 @@ export class InfraStack extends cdk.Stack {
       'aws secretsmanager get-secret-value --secret-id stacktracker/db-credentials-v3 --query SecretString --output text > /tmp/db-creds.json',
       'echo "Setting up environment variables..."',
       'export PGPASSWORD=$(jq -r .password /tmp/db-creds.json)',
-      `export NEW_DB_HOST=${newDbInstance.dbInstanceEndpointAddress}`,
-      'echo "Testing new database connection..."',
-      'echo "NEW_DB_HOST: $NEW_DB_HOST"',
-      'psql -h $NEW_DB_HOST -U stacktracker_admin -d stacktracker -c "SELECT version();" || { echo "New database connection failed!"; exit 1; }',
-      'echo "New database connection successful!"',
+      `export DB_HOST=${this.dbInstance.dbInstanceEndpointAddress}`, // Renamed var for clarity, points to stacktracker-db-v3
+      'echo "Testing database connection..."',
+      'echo "DB_HOST: $DB_HOST"',
+      'psql -h $DB_HOST -U stacktracker_admin -d stacktracker -c "SELECT version();" || { echo "Database connection to stacktracker-db-v3 failed!"; exit 1; }',
+      'echo "Database connection to stacktracker-db-v3 successful!"',
       'echo "Cleaning up..."',
       'rm /tmp/db-creds.json',
       'echo "User data script completed successfully."'
@@ -261,12 +273,6 @@ export class InfraStack extends cdk.Stack {
     });
 
     // Output database information
-    new cdk.CfnOutput(this, 'DatabaseEndpoint', {
-      value: this.dbInstance.dbInstanceEndpointAddress,
-      description: 'Database endpoint',
-      exportName: 'StackTrackerDatabaseEndpointV3',
-    });
-
     new cdk.CfnOutput(this, 'DatabasePort', {
       value: this.dbInstance.dbInstanceEndpointPort,
       description: 'Database port',
@@ -290,13 +296,6 @@ export class InfraStack extends cdk.Stack {
       value: uploadsBucket.bucketArn,
       description: 'S3 bucket ARN for uploads',
       exportName: 'StackTrackerUploadsBucketArnV3',
-    });
-
-    // Output subnet group information
-    new cdk.CfnOutput(this, 'DatabaseSubnetGroupName', {
-      value: subnetGroupName,
-      description: 'Database subnet group name',
-      exportName: 'StackTrackerDatabaseSubnetGroupNameV3',
     });
 
     // Create IAM role for Elastic Beanstalk

@@ -6,7 +6,7 @@ import { MonitoringStack } from '../lib/monitoring-stack';
 const app = new cdk.App();
 
 // Create the main infrastructure stack
-const infraStack = new InfraStack(app, 'StackTrackerInfraStackV2', {
+const infraStack = new InfraStack(app, 'StackTrackerInfraStackV3', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -33,7 +33,7 @@ const infraStack = new InfraStack(app, 'StackTrackerInfraStackV2', {
 });
 
 // Create the monitoring stack
-new MonitoringStack(app, 'StackTrackerMonitoringStackV2', {
+new MonitoringStack(app, 'StackTrackerMonitoringStackV3', {
   env: { 
     account: process.env.CDK_DEFAULT_ACCOUNT, 
     region: process.env.CDK_DEFAULT_REGION 
