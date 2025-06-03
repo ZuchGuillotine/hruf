@@ -7,6 +7,8 @@ import { Trie } from "../utils/trie";
 class SupplementService {
   private trie: Trie;
   private initialized: boolean;
+  private loading: boolean;
+  private loadingPromise: Promise<void> | null;
   private retryCount: number;
   private maxRetries: number;
   private cacheTimeout: NodeJS.Timeout | null;
@@ -16,24 +18,40 @@ class SupplementService {
   constructor() {
     this.trie = new Trie();
     this.initialized = false;
+    this.loading = false;
+    this.loadingPromise = null;
     this.retryCount = 0;
     this.maxRetries = 3;
     this.cacheTimeout = null;
   }
 
   async initialize() {
+    // Minimal initialization - just mark as ready for lazy loading
+    this.initialized = true;
+    console.log("Supplement service initialized for lazy loading");
+  }
+
+  /**
+   * Lazy load supplements only when first needed
+   */
+  private async ensureLoaded(): Promise<void> {
+    if (this.loading) {
+      // If already loading, wait for it to complete
+      return this.loadingPromise || Promise.resolve();
+    }
+
+    if (this.trie && this.trie.search('vitamin', 1).length > 0) {
+      // Already loaded
+      return;
+    }
+
+    this.loading = true;
+    this.loadingPromise = this.loadSupplementsInBackground();
+    
     try {
-      console.log("Starting supplement service initialization...");
-      
-      // Initialize empty trie first for immediate availability
-      this.trie = new Trie();
-      this.initialized = true;
-      
-      console.log("Supplement service initialized (background loading will start after app is ready)");
-      
-    } catch (error) {
-      console.error("Error initializing supplement service:", error);
-      // Don't throw error - allow service to work with reduced capabilities
+      await this.loadingPromise;
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -41,12 +59,8 @@ class SupplementService {
    * Start background loading of supplements - should be called after app is fully loaded
    */
   startBackgroundLoading() {
-    console.log("Starting background supplement loading...");
-    setImmediate(() => {
-      this.loadSupplementsInBackground().catch(error => {
-        console.error("Background supplement loading failed (non-fatal):", error);
-      });
-    });
+    // This is now optional - loading will happen on first use
+    console.log("Background supplement loading available on-demand");
   }
 
   private async loadSupplementsInBackground() {
@@ -141,6 +155,9 @@ class SupplementService {
       }
 
       console.log(`Searching for "${query}" with limit ${limit}`);
+
+      // Lazy load supplements on first search
+      await this.ensureLoaded();
 
       // Try trie search first
       const trieResults = this.trie.search(query, limit);

@@ -41,9 +41,23 @@ start = "typescript-language-server --stdio"
 requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
 
 [workflows]
+runButton = "Run"
 
 [[workflows.workflow]]
 name = "Production Start"
+author = 7339738
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
+
+[[workflows.workflow]]
+name = "Run"
 author = 7339738
 mode = "sequential"
 

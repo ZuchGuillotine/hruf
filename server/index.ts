@@ -345,13 +345,8 @@ async function startServerFirst() {
         console.log('Starting background service initialization...');
         await serviceInitializer.initializeServices();
 
-        // Start background supplement loading after all services are initialized
-        const { supplementService } = await import('./services/supplements.js');
-        
-        // Use setImmediate to ensure this doesn't block the event loop
-        setImmediate(() => {
-          supplementService.startBackgroundLoading();
-        });
+        // Supplement service is now lazy-loaded on first use
+        console.log('Supplement service configured for lazy loading');
 
         // Start cron jobs only after services are ready and only in production
         if (IS_PRODUCTION) {
