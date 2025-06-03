@@ -149,6 +149,14 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
+// Force production mode for deployment
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+console.log('Environment check:', {
+  NODE_ENV: process.env.NODE_ENV,
+  REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+  IS_PRODUCTION
+});
+
 // Enhanced health check responses for deployment
 const getHealthResponse = () => ({
   status: "healthy",
@@ -158,44 +166,7 @@ const getHealthResponse = () => ({
   version: "1.0.0"
 });
 
-// Primary health check endpoints - always respond immediately
-app.get('/', (req, res) => {
-  res.status(200).json(getHealthResponse());
-});
-
-app.get('/health', (req, res) => {
-  res.status(200).json(getHealthResponse());
-});
-
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
-
-app.get('/ready', (req, res) => {
-  res.status(200).json({
-    status: "ready",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-app.get('/readiness', (req, res) => {
-  res.status(200).json({
-    status: "ready", 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-// Force production mode for deployment
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
-console.log('Environment check:', {
-  NODE_ENV: process.env.NODE_ENV,
-  REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
-  IS_PRODUCTION
-});
-
-// Setup Vite or static serving based on environment
+// Setup Vite or static serving based on environment FIRST
 if (IS_PRODUCTION) {
   // Calculate the correct dist path relative to the compiled server location
   // When compiled, server files are in dist/server/, so we need to go up to dist/
@@ -245,6 +216,31 @@ if (IS_PRODUCTION) {
   console.log('Development mode - using Vite');
   await setupVite(app, server);
 }
+
+// Health check endpoints - AFTER Vite setup
+app.get('/health', (req, res) => {
+  res.status(200).json(getHealthResponse());
+});
+
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+app.get('/ready', (req, res) => {
+  res.status(200).json({
+    status: "ready",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+app.get('/readiness', (req, res) => {
+  res.status(200).json({
+    status: "ready", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
 
 
