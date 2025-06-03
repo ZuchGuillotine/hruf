@@ -15,6 +15,12 @@ class ServiceInitializer {
    * Initialize all services in the correct order (non-blocking)
    */
   async initializeServices(): Promise<void> {
+    // Skip all expensive operations during deployment
+    if (process.env.REPLIT_DEPLOYMENT === 'true') {
+      logger.info('Deployment mode detected - skipping service initialization');
+      return;
+    }
+
     logger.info('Starting background service initialization...');
 
     // Initialize services with individual error handling to prevent one failure from stopping others
@@ -36,12 +42,12 @@ class ServiceInitializer {
     // Wait for all services to attempt initialization
     await Promise.allSettled(initPromises);
 
-    // Start scheduled tasks if in production mode
+    // Start scheduled tasks if in production mode (but not deployment mode)
     try {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && process.env.REPLIT_DEPLOYMENT !== 'true') {
         this.startScheduledTasks();
       } else {
-        logger.info('Scheduled tasks not started in development mode');
+        logger.info('Scheduled tasks not started in development/deployment mode');
       }
     } catch (error) {
       logger.error('Failed to start scheduled tasks (continuing):', error);

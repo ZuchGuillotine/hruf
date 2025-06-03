@@ -149,11 +149,15 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
-// Force production mode for deployment
+// Force production mode for deployment - be more aggressive about detecting deployment
 const IS_PRODUCTION = process.env.NODE_ENV === 'production' || 
                       process.env.REPLIT_DEPLOYMENT === 'true' ||
                       process.env.RAILWAY_ENVIRONMENT === 'production' ||
-                      !process.env.REPL_SLUG; // If not in Replit dev environment, assume production
+                      process.env.VERCEL === '1' ||
+                      process.env.NETLIFY === 'true' ||
+                      !process.env.REPL_SLUG || // If not in Replit dev environment, assume production
+                      process.argv.includes('--production') ||
+                      process.env.PORT !== undefined; // If PORT is set externally, likely production
 
 console.log('Environment check:', {
   NODE_ENV: process.env.NODE_ENV,
@@ -345,26 +349,27 @@ async function startServerFirst() {
 
     console.log('Server started successfully, health checks are now available');
 
-    // Initialize services in background after server is ready
-    setImmediate(async () => {
-      try {
-        console.log('Starting background service initialization...');
-        await serviceInitializer.initializeServices();
+    // Skip all service initialization during deployment health checks
+    if (process.env.REPLIT_DEPLOYMENT === 'true') {
+      console.log('Deployment mode detected - skipping all service initialization for faster health checks');
+    } else {
+      // Initialize services in background after server is ready (only in non-deployment mode)
+      setTimeout(async () => {
+        try {
+          console.log('Starting background service initialization...');
+          await serviceInitializer.initializeServices();
 
-        // Supplement service is now lazy-loaded on first use
-        console.log('Supplement service configured for lazy loading');
+          // Supplement service is now lazy-loaded on first use
+          console.log('Supplement service configured for lazy loading');
 
-        // Start cron jobs only after services are ready and only in production
-        
-        console.log('Scheduled tasks not started in deployment mode');
-        
-
-        console.log('Background service initialization completed successfully');
-      } catch (error) {
-        console.error('Background service initialization failed (non-fatal):', error);
-        // Don't let background initialization failures affect server operation
-      }
-    });
+          // Start cron jobs only after services are ready and only in production
+          console.log('Background service initialization completed successfully');
+        } catch (error) {
+          console.error('Background service initialization failed (non-fatal):', error);
+          // Don't let background initialization failures affect server operation
+        }
+      }, 15000); // 15 second delay to ensure deployment health checks complete first
+    }
 
   } catch (error) {
     console.error('Failed to start server:', error);
