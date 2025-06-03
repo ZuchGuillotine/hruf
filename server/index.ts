@@ -149,15 +149,20 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
-// Simple health check responses for deployment
+// Enhanced health check responses for deployment
 const getHealthResponse = () => ({
-  status: "ok",
+  status: "healthy",
   timestamp: new Date().toISOString(),
-  ready: true,
-  environment: IS_PRODUCTION ? 'production' : 'development'
+  uptime: process.uptime(),
+  environment: IS_PRODUCTION ? 'production' : 'development',
+  version: "1.0.0"
 });
 
-// Health check endpoints - simple and direct
+// Primary health check endpoints - always respond immediately
+app.get('/', (req, res) => {
+  res.status(200).json(getHealthResponse());
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
@@ -169,14 +174,16 @@ app.get('/ping', (req, res) => {
 app.get('/ready', (req, res) => {
   res.status(200).json({
     status: "ready",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
 app.get('/readiness', (req, res) => {
   res.status(200).json({
     status: "ready", 
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
@@ -239,52 +246,7 @@ if (IS_PRODUCTION) {
   await setupVite(app, server);
 }
 
-// Initialize services after starting the server
-async function initializeAndStart() {
-  try {
-    // Start server immediately for health checks
-    await startServer();
 
-    // Keep servicesReady as true for health checks
-    console.log('Server started, beginning background initialization...');
-
-    // Initialize services in background - don't await to avoid blocking health checks
-    setImmediate(async () => {
-      try {
-        console.log('Starting background service initialization...');
-        await serviceInitializer.initializeServices();
-
-        // Start background supplement loading after all services are initialized
-        const { supplementService } = await import('./services/supplements.js');
-        
-        // Use setImmediate to ensure this doesn't block the event loop
-        setImmediate(() => {
-          supplementService.startBackgroundLoading();
-        });
-
-        // Start cron jobs only after services are ready and only in production
-        if (IS_PRODUCTION) {
-          setImmediate(() => {
-            summaryTaskManager.startDailySummaryTask();
-            summaryTaskManager.startWeeklySummaryTask();
-            updateTrialStatusesCron.start();
-            processMissingBiomarkersCron.start();
-            console.log('Background cron jobs started');
-          });
-        }
-
-        console.log('Background service initialization completed successfully');
-      } catch (error) {
-        console.error('Background service initialization failed (non-fatal):', error);
-        // Don't let background initialization failures affect health checks
-      }
-    });
-
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
 
 // Start server with improved error handling
 async function startServer() {
@@ -363,8 +325,54 @@ async function handleShutdown() {
   }
 }
 
-// Start services and server
-initializeAndStart().catch((error) => {
-  console.error('Failed to initialize and start:', error);
+// Start server first, then initialize services in background
+startServerFirst().catch((error) => {
+  console.error('Failed to start server:', error);
   process.exit(1);
 });
+
+// New function to start server immediately for health checks
+async function startServerFirst() {
+  try {
+    // Start server immediately for health checks
+    await startServer();
+    
+    console.log('Server started successfully, health checks are now available');
+    
+    // Initialize services in background after server is ready
+    setImmediate(async () => {
+      try {
+        console.log('Starting background service initialization...');
+        await serviceInitializer.initializeServices();
+
+        // Start background supplement loading after all services are initialized
+        const { supplementService } = await import('./services/supplements.js');
+        
+        // Use setImmediate to ensure this doesn't block the event loop
+        setImmediate(() => {
+          supplementService.startBackgroundLoading();
+        });
+
+        // Start cron jobs only after services are ready and only in production
+        if (IS_PRODUCTION) {
+          setImmediate(() => {
+            summaryTaskManager.startDailySummaryTask();
+            summaryTaskManager.startWeeklySummaryTask();
+            updateTrialStatusesCron.start();
+            processMissingBiomarkersCron.start();
+            console.log('Background cron jobs started');
+          });
+        }
+
+        console.log('Background service initialization completed successfully');
+      } catch (error) {
+        console.error('Background service initialization failed (non-fatal):', error);
+        // Don't let background initialization failures affect server operation
+      }
+    });
+
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
