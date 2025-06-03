@@ -342,9 +342,9 @@ async function startServerFirst() {
   try {
     // Start server immediately for health checks
     await startServer();
-    
+
     console.log('Server started successfully, health checks are now available');
-    
+
     // Initialize services in background after server is ready
     setImmediate(async () => {
       try {
@@ -355,15 +355,9 @@ async function startServerFirst() {
         console.log('Supplement service configured for lazy loading');
 
         // Start cron jobs only after services are ready and only in production
-        if (IS_PRODUCTION) {
-          setImmediate(() => {
-            summaryTaskManager.startDailySummaryTask();
-            summaryTaskManager.startWeeklySummaryTask();
-            updateTrialStatusesCron.start();
-            processMissingBiomarkersCron.start();
-            console.log('Background cron jobs started');
-          });
-        }
+        
+        console.log('Scheduled tasks not started in deployment mode');
+        
 
         console.log('Background service initialization completed successfully');
       } catch (error) {
