@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
@@ -17,9 +16,7 @@ const CATEGORY_COLORS = {
   hormone: 'bg-pink-100 hover:bg-pink-200 border-pink-300',
   mineral: 'bg-indigo-100 hover:bg-indigo-200 border-indigo-300',
   other: 'bg-gray-100 hover:bg-gray-200 border-gray-300'
-} as const;
-
-type CategoryType = keyof typeof CATEGORY_COLORS;
+};
 
 export function BiomarkerFilter() {
   const { data: chartData, isLoading } = useLabChartData();
@@ -28,20 +25,11 @@ export function BiomarkerFilter() {
   const selectedNames = React.useMemo(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const biomarkersParam = searchParams.get('biomarkers');
-    return biomarkersParam ? new Set(biomarkersParam.split(',').filter(Boolean)) : new Set<string>();
+    if (!biomarkersParam) return new Set<string>();
+    return new Set(biomarkersParam.split(',').filter(Boolean));
   }, [location]);
 
-  // Initialize selection state from URL params
-  React.useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const biomarkersParam = searchParams.get('biomarkers');
-    if (biomarkersParam) {
-      const biomarkers = biomarkersParam.split(',').filter(Boolean);
-      setLocation(`${window.location.pathname}?biomarkers=${biomarkers.join(',')}`, { replace: true });
-    }
-  }, [setLocation]);
-
-  const toggleName = React.useCallback((name: string) => {
+  const toggleName = (name: string) => {
     const newSelected = new Set(selectedNames);
     if (newSelected.has(name)) {
       newSelected.delete(name);
@@ -61,16 +49,16 @@ export function BiomarkerFilter() {
     const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
     
     setLocation(newUrl, { replace: true });
-  }, [selectedNames, setLocation]);
+  };
 
-  const clearAll = React.useCallback(() => {
+  const clearAll = () => {
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.delete('biomarkers');
     const newSearch = searchParams.toString();
     const basePath = window.location.pathname;
     const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
     setLocation(newUrl, { replace: true });
-  }, [setLocation]);
+  };
 
   if (isLoading) {
     return (
@@ -114,8 +102,8 @@ export function BiomarkerFilter() {
           <div className="flex flex-wrap gap-2 p-2">
             {chartData.allBiomarkers.map((name) => {
               const isSelected = selectedNames.has(name);
-              const category = (chartData.categories[name] || 'other') as CategoryType;
-              const colorClass = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
+              const category = chartData.categories[name] || 'other';
+              const colorClass = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || CATEGORY_COLORS.other;
               
               return (
                 <Button
@@ -131,7 +119,7 @@ export function BiomarkerFilter() {
                 >
                   {name}
                   {isSelected && (
-                    <span className="ml-1 text-xs" aria-hidden="true">✓</span>
+                    <span className="ml-1 text-xs">✓</span>
                   )}
                 </Button>
               );

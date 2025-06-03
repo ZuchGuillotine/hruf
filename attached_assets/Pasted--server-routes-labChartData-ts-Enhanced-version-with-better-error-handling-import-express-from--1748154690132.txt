@@ -1,3 +1,4 @@
+// server/routes/labChartData.ts - Enhanced version with better error handling
 
 import express from 'express';
 import { z } from 'zod';
@@ -50,16 +51,7 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
       )
       .orderBy(biomarkerResults.testDate);
 
-    logger.info('Raw database query results:', {
-      resultCount: results.length,
-      sampleResults: results.slice(0, 5),
-      distinctBiomarkers: [...new Set(results.map(r => r.name))],
-      dateRange: results.length > 0 ? {
-        earliest: results[0].testDate,
-        latest: results[results.length - 1].testDate
-      } : null
-    });
-
+    // Log retrieval results
     logger.info('Retrieved biomarker data', {
       userId,
       resultCount: results.length,
@@ -72,6 +64,7 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
 
     // Process and validate data
     const processedResults = results.map(result => {
+      // Convert numeric value from database
       const numericValue = typeof result.value === 'string' ? parseFloat(result.value) : result.value;
       
       return {
@@ -131,6 +124,7 @@ router.get('/', async (req, res) => {
       });
     }
 
+    // Validate & coerce query params
     const validationResult = querySchema.safeParse(req.query);
     if (!validationResult.success) {
       logger.warn('Invalid query parameters', {
@@ -148,6 +142,7 @@ router.get('/', async (req, res) => {
     const { biomarkers, page, pageSize } = validationResult.data;
     const offset = (page - 1) * pageSize;
 
+    // Get biomarker data
     const data = await getBiomarkerChartData(req.user.id, biomarkers);
 
     logger.info('Retrieved biomarker chart data:', {
@@ -156,11 +151,13 @@ router.get('/', async (req, res) => {
       uniqueBiomarkers: [...new Set(data.map(d => d.name))],
       requestedBiomarkers: biomarkers,
       page,
-      pageSize,
-      sampleData: data.slice(0, 3) // Log first 3 records for debugging
+      pageSize
     });
 
+    // Apply pagination
     const paginatedData = data.slice(offset, offset + pageSize);
+
+    // Check if user has any biomarker data at all
     const hasBiomarkers = data.length > 0;
 
     res.json({
@@ -199,12 +196,14 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Add a debug endpoint for testing
 router.get('/debug', async (req, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Get raw biomarker data without processing
     const rawResults = await db
       .select()
       .from(biomarkerResults)

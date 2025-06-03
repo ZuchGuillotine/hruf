@@ -1,52 +1,25 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
 run = "npm run dev"
-hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist", ".env"]
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
 
-[env]
-NODE_ENV = "production"
-BUILD_TIME = ""
-
 [deployment]
 deploymentTarget = "cloudrun"
-build = [
-  "sh", 
-  "-c", 
-  "export BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ') && npm run build"
-]
-run = [
-  "sh", 
-  "-c", 
-  "NODE_ENV=production node dist/server/index.js"
-]
-healthcheckPath = "/_health"
-healthcheckTimeout = 10
-startCommand = "npm run dev"
-
-# Optimize port configuration for Cloud Run
-[[ports]]
-localPort = 5000
-externalPort = 80
-description = "Main application port (Cloud Run)"
+build = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "node dist/server/index.js"]
 
 [[ports]]
 localPort = 3001
-externalPort = 3001
-description = "Development server port"
+externalPort = 80
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
 
 [workflows]
 runButton = "Start application"
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
 
 [[workflows.workflow]]
 name = "Start application"
@@ -61,18 +34,4 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
-waitForPort = 5000
-
-# Add deployment workflow
-[[workflows.workflow]]
-name = "Deploy"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run build"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node dist/server/index.js"
 waitForPort = 5000

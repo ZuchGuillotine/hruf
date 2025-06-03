@@ -37,11 +37,14 @@ import { summaryTaskManager } from './cron/summaryManager';
 import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
 import { healthCheck } from './utils/healthCheck';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
+
+// Remove the immediate "/" route - let Vite/static serving handle the React app
 
 // Add type for custom error
 interface CustomError extends Error {
@@ -124,28 +127,10 @@ app.use('/api', slowDown({
   delayMs: (hits) => hits * 100,
 }));
 
-// Simplified health check endpoint for Cloud Run
-app.get('/', (req, res, next) => {
-  // Quick response for health checks
-  if (req.headers['user-agent']?.includes('GoogleHC')) {
-    return res.status(200).send('OK');
-  }
-  next();
-});
-
-// Additional health check endpoints
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
+// Health checks must come before static file handling
+// Health check endpoints - excluding root path which should serve React app
+app.get(['/health', '/api/health'], (req, res) => {
+  return healthCheck(req, res);
 });
 
 // Setup routes and error handling
@@ -178,101 +163,102 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 // Serve static files (images)
 app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
 
-// Start cron jobs
-summaryTaskManager.startDailySummaryTask();
-summaryTaskManager.startWeeklySummaryTask();
-updateTrialStatusesCron.start();
-processMissingBiomarkersCron.start();
-
-// Setup Vite last
-if (app.get("env") === "development") {
-  await setupVite(app, server);
-} else {
-  serveStatic(app);
-}
-
-// Initialize services before starting the server
+// Initialize and start server with proper React app serving
 async function initializeAndStart() {
   try {
-    // Initialize our services
-    await serviceInitializer.initializeServices();
-    console.log('Services initialized successfully');
+    console.log('Initializing application...');
 
-    // Start server with improved error handling and retries
+    // Start server first, then setup Vite/static serving
+    console.log('Starting server...');
     await startServer();
-  } catch (error) {
-    console.error('Failed to initialize services:', error);
-    // Start server anyway, with reduced capabilities
-    await startServer();
-  }
-}
 
-// Start server with improved error handling and retries
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-const MAX_RETRIES = 3;
-
-async function findAvailablePort(startPort: number, maxRetries: number): Promise<number> {
-  const host = '0.0.0.0'; // Always bind to all interfaces
-  for (let port = startPort; port < startPort + maxRetries; port++) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const testServer = server.listen(port, host, () => {
-          testServer.close();
-          resolve();
-        });
-        testServer.on('error', reject);
+    // Setup Vite/static serving AFTER server is running
+    if (app.get("env") === "development") {
+      console.log('Setting up Vite development server...');
+      await setupVite(app, server);
+    } else {
+      console.log('Setting up static file serving...');
+      app.use(express.static(path.join(__dirname, 'public')));
+      // Serve index.html for all routes not explicitly handled
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
       });
-      return port;
-    } catch (err: unknown) {
-      const error = err as { code?: string };
-      if (error.code !== 'EADDRINUSE' || port === startPort + maxRetries - 1) {
-        throw err;
-      }
-      console.log(`Port ${port} is in use, trying next port...`);
     }
+
+    // Initialize background services after server is running
+    setTimeout(async () => {
+      try {
+        console.log('Starting background initialization...');
+
+        // Start cron jobs in background
+        summaryTaskManager.startDailySummaryTask();
+        summaryTaskManager.startWeeklySummaryTask();
+        updateTrialStatusesCron.start();
+        processMissingBiomarkersCron.start();
+
+        // Initialize services after server is running
+        await serviceInitializer.initializeServices();
+        console.log('Background initialization completed successfully');
+      } catch (error) {
+        console.error('Failed to initialize background services:', error);
+      }
+    }, 1000);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-  throw new Error(`Could not find an available port after ${maxRetries} attempts`);
 }
+
+// Use port 3001 for deployment compatibility (mapped to port 80)
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+const HOST = '0.0.0.0'; // Required for Replit deployments
 
 async function startServer() {
   try {
-    // Cloud Run requires port 5000 which gets mapped to 80
-    const port = process.env.NODE_ENV === 'production' ? 5000 : (process.env.PORT ? parseInt(process.env.PORT) : 3000);
-    const host = '0.0.0.0'; // Required for Cloud Run
+    console.log(`Starting server on ${HOST}:${PORT}`);
 
-    console.log(`Attempting to start server on ${host}:${port} (environment: ${process.env.NODE_ENV || 'development'})`);
+    // Use port 5000 consistently as in successful deployment
+    server.listen(PORT, HOST, () => {
+      console.log(`Server started on ${HOST}:${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
+      console.log('Health check endpoints available at /, /health, and /api/health');
 
-    // In production, always use the specified port (Cloud Run expects this)
-    if (process.env.NODE_ENV === 'production') {
-      server.listen(port, host, () => {
-        console.log(`Production server started on ${host}:${port}`);
-        console.log('Health check endpoints available at /, /health, and /api/health');
-      });
-    } else {
-      // In development, try to find an available port
-      let port: number;
-      try {
-        port = await findAvailablePort(PORT, MAX_RETRIES);
-        console.log(`Found available port: ${port}`);
-      } catch (portError) {
-        // If finding a port fails, try one last approach with a different port range
-        console.warn(`Port finding failed, trying alternative port range. Error: ${portError}`);
-        // Try a completely different port range as a last resort
-        const fallbackPort = 3000;
+      // Log where the static files are expected to be found in production
+      if (process.env.NODE_ENV === 'production') {
+        const publicPath = path.join(__dirname, 'public');
+        console.log('In production mode, looking for static files at:', publicPath);
+        console.log('Current working directory:', process.cwd());
+        console.log('__dirname:', __dirname);
+
         try {
-          port = await findAvailablePort(fallbackPort, MAX_RETRIES);
-        } catch (fallbackError) {
-          console.error(`Failed to find any available port: ${fallbackError}`);
-          throw fallbackError;
+          // Check multiple possible locations
+          const possiblePaths = [
+            publicPath,
+            path.join(__dirname, '..', 'dist', 'server', 'public'),
+            path.join(process.cwd(), 'dist', 'server', 'public'),
+            path.join(process.cwd(), 'dist', 'public')
+          ];
+
+          for (const checkPath of possiblePaths) {
+            if (fs.existsSync(checkPath)) {
+              console.log(`Found static files at: ${checkPath}`);
+              console.log('Contents:', fs.readdirSync(checkPath));
+
+              // Check for index.html specifically
+              const indexPath = path.join(checkPath, 'index.html');
+              if (fs.existsSync(indexPath)) {
+                console.log('✅ index.html found at:', indexPath);
+              } else {
+                console.log('❌ index.html NOT found at:', indexPath);
+              }
+            } else {
+              console.log(`Static files NOT found at: ${checkPath}`);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking static directories:', error);
         }
       }
-
-      // Start development server on the available port
-      server.listen(port, host, () => {
-        console.log(`Server started on ${host}:${port} (${process.env.NODE_ENV || 'development'} mode)`);
-        console.log('Health check endpoints available at /, /health, and /api/health');
-      });
-    }
+    });
 
     // Handle graceful shutdown
     process.on('SIGTERM', handleShutdown);

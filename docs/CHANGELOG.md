@@ -1,5 +1,63 @@
 ## [Unreleased]
 
+## Fixed (May 26, 2025)
+- Biomarker Chart Data Issues:
+  - Fixed selector refresh issue by correcting URL parameter parsing in labs.tsx
+  - Resolved chart data population by properly accessing chartDataResponse.series
+  - Enhanced query key in useLabChartData to include URL parameters for proper invalidation
+  - Fixed chart component to display biomarker data with functional selection
+  - Improved error handling and data validation throughout the chart pipeline
+  - Successfully achieved end-to-end biomarker visualization functionality
+
+## Added (May 23, 2025)
+Biomarker Visualization Implementation:
+
+### Enhanced (May 25, 2025)
+- Biomarker Visualization Color Scheme:
+  - Implemented consistent color scheme for biomarker categories:
+    - Lipids (cholesterol, etc.) -> Red (#ef4444)
+    - Metabolic (glucose, etc.) -> Blue (#3b82f6) 
+    - Thyroid -> Green (#10b981)
+    - Vitamins -> Amber (#f59e0b)
+    - Blood -> Violet (#8b5cf6)
+    - Liver -> Orange (#f97316)
+    - Kidney -> Cyan (#06b6d4)
+    - Hormones -> Pink (#ec4899)
+    - Minerals -> Indigo (#6366f1)
+    - Other -> Gray (#6b7280)
+  - Added visual consistency across components:
+    - BiomarkerFilter buttons
+    - BiomarkerHistoryChart lines
+    - Category indicators in UI
+  - Enhanced readability with color-coded grouping
+  - Improved accessibility with distinct color choices
+  - Added consistent color mapping in shared constants
+
+Added BiomarkerHistoryChart component with Recharts integration
+Implemented BiomarkerFilter component for data selection
+Created useLabChartData hook for data fetching
+Added chart data transformation logic
+Implemented proper error boundaries
+Enhanced layout with responsive design
+Fixed (May 23, 2025)
+Chart Component Issues:
+Resolved initial rendering issues
+Fixed filter component data reference
+Corrected chart container sizing
+Enhanced error handling for data loading
+Improved component organization
+Known Issues (May 23, 2025)
+Chart data display not functioning:
+Component renders without data
+Data fetching appears successful
+Transform or display logic needs investigation
+Chart configuration may need adjustment
+
+
+advanced
+Claude 3.5 Sonnet V2
+
+
 ### Changed (May 17, 2025)
 - Enhanced Biomarker Extraction Pipeline:
   - Improved biomarker extraction accuracy:

@@ -7,9 +7,9 @@ import {
   YAxis, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer
+  ResponsiveContainer,
+  ReferenceLine 
 } from 'recharts';
-import { Card } from '@/components/ui/card';
 import type { Series } from '@/types/chart';
 
 const CHART_COLORS = {
@@ -30,47 +30,15 @@ interface BiomarkerHistoryChartProps {
 }
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
-  console.log('BiomarkerHistoryChart received series:', series);
-
-  if (!series || series.length === 0) {
-    console.log('No series data available for chart');
-    return (
-      <Card className="p-6">
-        <div className="text-center text-gray-500">
-          <p>No biomarker data selected for visualization</p>
-        </div>
-      </Card>
-    );
-  }
-
   const chartData = React.useMemo(() => {
-    if (!series?.length) return [];
-
-    // Get all unique dates
+    if (series.length === 0) return [];
+    
+    // Get all unique dates across all series
     const dates = Array.from(
       new Set(series.flatMap(s => s.points.map(p => p.testDate)))
     ).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-
+    
     // Create data points for each date
-    return dates.map(date => {
-      const dataPoint: Record<string, any> = {
-        testDate: date,
-        formattedDate: new Date(date).toLocaleDateString()
-      };
-
-      // Add values for each series
-      series.forEach(s => {
-        const point = s.points.find(p => p.testDate === date);
-        if (point) {
-          dataPoint[s.name] = point.value;
-          dataPoint[`${s.name}_unit`] = s.unit;
-          dataPoint[`${s.name}_status`] = point.status;
-        }
-      });
-
-      return dataPoint;
-    });
-
     return dates.map(date => {
       const entry: Record<string, any> = { 
         testDate: date,
@@ -80,39 +48,43 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
           year: 'numeric'
         })
       };
-
+      
       series.forEach(s => {
-        if (s && s.points) {
-          const point = s.points.find(p => p.testDate === date);
-          if (point) {
-            entry[s.name] = point.value;
-            entry[`${s.name}_unit`] = s.unit;
-          }
+        const point = s.points.find(p => p.testDate === date);
+        if (point) {
+          entry[s.name] = point.value;
+          entry[`${s.name}_unit`] = s.unit;
+          entry[`${s.name}_status`] = point.status || 'Normal';
         }
       });
       return entry;
     });
   }, [series]);
 
+  // Determine if we need multiple Y-axes (different units)
   const uniqueUnits = React.useMemo(() => {
     return Array.from(new Set(series.map(s => s.unit)));
   }, [series]);
 
+  // Calculate Y-axis domain for better visualization
   const yAxisDomain = React.useMemo(() => {
     if (series.length === 0) return ['auto', 'auto'];
-
+    
     const allValues = series.flatMap(s => s.points.map(p => p.value));
     const min = Math.min(...allValues);
     const max = Math.max(...allValues);
-    const padding = (max - min) * 0.1;
-
-    return [Math.max(0, min - padding), max + padding];
+    const padding = (max - min) * 0.1; // 10% padding
+    
+    return [
+      Math.max(0, min - padding),
+      max + padding
+    ];
   }, [series]);
 
   const formatTooltipValue = (value: any, name: string, props: any) => {
     const unit = props.payload[`${name}_unit`];
     const status = props.payload[`${name}_status`];
-
+    
     return [
       `${value} ${unit || ''}`,
       name,
@@ -129,6 +101,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
     });
   };
 
+  // Show message if no biomarkers are selected
   if (series.length === 0) {
     return (
       <div className="w-full h-[400px] bg-white rounded-lg p-4 shadow-sm mb-4 border">
@@ -162,7 +135,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
           )}
         </p>
       </div>
-
+      
       <ResponsiveContainer width="100%" height="90%">
         <LineChart 
           data={chartData} 
@@ -214,7 +187,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
               paddingBottom: '20px'
             }}
           />
-
+          
           {series.map((s) => {
             const color = CHART_COLORS[s.category as keyof typeof CHART_COLORS] || CHART_COLORS.other;
             return (

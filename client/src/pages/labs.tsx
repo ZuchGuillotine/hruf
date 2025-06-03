@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { useLocation } from 'wouter';
 import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
 import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
+import type { ApiError } from "@/lib/types";
 import { useLabChartData } from "@/hooks/use-lab-chart-data";
 import type { Series } from "@/types/chart";
 
@@ -21,11 +22,11 @@ interface LabFile {
 
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
-  const { getSeriesByName } = useLabChartData();
+  const { data: chartDataResponse, getSeriesByName } = useLabChartData();
   const [location] = useLocation();
   const selectedNames = useMemo(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
-    const biomarkers = params.get('biomarkers') ?? '';
+    const searchParams = new URLSearchParams(window.location.search);
+    const biomarkers = searchParams.get('biomarkers') ?? '';
     return new Set(biomarkers.split(',').filter(Boolean));
   }, [location]);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
@@ -71,10 +72,22 @@ export default function Labs() {
   };
 
   const chartData = useMemo(() => {
-      return Array.from(selectedNames).map(name =>
-          getSeriesByName(name)
-      ).filter(Boolean) as Series[];
-  }, [selectedNames, getSeriesByName]);
+      console.log('Computing chart data with selectedNames:', selectedNames);
+      console.log('Chart data response available:', !!chartDataResponse);
+      
+      if (!chartDataResponse?.series) {
+        console.log('No chart data response or series available');
+        return [];
+      }
+      
+      const result = Array.from(selectedNames).map(name => {
+        const series = chartDataResponse.series.find(s => s.name === name);
+        console.log(`Series for ${name}:`, series);
+        return series;
+      }).filter(Boolean) as Series[];
+      console.log('Final chart data:', result);
+      return result;
+  }, [selectedNames, chartDataResponse]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
@@ -84,13 +97,12 @@ export default function Labs() {
           <h2 className="text-3xl font-bold text-white mb-6">Biomarker Trends</h2>
           {labFiles.length > 0 ? (
             <>
-              <BiomarkerFilter />
+              <div className="space-y-4">
+                <BiomarkerHistoryChart series={chartData} />
+                <BiomarkerFilter />
+              </div>
               <div className="mt-4">
-                {selectedNames.size > 0 ? (
-                  <div className="w-full max-w-[95vw] mx-auto">
-                    <BiomarkerHistoryChart series={chartData} />
-                  </div>
-                ) : (
+                {selectedNames.size === 0 && (
                   <Card className="bg-white/10 border-none">
                     <CardContent className="p-6 text-center">
                       <p className="text-white/70">Select biomarkers above to view their trends</p>
