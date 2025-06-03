@@ -188,33 +188,6 @@ app.get('/api/healthz', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
 
-// Root endpoint for deployment health checks
-app.get('/', (req, res) => {
-  // Check if this is a health check request
-  const userAgent = req.get('User-Agent') || '';
-  const acceptHeader = req.get('Accept') || '';
-  const isHealthCheck = userAgent.includes('kube-probe') || 
-                        userAgent.includes('GoogleHC') || 
-                        userAgent.includes('health-check') ||
-                        userAgent.includes('HealthCheck') ||
-                        userAgent.includes('curl') ||
-                        userAgent.includes('Replit') ||
-                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
-
-  if (isHealthCheck || !IS_PRODUCTION) {
-    return res.status(200).json(getHealthResponse());
-  }
-
-  // For production web requests, serve the frontend
-  if (IS_PRODUCTION) {
-    const indexPath = path.join(__dirname, '..', 'index.html');
-    return res.sendFile(indexPath);
-  }
-
-  // In development, let Vite handle it
-  res.status(200).json(getHealthResponse());
-});
-
 // Readiness check for when services are fully loaded
 let servicesReady = false;
 app.get('/ready', (req, res) => {
@@ -299,6 +272,35 @@ if (IS_PRODUCTION) {
   console.log('Development mode - using Vite');
   await setupVite(app, server);
 }
+
+// Root endpoint for deployment health checks (after Vite setup)
+app.get('/', (req, res) => {
+  // Check if this is a health check request
+  const userAgent = req.get('User-Agent') || '';
+  const acceptHeader = req.get('Accept') || '';
+  const isHealthCheck = userAgent.includes('kube-probe') || 
+                        userAgent.includes('GoogleHC') || 
+                        userAgent.includes('health-check') ||
+                        userAgent.includes('HealthCheck') ||
+                        userAgent.includes('curl') ||
+                        userAgent.includes('Replit') ||
+                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
+
+  if (isHealthCheck) {
+    return res.status(200).json(getHealthResponse());
+  }
+
+  // For production web requests, serve the frontend
+  if (IS_PRODUCTION) {
+    const indexPath = path.join(__dirname, '..', 'index.html');
+    return res.sendFile(indexPath);
+  }
+
+  // In development, this should not be reached due to Vite middleware
+  // If it is reached, something is wrong with the Vite setup
+  console.warn('Root route reached in development mode - this should not happen');
+  res.status(500).json({ error: 'Development routing error' });
+});
 
 // Initialize services after starting the server
 async function initializeAndStart() {
