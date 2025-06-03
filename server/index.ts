@@ -150,10 +150,15 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 });
 
 // Force production mode for deployment
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || 
+                      process.env.REPLIT_DEPLOYMENT === 'true' ||
+                      process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                      !process.env.REPL_SLUG; // If not in Replit dev environment, assume production
+
 console.log('Environment check:', {
   NODE_ENV: process.env.NODE_ENV,
   REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+  REPL_SLUG: process.env.REPL_SLUG,
   IS_PRODUCTION
 });
 
