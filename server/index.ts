@@ -149,18 +149,15 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
-// Health check state - start as ready for deployment
-let servicesReady = true; // Start as ready to pass initial health checks
-
-// Immediate health check responses - simplified for deployment
+// Simple health check responses for deployment
 const getHealthResponse = () => ({
   status: "ok",
   timestamp: new Date().toISOString(),
-  ready: true, // Always report ready for health checks
+  ready: true,
   environment: IS_PRODUCTION ? 'production' : 'development'
 });
 
-// Health check endpoints - MUST be defined before other routes
+// Health check endpoints - simple and direct
 app.get('/health', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
@@ -179,44 +176,6 @@ app.get('/ready', (req, res) => {
 app.get('/readiness', (req, res) => {
   res.status(200).json({
     status: "ready", 
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Root endpoint handler - prioritize health checks for deployment
-app.get('/', (req, res) => {
-  // Check if this looks like a health check request first
-  const userAgent = req.get('User-Agent') || '';
-  const acceptHeader = req.get('Accept') || '';
-  
-  // Replit deployment health checks or other automated tools
-  const isHealthCheck = userAgent.includes('curl') || 
-                        userAgent.includes('Replit') || 
-                        userAgent.includes('health') ||
-                        userAgent.includes('kube-probe') ||
-                        userAgent.includes('GoogleHC') ||
-                        userAgent.includes('HealthCheck') ||
-                        (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
-
-  if (isHealthCheck) {
-    return res.status(200).json(getHealthResponse());
-  }
-
-  // For browser requests in production, serve the frontend
-  if (IS_PRODUCTION) {
-    const indexPath = path.join(__dirname, '..', 'index.html');
-    return res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error serving index.html:', err);
-        res.status(200).json(getHealthResponse()); // Fallback to health check
-      }
-    });
-  }
-
-  // Development mode - should not reach here if Vite is properly set up
-  res.status(200).json({
-    status: "development_mode",
-    message: "Development server running",
     timestamp: new Date().toISOString()
   });
 });
@@ -243,31 +202,26 @@ if (IS_PRODUCTION) {
   // Serve public assets
   app.use(express.static(path.join(__dirname, '..', '..', 'client', 'public')));
 
-  // SPA fallback - must be after all other routes but before root
+  // Root route - serve index.html for the homepage
+  app.get('/', (req, res) => {
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        res.status(500).json({ error: 'Failed to load application' });
+      }
+    });
+  });
+
+  // SPA fallback for all other non-API routes
   app.get('*', (req, res) => {
     // Skip API routes and health check routes
     if (req.path.startsWith('/api/') || 
         req.path === '/health' || 
         req.path === '/ping' || 
         req.path === '/ready' || 
-        req.path === '/readiness' ||
-        req.path === '/') {
+        req.path === '/readiness') {
       return res.status(404).json({ error: 'Route not found' });
-    }
-
-    // Check for health check requests on other paths
-    const userAgent = req.get('User-Agent') || '';
-    const acceptHeader = req.get('Accept') || '';
-    const isHealthCheck = userAgent.includes('kube-probe') || 
-                          userAgent.includes('GoogleHC') || 
-                          userAgent.includes('health-check') ||
-                          userAgent.includes('HealthCheck') ||
-                          userAgent.includes('curl') ||
-                          userAgent.includes('Replit') ||
-                          (!acceptHeader.includes('text/html') && !acceptHeader.includes('*/*'));
-
-    if (isHealthCheck) {
-      return res.status(200).json(getHealthResponse());
     }
 
     // Serve the index.html for SPA routes
@@ -275,7 +229,7 @@ if (IS_PRODUCTION) {
     res.sendFile(indexPath, (err) => {
       if (err) {
         console.error('Error serving SPA fallback:', err);
-        res.status(200).json(getHealthResponse());
+        res.status(500).json({ error: 'Failed to load application' });
       }
     });
   });
