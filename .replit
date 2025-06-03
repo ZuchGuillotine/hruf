@@ -41,7 +41,6 @@ start = "typescript-language-server --stdio"
 requiredFiles = [".replit", "replit.nix", "package.json", "package-lock.json"]
 
 [workflows]
-runButton = "Production Start"
 
 [[workflows.workflow]]
 name = "Production Start"
