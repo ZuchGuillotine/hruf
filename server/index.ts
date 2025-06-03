@@ -167,57 +167,11 @@ const getHealthResponse = () => ({
 });
 
 // Setup Vite or static serving based on environment FIRST
-if (IS_PRODUCTION) {
-  // Calculate the correct dist path relative to the compiled server location
-  // When compiled, server files are in dist/server/, so we need to go up to dist/
-  const distPath = path.join(__dirname, '..');
+// Health check endpoints FIRST - before any other routing
+app.get('/', (req, res) => {
+  res.status(200).json(getHealthResponse());
+});
 
-  console.log('Production mode - serving static files from:', distPath);
-
-  // Serve static files from the dist directory (but not index.html)
-  app.use(express.static(distPath, { index: false }));
-
-  // Serve public assets
-  app.use(express.static(path.join(__dirname, '..', '..', 'client', 'public')));
-
-  // Root route - serve index.html for the homepage
-  app.get('/', (req, res) => {
-    const indexPath = path.join(distPath, 'index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error serving index.html:', err);
-        res.status(500).json({ error: 'Failed to load application' });
-      }
-    });
-  });
-
-  // SPA fallback for all other non-API routes
-  app.get('*', (req, res) => {
-    // Skip API routes and health check routes
-    if (req.path.startsWith('/api/') || 
-        req.path === '/health' || 
-        req.path === '/ping' || 
-        req.path === '/ready' || 
-        req.path === '/readiness') {
-      return res.status(404).json({ error: 'Route not found' });
-    }
-
-    // Serve the index.html for SPA routes
-    const indexPath = path.join(distPath, 'index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error serving SPA fallback:', err);
-        res.status(500).json({ error: 'Failed to load application' });
-      }
-    });
-  });
-} else {
-  // Development mode - use Vite
-  console.log('Development mode - using Vite');
-  await setupVite(app, server);
-}
-
-// Health check endpoints - AFTER Vite setup
 app.get('/health', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
@@ -241,6 +195,57 @@ app.get('/readiness', (req, res) => {
     uptime: process.uptime()
   });
 });
+
+if (IS_PRODUCTION) {
+  // Calculate the correct dist path relative to the compiled server location
+  // When compiled, server files are in dist/server/, so we need to go up to dist/
+  const distPath = path.join(__dirname, '..');
+
+  console.log('Production mode - serving static files from:', distPath);
+
+  // Serve static files from the dist directory (but not index.html)
+  app.use(express.static(distPath, { index: false }));
+
+  // Serve public assets
+  app.use(express.static(path.join(__dirname, '..', '..', 'client', 'public')));
+
+  // Frontend route - serve index.html for the frontend app
+  app.get('/app', (req, res) => {
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        res.status(500).json({ error: 'Failed to load application' });
+      }
+    });
+  });
+
+  // SPA fallback for all other non-API routes
+  app.get('*', (req, res) => {
+    // Skip API routes and health check routes
+    if (req.path.startsWith('/api/') || 
+        req.path === '/health' || 
+        req.path === '/ping' || 
+        req.path === '/ready' || 
+        req.path === '/readiness' ||
+        req.path === '/') {
+      return res.status(404).json({ error: 'Route not found' });
+    }
+
+    // Serve the index.html for SPA routes
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving SPA fallback:', err);
+        res.status(500).json({ error: 'Failed to load application' });
+      }
+    });
+  });
+} else {
+  // Development mode - use Vite
+  console.log('Development mode - using Vite');
+  await setupVite(app, server);
+}
 
 
 
