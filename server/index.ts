@@ -112,6 +112,44 @@ if (app.get('env') === 'production') {
   sessionConfig.cookie!.secure = true; // Must be secure if sameSite is none
 }
 
+// HEALTH CHECK ENDPOINTS FIRST - before any other routing
+// These endpoints respond immediately without any service dependencies
+const getHealthResponse = () => ({
+  status: "healthy",
+  timestamp: new Date().toISOString(),
+  uptime: process.uptime(),
+  environment: process.env.NODE_ENV || 'development',
+  version: "1.0.0"
+});
+
+app.get('/', (req, res) => {
+  res.status(200).json(getHealthResponse());
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json(getHealthResponse());
+});
+
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+app.get('/ready', (req, res) => {
+  res.status(200).json({
+    status: "ready",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+app.get('/readiness', (req, res) => {
+  res.status(200).json({
+    status: "ready", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Core middleware setup - order is important
 app.use(session(sessionConfig));
 setupAuth(app);
@@ -198,45 +236,7 @@ console.log('Environment check:', {
   IS_PRODUCTION
 });
 
-// Enhanced health check responses for deployment - immediate response without any service dependencies
-const getHealthResponse = () => ({
-  status: "healthy",
-  timestamp: new Date().toISOString(),
-  uptime: process.uptime(),
-  environment: process.env.NODE_ENV || 'development',
-  version: "1.0.0"
-});
-
-// Setup Vite or static serving based on environment FIRST
-// Health check endpoints FIRST - before any other routing
-// These endpoints respond immediately without any service dependencies
-app.get('/', (req, res) => {
-  res.status(200).json(getHealthResponse());
-});
-
-app.get('/health', (req, res) => {
-  res.status(200).json(getHealthResponse());
-});
-
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
-
-app.get('/ready', (req, res) => {
-  res.status(200).json({
-    status: "ready",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
-app.get('/readiness', (req, res) => {
-  res.status(200).json({
-    status: "ready", 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+// Static file serving and SPA setup based on environment
 
 if (IS_PRODUCTION) {
   // Calculate the correct dist path relative to the compiled server location
@@ -262,19 +262,15 @@ if (IS_PRODUCTION) {
     });
   });
 
-  // SPA fallback for all other non-API routes
+  // SPA fallback for frontend routes only (excluding API and health check routes)
   app.get('*', (req, res) => {
-    // Skip API routes and health check routes
-    if (req.path.startsWith('/api/') || 
-        req.path === '/health' || 
-        req.path === '/ping' || 
-        req.path === '/ready' || 
-        req.path === '/readiness' ||
-        req.path === '/') {
-      return res.status(404).json({ error: 'Route not found' });
+    // Skip API routes - these should return 404 if not found
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API route not found' });
     }
 
-    // Serve the index.html for SPA routes
+    // Health check routes are already handled above, so they won't reach here
+    // Serve the index.html for all other SPA routes
     const indexPath = path.join(distPath, 'index.html');
     res.sendFile(indexPath, (err) => {
       if (err) {
@@ -406,7 +402,7 @@ async function startServerFirst() {
       return;
     } else {
       // Initialize services in background after server is ready (only in non-deployment mode)
-      // Reduced delay from 15 seconds to 2 seconds to prevent health check timeouts
+      // Use a minimal delay to allow server to start serving health checks immediately
       setTimeout(async () => {
         try {
           console.log('Starting background service initialization...');
@@ -420,7 +416,7 @@ async function startServerFirst() {
           console.error('Background service initialization failed (non-fatal):', error);
           // Don't let background initialization failures affect server operation
         }
-      }, 2000); // Reduced delay from 15000ms to 2000ms to prevent health check timeouts
+      }, 500); // Minimal delay - just enough to let server start responding to health checks
     }
 
   } catch (error) {
