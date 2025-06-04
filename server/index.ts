@@ -12,6 +12,22 @@
 **/
 import dotenv from 'dotenv';
 dotenv.config();
+
+// Set deployment mode flag BEFORE any service imports to prevent initialization
+const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                         process.env.REPLIT_DEPLOYMENT === '1' ||
+                         process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                         process.env.VERCEL === '1' ||
+                         process.env.NETLIFY === 'true';
+
+// Set global flag for services to check
+globalThis.__DEPLOYMENT_MODE__ = isDeploymentMode;
+
+// Force NODE_ENV to production during deployment
+if (isDeploymentMode && process.env.NODE_ENV !== 'production') {
+  process.env.NODE_ENV = 'production';
+  console.log('Set NODE_ENV to production for deployment');
+}
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -150,15 +166,20 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 });
 
 // Set NODE_ENV to production if not already set and we're in deployment mode
-if (!process.env.NODE_ENV && (
-  process.env.REPLIT_DEPLOYMENT === 'true' ||
-  process.env.RAILWAY_ENVIRONMENT === 'production' ||
-  process.env.VERCEL === '1' ||
-  process.env.NETLIFY === 'true' ||
-  !process.env.REPL_SLUG
-)) {
+// Check for various deployment indicators
+const isDeployment = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                     process.env.REPLIT_DEPLOYMENT === '1' ||
+                     process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                     process.env.VERCEL === '1' ||
+                     process.env.NETLIFY === 'true' ||
+                     process.env.NODE_ENV === 'production';
+
+if (!process.env.NODE_ENV && isDeployment) {
   process.env.NODE_ENV = 'production';
   console.log('Set NODE_ENV to production for deployment');
+} else if (isDeployment && process.env.NODE_ENV !== 'production') {
+  process.env.NODE_ENV = 'production';
+  console.log('Forced NODE_ENV to production for deployment');
 }
 
 // Force production mode for deployment - be more aggressive about detecting deployment
@@ -364,12 +385,21 @@ async function startServerFirst() {
 
     // Check if we're in deployment mode and skip service initialization for faster health checks
     const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                             process.env.REPLIT_DEPLOYMENT === '1' ||
                              process.env.RAILWAY_ENVIRONMENT === 'production' ||
                              process.env.VERCEL === '1' ||
                              process.env.NETLIFY === 'true';
 
+    console.log('Deployment mode check:', {
+      REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+      isDeploymentMode,
+      NODE_ENV: process.env.NODE_ENV
+    });
+
     if (isDeploymentMode) {
-      console.log('Deployment mode detected - skipping all service initialization for faster health checks');
+      console.log('DEPLOYMENT MODE DETECTED - SKIPPING ALL SERVICE INITIALIZATION FOR FASTER HEALTH CHECKS');
+      // Do not initialize any services during deployment to ensure fast health checks
+      return;
     } else {
       // Initialize services in background after server is ready (only in non-deployment mode)
       // Reduced delay from 15 seconds to 2 seconds to prevent health check timeouts

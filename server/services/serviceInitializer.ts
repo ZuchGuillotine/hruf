@@ -17,12 +17,19 @@ class ServiceInitializer {
   async initializeServices(): Promise<void> {
     // Skip all expensive operations during deployment mode
     const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                             process.env.REPLIT_DEPLOYMENT === '1' ||
                              process.env.RAILWAY_ENVIRONMENT === 'production' ||
                              process.env.VERCEL === '1' ||
                              process.env.NETLIFY === 'true';
     
+    logger.info('ServiceInitializer deployment check:', {
+      REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+      isDeploymentMode,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
     if (isDeploymentMode) {
-      logger.info('Deployment mode detected - skipping service initialization for faster health checks');
+      logger.info('DEPLOYMENT MODE DETECTED IN SERVICE INITIALIZER - SKIPPING ALL SERVICE INITIALIZATION');
       return;
     }
 

@@ -1,10 +1,6 @@
 import { LRUCache } from 'lru-cache';
-
-import { logger } from '../utils/logger';
-
-import { openai } from '../openai';
 import logger from '../utils/logger';
-import { LRUCache } from 'lru-cache';
+import { openai } from '../openai';
 import { db } from '../../db';
 import { logEmbeddings, summaryEmbeddings, logSummaries, qualitativeLogs, supplementLogs, supplements, labResults } from '../../db/schema';
 import { and, eq, sql, desc, notInArray, gte } from 'drizzle-orm';
@@ -17,9 +13,18 @@ class EmbeddingService {
   private SIMILARITY_THRESHOLD = 0.75; // Cosine similarity threshold
 
   // LRU Cache for embeddings
-  private embeddingCache: LRUCache<string, number[]>;
+  private embeddingCache: LRUCache<string, number[]> | null = null;
 
   constructor() {
+    // Check global deployment flag set before service imports
+    const isDeploymentMode = (globalThis as any).__DEPLOYMENT_MODE__ || false;
+
+    if (isDeploymentMode) {
+      // Skip cache initialization during deployment for faster startup
+      logger.info('Deployment mode - skipping embedding service cache initialization');
+      return;
+    }
+
     // Initialize cache with TTL of 1 day and max size of 500 entries
     this.embeddingCache = new LRUCache({
       max: 500,
@@ -61,23 +66,29 @@ class EmbeddingService {
    */
   async generateEmbedding(text: string): Promise<number[]> {
     try {
-      // Create a cache key - use a hash of the text to avoid key size issues
-      const cacheKey = this.hashText(text);
+      // Skip cache operations if in deployment mode or cache not initialized
+      if (this.embeddingCache) {
+        // Create a cache key - use a hash of the text to avoid key size issues
+        const cacheKey = this.hashText(text);
 
-      // Check cache first
-      const cachedEmbedding = this.embeddingCache.get(cacheKey);
-      if (cachedEmbedding) {
-        logger.debug('Cache hit for embedding', {
-          textLength: text.length,
-          textPreview: text.substring(0, 50) + '...'
+        // Check cache first
+        const cachedEmbedding = this.embeddingCache.get(cacheKey);
+        if (cachedEmbedding) {
+          logger.debug('Cache hit for embedding', {
+            textLength: text.length,
+            textPreview: text.substring(0, 50) + '...'
+          });
+          return cachedEmbedding;
+        }
+
+        logger.debug('Cache miss, generating embedding', {
+          textLength: text.length
         });
-        return cachedEmbedding;
+      } else {
+        logger.debug('Cache not available, generating embedding directly', {
+          textLength: text.length
+        });
       }
-
-      // Not in cache, generate embedding
-      logger.debug('Cache miss, generating embedding', {
-        textLength: text.length
-      });
 
       const response = await openai.embeddings.create({
         model: this.EMBEDDING_MODEL,
@@ -86,8 +97,11 @@ class EmbeddingService {
 
       const embedding = response.data[0].embedding;
 
-      // Store in cache
-      this.embeddingCache.set(cacheKey, embedding);
+      // Store in cache if available
+      if (this.embeddingCache) {
+        const cacheKey = this.hashText(text);
+        this.embeddingCache.set(cacheKey, embedding);
+      }
 
       return embedding;
     } catch (error) {
