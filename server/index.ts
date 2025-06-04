@@ -149,6 +149,18 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
   });
 });
 
+// Set NODE_ENV to production if not already set and we're in deployment mode
+if (!process.env.NODE_ENV && (
+  process.env.REPLIT_DEPLOYMENT === 'true' ||
+  process.env.RAILWAY_ENVIRONMENT === 'production' ||
+  process.env.VERCEL === '1' ||
+  process.env.NETLIFY === 'true' ||
+  !process.env.REPL_SLUG
+)) {
+  process.env.NODE_ENV = 'production';
+  console.log('Set NODE_ENV to production for deployment');
+}
+
 // Force production mode for deployment - be more aggressive about detecting deployment
 const IS_PRODUCTION = process.env.NODE_ENV === 'production' || 
                       process.env.REPLIT_DEPLOYMENT === 'true' ||
@@ -166,17 +178,18 @@ console.log('Environment check:', {
   IS_PRODUCTION
 });
 
-// Enhanced health check responses for deployment
+// Enhanced health check responses for deployment - immediate response without any service dependencies
 const getHealthResponse = () => ({
   status: "healthy",
   timestamp: new Date().toISOString(),
   uptime: process.uptime(),
-  environment: IS_PRODUCTION ? 'production' : 'development',
+  environment: process.env.NODE_ENV || 'development',
   version: "1.0.0"
 });
 
 // Setup Vite or static serving based on environment FIRST
 // Health check endpoints FIRST - before any other routing
+// These endpoints respond immediately without any service dependencies
 app.get('/', (req, res) => {
   res.status(200).json(getHealthResponse());
 });
@@ -349,11 +362,17 @@ async function startServerFirst() {
 
     console.log('Server started successfully, health checks are now available');
 
-    // Skip all service initialization during deployment health checks
-    if (process.env.REPLIT_DEPLOYMENT === 'true') {
+    // Check if we're in deployment mode and skip service initialization for faster health checks
+    const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                             process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                             process.env.VERCEL === '1' ||
+                             process.env.NETLIFY === 'true';
+
+    if (isDeploymentMode) {
       console.log('Deployment mode detected - skipping all service initialization for faster health checks');
     } else {
       // Initialize services in background after server is ready (only in non-deployment mode)
+      // Reduced delay from 15 seconds to 2 seconds to prevent health check timeouts
       setTimeout(async () => {
         try {
           console.log('Starting background service initialization...');
@@ -368,7 +387,7 @@ async function startServerFirst() {
           console.error('Background service initialization failed (non-fatal):', error);
           // Don't let background initialization failures affect server operation
         }
-      }, 15000); // 15 second delay to ensure deployment health checks complete first
+      }, 2000); // Reduced delay from 15000ms to 2000ms to prevent health check timeouts
     }
 
   } catch (error) {

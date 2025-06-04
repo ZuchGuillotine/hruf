@@ -15,9 +15,14 @@ class ServiceInitializer {
    * Initialize all services in the correct order (non-blocking)
    */
   async initializeServices(): Promise<void> {
-    // Skip all expensive operations during deployment
-    if (process.env.REPLIT_DEPLOYMENT === 'true') {
-      logger.info('Deployment mode detected - skipping service initialization');
+    // Skip all expensive operations during deployment mode
+    const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                             process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                             process.env.VERCEL === '1' ||
+                             process.env.NETLIFY === 'true';
+    
+    if (isDeploymentMode) {
+      logger.info('Deployment mode detected - skipping service initialization for faster health checks');
       return;
     }
 
@@ -44,7 +49,12 @@ class ServiceInitializer {
 
     // Start scheduled tasks if in production mode (but not deployment mode)
     try {
-      if (process.env.NODE_ENV === 'production' && process.env.REPLIT_DEPLOYMENT !== 'true') {
+      const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                               process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                               process.env.VERCEL === '1' ||
+                               process.env.NETLIFY === 'true';
+      
+      if (process.env.NODE_ENV === 'production' && !isDeploymentMode) {
         this.startScheduledTasks();
       } else {
         logger.info('Scheduled tasks not started in development/deployment mode');
