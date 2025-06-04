@@ -13,21 +13,24 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Set deployment mode flag BEFORE any service imports to prevent initialization
+// Detect deployment mode and set NODE_ENV immediately
 const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
                          process.env.REPLIT_DEPLOYMENT === '1' ||
                          process.env.RAILWAY_ENVIRONMENT === 'production' ||
                          process.env.VERCEL === '1' ||
                          process.env.NETLIFY === 'true';
 
-// Set global flag for services to check
-globalThis.__DEPLOYMENT_MODE__ = isDeploymentMode;
-
-// Force NODE_ENV to production during deployment
-if (isDeploymentMode && process.env.NODE_ENV !== 'production') {
+// Force NODE_ENV to production during deployment BEFORE any imports
+if (isDeploymentMode || !process.env.NODE_ENV) {
   process.env.NODE_ENV = 'production';
   console.log('Set NODE_ENV to production for deployment');
 }
+
+console.log('Deployment mode check at startup:', {
+  REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+  NODE_ENV: process.env.NODE_ENV,
+  isDeploymentMode
+});
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -45,13 +48,9 @@ import { handleStripeRedirects } from './middleware/stripeAuthMiddleware';
 import session from 'express-session';
 import createMemoryStore from "memorystore";
 import crypto from "crypto";
-import { serviceInitializer } from './services/serviceInitializer';
 import path from "path";
 import stripeRoutes from './routes/stripe';
 import adminRoutes from './routes/admin';
-import { summaryTaskManager } from './cron/summaryManager';
-import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
-import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -349,8 +348,13 @@ async function handleShutdown() {
   console.log('Received shutdown signal, closing server...');
 
   try {
-    // Shutdown services gracefully
-    await serviceInitializer.shutdownServices();
+    // Shutdown services gracefully only if they were initialized
+    try {
+      const { serviceInitializer } = await import('./services/serviceInitializer');
+      await serviceInitializer.shutdownServices();
+    } catch (error) {
+      console.log('Service initializer not loaded, skipping service shutdown');
+    }
 
     // Close server connections
     server.close(() => {
@@ -406,12 +410,11 @@ async function startServerFirst() {
       setTimeout(async () => {
         try {
           console.log('Starting background service initialization...');
+          
+          // Lazy import services only when needed
+          const { serviceInitializer } = await import('./services/serviceInitializer');
           await serviceInitializer.initializeServices();
 
-          // Supplement service is now lazy-loaded on first use
-          console.log('Supplement service configured for lazy loading');
-
-          // Start cron jobs only after services are ready and only in production
           console.log('Background service initialization completed successfully');
         } catch (error) {
           console.error('Background service initialization failed (non-fatal):', error);

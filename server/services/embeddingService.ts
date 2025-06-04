@@ -16,12 +16,16 @@ class EmbeddingService {
   private embeddingCache: LRUCache<string, number[]> | null = null;
 
   constructor() {
-    // Check global deployment flag set before service imports
-    const isDeploymentMode = (globalThis as any).__DEPLOYMENT_MODE__ || false;
+    // Check deployment mode using environment variables directly
+    const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                             process.env.REPLIT_DEPLOYMENT === '1' ||
+                             process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                             process.env.VERCEL === '1' ||
+                             process.env.NETLIFY === 'true';
 
     if (isDeploymentMode) {
-      // Skip cache initialization during deployment for faster startup
-      logger.info('Deployment mode - skipping embedding service cache initialization');
+      // Skip ALL initialization during deployment for faster startup
+      console.log('DEPLOYMENT MODE - Skipping embedding service initialization');
       return;
     }
 
