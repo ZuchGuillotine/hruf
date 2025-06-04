@@ -114,20 +114,21 @@ if (app.get('env') === 'production') {
 
 // HEALTH CHECK ENDPOINTS FIRST - before any other routing
 // These endpoints respond immediately without any service dependencies
-const getHealthResponse = () => ({
-  status: "healthy",
-  timestamp: new Date().toISOString(),
-  uptime: process.uptime(),
-  environment: process.env.NODE_ENV || 'development',
-  version: "1.0.0"
-});
-
 app.get('/', (req, res) => {
-  res.status(200).json(getHealthResponse());
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    version: "1.0.0"
+  });
 });
 
 app.get('/health', (req, res) => {
-  res.status(200).json(getHealthResponse());
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime())
+  });
 });
 
 app.get('/ping', (req, res) => {
@@ -137,16 +138,14 @@ app.get('/ping', (req, res) => {
 app.get('/ready', (req, res) => {
   res.status(200).json({
     status: "ready",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    timestamp: new Date().toISOString()
   });
 });
 
 app.get('/readiness', (req, res) => {
   res.status(200).json({
-    status: "ready", 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    status: "ready",
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -287,56 +286,20 @@ if (IS_PRODUCTION) {
 
 
 
-// Start server with improved error handling
+// Start server with simplified startup for fast health checks
 async function startServer() {
-  try {
-    const host = '0.0.0.0'; // Always bind to 0.0.0.0 for Replit
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+  const host = '0.0.0.0';
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
 
-    console.log('Server startup configuration:', {
-      nodeEnv: process.env.NODE_ENV,
-      replitDeployment: process.env.REPLIT_DEPLOYMENT,
-      port: port,
-      host: host,
-      isProduction: IS_PRODUCTION
+  console.log(`Starting server on ${host}:${port}`);
+
+  return new Promise<void>((resolve, reject) => {
+    server.listen(port, host, () => {
+      console.log(`Server running on ${host}:${port}`);
+      resolve();
     });
-
-    await new Promise<void>((resolve, reject) => {
-      server.listen(port, host, () => {
-        console.log(`🚀 Server running on ${host}:${port} (${IS_PRODUCTION ? 'production' : 'development'})`);
-        log(`Server started successfully on ${host}:${port}`);
-        resolve();
-      });
-      server.on('error', reject);
-    });
-
-    // Handle graceful shutdown
-    process.on('SIGTERM', handleShutdown);
-    process.on('SIGINT', handleShutdown);
-
-    // Add error handler for server
-    server.on('error', (error: any) => {
-      console.error('Server error:', {
-        message: error.message,
-        code: error.code,
-        port: error.port,
-        timestamp: new Date().toISOString()
-      });
-
-      if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${error.port} is already in use`);
-      }
-    });
-
-  } catch (err: unknown) {
-    const error = err as { message?: string; code?: string };
-    console.error('Failed to start server:', {
-      error: error.message || 'Unknown error',
-      code: error.code || 'UNKNOWN',
-      timestamp: new Date().toISOString()
-    });
-    process.exit(1);
-  }
+    server.on('error', reject);
+  });
 }
 
 // Graceful shutdown function
@@ -369,58 +332,35 @@ async function handleShutdown() {
   }
 }
 
-// Start server first, then initialize services in background
-startServerFirst().catch((error) => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
-
-// New function to start server immediately for health checks
-async function startServerFirst() {
-  try {
-    // Start server immediately for health checks
-    await startServer();
-
+// Start server immediately for fast health check responses
+startServer()
+  .then(() => {
     console.log('Server started successfully, health checks are now available');
-
-    // Check if we're in deployment mode and skip service initialization for faster health checks
-    const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
-                             process.env.REPLIT_DEPLOYMENT === '1' ||
-                             process.env.RAILWAY_ENVIRONMENT === 'production' ||
-                             process.env.VERCEL === '1' ||
-                             process.env.NETLIFY === 'true';
-
-    console.log('Deployment mode check:', {
-      REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
-      isDeploymentMode,
-      NODE_ENV: process.env.NODE_ENV
-    });
-
-    if (isDeploymentMode) {
-      console.log('DEPLOYMENT MODE DETECTED - SKIPPING ALL SERVICE INITIALIZATION FOR FASTER HEALTH CHECKS');
-      // Do not initialize any services during deployment to ensure fast health checks
-      return;
-    } else {
-      // Initialize services in background after server is ready (only in non-deployment mode)
-      // Use a minimal delay to allow server to start serving health checks immediately
+    
+    // Add graceful shutdown handlers
+    process.on('SIGTERM', handleShutdown);
+    process.on('SIGINT', handleShutdown);
+    
+    // Initialize services in background only in development mode
+    const isDeployment = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                        process.env.NODE_ENV === 'production';
+    
+    if (!isDeployment) {
+      // Only initialize services in development after a delay
       setTimeout(async () => {
         try {
-          console.log('Starting background service initialization...');
-          
-          // Lazy import services only when needed
           const { serviceInitializer } = await import('./services/serviceInitializer');
           await serviceInitializer.initializeServices();
-
-          console.log('Background service initialization completed successfully');
+          console.log('Background services initialized');
         } catch (error) {
-          console.error('Background service initialization failed (non-fatal):', error);
-          // Don't let background initialization failures affect server operation
+          console.log('Background service initialization skipped:', error instanceof Error ? error.message : 'Unknown error');
         }
-      }, 500); // Minimal delay - just enough to let server start responding to health checks
+      }, 1000);
+    } else {
+      console.log('Deployment mode - skipping service initialization for faster startup');
     }
-
-  } catch (error) {
+  })
+  .catch((error) => {
     console.error('Failed to start server:', error);
     process.exit(1);
-  }
-}
+  });
