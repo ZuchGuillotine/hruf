@@ -1,13 +1,13 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { useUser } from "@/hooks/use-user";
-import { 
+import { Link } from 'wouter';
+import { Button } from '@/components/ui/button';
+import { useUser } from '@/hooks/use-user';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { Home, BookOpen, Info, HelpCircle, FileText, Search, Menu } from "lucide-react";
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Home, BookOpen, Info, HelpCircle, FileText, Search, Menu } from 'lucide-react';
 
 export default function LandingHeader() {
   const { user } = useUser();
@@ -76,9 +76,9 @@ export default function LandingHeader() {
             Blog
           </a>
           {!user && (
-            <Button 
-              variant="ghost" 
-              onClick={() => window.location.href = '/auth?login=true'}
+            <Button
+              variant="ghost"
+              onClick={() => (window.location.href = '/auth?login=true')}
               className="text-foreground hover:text-foreground/80 transition-colors"
             >
               Log in

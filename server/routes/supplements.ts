@@ -8,7 +8,7 @@ const router = express.Router();
 // Middleware to check authentication
 const requireAuth = (req: any, res: any, next: any) => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: "Authentication required" });
+    return res.status(401).json({ error: 'Authentication required' });
   }
   next();
 };
@@ -25,14 +25,10 @@ router.get('/streak', requireAuth, async (req, res) => {
     const twoWeeksAgo = new Date();
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-    const logs = await db.select()
+    const logs = await db
+      .select()
       .from(supplementLogs)
-      .where(
-        and(
-          eq(supplementLogs.userId, userId),
-          gte(supplementLogs.takenAt, twoWeeksAgo)
-        )
-      );
+      .where(and(eq(supplementLogs.userId, userId), gte(supplementLogs.takenAt, twoWeeksAgo)));
 
     // Count consecutive days
     const streakDays = logs.reduce((streak, log) => {
@@ -46,7 +42,7 @@ router.get('/streak', requireAuth, async (req, res) => {
       userId,
       streakDays,
       logsCount: logs.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     res.json({ streakDays });

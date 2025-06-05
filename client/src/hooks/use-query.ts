@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Message } from "@/lib/types";
+import { useState } from 'react';
+import { Message } from '@/lib/types';
 
 export interface QueryResult {
   response: string;
@@ -21,35 +21,35 @@ export function useQuery() {
       setError(null);
 
       // Add user message to the chat
-      const newUserMessage: Message = { role: "user", content: query };
+      const newUserMessage: Message = { role: 'user', content: query };
       const updatedMessages = [...messages, newUserMessage];
       setMessages(updatedMessages);
 
       // Send query to API
-      const response = await fetch("/api/query", {
-        method: "POST",
+      const response = await fetch('/api/query', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ messages: updatedMessages }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to get response");
+        throw new Error(errorData.message || 'Failed to get response');
       }
 
       // Handle streaming response
-      if (response.headers.get("content-type")?.includes("text/event-stream")) {
+      if (response.headers.get('content-type')?.includes('text/event-stream')) {
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        let fullResponse = "";
+        let fullResponse = '';
 
-        if (!reader) throw new Error("No response body");
+        if (!reader) throw new Error('No response body');
 
         try {
           // Add a placeholder assistant message
-          const assistantMessage: Message = { role: "assistant", content: "" };
+          const assistantMessage: Message = { role: 'assistant', content: '' };
           setMessages((prev) => [...prev, assistantMessage]);
 
           while (true) {
@@ -70,21 +70,21 @@ export function useQuery() {
                   // Check if the user has reached their daily limit
                   if (data.limitReached) {
                     setLimitReached(true);
-                    
+
                     // Update the last message with the error about limit
                     setMessages((prev) => {
                       const newMessages = [...prev];
                       // Remove the last message (assistant placeholder)
                       return newMessages.slice(0, -1);
                     });
-                    
+
                     // Set the result with error info
                     setResult({
-                      response: "",
-                      error: data.error || "Daily limit reached",
-                      limitReached: true
+                      response: '',
+                      error: data.error || 'Daily limit reached',
+                      limitReached: true,
                     });
-                    
+
                     // End the streaming since we've reached the limit
                     break;
                   } else if (data.response) {
@@ -95,7 +95,7 @@ export function useQuery() {
                     setMessages((prev) => {
                       const newMessages = [...prev];
                       newMessages[newMessages.length - 1] = {
-                        role: "assistant",
+                        role: 'assistant',
                         content: fullResponse,
                       };
                       return newMessages;
@@ -117,24 +117,23 @@ export function useQuery() {
 
       // Handle non-streaming response for backward compatibility
       const data = await response.json();
-      
+
       // Check if the user has reached their daily limit
       if (data.limitReached) {
         setLimitReached(true);
         setResult({
-          response: "",
-          error: data.error || "Daily limit reached",
-          limitReached: true
+          response: '',
+          error: data.error || 'Daily limit reached',
+          limitReached: true,
         });
       } else {
-        const assistantMessage: Message = { role: "assistant", content: data.response };
+        const assistantMessage: Message = { role: 'assistant', content: data.response };
         setMessages((prev) => [...prev, assistantMessage]);
         setResult(data);
       }
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      console.error("Query error:", err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Query error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -148,15 +147,15 @@ export function useQuery() {
 
   const loadHistory = async () => {
     try {
-      const response = await fetch("/api/query/history");
+      const response = await fetch('/api/query/history');
       if (!response.ok) {
-        throw new Error("Failed to fetch query history");
+        throw new Error('Failed to fetch query history');
       }
 
       const history = await response.json();
       return history;
     } catch (err) {
-      console.error("Error loading query history:", err);
+      console.error('Error loading query history:', err);
       return [];
     }
   };
@@ -174,6 +173,6 @@ export function useQuery() {
     isLoading,
     error,
     limitReached,
-    resetLimitReached
+    resetLimitReached,
   };
 }

@@ -1,11 +1,17 @@
-import { Fragment } from "react";
-import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import LandingHeader from "@/components/landing-header";
-import Footer from "@/components/footer";
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Loader2 } from "lucide-react";
-import type { BlogPost } from "@/lib/types";
+import { Fragment } from 'react';
+import { Link } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import LandingHeader from '@/components/landing-header';
+import Footer from '@/components/footer';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Loader2 } from 'lucide-react';
+import type { BlogPost } from '@/lib/types';
 
 const POSTS_PER_PAGE = 6;
 
@@ -18,7 +24,7 @@ export default function LearnPage() {
       const res = await fetch('/api/blog');
       if (!res.ok) throw new Error('Failed to fetch posts');
       return res.json();
-    }
+    },
   });
 
   const startIndex = (page - 1) * POSTS_PER_PAGE;
@@ -47,11 +53,7 @@ export default function LearnPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedPosts.map((post) => (
             <article key={post.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <img 
-                src={post.thumbnailUrl} 
-                alt={post.title}
-                className="w-full h-48 object-cover"
-              />
+              <img src={post.thumbnailUrl} alt={post.title} className="w-full h-48 object-cover" />
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-2">
                   <Link href={`/learn/${post.slug}`} className="text-primary hover:underline">

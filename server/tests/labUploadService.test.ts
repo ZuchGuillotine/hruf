@@ -1,15 +1,15 @@
 /**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 17/05/2025 - 20:37:44
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 17/05/2025
-    * - Author          : 
-    * - Modification    : 
-**/
+ * @description      :
+ * @author           :
+ * @group            :
+ * @created          : 17/05/2025 - 20:37:44
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 17/05/2025
+ * - Author          :
+ * - Modification    :
+ **/
 import { labUploadService } from '../services/labUploadService';
 import { labTextPreprocessingService } from '../services/labTextPreprocessingService';
 import { BiomarkerExtractionService } from '../services/biomarkerExtractionService';
@@ -24,24 +24,24 @@ import { fileTypeFromBuffer } from 'file-type';
 
 // Create a mock instance of BiomarkerExtractionService
 const mockBiomarkerExtractionService = {
-  extractBiomarkers: jest.fn()
+  extractBiomarkers: jest.fn(),
 };
 
 // Mock the dependent services
 jest.mock('../services/labTextPreprocessingService', () => ({
   labTextPreprocessingService: {
-    preprocessLabText: jest.fn()
-  }
+    preprocessLabText: jest.fn(),
+  },
 }));
 
 jest.mock('../services/biomarkerExtractionService', () => ({
-  BiomarkerExtractionService: jest.fn().mockImplementation(() => mockBiomarkerExtractionService)
+  BiomarkerExtractionService: jest.fn().mockImplementation(() => mockBiomarkerExtractionService),
 }));
 
 jest.mock('../services/labSummaryService', () => ({
   labSummaryService: {
-    summarizeLabResult: jest.fn()
-  }
+    summarizeLabResult: jest.fn(),
+  },
 }));
 
 // Mock the database
@@ -52,16 +52,16 @@ jest.mock('../../db', () => ({
     select: jest.fn(),
     query: {
       labResults: {
-        findFirst: jest.fn()
-      }
-    }
-  }
+        findFirst: jest.fn(),
+      },
+    },
+  },
 }));
 
 describe('LabUploadService Tests', () => {
   const testUserId = 999;
   const testLabResultId = 123;
-  let createdLabResultIds: number[] = [];
+  const createdLabResultIds: number[] = [];
   const uploadDir = path.join(process.cwd(), 'uploads');
 
   // Clean up test data after running tests
@@ -70,7 +70,9 @@ describe('LabUploadService Tests', () => {
       // Remove test lab results
       for (const id of createdLabResultIds) {
         await db.delete(labResults).where(eq(labResults.id, id));
-        await db.delete(biomarkerProcessingStatus).where(eq(biomarkerProcessingStatus.labResultId, id));
+        await db
+          .delete(biomarkerProcessingStatus)
+          .where(eq(biomarkerProcessingStatus.labResultId, id));
       }
       logger.info(`Cleaned up ${createdLabResultIds.length} test lab results`);
 
@@ -98,7 +100,9 @@ describe('LabUploadService Tests', () => {
 
   beforeAll(() => {
     // (Dummy call so that fileTypeFromBuffer is "used" (and "file-type" is "loaded"))
-    (async () => { await fileTypeFromBuffer(Buffer.from('dummy')); })();
+    (async () => {
+      await fileTypeFromBuffer(Buffer.from('dummy'));
+    })();
   });
 
   test('Should successfully process a lab result through the entire pipeline', async () => {
@@ -112,34 +116,38 @@ describe('LabUploadService Tests', () => {
       truncated: false,
       mimetype: 'application/pdf',
       md5: 'test-md5',
-      mv: jest.fn().mockResolvedValue(undefined)
+      mv: jest.fn().mockResolvedValue(undefined),
     };
 
     // Mock database responses
     (db.insert as jest.Mock).mockReturnValue({
       values: jest.fn().mockReturnValue({
-        returning: jest.fn().mockResolvedValue([{ id: testLabResultId }])
-      })
+        returning: jest.fn().mockResolvedValue([{ id: testLabResultId }]),
+      }),
     });
 
     (db.select as jest.Mock).mockReturnValue({
       from: jest.fn().mockReturnValue({
         where: jest.fn().mockReturnValue({
-          limit: jest.fn().mockResolvedValue([{
-            id: testLabResultId,
-            metadata: { size: 1024 }
-          }])
-        })
-      })
+          limit: jest.fn().mockResolvedValue([
+            {
+              id: testLabResultId,
+              metadata: { size: 1024 },
+            },
+          ]),
+        }),
+      }),
     });
 
     // Mock preprocessing result
     const mockPreprocessedText = {
       rawText: 'Raw lab text',
       normalizedText: 'Normalized lab text',
-      metadata: { pageCount: 1 }
+      metadata: { pageCount: 1 },
     };
-    (labTextPreprocessingService.preprocessLabText as jest.Mock).mockResolvedValue(mockPreprocessedText);
+    (labTextPreprocessingService.preprocessLabText as jest.Mock).mockResolvedValue(
+      mockPreprocessedText
+    );
 
     // Mock biomarker extraction result
     const mockBiomarkers = {
@@ -150,10 +158,10 @@ describe('LabUploadService Tests', () => {
           unit: 'mg/dL',
           referenceRange: '100-200',
           testDate: new Date().toISOString(),
-          category: 'lipid'
-        }
+          category: 'lipid',
+        },
       ],
-      parsingErrors: []
+      parsingErrors: [],
     };
     mockBiomarkerExtractionService.extractBiomarkers.mockResolvedValue(mockBiomarkers);
 
@@ -166,16 +174,18 @@ describe('LabUploadService Tests', () => {
     createdLabResultIds.push(labResultId);
 
     // Wait for processing to complete (give it some time)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Verify the pipeline steps
     expect(labTextPreprocessingService.preprocessLabText).toHaveBeenCalled();
-    expect(mockBiomarkerExtractionService.extractBiomarkers).toHaveBeenCalledWith(mockPreprocessedText.normalizedText);
+    expect(mockBiomarkerExtractionService.extractBiomarkers).toHaveBeenCalledWith(
+      mockPreprocessedText.normalizedText
+    );
     expect(labSummaryService.summarizeLabResult).toHaveBeenCalledWith(labResultId);
 
     // Verify database updates
     expect(db.update).toHaveBeenCalledWith(labResults);
-    const updateCall = (db.update as jest.Mock).mock.calls.find(call => call[0] === labResults);
+    const updateCall = (db.update as jest.Mock).mock.calls.find((call) => call[0] === labResults);
     expect(updateCall).toBeDefined();
 
     // Verify the final metadata structure
@@ -185,15 +195,15 @@ describe('LabUploadService Tests', () => {
       preprocessedText: {
         rawText: mockPreprocessedText.rawText,
         normalizedText: mockPreprocessedText.normalizedText,
-        processingMetadata: mockPreprocessedText.metadata
+        processingMetadata: mockPreprocessedText.metadata,
       },
       biomarkers: {
         parsedBiomarkers: mockBiomarkers.parsedBiomarkers,
         parsingErrors: mockBiomarkers.parsingErrors,
-        extractedAt: expect.any(String)
+        extractedAt: expect.any(String),
       },
       summary: mockSummary,
-      summarizedAt: expect.any(String)
+      summarizedAt: expect.any(String),
     });
 
     // Verify progress tracking
@@ -214,14 +224,14 @@ describe('LabUploadService Tests', () => {
       truncated: false,
       mimetype: 'application/pdf',
       md5: 'test-md5-error',
-      mv: jest.fn().mockResolvedValue(undefined)
+      mv: jest.fn().mockResolvedValue(undefined),
     };
 
     // Mock database responses
     (db.insert as jest.Mock).mockReturnValue({
       values: jest.fn().mockReturnValue({
-        returning: jest.fn().mockResolvedValue([{ id: testLabResultId + 1 }])
-      })
+        returning: jest.fn().mockResolvedValue([{ id: testLabResultId + 1 }]),
+      }),
     });
 
     // Mock preprocessing to throw an error
@@ -234,7 +244,7 @@ describe('LabUploadService Tests', () => {
     createdLabResultIds.push(labResultId);
 
     // Wait for processing to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Verify error handling
     const progress = labUploadService.getUploadProgress(labResultId);
@@ -245,7 +255,7 @@ describe('LabUploadService Tests', () => {
     // Verify error was recorded in database
     expect(db.update).toHaveBeenCalledWith(biomarkerProcessingStatus);
     const statusUpdateCall = (db.update as jest.Mock).mock.calls.find(
-      call => call[0] === biomarkerProcessingStatus
+      (call) => call[0] === biomarkerProcessingStatus
     );
     expect(statusUpdateCall).toBeDefined();
     expect(statusUpdateCall[1].set.status).toBe('error');
@@ -262,23 +272,23 @@ describe('LabUploadService Tests', () => {
       truncated: false,
       mimetype: 'text/plain',
       md5: 'test-md5',
-      mv: jest.fn()
+      mv: jest.fn(),
     };
 
     // Test file size validation
-    await expect(
-      labUploadService.uploadLabResult(invalidFile as any, testUserId)
-    ).rejects.toThrow('File size exceeds 50MB limit');
+    await expect(labUploadService.uploadLabResult(invalidFile as any, testUserId)).rejects.toThrow(
+      'File size exceeds 50MB limit'
+    );
 
     // Test file type validation
     const invalidTypeFile = {
       ...invalidFile,
       size: 1024,
-      mimetype: 'application/x-executable'
+      mimetype: 'application/x-executable',
     };
 
     await expect(
       labUploadService.uploadLabResult(invalidTypeFile as any, testUserId)
     ).rejects.toThrow('Unsupported file type');
   });
-}); 
+});

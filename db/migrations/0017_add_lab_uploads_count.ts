@@ -1,19 +1,18 @@
-
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
 async function main() {
   console.log('Starting migration: Adding lab_uploads_count column...');
-  
+
   try {
     await db.execute(sql`
       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS lab_uploads_count INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS lab_uploads_reset TIMESTAMPTZ;
     `);
-    
+
     console.log('✅ Successfully added lab_uploads_count column');
-    
+
     return Promise.resolve();
   } catch (error) {
     console.error('Migration failed:', error);

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/hooks/use-user';
@@ -28,11 +27,15 @@ export default function ProfileCompletionNotification() {
             Completing your profile helps us give better health insights
           </p>
           <div className="space-y-2">
-            <Progress value={completionPercentage} className="h-2 bg-blue-200" indicatorClassName="bg-blue-600" />
+            <Progress
+              value={completionPercentage}
+              className="h-2 bg-blue-200"
+              indicatorClassName="bg-blue-600"
+            />
             <p className="text-sm text-blue-600 font-medium">{completionPercentage}% Complete</p>
           </div>
           <div className="flex gap-3 pt-2">
-            <Button 
+            <Button
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setLocation('/profile')}
             >

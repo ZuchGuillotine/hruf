@@ -18,22 +18,18 @@ import { chatWithAI } from '../openai';
  */
 export async function generateChatSummary(userId: number, startDate: Date, endDate: Date) {
   // Fetch relevant chat logs for the period
-  const logs = await db.select()
+  const logs = await db
+    .select()
     .from(qualitativeLogs)
-    .where(
-      and(
-        gte(qualitativeLogs.createdAt, startDate),
-        lt(qualitativeLogs.createdAt, endDate)
-      )
-    );
+    .where(and(gte(qualitativeLogs.createdAt, startDate), lt(qualitativeLogs.createdAt, endDate)));
 
   // Create summary entry in database
   const summary = await db.insert(chatSummaries).values({
     userId,
-    summary: "Summary will be generated",
+    summary: 'Summary will be generated',
     periodStart: startDate,
     periodEnd: endDate,
-    metadata: {} // Reserved for future use
+    metadata: {}, // Reserved for future use
   });
 
   return summary;
@@ -58,7 +54,7 @@ export async function summarizeOldChats(userId: number) {
       eq(qualitativeLogs.type, 'chat'),
       lt(qualitativeLogs.createdAt, twoWeeksAgo)
     ),
-    orderBy: asc(qualitativeLogs.createdAt)
+    orderBy: asc(qualitativeLogs.createdAt),
   });
 
   if (oldChats.length === 0) {
@@ -68,28 +64,30 @@ export async function summarizeOldChats(userId: number) {
   console.log(`Found ${oldChats.length} chats to summarize for user ${userId}`);
 
   // Prepare chats for summarization
-  const chatContent = oldChats.map(chat => {
-    try {
-      const messages = JSON.parse(chat.content);
-      return messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
-    } catch (e) {
-      return chat.content;
-    }
-  }).join('\n---\n');
+  const chatContent = oldChats
+    .map((chat) => {
+      try {
+        const messages = JSON.parse(chat.content);
+        return messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+      } catch (e) {
+        return chat.content;
+      }
+    })
+    .join('\n---\n');
 
   // Generate summary using OpenAI with qualitative model
   const { chatWithAI } = await import('../openai');
   const { MODELS } = await import('../openai');
-  
+
   // Start generating the summary
   const summaryGenerator = chatWithAI(
     [
       { role: 'system', content: SUMMARY_PROMPT },
-      { role: 'user', content: chatContent }
+      { role: 'user', content: chatContent },
     ],
     MODELS.QUALITATIVE_CHAT
   );
-  
+
   // Get the first response (we don't need streaming for summaries)
   const first = await summaryGenerator.next();
   const summaryResponse = first.value;
@@ -102,14 +100,18 @@ export async function summarizeOldChats(userId: number) {
     periodEnd: oldChats[oldChats.length - 1].createdAt,
     metadata: {
       chatCount: oldChats.length,
-      originalIds: oldChats.map(c => c.id)
-    }
+      originalIds: oldChats.map((c) => c.id),
+    },
   });
 
   // Optional: Delete old chats after successful summarization
-  await db.delete(qualitativeLogs)
-    .where(and(
+  await db.delete(qualitativeLogs).where(
+    and(
       eq(qualitativeLogs.userId, userId),
-      inArray(qualitativeLogs.id, oldChats.map(c => c.id))
-    ));
+      inArray(
+        qualitativeLogs.id,
+        oldChats.map((c) => c.id)
+      )
+    )
+  );
 }

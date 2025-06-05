@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, X, Upload } from "lucide-react";
-import { useProfileCompletion } from "@/hooks/use-profile-completion";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, Circle, X, Upload } from 'lucide-react';
+import { useProfileCompletion } from '@/hooks/use-profile-completion';
+import { Button } from '@/components/ui/button';
 
 export function ProfileProgress() {
   const { steps, completionPercentage, isLoading } = useProfileCompletion();
@@ -28,9 +28,7 @@ export function ProfileProgress() {
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">Profile Completion</h3>
           <Progress value={completionPercentage} className="h-2 bg-white/20" />
-          <p className="text-sm mt-2 text-white/70">
-            {completionPercentage}% Complete
-          </p>
+          <p className="text-sm mt-2 text-white/70">{completionPercentage}% Complete</p>
         </div>
 
         <div className="space-y-4">
@@ -38,10 +36,8 @@ export function ProfileProgress() {
             <div
               key={step.id}
               className={cn(
-                "flex items-start gap-3 p-3 rounded-lg transition-colors",
-                step.completed
-                  ? "bg-white/10"
-                  : "bg-white/5 hover:bg-white/10"
+                'flex items-start gap-3 p-3 rounded-lg transition-colors',
+                step.completed ? 'bg-white/10' : 'bg-white/5 hover:bg-white/10'
               )}
             >
               {step.completed ? (
@@ -57,17 +53,12 @@ export function ProfileProgress() {
                       Completed
                     </Badge>
                   ) : (
-                    <Badge
-                      variant="outline"
-                      className="bg-white/10 text-white hover:bg-white/20"
-                    >
+                    <Badge variant="outline" className="bg-white/10 text-white hover:bg-white/20">
                       Todo
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-white/70 mt-0.5">
-                  {step.description}
-                </p>
+                <p className="text-sm text-white/70 mt-0.5">{step.description}</p>
               </div>
             </div>
           ))}

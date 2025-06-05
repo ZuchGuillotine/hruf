@@ -1,15 +1,15 @@
 /**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 17/05/2025 - 01:24:23
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 17/05/2025
-    * - Author          : 
-    * - Modification    : 
-**/
+ * @description      :
+ * @author           :
+ * @group            :
+ * @created          : 17/05/2025 - 01:24:23
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 17/05/2025
+ * - Author          :
+ * - Modification    :
+ **/
 import { z } from 'zod';
 import logger from '../utils/logger';
 import type { BiomarkerCategory } from './biomarkerExtractionService';
@@ -51,10 +51,10 @@ const UNIT_MAPPINGS: Record<string, Record<string, string>> = {
 const VALUE_TRANSFORMS: Record<string, Record<string, (v: number) => number>> = {
   glucose: {
     'mmol/L->mg/dL': (v) => v * 18, // Convert mmol/L to mg/dL
-    'g/L->mg/dL': (v) => v * 100,   // Convert g/L to mg/dL
+    'g/L->mg/dL': (v) => v * 100, // Convert g/L to mg/dL
   },
   cholesterol: {
-    'g/L->mg/dL': (v) => v * 100,   // Convert g/L to mg/dL
+    'g/L->mg/dL': (v) => v * 100, // Convert g/L to mg/dL
   },
   // Add more transformations as needed
 };
@@ -63,7 +63,8 @@ const VALUE_TRANSFORMS: Record<string, Record<string, (v: number) => number>> = 
 export const BIOMARKER_PATTERNS: Record<string, PatternConfig> = {
   // High confidence patterns (exact matches)
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*(?:Result|Value|Level)?[:=]?\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L|g\/L)(?:\s*(?:High|Low|Normal|H|L|N))?/i,
+    pattern:
+      /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*(?:Result|Value|Level)?[:=]?\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L|g\/L)(?:\s*(?:High|Low|Normal|H|L|N))?/i,
     category: 'metabolic',
     tier: 'high',
     confidence: 0.95,
@@ -76,13 +77,14 @@ export const BIOMARKER_PATTERNS: Record<string, PatternConfig> = {
     validationRules: {
       minValue: 20,
       maxValue: 1000,
-      allowedUnits: ['mg/dL', 'mmol/L', 'g/L']
-    }
+      allowedUnits: ['mg/dL', 'mmol/L', 'g/L'],
+    },
   },
 
   // Medium confidence patterns (common variations)
   hdl: {
-    pattern: /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)(?:\s*(?:Cholesterol|Level|Value))?[:=]?\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)(?:\s*(?:High|Low|Normal|H|L|N))?/i,
+    pattern:
+      /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)(?:\s*(?:Cholesterol|Level|Value))?[:=]?\s*(\d+(?:\.\d+)?)\s*(mg\/dL|mmol\/L)(?:\s*(?:High|Low|Normal|H|L|N))?/i,
     category: 'lipid',
     tier: 'medium',
     confidence: 0.85,
@@ -90,21 +92,22 @@ export const BIOMARKER_PATTERNS: Record<string, PatternConfig> = {
     validationRules: {
       minValue: 10,
       maxValue: 200,
-      allowedUnits: ['mg/dL', 'mmol/L']
-    }
+      allowedUnits: ['mg/dL', 'mmol/L'],
+    },
   },
 
   // Low confidence patterns (fuzzy matches)
   vitaminD: {
-    pattern: /(?:Vitamin\s*D|25-?OH\s*Vitamin\s*D|25-?Hydroxyvitamin\s*D|25\(OH\)D)(?:\s*(?:Level|Value|Result))?[:=]?\s*(\d+(?:\.\d+)?)\s*(ng\/mL|nmol\/L)(?:\s*(?:High|Low|Normal|H|L|N))?/i,
+    pattern:
+      /(?:Vitamin\s*D|25-?OH\s*Vitamin\s*D|25-?Hydroxyvitamin\s*D|25\(OH\)D)(?:\s*(?:Level|Value|Result))?[:=]?\s*(\d+(?:\.\d+)?)\s*(ng\/mL|nmol\/L)(?:\s*(?:High|Low|Normal|H|L|N))?/i,
     category: 'vitamin',
     tier: 'low',
     confidence: 0.75,
     validationRules: {
       minValue: 5,
       maxValue: 200,
-      allowedUnits: ['ng/mL', 'nmol/L']
-    }
+      allowedUnits: ['ng/mL', 'nmol/L'],
+    },
   },
 
   // Add more patterns with appropriate tiers...
@@ -167,7 +170,7 @@ export class BiomarkerPatternService {
           ...match,
           value: transform(match.value),
           unit: standardUnit,
-          confidence: match.confidence * 0.95 // Slightly reduce confidence for converted values
+          confidence: match.confidence * 0.95, // Slightly reduce confidence for converted values
         };
       }
     }
@@ -179,23 +182,23 @@ export class BiomarkerPatternService {
     const matches: PatternMatch[] = [];
     logger.info('Starting pattern extraction with enhanced matching', {
       textLength: text.length,
-      patternCount: Object.keys(BIOMARKER_PATTERNS).length
+      patternCount: Object.keys(BIOMARKER_PATTERNS).length,
     });
 
     // Process each pattern
     for (const [name, config] of Object.entries(BIOMARKER_PATTERNS)) {
       const regexMatches = text.matchAll(new RegExp(config.pattern, 'gi'));
-      
+
       for (const match of regexMatches) {
         try {
           const [fullMatch, value, unit, status] = match;
           const parsedValue = parseFloat(value);
-          
+
           if (isNaN(parsedValue)) {
             logger.warn('Failed to parse biomarker value', {
               biomarker: name,
               rawValue: value,
-              match: fullMatch
+              match: fullMatch,
             });
             continue;
           }
@@ -209,7 +212,7 @@ export class BiomarkerPatternService {
             confidence: config.confidence,
             tier: config.tier,
             sourceText: fullMatch,
-            validationStatus: 'valid'
+            validationStatus: 'valid',
           };
 
           // Apply validation and standardization
@@ -218,25 +221,25 @@ export class BiomarkerPatternService {
             logger.warn('Invalid biomarker match', {
               biomarker: name,
               match: validatedMatch,
-              message: validatedMatch.validationMessage
+              message: validatedMatch.validationMessage,
             });
             continue;
           }
 
           // Standardize units
           const standardizedMatch = this.standardizeUnit(validatedMatch);
-          
+
           matches.push(standardizedMatch);
-          
+
           logger.debug('Successfully extracted biomarker', {
             biomarker: name,
-            match: standardizedMatch
+            match: standardizedMatch,
           });
         } catch (error) {
           logger.error('Error processing pattern match', {
             biomarker: name,
             error: error instanceof Error ? error.message : String(error),
-            match: match[0]
+            match: match[0],
           });
         }
       }
@@ -256,15 +259,15 @@ export class BiomarkerPatternService {
     }
 
     const results = Array.from(uniqueMatches.values());
-    
+
     logger.info('Pattern extraction complete', {
       totalMatches: matches.length,
       uniqueMatches: results.length,
-      biomarkersFound: results.map(m => m.name)
+      biomarkersFound: results.map((m) => m.name),
     });
 
     return results;
   }
 }
 
-export const biomarkerPatternService = new BiomarkerPatternService(); 
+export const biomarkerPatternService = new BiomarkerPatternService();

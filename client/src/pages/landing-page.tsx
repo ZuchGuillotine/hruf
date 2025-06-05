@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useUser } from "@/hooks/use-user";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, BarChart3, ChevronRight } from "lucide-react";
-import Footer from "@/components/footer";
-import LandingHeader from "@/components/landing-header";
-import BackgroundWords from "@/components/background-words";
-import { ValueProposition } from "@/components/ValueProposition";
+  CardFooter,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useUser } from '@/hooks/use-user';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, CheckCircle, BarChart3, ChevronRight } from 'lucide-react';
+import Footer from '@/components/footer';
+import LandingHeader from '@/components/landing-header';
+import BackgroundWords from '@/components/background-words';
+import { ValueProposition } from '@/components/ValueProposition';
 import { useLocation } from 'wouter';
 
 type TrialFormData = {
@@ -30,7 +30,11 @@ export default function LandingPage() {
   const { register } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { register: registerField, handleSubmit, formState: { errors } } = useForm<TrialFormData>();
+  const {
+    register: registerField,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<TrialFormData>();
 
   const onSubmit = async (data: TrialFormData) => {
     try {
@@ -49,8 +53,8 @@ export default function LandingPage() {
 
       // Show success toast for successful signup
       toast({
-        title: "Account Created",
-        description: "Your account has been created successfully!",
+        title: 'Account Created',
+        description: 'Your account has been created successfully!',
       });
 
       if (selectedPlan === 'free') {
@@ -73,24 +77,27 @@ export default function LandingPage() {
         // For paid tiers, redirect to subscription checkout
         // Use PRODUCTS from our stripe price helper
         const priceIds = {
-          'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',  // Monthly starter
-          'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',   // Yearly starter 
-          'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',      // Monthly pro
-          'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG'        // Yearly pro
+          'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z', // Monthly starter
+          'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz', // Yearly starter
+          'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL', // Monthly pro
+          'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG', // Yearly pro
         };
 
         const [tier, interval] = (selectedPlan as string).split('-');
         const priceId = priceIds[selectedPlan];
 
         // Create checkout session
-        const checkoutResponse = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ priceId }),
-          credentials: 'include'
-        });
+        const checkoutResponse = await fetch(
+          `${window.location.origin}/api/stripe/create-checkout-session`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ priceId }),
+            credentials: 'include',
+          }
+        );
 
         if (!checkoutResponse.ok) {
           const errorData = await checkoutResponse.json();
@@ -104,14 +111,14 @@ export default function LandingPage() {
     } catch (error: any) {
       console.error('Signup error:', error);
 
-      let errorMessage = "Registration failed. Please try again.";
+      let errorMessage = 'Registration failed. Please try again.';
       if (error.message) {
         errorMessage = error.message;
       }
 
       toast({
-        variant: "destructive",
-        title: "Registration Error",
+        variant: 'destructive',
+        title: 'Registration Error',
         description: errorMessage,
         duration: 5000,
       });
@@ -142,8 +149,8 @@ export default function LandingPage() {
           </CardContent>
         </Card>
         <div className="text-center mb-16">
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             className="bg-[#2d6a4f] hover:bg-[#1b4332] text-white"
             onClick={() => {
               const trialElement = document.getElementById('try-free');
@@ -163,7 +170,9 @@ export default function LandingPage() {
 
         {/* Pricing Cards Section */}
         <div className="mb-24 px-4 sm:px-6">
-          <h2 className="text-3xl font-bold text-center text-[#1b4332] mb-12">Simple, Transparent Pricing</h2>
+          <h2 className="text-3xl font-bold text-center text-[#1b4332] mb-12">
+            Simple, Transparent Pricing
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
             {/* Free Tier Card */}
@@ -174,7 +183,9 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
                 <p className="text-3xl sm:text-4xl font-bold text-[#1b4332] mb-3 sm:mb-4">Free</p>
-                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">No credit card required</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+                  No credit card required
+                </p>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
@@ -195,12 +206,15 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full bg-[#2d6a4f] hover:bg-[#1b4332]" onClick={() => {
-                  const signupElement = document.getElementById('free-trial-signup');
-                  if (signupElement) {
-                    signupElement.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}>
+                <Button
+                  className="w-full bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={() => {
+                    const signupElement = document.getElementById('free-trial-signup');
+                    if (signupElement) {
+                      signupElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                >
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Start Tracking
                 </Button>
@@ -214,10 +228,16 @@ export default function LandingPage() {
                 <CardDescription>Flexible pricing options</CardDescription>
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
-                <a href="https://buy.stripe.com/6oEdTTeEQaWT76028b" className="no-underline hover:no-underline">
+                <a
+                  href="https://buy.stripe.com/6oEdTTeEQaWT76028b"
+                  className="no-underline hover:no-underline"
+                >
                   <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$7.99/mo</p>
                 </a>
-                <a href="https://buy.stripe.com/eVa177aoAfd94XSbIM" className="no-underline hover:no-underline">
+                <a
+                  href="https://buy.stripe.com/eVa177aoAfd94XSbIM"
+                  className="no-underline hover:no-underline"
+                >
                   <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$69/yr</p>
                 </a>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
@@ -240,83 +260,95 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter className="flex gap-2">
-                <Button 
-                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        // Store selected plan in session storage
-                        sessionStorage.setItem('selectedPlan', 'starter-monthly');
+                <Button
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={async () => {
+                    try {
+                      // Store selected plan in session storage
+                      sessionStorage.setItem('selectedPlan', 'starter-monthly');
 
-                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
+                      const response = await fetch(
+                        `${window.location.origin}/api/stripe/create-checkout-session`,
+                        {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
                           },
-                          body: JSON.stringify({ 
+                          body: JSON.stringify({
                             priceId: 'price_1RKZsdAIJBVVerrJhsQhpig2',
                             successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.origin}`
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
+                            cancelUrl: `${window.location.origin}`,
+                          }),
                         }
+                      );
 
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error: any) {
-                        console.error('Error creating checkout:', error);
-                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
-                        toast({
-                          variant: "destructive",
-                          title: "Checkout Error",
-                          description: errorMessage,
-                        });
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
                       }
-                    }}
-                  >
-                    Monthly
-                  </Button>
-                  <Button 
-                    className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
-                    onClick={async () => {
-                      try {
-                        // Store selected plan in session storage
-                        sessionStorage.setItem('selectedPlan', 'starter-yearly');
 
-                        const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error: any) {
+                      console.error('Error creating checkout:', error);
+                      const errorMessage =
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to start checkout process';
+                      toast({
+                        variant: 'destructive',
+                        title: 'Checkout Error',
+                        description: errorMessage,
+                      });
+                    }
+                  }}
+                >
+                  Monthly
+                </Button>
+                <Button
+                  className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
+                  onClick={async () => {
+                    try {
+                      // Store selected plan in session storage
+                      sessionStorage.setItem('selectedPlan', 'starter-yearly');
+
+                      const response = await fetch(
+                        `${window.location.origin}/api/stripe/create-checkout-session`,
+                        {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
                           },
-                          body: JSON.stringify({ 
+                          body: JSON.stringify({
                             priceId: 'price_1RKZsdAIJBVVerrJmp9neLDz',
                             successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                            cancelUrl: `${window.location.origin}`
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to create checkout session');
+                            cancelUrl: `${window.location.origin}`,
+                          }),
                         }
+                      );
 
-                        const { url } = await response.json();
-                        window.location.href = url;
-                      } catch (error: any) {
-                        console.error('Error creating checkout:', error);
-                        const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
-                        toast({
-                          variant: "destructive",
-                          title: "Checkout Error",
-                          description: errorMessage,
-                        });
+                      if (!response.ok) {
+                        throw new Error('Failed to create checkout session');
                       }
-                    }}
-                  >
-                    Yearly
-                  </Button>
-                </CardFooter>
+
+                      const { url } = await response.json();
+                      window.location.href = url;
+                    } catch (error: any) {
+                      console.error('Error creating checkout:', error);
+                      const errorMessage =
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to start checkout process';
+                      toast({
+                        variant: 'destructive',
+                        title: 'Checkout Error',
+                        description: errorMessage,
+                      });
+                    }
+                  }}
+                >
+                  Yearly
+                </Button>
+              </CardFooter>
             </Card>
 
             {/* Pro Biohacker Suite Card */}
@@ -330,7 +362,9 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="text-center px-3 sm:px-6">
                 <p className="text-2xl sm:text-3xl font-bold text-[#1b4332] mb-1">$14.99/mo</p>
-                <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">$99/yr (save $80)</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#1b4332] mb-8">
+                  $99/yr (save $80)
+                </p>
                 <ul className="space-y-2 sm:space-y-3 text-left mb-6 sm:mb-8 text-sm sm:text-base">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600 flex-shrink-0 mt-0.5" />
@@ -351,24 +385,27 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter className="flex gap-2">
-                <Button 
+                <Button
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
                   onClick={async () => {
                     try {
                       // Store selected plan in session storage
                       sessionStorage.setItem('selectedPlan', 'pro-monthly');
 
-                      const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ 
-                          priceId: 'price_1RFrkBAIJBVVerrJNDRc9xSL',
-                          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                          cancelUrl: `${window.location.origin}`
-                        })
-                      });
+                      const response = await fetch(
+                        `${window.location.origin}/api/stripe/create-checkout-session`,
+                        {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            priceId: 'price_1RFrkBAIJBVVerrJNDRc9xSL',
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`,
+                          }),
+                        }
+                      );
 
                       if (!response.ok) {
                         throw new Error('Failed to create checkout session');
@@ -378,10 +415,13 @@ export default function LandingPage() {
                       window.location.href = url;
                     } catch (error: any) {
                       console.error('Error creating checkout:', error);
-                      const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
+                      const errorMessage =
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to start checkout process';
                       toast({
-                        variant: "destructive",
-                        title: "Checkout Error",
+                        variant: 'destructive',
+                        title: 'Checkout Error',
                         description: errorMessage,
                       });
                       // Fallback to direct link if session creation fails
@@ -391,24 +431,27 @@ export default function LandingPage() {
                 >
                   Monthly
                 </Button>
-                <Button 
+                <Button
                   className="w-1/2 bg-[#2d6a4f] hover:bg-[#1b4332]"
                   onClick={async () => {
                     try {
                       // Store selected plan in session storage
                       sessionStorage.setItem('selectedPlan', 'pro-yearly');
 
-                      const response = await fetch(`${window.location.origin}/api/stripe/create-checkout-session`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ 
-                          priceId: 'price_1RKZwJAIJBVVerrJjGTuhgbG',
-                          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-                          cancelUrl: `${window.location.origin}`
-                        })
-                      });
+                      const response = await fetch(
+                        `${window.location.origin}/api/stripe/create-checkout-session`,
+                        {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            priceId: 'price_1RKZwJAIJBVVerrJjGTuhgbG',
+                            successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+                            cancelUrl: `${window.location.origin}`,
+                          }),
+                        }
+                      );
 
                       if (!response.ok) {
                         throw new Error('Failed to create checkout session');
@@ -418,10 +461,13 @@ export default function LandingPage() {
                       window.location.href = url;
                     } catch (error: any) {
                       console.error('Error creating checkout:', error);
-                      const errorMessage = error.response?.data?.error || error.message || "Failed to start checkout process";
+                      const errorMessage =
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Failed to start checkout process';
                       toast({
-                        variant: "destructive",
-                        title: "Checkout Error",
+                        variant: 'destructive',
+                        title: 'Checkout Error',
                         description: errorMessage,
                       });
                     }
@@ -439,9 +485,7 @@ export default function LandingPage() {
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <CardTitle id="try-free">Optimal Health Starts Here</CardTitle>
-              <CardDescription>
-                No credit card required
-              </CardDescription>
+              <CardDescription>No credit card required</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
@@ -452,12 +496,10 @@ export default function LandingPage() {
                   <Input
                     id="email"
                     type="email"
-                    {...registerField("email", { required: true })}
+                    {...registerField('email', { required: true })}
                     placeholder="Enter your email"
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs">Email is required</p>
-                  )}
+                  {errors.email && <p className="text-red-500 text-xs">Email is required</p>}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="username" className="text-sm font-medium">
@@ -466,12 +508,10 @@ export default function LandingPage() {
                   <Input
                     id="username"
                     type="text"
-                    {...registerField("username", { required: true })}
+                    {...registerField('username', { required: true })}
                     placeholder="Choose a username"
                   />
-                  {errors.username && (
-                    <p className="text-red-500 text-xs">Username is required</p>
-                  )}
+                  {errors.username && <p className="text-red-500 text-xs">Username is required</p>}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="password" className="text-sm font-medium">
@@ -480,7 +520,7 @@ export default function LandingPage() {
                   <Input
                     id="password"
                     type="password"
-                    {...registerField("password", { required: true, minLength: 6 })}
+                    {...registerField('password', { required: true, minLength: 6 })}
                     placeholder="Create a password"
                   />
                   {errors.password && (
@@ -501,11 +541,7 @@ export default function LandingPage() {
                   )}
                   Start Tracking
                 </Button>
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={goToLogin}
-                >
+                <Button type="button" variant="link" onClick={goToLogin}>
                   Already have an account? Sign in
                 </Button>
               </CardFooter>

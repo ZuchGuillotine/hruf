@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
@@ -16,7 +15,7 @@ const CATEGORY_COLORS = {
   kidney: 'bg-teal-100 hover:bg-teal-200 border-teal-300',
   hormone: 'bg-pink-100 hover:bg-pink-200 border-pink-300',
   mineral: 'bg-indigo-100 hover:bg-indigo-200 border-indigo-300',
-  other: 'bg-gray-100 hover:bg-gray-200 border-gray-300'
+  other: 'bg-gray-100 hover:bg-gray-200 border-gray-300',
 } as const;
 
 type CategoryType = keyof typeof CATEGORY_COLORS;
@@ -28,7 +27,9 @@ export function BiomarkerFilter() {
   const selectedNames = React.useMemo(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const biomarkersParam = searchParams.get('biomarkers');
-    return biomarkersParam ? new Set(biomarkersParam.split(',').filter(Boolean)) : new Set<string>();
+    return biomarkersParam
+      ? new Set(biomarkersParam.split(',').filter(Boolean))
+      : new Set<string>();
   }, [location]);
 
   // Initialize selection state from URL params
@@ -37,31 +38,36 @@ export function BiomarkerFilter() {
     const biomarkersParam = searchParams.get('biomarkers');
     if (biomarkersParam) {
       const biomarkers = biomarkersParam.split(',').filter(Boolean);
-      setLocation(`${window.location.pathname}?biomarkers=${biomarkers.join(',')}`, { replace: true });
+      setLocation(`${window.location.pathname}?biomarkers=${biomarkers.join(',')}`, {
+        replace: true,
+      });
     }
   }, [setLocation]);
 
-  const toggleName = React.useCallback((name: string) => {
-    const newSelected = new Set(selectedNames);
-    if (newSelected.has(name)) {
-      newSelected.delete(name);
-    } else {
-      newSelected.add(name);
-    }
+  const toggleName = React.useCallback(
+    (name: string) => {
+      const newSelected = new Set(selectedNames);
+      if (newSelected.has(name)) {
+        newSelected.delete(name);
+      } else {
+        newSelected.add(name);
+      }
 
-    const searchParams = new URLSearchParams(window.location.search);
-    if (newSelected.size > 0) {
-      searchParams.set('biomarkers', Array.from(newSelected).join(','));
-    } else {
-      searchParams.delete('biomarkers');
-    }
+      const searchParams = new URLSearchParams(window.location.search);
+      if (newSelected.size > 0) {
+        searchParams.set('biomarkers', Array.from(newSelected).join(','));
+      } else {
+        searchParams.delete('biomarkers');
+      }
 
-    const newSearch = searchParams.toString();
-    const basePath = window.location.pathname;
-    const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
-    
-    setLocation(newUrl, { replace: true });
-  }, [selectedNames, setLocation]);
+      const newSearch = searchParams.toString();
+      const basePath = window.location.pathname;
+      const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
+
+      setLocation(newUrl, { replace: true });
+    },
+    [selectedNames, setLocation]
+  );
 
   const clearAll = React.useCallback(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -99,46 +105,43 @@ export function BiomarkerFilter() {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Select Biomarkers</h3>
           {selectedNames.size > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAll}
-              className="text-xs"
-            >
+            <Button variant="outline" size="sm" onClick={clearAll} className="text-xs">
               Clear All ({selectedNames.size})
             </Button>
           )}
         </div>
-        
+
         <ScrollArea className="h-[200px] w-full">
           <div className="flex flex-wrap gap-2 p-2">
             {chartData.allBiomarkers.map((name) => {
               const isSelected = selectedNames.has(name);
               const category = (chartData.categories[name] || 'other') as CategoryType;
               const colorClass = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
-              
+
               return (
                 <Button
                   key={name}
-                  variant={isSelected ? "default" : "outline"}
+                  variant={isSelected ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => toggleName(name)}
                   className={`rounded-full transition-all duration-200 ${
-                    isSelected 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
+                    isSelected
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
                       : `${colorClass} text-gray-700 border`
                   }`}
                 >
                   {name}
                   {isSelected && (
-                    <span className="ml-1 text-xs" aria-hidden="true">✓</span>
+                    <span className="ml-1 text-xs" aria-hidden="true">
+                      ✓
+                    </span>
                   )}
                 </Button>
               );
             })}
           </div>
         </ScrollArea>
-        
+
         {selectedNames.size > 0 && (
           <div className="text-sm text-gray-600">
             {selectedNames.size} biomarker{selectedNames.size === 1 ? '' : 's'} selected

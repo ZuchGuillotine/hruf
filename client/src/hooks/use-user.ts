@@ -1,16 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { InsertUser, SelectUser } from "@db/neon-schema";
+import type { InsertUser, SelectUser } from '@db/neon-schema';
 
-type RequestResult = {
-  ok: true;
-  user?: SelectUser;
-  message?: string;
-  requiresVerification?: boolean;
-  redirectUrl?: string;
-} | {
-  ok: false;
-  message: string;
-};
+type RequestResult =
+  | {
+      ok: true;
+      user?: SelectUser;
+      message?: string;
+      requiresVerification?: boolean;
+      redirectUrl?: string;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
 
 async function handleRequest(
   url: string,
@@ -20,37 +22,37 @@ async function handleRequest(
   try {
     const response = await fetch(url, {
       method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
-      credentials: "include",
+      credentials: 'include',
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       if (response.status === 401 && data.code === 'TRIAL_EXPIRED') {
-        return { 
-          ok: false, 
-          message: "Your trial has expired. Please upgrade to continue.",
-          code: 'TRIAL_EXPIRED'
+        return {
+          ok: false,
+          message: 'Your trial has expired. Please upgrade to continue.',
+          code: 'TRIAL_EXPIRED',
         };
       }
-      return { 
-        ok: false, 
-        message: data.error || data.message || "Authentication failed",
-        code: response.status === 401 ? 'AUTH_FAILED' : 'SERVER_ERROR'
+      return {
+        ok: false,
+        message: data.error || data.message || 'Authentication failed',
+        code: response.status === 401 ? 'AUTH_FAILED' : 'SERVER_ERROR',
       };
     }
 
     return { ok: true, ...data };
   } catch (e: any) {
-    return { ok: false, message: "Connection error occurred", code: 'CONNECTION_ERROR' };
+    return { ok: false, message: 'Connection error occurred', code: 'CONNECTION_ERROR' };
   }
 }
 
 async function fetchUser(): Promise<SelectUser | null> {
   const response = await fetch('/api/user', {
-    credentials: 'include'
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -67,11 +69,15 @@ async function fetchUser(): Promise<SelectUser | null> {
 export function useUser() {
   const queryClient = useQueryClient();
 
-  const { data: user, error, isLoading } = useQuery<SelectUser | null>({
+  const {
+    data: user,
+    error,
+    isLoading,
+  } = useQuery<SelectUser | null>({
     queryKey: ['user'],
     queryFn: fetchUser,
     staleTime: Infinity,
-    retry: false
+    retry: false,
   });
 
   const loginMutation = useMutation({

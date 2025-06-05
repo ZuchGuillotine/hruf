@@ -1,8 +1,7 @@
-
-import { useEffect } from "react";
-import { useUser } from "./use-user";
-import { useQuery } from "@tanstack/react-query";
-import { SelectHealthStats } from "@db/neon-schema";
+import { useEffect } from 'react';
+import { useUser } from './use-user';
+import { useQuery } from '@tanstack/react-query';
+import { SelectHealthStats } from '@db/neon-schema';
 
 type ProfileStep = {
   id: string;
@@ -18,7 +17,7 @@ export function useProfileCompletion() {
     queryKey: ['health-stats', user?.id],
     queryFn: async () => {
       const response = await fetch('/api/health-stats', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch health stats');
       return response.json();
@@ -30,7 +29,7 @@ export function useProfileCompletion() {
     queryKey: ['supplements-count', user?.id],
     queryFn: async () => {
       const response = await fetch('/api/supplements/count', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch supplement count');
       return response.json();
@@ -42,7 +41,7 @@ export function useProfileCompletion() {
     queryKey: ['labs-count', user?.id],
     queryFn: async () => {
       const response = await fetch('/api/labs', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch lab results');
       const data = await response.json();
@@ -53,38 +52,43 @@ export function useProfileCompletion() {
 
   const steps: ProfileStep[] = [
     {
-      id: "basic-info",
-      label: "Basic Information", 
-      description: "Add your name and contact details",
+      id: 'basic-info',
+      label: 'Basic Information',
+      description: 'Add your name and contact details',
       completed: !!(user?.name && user?.email),
     },
     {
-      id: "health-metrics",
-      label: "Health Metrics",
-      description: "Add your weight and sleep patterns",
-      completed: !!(healthStats?.weight || healthStats?.height || healthStats?.gender || healthStats?.dateOfBirth),
+      id: 'health-metrics',
+      label: 'Health Metrics',
+      description: 'Add your weight and sleep patterns',
+      completed: !!(
+        healthStats?.weight ||
+        healthStats?.height ||
+        healthStats?.gender ||
+        healthStats?.dateOfBirth
+      ),
     },
     {
-      id: "allergies",
-      label: "Allergies",
-      description: "List any allergies you have",
+      id: 'allergies',
+      label: 'Allergies',
+      description: 'List any allergies you have',
       completed: !!(healthStats?.allergies && healthStats.allergies.trim().length > 0),
     },
     {
-      id: "supplement-logs",
-      label: "Log Your First Supplements",
-      description: "Log at least one supplement",
+      id: 'supplement-logs',
+      label: 'Log Your First Supplements',
+      description: 'Log at least one supplement',
       completed: !!(supplementCount && supplementCount > 0),
     },
     {
-      id: "lab-results", 
-      label: "Upload Lab Results",
-      description: "Upload your first blood test or lab results",
+      id: 'lab-results',
+      label: 'Upload Lab Results',
+      description: 'Upload your first blood test or lab results',
       completed: !!(labResults?.count && labResults.count > 0),
     },
   ];
 
-  const completedSteps = steps.filter(step => step.completed).length;
+  const completedSteps = steps.filter((step) => step.completed).length;
   const totalSteps = steps.length;
   const completionPercentage = Math.round((completedSteps / totalSteps) * 100);
 

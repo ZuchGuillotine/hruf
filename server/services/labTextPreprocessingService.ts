@@ -1,15 +1,15 @@
 /**
  * @description      : Service for pre-processing and normalizing text from lab reports
- * @author           : 
- * @group            : 
+ * @author           :
+ * @group            :
  * @created          : 17/05/2025 - 01:24:23
- * 
+ *
  * MODIFICATION LOG
  * - Version         : 1.0.0
  * - Date            : 17/05/2025
- * - Author          : 
+ * - Author          :
  * - Modification    : Initial implementation
-**/
+ **/
 
 import { z } from 'zod';
 import logger from '../utils/logger';
@@ -31,27 +31,29 @@ const PreprocessedTextSchema = z.object({
     lineCount: z.number(),
     hasHeaders: z.boolean(),
     hasFooters: z.boolean(),
-    qualityMetrics: z.object({
-      whitespaceRatio: z.number(),
-      specialCharRatio: z.number(),
-      numericRatio: z.number(),
-      potentialOcrErrors: z.number()
-    }).optional()
-  })
+    qualityMetrics: z
+      .object({
+        whitespaceRatio: z.number(),
+        specialCharRatio: z.number(),
+        numericRatio: z.number(),
+        potentialOcrErrors: z.number(),
+      })
+      .optional(),
+  }),
 });
 
 type PreprocessedText = z.infer<typeof PreprocessedTextSchema>;
 
 // Common OCR error corrections
 const OCR_CORRECTIONS: Record<string, string> = {
-  'l': '1', // lowercase L to 1
-  'O': '0', // uppercase O to 0
-  'o': '0', // lowercase o to 0
-  'I': '1', // uppercase I to 1
-  'i': '1', // lowercase i to 1
-  'rn': 'm', // rn to m
-  'cl': 'd', // cl to d
-  'vv': 'w', // vv to w
+  l: '1', // lowercase L to 1
+  O: '0', // uppercase O to 0
+  o: '0', // lowercase o to 0
+  I: '1', // uppercase I to 1
+  i: '1', // lowercase i to 1
+  rn: 'm', // rn to m
+  cl: 'd', // cl to d
+  vv: 'w', // vv to w
 };
 
 // Common lab report phrases to standardize
@@ -120,11 +122,11 @@ interface ReflowedLine {
 
 export class LabTextPreprocessingService {
   private async processPdf(buffer: Buffer): Promise<PreprocessedText> {
-    const extractionAttempts: Array<{method: string, text: string | null, error?: string}> = [];
-    
+    const extractionAttempts: Array<{ method: string; text: string | null; error?: string }> = [];
+
     // Method 1: Standard pdf-parse with enhanced options
     try {
-      const pdfParse = await import('pdf-parse').then(module => module.default);
+      const pdfParse = await import('pdf-parse').then((module) => module.default);
       const pdfData = await pdfParse(buffer, {
         max: 0,
         version: 'v1.10.100',
@@ -133,12 +135,13 @@ export class LabTextPreprocessingService {
           const textItems = textContent.items.map((item: any) => ({
             text: item.str || '',
             x: item.transform[4],
-            y: item.transform[5]
+            y: item.transform[5],
           }));
 
           // Sort items by position (top to bottom, left to right)
           textItems.sort((a: any, b: any) => {
-            if (Math.abs(a.y - b.y) < 5) { // Same line
+            if (Math.abs(a.y - b.y) < 5) {
+              // Same line
               return a.x - b.x;
             }
             return b.y - a.y; // Different lines
@@ -156,12 +159,12 @@ export class LabTextPreprocessingService {
                 lines.push(currentLine.trim());
                 currentLine = '';
               }
-            } else if (lastX !== -1 && (item.x - lastX) > 20) {
+            } else if (lastX !== -1 && item.x - lastX > 20) {
               currentLine += ' ';
             }
             currentLine += item.text;
             lastY = item.y;
-            lastX = item.x + (item.text.length * 5);
+            lastX = item.x + item.text.length * 5;
           }
 
           if (currentLine) {
@@ -169,19 +172,19 @@ export class LabTextPreprocessingService {
           }
 
           return lines.join('\n');
-        }
+        },
       });
 
       const text = pdfData.text;
       if (text && text.trim().length > 0) {
         extractionAttempts.push({
           method: 'pdf-parse-enhanced',
-          text: text
+          text: text,
         });
         logger.info('PDF text extraction successful with enhanced pdf-parse', {
           method: 'pdf-parse-enhanced',
           textLength: text.length,
-          pageCount: pdfData.numpages
+          pageCount: pdfData.numpages,
         });
         return this.normalizeText(text, 'pdf');
       }
@@ -189,32 +192,32 @@ export class LabTextPreprocessingService {
       extractionAttempts.push({
         method: 'pdf-parse-enhanced',
         text: null,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       logger.warn('Enhanced pdf-parse extraction failed', {
         method: 'pdf-parse-enhanced',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
 
     // Method 2: Basic pdf-parse without custom renderer
     try {
-      const pdfParse = await import('pdf-parse').then(module => module.default);
+      const pdfParse = await import('pdf-parse').then((module) => module.default);
       const pdfData = await pdfParse(buffer, {
         max: 0,
-        version: 'v1.10.100'
+        version: 'v1.10.100',
       });
 
       const text = pdfData.text;
       if (text && text.trim().length > 0) {
         extractionAttempts.push({
           method: 'pdf-parse-basic',
-          text: text
+          text: text,
         });
         logger.info('PDF text extraction successful with basic pdf-parse', {
           method: 'pdf-parse-basic',
           textLength: text.length,
-          pageCount: pdfData.numpages
+          pageCount: pdfData.numpages,
         });
         return this.normalizeText(text, 'pdf');
       }
@@ -222,11 +225,11 @@ export class LabTextPreprocessingService {
       extractionAttempts.push({
         method: 'pdf-parse-basic',
         text: null,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       logger.warn('Basic pdf-parse extraction failed', {
         method: 'pdf-parse-basic',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
 
@@ -234,7 +237,7 @@ export class LabTextPreprocessingService {
     try {
       // Convert PDF to base64 for OCR
       const base64Pdf = buffer.toString('base64');
-      
+
       // Use our existing OCR infrastructure
       const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
       const client = new ImageAnnotatorClient({ credentials });
@@ -249,15 +252,15 @@ export class LabTextPreprocessingService {
             advancedOcrOptions: [
               'MEDICAL_DOCUMENT',
               'DENSE_TEXT',
-              'PDF_DOCUMENT'  // Add PDF-specific OCR mode
+              'PDF_DOCUMENT', // Add PDF-specific OCR mode
             ],
             // Add crop hints for common lab report layouts
             cropHintsParams: {
               aspectRatios: [1.414, 0.707], // A4 and landscape
-              minBoundingPolyVertices: 4
-            }
-          }
-        }
+              minBoundingPolyVertices: 4,
+            },
+          },
+        },
       });
 
       const fullText = result.fullTextAnnotation?.text || '';
@@ -266,12 +269,12 @@ export class LabTextPreprocessingService {
       if (fullText && fullText.trim().length > 0) {
         extractionAttempts.push({
           method: 'ocr-fallback',
-          text: fullText
+          text: fullText,
         });
         logger.info('PDF text extraction successful with OCR fallback', {
           method: 'ocr-fallback',
           textLength: fullText.length,
-          confidence
+          confidence,
         });
 
         // Use our existing image processing pipeline for OCR text
@@ -282,28 +285,28 @@ export class LabTextPreprocessingService {
             confidence,
             medicalTerms: this.countMedicalTerms(fullText),
             numericValues: this.countNumericValues(fullText),
-            unitConsistency: this.checkUnitConsistency(fullText)
-          })
+            unitConsistency: this.checkUnitConsistency(fullText),
+          }),
         });
       }
     } catch (error) {
       extractionAttempts.push({
         method: 'ocr-fallback',
         text: null,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       logger.warn('OCR fallback extraction failed', {
         method: 'ocr-fallback',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
 
     // If all methods failed, log detailed attempt information and throw error
     logger.error('All PDF text extraction methods failed', {
       attempts: extractionAttempts,
-      bufferSize: buffer.length
+      bufferSize: buffer.length,
     });
-    
+
     throw new Error('PDF text extraction failed - all methods exhausted');
   }
 
@@ -311,20 +314,20 @@ export class LabTextPreprocessingService {
     // Split into lines for processing
     const lines = text.split('\n');
     const processedLines: string[] = [];
-    
+
     // Track if we're in a biomarker section
-    let inBiomarkerSection = false;
-    let currentBiomarker: string | null = null;
-    let currentValue: string | null = null;
-    let currentRange: string | null = null;
-    let currentUnit: string | null = null;
-    
+    const inBiomarkerSection = false;
+    const currentBiomarker: string | null = null;
+    const currentValue: string | null = null;
+    const currentRange: string | null = null;
+    const currentUnit: string | null = null;
+
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
-      
+      const line = lines[i].trim();
+
       // Skip empty lines
       if (!line) continue;
-      
+
       /* // Detect biomarker section start
       if (line.match(/^(?:Results|Test Results|Lab Results|Biomarkers|Blood Work|COMPREHENSIVE METABOLIC PANEL)/i)) {
         inBiomarkerSection = true;
@@ -381,31 +384,31 @@ export class LabTextPreprocessingService {
           continue;
         }
       } */
-      
+
       // Add non-biomarker lines as is
       processedLines.push(line);
     }
-    
+
     // Add any pending biomarker
     if (currentBiomarker && (currentValue || currentRange)) {
       const parts = [
         currentBiomarker,
         currentValue ? `: ${currentValue}` : '',
         currentUnit ? ` ${currentUnit}` : '',
-        currentRange ? ` (${currentRange})` : ''
+        currentRange ? ` (${currentRange})` : '',
       ].filter(Boolean);
       processedLines.push(parts.join(''));
     }
-    
+
     const processedText = processedLines.join('\n');
-    
+
     // Log the processed text for debugging
     logger.info('PDF text preprocessing complete', {
       originalLength: text.length,
       processedLength: processedText.length,
-      sampleText: processedText.substring(0, 200)
+      sampleText: processedText.substring(0, 200),
     });
-    
+
     return processedText;
   }
 
@@ -433,21 +436,21 @@ export class LabTextPreprocessingService {
             enableTextDetectionConfidenceScore: true,
             advancedOcrOptions: [
               'MEDICAL_DOCUMENT',
-              'DENSE_TEXT',  // Add this for dense lab reports
-              'TEXT_DENSE'   // Alternative dense text mode
+              'DENSE_TEXT', // Add this for dense lab reports
+              'TEXT_DENSE', // Alternative dense text mode
             ],
             // Add crop hints for common lab report layouts
             cropHintsParams: {
               aspectRatios: [1.414, 0.707], // A4 and landscape
-              minBoundingPolyVertices: 4
-            }
-          }
-        }
+              minBoundingPolyVertices: 4,
+            },
+          },
+        },
       });
 
       const rawText = result.fullTextAnnotation?.text || '';
       const confidence = result.fullTextAnnotation?.pages?.[0]?.confidence || 0;
-      
+
       // Enhanced OCR error corrections for medical documents
       const medicalOcrCorrections: Record<string, string> = {
         ...OCR_CORRECTIONS,
@@ -460,30 +463,30 @@ export class LabTextPreprocessingService {
         'mcg/l': 'µg/L',
         'mcg/dl': 'µg/dL',
         'meq/l': 'mEq/L',
-        'mm3': 'mm³',
-        'ul': 'µL',
-        'nl': 'nL',
-        'pl': 'pL',
-        'fl': 'fL',
+        mm3: 'mm³',
+        ul: 'µL',
+        nl: 'nL',
+        pl: 'pL',
+        fl: 'fL',
         // Common medical OCR errors
-        'hemoglobin': 'Hemoglobin',
-        'hematocrit': 'Hematocrit',
-        'glucose': 'Glucose',
-        'cholesterol': 'Cholesterol',
-        'triglycerides': 'Triglycerides',
-        'creatinine': 'Creatinine',
-        'bun': 'BUN',
-        'alt': 'ALT',
-        'ast': 'AST',
-        'tsh': 'TSH',
-        't4': 'T4',
-        't3': 'T3',
+        hemoglobin: 'Hemoglobin',
+        hematocrit: 'Hematocrit',
+        glucose: 'Glucose',
+        cholesterol: 'Cholesterol',
+        triglycerides: 'Triglycerides',
+        creatinine: 'Creatinine',
+        bun: 'BUN',
+        alt: 'ALT',
+        ast: 'AST',
+        tsh: 'TSH',
+        t4: 'T4',
+        t3: 'T3',
         'vitamin d': 'Vitamin D',
         'vitamin b12': 'Vitamin B12',
-        'folate': 'Folate',
-        'ferritin': 'Ferritin',
-        'iron': 'Iron',
-        'magnesium': 'Magnesium'
+        folate: 'Folate',
+        ferritin: 'Ferritin',
+        iron: 'Iron',
+        magnesium: 'Magnesium',
       };
 
       // Apply medical-specific corrections
@@ -498,20 +501,20 @@ export class LabTextPreprocessingService {
         confidence,
         medicalTerms: this.countMedicalTerms(correctedText),
         numericValues: this.countNumericValues(correctedText),
-        unitConsistency: this.checkUnitConsistency(correctedText)
+        unitConsistency: this.checkUnitConsistency(correctedText),
       });
 
       const preprocessed = await this.normalizeText(correctedText, 'image', {
         confidence,
         ocrEngine: 'google-vision',
-        qualityMetrics
+        qualityMetrics,
       });
 
       return preprocessed;
     } catch (error) {
       logger.error('Error processing image:', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       throw new Error('Failed to process image file');
     }
@@ -519,25 +522,113 @@ export class LabTextPreprocessingService {
 
   private countMedicalTerms(text: string): number {
     const medicalTerms = [
-      'hemoglobin', 'hematocrit', 'glucose', 'cholesterol', 'triglycerides',
-      'creatinine', 'bun', 'alt', 'ast', 'tsh', 't4', 't3', 'vitamin',
-      'ferritin', 'iron', 'magnesium', 'calcium', 'sodium', 'potassium',
-      'chloride', 'co2', 'anion gap', 'albumin', 'bilirubin', 'alkaline',
-      'phosphatase', 'protein', 'globulin', 'a/g ratio', 'bun/creatinine',
-      'egfr', 'ldl', 'hdl', 'vldl', 'lipoprotein', 'apolipoprotein',
-      'homocysteine', 'c-reactive', 'sed rate', 'wbc', 'rbc', 'platelets',
-      'neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils',
-      'mcv', 'mch', 'mchc', 'rdw', 'mpv', 'pt', 'inr', 'aptt', 'fibrinogen',
-      'd-dimer', 'fsh', 'lh', 'estradiol', 'progesterone', 'testosterone',
-      'cortisol', 'acth', 'aldosterone', 'renin', 'parathyroid', 'calcitonin',
-      'insulin', 'c-peptide', 'hba1c', 'vitamin d', 'vitamin b12', 'folate',
-      'ferritin', 'iron', 'transferrin', 'tibc', 'uibc', 'zinc', 'copper',
-      'magnesium', 'calcium', 'phosphorus', 'sodium', 'potassium', 'chloride',
-      'co2', 'anion gap', 'osmolality', 'albumin', 'globulin', 'protein',
-      'bilirubin', 'alkaline phosphatase', 'ast', 'alt', 'ggt', 'ldh',
-      'amylase', 'lipase', 'creatinine', 'bun', 'uric acid', 'egfr'
+      'hemoglobin',
+      'hematocrit',
+      'glucose',
+      'cholesterol',
+      'triglycerides',
+      'creatinine',
+      'bun',
+      'alt',
+      'ast',
+      'tsh',
+      't4',
+      't3',
+      'vitamin',
+      'ferritin',
+      'iron',
+      'magnesium',
+      'calcium',
+      'sodium',
+      'potassium',
+      'chloride',
+      'co2',
+      'anion gap',
+      'albumin',
+      'bilirubin',
+      'alkaline',
+      'phosphatase',
+      'protein',
+      'globulin',
+      'a/g ratio',
+      'bun/creatinine',
+      'egfr',
+      'ldl',
+      'hdl',
+      'vldl',
+      'lipoprotein',
+      'apolipoprotein',
+      'homocysteine',
+      'c-reactive',
+      'sed rate',
+      'wbc',
+      'rbc',
+      'platelets',
+      'neutrophils',
+      'lymphocytes',
+      'monocytes',
+      'eosinophils',
+      'basophils',
+      'mcv',
+      'mch',
+      'mchc',
+      'rdw',
+      'mpv',
+      'pt',
+      'inr',
+      'aptt',
+      'fibrinogen',
+      'd-dimer',
+      'fsh',
+      'lh',
+      'estradiol',
+      'progesterone',
+      'testosterone',
+      'cortisol',
+      'acth',
+      'aldosterone',
+      'renin',
+      'parathyroid',
+      'calcitonin',
+      'insulin',
+      'c-peptide',
+      'hba1c',
+      'vitamin d',
+      'vitamin b12',
+      'folate',
+      'ferritin',
+      'iron',
+      'transferrin',
+      'tibc',
+      'uibc',
+      'zinc',
+      'copper',
+      'magnesium',
+      'calcium',
+      'phosphorus',
+      'sodium',
+      'potassium',
+      'chloride',
+      'co2',
+      'anion gap',
+      'osmolality',
+      'albumin',
+      'globulin',
+      'protein',
+      'bilirubin',
+      'alkaline phosphatase',
+      'ast',
+      'alt',
+      'ggt',
+      'ldh',
+      'amylase',
+      'lipase',
+      'creatinine',
+      'bun',
+      'uric acid',
+      'egfr',
     ];
-    
+
     return medicalTerms.reduce((count, term) => {
       const regex = new RegExp(`\\b${term}\\b`, 'gi');
       return count + (text.match(regex) || []).length;
@@ -546,7 +637,8 @@ export class LabTextPreprocessingService {
 
   private countNumericValues(text: string): number {
     // Match numbers with units (e.g., "123 mg/dL", "45.6 mmol/L")
-    const numericPattern = /\d+(?:\.\d+)?\s*(?:mg\/dL|mmol\/L|g\/dL|g\/L|ng\/mL|µg\/L|IU\/L|mEq\/L|mm³|µL|nL|pL|fL|%|U\/L)/gi;
+    const numericPattern =
+      /\d+(?:\.\d+)?\s*(?:mg\/dL|mmol\/L|g\/dL|g\/L|ng\/mL|µg\/L|IU\/L|mEq\/L|mm³|µL|nL|pL|fL|%|U\/L)/gi;
     return (text.match(numericPattern) || []).length;
   }
 
@@ -559,17 +651,17 @@ export class LabTextPreprocessingService {
       'IU/L': /IU\/L/gi,
       'mEq/L': /mEq\/L/gi,
       'mm³': /mm³/gi,
-      'µL': /µL/gi,
-      'nL': /nL/gi,
-      'pL': /pL/gi,
-      'fL': /fL/gi,
+      µL: /µL/gi,
+      nL: /nL/gi,
+      pL: /pL/gi,
+      fL: /fL/gi,
       '%': /%/g,
-      'U/L': /U\/L/gi
+      'U/L': /U\/L/gi,
     };
 
     const unitCounts = Object.entries(unitPatterns).map(([unit, pattern]) => ({
       unit,
-      count: (text.match(pattern) || []).length
+      count: (text.match(pattern) || []).length,
     }));
 
     // Calculate consistency score based on unit distribution
@@ -577,13 +669,14 @@ export class LabTextPreprocessingService {
     if (totalUnits === 0) return 0;
 
     const expectedCount = totalUnits / unitCounts.length;
-    const variance = unitCounts.reduce((sum, { count }) => {
-      const diff = count - expectedCount;
-      return sum + (diff * diff);
-    }, 0) / unitCounts.length;
+    const variance =
+      unitCounts.reduce((sum, { count }) => {
+        const diff = count - expectedCount;
+        return sum + diff * diff;
+      }, 0) / unitCounts.length;
 
     // Convert variance to a 0-1 score (1 being most consistent)
-    return Math.max(0, 1 - (variance / (totalUnits * totalUnits)));
+    return Math.max(0, 1 - variance / (totalUnits * totalUnits));
   }
 
   private calculateQualityMetrics(text: string, additionalMetrics: any = {}) {
@@ -597,18 +690,21 @@ export class LabTextPreprocessingService {
         medicalTermCount: 0,
         numericValueCount: 0,
         unitConsistencyScore: 0,
-        overallQualityScore: 0
+        overallQualityScore: 0,
       };
     }
 
     const baseMetrics = {
       whitespaceRatio: Math.min(1, Math.max(0, (text.match(/\s/g) || []).length / text.length)),
-      specialCharRatio: Math.min(1, Math.max(0, (text.match(/[^a-zA-Z0-9\s]/g) || []).length / text.length)),
+      specialCharRatio: Math.min(
+        1,
+        Math.max(0, (text.match(/[^a-zA-Z0-9\s]/g) || []).length / text.length)
+      ),
       numericRatio: Math.min(1, Math.max(0, (text.match(/[0-9]/g) || []).length / text.length)),
       potentialOcrErrors: Object.keys(OCR_CORRECTIONS).reduce((count, error) => {
         const matches = text.match(new RegExp(error, 'g')) || [];
         return count + matches.length;
-      }, 0)
+      }, 0),
     };
 
     return {
@@ -619,8 +715,8 @@ export class LabTextPreprocessingService {
       unitConsistencyScore: additionalMetrics.unitConsistency || 0,
       overallQualityScore: this.calculateOverallQualityScore({
         ...baseMetrics,
-        ...additionalMetrics
-      })
+        ...additionalMetrics,
+      }),
     };
   }
 
@@ -632,7 +728,7 @@ export class LabTextPreprocessingService {
       unitConsistencyScore: 0.15,
       whitespaceRatio: 0.05,
       specialCharRatio: 0.05,
-      numericRatio: 0.05
+      numericRatio: 0.05,
     };
 
     const scores: QualityScores = {
@@ -642,21 +738,21 @@ export class LabTextPreprocessingService {
       unitConsistencyScore: metrics.unitConsistencyScore || 0,
       whitespaceRatio: 1 - Math.abs(metrics.whitespaceRatio - 0.15),
       specialCharRatio: 1 - Math.min(metrics.specialCharRatio / 0.1, 1),
-      numericRatio: Math.min(metrics.numericRatio / 0.2, 1)
+      numericRatio: Math.min(metrics.numericRatio / 0.2, 1),
     };
 
     return Object.entries(weights).reduce((score, [key, weight]) => {
-      return score + (scores[key] * weight);
+      return score + scores[key] * weight;
     }, 0);
   }
 
   private reflowPdfColumns(lines: string[]): string[] {
     const reflowedLines: ReflowedLine[] = [];
-    let currentBiomarker: ReflowedLine | null = null;
-    let pendingUnit: string | null = null;
-    let pendingRange: string | null = null;
-    let pendingStatus: string | null = null;
-    
+    const currentBiomarker: ReflowedLine | null = null;
+    const pendingUnit: string | null = null;
+    const pendingRange: string | null = null;
+    const pendingStatus: string | null = null;
+
     /* // Enhanced patterns for better matching
     const unitPattern = /(?:mg\/dL|mmol\/L|g\/dL|g\/L|ng\/mL|µg\/L|IU\/L|mEq\/L|mm³|µL|nL|pL|fL|%|U\/L|mL\/min\/1\.73m²)/i;
     const rangePattern = /(?:Normal|Reference) range:?\s*([\d\.]+\s*-\s*[\d\.]+)\s*(?:mg\/dL|mmol\/L|g\/dL|g\/L|ng\/mL|µg\/L|IU\/L|mEq\/L|mm³|µL|nL|pL|fL|%|U\/L|mL\/min\/1\.73m²)?/i;
@@ -674,17 +770,17 @@ export class LabTextPreprocessingService {
     // Helper to calculate confidence score
     const calculateConfidence = (line: ReflowedLine): number => {
       let score = 1.0;
-      
+
       // Penalize missing components
       if (!line.value) score *= 0.5;
       if (!line.unit) score *= 0.8;
       if (!line.referenceRange) score *= 0.9;
-      
+
       // Bonus for complete entries
       if (line.value && line.unit && line.referenceRange && line.status) {
         score *= 1.1;
       }
-      
+
       // Penalize if value is outside typical ranges
       const value = parseFloat(line.value);
       if (!isNaN(value)) {
@@ -694,7 +790,7 @@ export class LabTextPreprocessingService {
           if (value > 100 || value < 0) score *= 0.8;
         }
       }
-      
+
       return Math.min(1.0, Math.max(0.0, score));
     };
 
@@ -702,7 +798,7 @@ export class LabTextPreprocessingService {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-      
+
       /* // Look for biomarker name
       if (isBiomarkerName(line)) {
         // If we have a pending biomarker, add it
@@ -790,24 +886,24 @@ export class LabTextPreprocessingService {
         }
       } */
     }
-    
+
     // Add any pending biomarker
     if (currentBiomarker) {
       currentBiomarker.confidence = calculateConfidence(currentBiomarker);
       reflowedLines.push(currentBiomarker);
     }
-    
+
     // Convert reflowed lines back to text with confidence scores
-    return reflowedLines.map(line => {
+    return reflowedLines.map((line) => {
       const parts = [
         `${line.biomarker}:`,
         line.value,
         line.unit,
         line.status ? `(${line.status})` : '',
         line.referenceRange ? `[${line.referenceRange}]` : '',
-        `{confidence:${line.confidence.toFixed(2)}}`
+        `{confidence:${line.confidence.toFixed(2)}}`,
       ].filter(Boolean);
-      
+
       return parts.join(' ');
     });
   }
@@ -895,7 +991,7 @@ export class LabTextPreprocessingService {
       // Add new metrics for biomarker detection
       biomarkerCount: this.countBiomarkers(normalizedText),
       unitConsistency: this.checkUnitConsistency(normalizedText),
-      valueRangeConsistency: this.checkValueRanges(normalizedText)
+      valueRangeConsistency: this.checkValueRanges(normalizedText),
     });
 
     // Step 6: Final cleanup - preserve intentional whitespace
@@ -921,7 +1017,7 @@ export class LabTextPreprocessingService {
       qualityMetrics,
       biomarkerCount: qualityMetrics.biomarkerCount,
       unitConsistency: qualityMetrics.unitConsistency,
-      valueRangeConsistency: qualityMetrics.valueRangeConsistency
+      valueRangeConsistency: qualityMetrics.valueRangeConsistency,
     });
 
     return {
@@ -938,8 +1034,8 @@ export class LabTextPreprocessingService {
         confidence: metadata.confidence,
         ocrEngine: metadata.ocrEngine,
         qualityMetrics,
-        ...metadata
-      }
+        ...metadata,
+      },
     };
   }
 
@@ -963,14 +1059,14 @@ export class LabTextPreprocessingService {
     try {
       // Detect file type if not provided
       const detectedType = mimeType || (await fileTypeFromBuffer(buffer))?.mime;
-      
+
       if (!detectedType) {
         throw new Error('Could not detect file type');
       }
 
       logger.info('Starting lab text preprocessing', {
         mimeType: detectedType,
-        bufferSize: buffer.length
+        bufferSize: buffer.length,
       });
 
       let preprocessedText: PreprocessedText;
@@ -979,13 +1075,12 @@ export class LabTextPreprocessingService {
       if (detectedType === 'application/pdf') {
         preprocessedText = await this.processPdf(buffer);
       } else if (
-        detectedType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        detectedType ===
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         detectedType === 'application/msword'
       ) {
         preprocessedText = await this.processDocx(buffer);
-      } else if (
-        detectedType.startsWith('image/')
-      ) {
+      } else if (detectedType.startsWith('image/')) {
         preprocessedText = await this.processImage(buffer);
       } else {
         throw new Error(`Unsupported file type: ${detectedType}`);
@@ -997,14 +1092,14 @@ export class LabTextPreprocessingService {
       logger.info('Lab text preprocessing complete', {
         mimeType: detectedType,
         textLength: validated.normalizedText.length,
-        processingSteps: validated.metadata.processingSteps
+        processingSteps: validated.metadata.processingSteps,
       });
 
       return validated;
     } catch (error) {
       logger.error('Error preprocessing lab text:', {
         error: error instanceof Error ? error.message : String(error),
-        mimeType
+        mimeType,
       });
       throw error;
     }
@@ -1045,4 +1140,4 @@ export class LabTextPreprocessingService {
   }
 }
 
-export const labTextPreprocessingService = new LabTextPreprocessingService(); 
+export const labTextPreprocessingService = new LabTextPreprocessingService();

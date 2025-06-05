@@ -1,4 +1,3 @@
-
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
@@ -39,7 +38,7 @@ async function main() {
       WHERE subscription_tier IS NULL 
       OR subscription_tier NOT IN ('pro', 'core');
     `);
-    
+
     console.log('✅ Successfully updated existing users with subscription tiers');
     return Promise.resolve();
   } catch (error) {
@@ -72,7 +71,7 @@ export async function down() {
       UPDATE users 
       SET subscription_tier = 'free';
     `);
-    
+
     console.log('✅ Successfully rolled back subscription tier updates');
     return Promise.resolve();
   } catch (error) {

@@ -1,7 +1,20 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, ArrowRight } from 'lucide-react';
 import { PRODUCTS, TIERS } from '@/lib/stripe-price-ids';
@@ -29,9 +42,9 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
   const handlePlanSelection = async (tier: 'starter' | 'pro', interval: 'MONTHLY' | 'YEARLY') => {
     try {
       setIsLoading(true);
-      
+
       const priceId = TIERS[tier][interval].id;
-      
+
       // Create a server-side checkout session for better tracking and post-payment handling
       const response = await apiRequest('POST', '/api/stripe/create-checkout-session', {
         priceId,
@@ -39,9 +52,9 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
         cancelUrl: window.location.origin,
         customerEmail: null, // Will be filled in if user is logged in on backend
       });
-      
+
       const data = await response.json();
-      
+
       // Redirect to Stripe checkout
       window.location.href = data.url;
     } catch (error) {
@@ -63,11 +76,20 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="monthly" className="w-full" onValueChange={(value) => setSelectedTab(value as 'monthly' | 'yearly')}>
+        <Tabs
+          defaultValue="monthly"
+          className="w-full"
+          onValueChange={(value) => setSelectedTab(value as 'monthly' | 'yearly')}
+        >
           <div className="flex justify-center mb-6">
             <TabsList>
               <TabsTrigger value="monthly">Monthly</TabsTrigger>
-              <TabsTrigger value="yearly">Yearly <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Save 15-20%</span></TabsTrigger>
+              <TabsTrigger value="yearly">
+                Yearly{' '}
+                <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                  Save 15-20%
+                </span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -78,8 +100,13 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
               <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all">
                 <CardHeader>
                   <CardTitle>Starter AI Essentials</CardTitle>
-                  <CardDescription>Essential AI features for health optimization beginners</CardDescription>
-                  <div className="mt-2 text-3xl font-bold">${TIERS.starter.MONTHLY.price}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+                  <CardDescription>
+                    Essential AI features for health optimization beginners
+                  </CardDescription>
+                  <div className="mt-2 text-3xl font-bold">
+                    ${TIERS.starter.MONTHLY.price}
+                    <span className="text-sm font-normal text-muted-foreground">/month</span>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-start gap-2">
@@ -100,12 +127,18 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <Button
                     className="w-full gap-2"
                     onClick={() => handlePlanSelection('starter', 'MONTHLY')}
                     disabled={isLoading}
                   >
-                    {isLoading ? <LoadingSpinner /> : <>Get Started <ArrowRight className="h-4 w-4" /></>}
+                    {isLoading ? (
+                      <LoadingSpinner />
+                    ) : (
+                      <>
+                        Get Started <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -113,19 +146,30 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
               {/* Pro Plan */}
               <Card className="border-2 border-primary shadow-lg hover:border-primary/90 transition-all">
                 <CardHeader>
-                  <div className="bg-primary text-primary-foreground text-xs rounded-full px-2.5 py-0.5 w-fit mb-2">MOST POPULAR</div>
+                  <div className="bg-primary text-primary-foreground text-xs rounded-full px-2.5 py-0.5 w-fit mb-2">
+                    MOST POPULAR
+                  </div>
                   <CardTitle>Pro Biohacker Suite</CardTitle>
-                  <CardDescription>Advanced features for the dedicated health optimizer</CardDescription>
-                  <div className="mt-2 text-3xl font-bold">${TIERS.pro.MONTHLY.price}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
+                  <CardDescription>
+                    Advanced features for the dedicated health optimizer
+                  </CardDescription>
+                  <div className="mt-2 text-3xl font-bold">
+                    ${TIERS.pro.MONTHLY.price}
+                    <span className="text-sm font-normal text-muted-foreground">/month</span>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> AI health chats</span>
+                    <span>
+                      <strong>Unlimited</strong> AI health chats
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> lab result uploads</span>
+                    <span>
+                      <strong>Unlimited</strong> lab result uploads
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -141,12 +185,18 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <Button
                     className="w-full gap-2"
                     onClick={() => handlePlanSelection('pro', 'MONTHLY')}
                     disabled={isLoading}
                   >
-                    {isLoading ? <LoadingSpinner /> : <>Upgrade to Pro <ArrowRight className="h-4 w-4" /></>}
+                    {isLoading ? (
+                      <LoadingSpinner />
+                    ) : (
+                      <>
+                        Upgrade to Pro <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -160,9 +210,16 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
               <Card className="border-2 border-primary/20 hover:border-primary/50 transition-all">
                 <CardHeader>
                   <CardTitle>Starter AI Essentials</CardTitle>
-                  <CardDescription>Essential AI features for health optimization beginners</CardDescription>
-                  <div className="mt-2 text-3xl font-bold">${(TIERS.starter.YEARLY.price / 12).toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
-                  <div className="text-sm text-primary">Save {calculateSavings('starter')}% with annual billing</div>
+                  <CardDescription>
+                    Essential AI features for health optimization beginners
+                  </CardDescription>
+                  <div className="mt-2 text-3xl font-bold">
+                    ${(TIERS.starter.YEARLY.price / 12).toFixed(2)}
+                    <span className="text-sm font-normal text-muted-foreground">/month</span>
+                  </div>
+                  <div className="text-sm text-primary">
+                    Save {calculateSavings('starter')}% with annual billing
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-start gap-2">
@@ -183,12 +240,18 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <Button
                     className="w-full gap-2"
                     onClick={() => handlePlanSelection('starter', 'YEARLY')}
                     disabled={isLoading}
                   >
-                    {isLoading ? <LoadingSpinner /> : <>Get Annual Plan <ArrowRight className="h-4 w-4" /></>}
+                    {isLoading ? (
+                      <LoadingSpinner />
+                    ) : (
+                      <>
+                        Get Annual Plan <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -196,20 +259,33 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
               {/* Pro Plan */}
               <Card className="border-2 border-primary shadow-lg hover:border-primary/90 transition-all">
                 <CardHeader>
-                  <div className="bg-primary text-primary-foreground text-xs rounded-full px-2.5 py-0.5 w-fit mb-2">BEST VALUE</div>
+                  <div className="bg-primary text-primary-foreground text-xs rounded-full px-2.5 py-0.5 w-fit mb-2">
+                    BEST VALUE
+                  </div>
                   <CardTitle>Pro Biohacker Suite</CardTitle>
-                  <CardDescription>Advanced features for the dedicated health optimizer</CardDescription>
-                  <div className="mt-2 text-3xl font-bold">${(TIERS.pro.YEARLY.price / 12).toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/month</span></div>
-                  <div className="text-sm text-primary">Save {calculateSavings('pro')}% with annual billing</div>
+                  <CardDescription>
+                    Advanced features for the dedicated health optimizer
+                  </CardDescription>
+                  <div className="mt-2 text-3xl font-bold">
+                    ${(TIERS.pro.YEARLY.price / 12).toFixed(2)}
+                    <span className="text-sm font-normal text-muted-foreground">/month</span>
+                  </div>
+                  <div className="text-sm text-primary">
+                    Save {calculateSavings('pro')}% with annual billing
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> AI health chats</span>
+                    <span>
+                      <strong>Unlimited</strong> AI health chats
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> lab result uploads</span>
+                    <span>
+                      <strong>Unlimited</strong> lab result uploads
+                    </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -225,12 +301,18 @@ export function PaymentOptionsModal({ isOpen, onClose }: PaymentOptionsModalProp
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <Button
                     className="w-full gap-2"
                     onClick={() => handlePlanSelection('pro', 'YEARLY')}
                     disabled={isLoading}
                   >
-                    {isLoading ? <LoadingSpinner /> : <>Upgrade to Annual Pro <ArrowRight className="h-4 w-4" /></>}
+                    {isLoading ? (
+                      <LoadingSpinner />
+                    ) : (
+                      <>
+                        Upgrade to Annual Pro <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>

@@ -1,21 +1,25 @@
 /**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 17/05/2025 - 13:24:56
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 17/05/2025
-    * - Author          : 
-    * - Modification    : 
-**/
+ * @description      :
+ * @author           :
+ * @group            :
+ * @created          : 17/05/2025 - 13:24:56
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 17/05/2025
+ * - Author          :
+ * - Modification    :
+ **/
 import type { Request } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { db } from '../../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../../db/schema';
-import type { SelectLabResult, InsertBiomarkerResult, SelectBiomarkerResult } from '../../db/schema';
+import type {
+  SelectLabResult,
+  InsertBiomarkerResult,
+  SelectBiomarkerResult,
+} from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import logger from '../utils/logger';
 import { labTextPreprocessingService } from './labTextPreprocessingService';
@@ -40,7 +44,14 @@ type UploadedFile = NonNullable<Request['files']>[string] & {
 
 export interface UploadProgress {
   labResultId: number;
-  status: 'uploading' | 'processing' | 'extracting' | 'summarizing' | 'completed' | 'error' | 'retrying';
+  status:
+    | 'uploading'
+    | 'processing'
+    | 'extracting'
+    | 'summarizing'
+    | 'completed'
+    | 'error'
+    | 'retrying';
   progress: number;
   message?: string;
   error?: string;
@@ -139,7 +150,7 @@ const MAX_RETRY_DELAY = 30000; // 30 seconds
 
 // Add this helper function before the LabUploadService class
 async function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Add this helper function before the LabUploadService class
@@ -154,13 +165,13 @@ async function validateExtractedText(text: string): Promise<boolean> {
   if (!text || text.trim().length === 0) {
     return false;
   }
-  
+
   // Check for minimum content requirements
   const minLength = 50; // Minimum expected text length
   const minWords = 10; // Minimum expected word count
-  
-  const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
-  
+
+  const wordCount = text.split(/\s+/).filter((word) => word.length > 0).length;
+
   return text.length >= minLength && wordCount >= minWords;
 }
 
@@ -178,7 +189,7 @@ export class LabUploadService {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'image/jpeg',
-      'image/png'
+      'image/png',
     ];
 
     // Check file size (50MB limit)
@@ -189,15 +200,18 @@ export class LabUploadService {
     // Verify file type
     const buffer = file.data;
     const fileType = await fileTypeFromBuffer(buffer);
-    
+
     if (!fileType || !allowedTypes.includes(fileType.mime)) {
       throw new Error(`Unsupported file type: ${fileType?.mime || 'unknown'}`);
     }
   }
 
-  private async saveFile(file: UploadedFile, userId: number): Promise<{ filePath: string; relativeUrl: string }> {
+  private async saveFile(
+    file: UploadedFile,
+    userId: number
+  ): Promise<{ filePath: string; relativeUrl: string }> {
     const uploadDir = path.join(process.cwd(), 'uploads');
-    
+
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -231,8 +245,8 @@ export class LabUploadService {
         metadata: {
           size: file.size,
           lastViewed: new Date().toISOString(),
-          tags: []
-        }
+          tags: [],
+        },
       })
       .returning();
 
@@ -253,8 +267,8 @@ export class LabUploadService {
           startedAt: new Date(),
           metadata: {
             retryCount: 0,
-            processingTime: 0
-          }
+            processingTime: 0,
+          },
         })
         .onConflictDoUpdate({
           target: biomarkerProcessingStatus.labResultId,
@@ -264,26 +278,28 @@ export class LabUploadService {
             errorMessage: null,
             metadata: {
               retryCount: 0,
-              processingTime: 0
-            }
-          }
+              processingTime: 0,
+            },
+          },
         });
 
       // Update progress
       this.updateProgress(labResultId, {
         status: 'processing',
         progress: 20,
-        message: 'Processing lab result...'
+        message: 'Processing lab result...',
       });
 
       while (retryCount <= MAX_RETRIES) {
         try {
           // Read file buffer
           const fileBuffer = fs.readFileSync(filePath);
-          
+
           // Pre-process the file content
-          const preprocessedText = await labTextPreprocessingService.preprocessLabText(fileBuffer) as PreprocessedText;
-          
+          const preprocessedText = (await labTextPreprocessingService.preprocessLabText(
+            fileBuffer
+          )) as PreprocessedText;
+
           // Validate extracted text
           const isValid = await validateExtractedText(preprocessedText.normalizedText);
           if (!isValid) {
@@ -298,8 +314,8 @@ export class LabUploadService {
               metadata: {
                 textLength: preprocessedText.normalizedText.length,
                 retryCount,
-                processingTime: Date.now() - new Date().getTime()
-              }
+                processingTime: Date.now() - new Date().getTime(),
+              },
             })
             .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
@@ -307,14 +323,14 @@ export class LabUploadService {
           this.updateProgress(labResultId, {
             status: 'extracting',
             progress: 50,
-            message: 'Extracting biomarkers...'
+            message: 'Extracting biomarkers...',
           });
 
           // Extract and store biomarkers first
           this.updateProgress(labResultId, {
             status: 'extracting',
             progress: 60,
-            message: 'Processing biomarkers...'
+            message: 'Processing biomarkers...',
           });
 
           // Process biomarkers with dedicated transaction
@@ -324,18 +340,18 @@ export class LabUploadService {
           this.updateProgress(labResultId, {
             status: 'summarizing',
             progress: 80,
-            message: 'Generating summary...'
+            message: 'Generating summary...',
           });
 
           // Generate summary after biomarker processing is complete
           const summary = await labSummaryService.summarizeLabResult(labResultId);
 
           // Get current metadata to preserve required fields
-          const [currentLab] = await db
+          const [currentLab] = (await db
             .select()
             .from(labResults)
             .where(eq(labResults.id, labResultId))
-            .limit(1) as [SelectLabResult | undefined];
+            .limit(1)) as [SelectLabResult | undefined];
 
           if (!currentLab) {
             throw new Error('Lab result not found during processing');
@@ -344,28 +360,29 @@ export class LabUploadService {
           // Use a transaction to ensure atomic updates
           await db.transaction(async (trx) => {
             // 1. Delete any existing biomarkers for this lab result
-            await trx
-              .delete(biomarkerResults)
-              .where(eq(biomarkerResults.labResultId, labResultId));
+            await trx.delete(biomarkerResults).where(eq(biomarkerResults.labResultId, labResultId));
 
             // 2. Insert new biomarkers if any were extracted
             if (extractionResults.parsedBiomarkers.length > 0) {
-              const biomarkerInserts = extractionResults.parsedBiomarkers.map(b => ({
+              const biomarkerInserts = extractionResults.parsedBiomarkers.map((b) => ({
                 labResultId,
                 name: b.name,
                 value: String(typeof b.value === 'string' ? parseFloat(b.value) : b.value),
                 unit: b.unit,
                 category: b.category || 'other',
                 referenceRange: b.referenceRange || null,
-                testDate: b.testDate instanceof Date ? b.testDate : new Date(b.testDate || currentLab.uploadedAt || new Date()),
+                testDate:
+                  b.testDate instanceof Date
+                    ? b.testDate
+                    : new Date(b.testDate || currentLab.uploadedAt || new Date()),
                 status: b.status || null,
                 extractionMethod: b.extractionMethod || 'regex',
                 confidence: b.confidence ? String(b.confidence) : null,
                 metadata: {
                   sourceText: b.sourceText || undefined,
                   extractionTimestamp: new Date().toISOString(),
-                  validationStatus: 'validated'
-                }
+                  validationStatus: 'validated',
+                },
               }));
 
               // Insert in chunks to avoid transaction timeout
@@ -395,23 +412,27 @@ export class LabUploadService {
                   lineCount: preprocessedText.normalizedText.split('\n').length,
                   hasHeaders: preprocessedText.metadata.hasHeaders || false,
                   hasFooters: preprocessedText.metadata.hasFooters || false,
-                  qualityMetrics: preprocessedText.metadata.qualityMetrics
-                }
+                  qualityMetrics: preprocessedText.metadata.qualityMetrics,
+                },
               },
-              biomarkers: extractionResults.parsedBiomarkers.length > 0 ? {
-                parsedBiomarkers: extractionResults.parsedBiomarkers.map(b => ({
-                  name: b.name,
-                  value: typeof b.value === 'string' ? parseFloat(b.value) : b.value,
-                  unit: b.unit,
-                  referenceRange: b.referenceRange,
-                  testDate: b.testDate instanceof Date ? b.testDate.toISOString() : b.testDate,
-                  category: b.category || 'other'
-                })),
-                parsingErrors: extractionResults.parsingErrors,
-                extractedAt: new Date().toISOString()
-              } : undefined,
+              biomarkers:
+                extractionResults.parsedBiomarkers.length > 0
+                  ? {
+                      parsedBiomarkers: extractionResults.parsedBiomarkers.map((b) => ({
+                        name: b.name,
+                        value: typeof b.value === 'string' ? parseFloat(b.value) : b.value,
+                        unit: b.unit,
+                        referenceRange: b.referenceRange,
+                        testDate:
+                          b.testDate instanceof Date ? b.testDate.toISOString() : b.testDate,
+                        category: b.category || 'other',
+                      })),
+                      parsingErrors: extractionResults.parsingErrors,
+                      extractedAt: new Date().toISOString(),
+                    }
+                  : undefined,
               summary: summary || undefined,
-              summarizedAt: new Date().toISOString()
+              summarizedAt: new Date().toISOString(),
             };
 
             await trx
@@ -427,12 +448,16 @@ export class LabUploadService {
                 completedAt: new Date(),
                 biomarkerCount: extractionResults.parsedBiomarkers.length,
                 metadata: {
-                  regexMatches: extractionResults.parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
-                  llmExtractions: extractionResults.parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length,
+                  regexMatches: extractionResults.parsedBiomarkers.filter(
+                    (b) => b.extractionMethod === 'regex'
+                  ).length,
+                  llmExtractions: extractionResults.parsedBiomarkers.filter(
+                    (b) => b.extractionMethod === 'llm'
+                  ).length,
                   processingTime: Date.now() - new Date(currentLab.uploadedAt).getTime(),
                   retryCount,
-                  textLength: preprocessedText.normalizedText.length
-                }
+                  textLength: preprocessedText.normalizedText.length,
+                },
               })
               .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
           });
@@ -441,16 +466,18 @@ export class LabUploadService {
           this.updateProgress(labResultId, {
             status: 'completed',
             progress: 100,
-            message: 'Processing complete'
+            message: 'Processing complete',
           });
 
           // Clean up progress tracking after 5 minutes
-          setTimeout(() => {
-            this.uploadProgress.delete(labResultId);
-          }, 5 * 60 * 1000);
+          setTimeout(
+            () => {
+              this.uploadProgress.delete(labResultId);
+            },
+            5 * 60 * 1000
+          );
 
           return; // Success - exit the retry loop
-
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           retryCount++;
@@ -464,8 +491,8 @@ export class LabUploadService {
               metadata: {
                 retryCount,
                 errorDetails: lastError.stack,
-                processingTime: Date.now() - new Date().getTime()
-              }
+                processingTime: Date.now() - new Date().getTime(),
+              },
             })
             .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
@@ -474,14 +501,14 @@ export class LabUploadService {
             logger.info(`Retrying lab result processing (attempt ${retryCount}/${MAX_RETRIES})`, {
               labResultId,
               delayMs,
-              error: lastError.message
+              error: lastError.message,
             });
 
             // Update progress with retry information
             this.updateProgress(labResultId, {
               status: 'retrying',
-              progress: Math.max(0, 50 - (retryCount * 10)),
-              message: `Retrying processing (attempt ${retryCount}/${MAX_RETRIES})...`
+              progress: Math.max(0, 50 - retryCount * 10),
+              message: `Retrying processing (attempt ${retryCount}/${MAX_RETRIES})...`,
             });
 
             await delay(delayMs);
@@ -493,20 +520,19 @@ export class LabUploadService {
 
       // If we get here, all retries failed
       throw lastError || new Error('Text extraction failed after all retries');
-
     } catch (error) {
       logger.error('Error processing lab result:', {
         labResultId,
         retryCount,
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       // Update progress with error
       this.updateProgress(labResultId, {
         status: 'error',
         progress: 0,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
 
       // Update processing status in database
@@ -519,8 +545,8 @@ export class LabUploadService {
           metadata: {
             retryCount,
             errorDetails: error instanceof Error ? error.stack : undefined,
-            processingTime: Date.now() - new Date().getTime()
-          }
+            processingTime: Date.now() - new Date().getTime(),
+          },
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
@@ -532,12 +558,12 @@ export class LabUploadService {
     const current = this.uploadProgress.get(labResultId) || {
       labResultId,
       status: 'uploading',
-      progress: 0
+      progress: 0,
     };
 
     this.uploadProgress.set(labResultId, {
       ...current,
-      ...progress
+      ...progress,
     });
   }
 
@@ -566,17 +592,16 @@ export class LabUploadService {
       this.updateProgress(labResultId, {
         status: 'uploading',
         progress: 10,
-        message: 'File uploaded, starting processing...'
+        message: 'File uploaded, starting processing...',
       });
 
       // Process in background
-      this.processLabResult(labResultId, filePath)
-        .catch(error => {
-          logger.error('Background processing failed:', {
-            labResultId,
-            error: error instanceof Error ? error.message : String(error)
-          });
+      this.processLabResult(labResultId, filePath).catch((error) => {
+        logger.error('Background processing failed:', {
+          labResultId,
+          error: error instanceof Error ? error.message : String(error),
         });
+      });
 
       return labResultId;
     } catch (error) {
@@ -584,11 +609,11 @@ export class LabUploadService {
         userId,
         fileName: file.name,
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       throw error;
     }
   }
 }
 
-export const labUploadService = new LabUploadService(); 
+export const labUploadService = new LabUploadService();

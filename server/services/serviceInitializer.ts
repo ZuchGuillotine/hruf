@@ -1,4 +1,3 @@
-
 import path from 'path';
 import fs from 'fs';
 import embeddingService from './embeddingService';
@@ -38,7 +37,7 @@ class ServiceInitializer {
     } catch (error) {
       logger.error('Service initialization failed:', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       // Even if initialization fails, we'll continue running the app
@@ -105,20 +104,22 @@ class ServiceInitializer {
           fs.mkdirSync(uploadsDir, { recursive: true });
           logger.info('Created uploads directory at:', uploadsDir);
         }
-        
+
         // Verify directory permissions
         fs.accessSync(uploadsDir, fs.constants.R_OK | fs.constants.W_OK);
         logger.info('Uploads directory verified with correct permissions');
-        
+
         // Pre-load required modules for lab processing to avoid initialization issues
         logger.info('Preloading PDF processing modules...');
         try {
           // Dynamically import pdf-parse to ensure it's loaded correctly
-          import('pdf-parse').then(() => {
-            logger.info('PDF processing module loaded successfully');
-          }).catch(err => {
-            logger.warn('PDF processing module preload warning (non-fatal):', err);
-          });
+          import('pdf-parse')
+            .then(() => {
+              logger.info('PDF processing module loaded successfully');
+            })
+            .catch((err) => {
+              logger.warn('PDF processing module preload warning (non-fatal):', err);
+            });
         } catch (moduleError) {
           logger.warn('Module preloading warning (non-fatal):', moduleError);
         }

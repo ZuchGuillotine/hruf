@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 import { eq, gte, and } from 'drizzle-orm/expressions';
 import { db } from '../../db';
 import { qualitativeLogs, users } from '../../db/schema';
-import { chatWithAI as openAIChatWithAI, MODELS } from "../openai";
+import { chatWithAI as openAIChatWithAI, MODELS } from '../openai';
 import { tierLimitService } from './tierLimitService';
 
 /**
@@ -36,7 +36,10 @@ async function getUserDailyChatCount(userId: number): Promise<number> {
  * @param userId User ID for context and rate limiting
  * @returns Async generator that yields response chunks
  */
-export async function chatWithAI(messages: Array<{ role: string; content: string }>, userId: number) {
+export async function chatWithAI(
+  messages: Array<{ role: string; content: string }>,
+  userId: number
+) {
   try {
     //Added unique identifier to prevent duplicate logs
     const uniqueIdentifier = crypto.randomUUID();
@@ -44,7 +47,7 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       userId,
       messageCount: messages.length,
       timestamp: new Date().toISOString(),
-      uniqueIdentifier
+      uniqueIdentifier,
     });
 
     const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -56,20 +59,22 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
 
     const canUseAI = await tierLimitService.canUseAI(userId);
     if (!canUseAI) {
-      throw new Error('Monthly chat limit reached. Please upgrade your plan to continue using AI features.');
+      throw new Error(
+        'Monthly chat limit reached. Please upgrade your plan to continue using AI features.'
+      );
     }
 
     // Define the correct model for qualitative chat
-    const QUALITATIVE_MODEL = "gpt-4o-mini";
+    const QUALITATIVE_MODEL = 'gpt-4o-mini';
 
     // Verify model being used - explicitly logging to help debug model selection issues
     // IMPORTANT: This service must always use the qualitative model (gpt-4o-mini)
-    console.log('Using qualitative chat model:', { 
+    console.log('Using qualitative chat model:', {
       model: QUALITATIVE_MODEL,
       modelName: QUALITATIVE_MODEL,
       userId,
       timestamp: new Date().toISOString(),
-      uniqueIdentifier
+      uniqueIdentifier,
     });
 
     // Use the dedicated qualitative service
@@ -80,7 +85,7 @@ export async function chatWithAI(messages: Array<{ role: string; content: string
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     throw error;
   }
@@ -98,7 +103,7 @@ export async function qualitativeChatWithAI(userId: string, message: string) {
     console.log('Qualitative chat request with single message:', {
       userId,
       messagePreview: message.substring(0, 50) + '...',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Convert string userId to number for database queries
@@ -109,13 +114,15 @@ export async function qualitativeChatWithAI(userId: string, message: string) {
     }
 
     // Format the message into the expected format for the LLM
-    const formattedMessages = [
-      { role: 'user', content: message }
-    ];
+    const formattedMessages = [{ role: 'user', content: message }];
 
     //Added logging for qualitative chat
     const response = await chatWithAI(formattedMessages, userIdNum);
-    console.log("Qualitative chat response:", {userId, response, timestamp: new Date().toISOString()})
+    console.log('Qualitative chat response:', {
+      userId,
+      response,
+      timestamp: new Date().toISOString(),
+    });
     // Use the existing chatWithAI function with the formatted messages
     return response;
   } catch (error) {
@@ -123,7 +130,7 @@ export async function qualitativeChatWithAI(userId: string, message: string) {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     throw error;
   }

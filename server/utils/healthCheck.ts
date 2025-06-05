@@ -6,7 +6,7 @@ export function healthCheck(req: Request, res: Response) {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    port: process.env.PORT || '5000'
+    port: process.env.PORT || '5000',
   };
 
   // Log health check for debugging deployment issues
@@ -15,7 +15,7 @@ export function healthCheck(req: Request, res: Response) {
       url: req.url,
       method: req.method,
       headers: req.headers,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 

@@ -1,16 +1,16 @@
-import { useUser } from "@/hooks/use-user";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import Header from "@/components/header";
-import { ProfileProgress } from "@/components/profile-progress";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from '@/hooks/use-user';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import Header from '@/components/header';
+import { ProfileProgress } from '@/components/profile-progress';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 type ProfileFormData = {
   email: string;
@@ -40,7 +40,7 @@ async function updateProfile(data: ProfileFormData) {
   return response.json();
 }
 
-import { AccountInfo } from "@/components/AccountInfo";
+import { AccountInfo } from '@/components/AccountInfo';
 
 export default function ProfilePage() {
   const { user, isLoading } = useUser();
@@ -49,10 +49,10 @@ export default function ProfilePage() {
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
-      email: user?.email || "",
-      phoneNumber: user?.phoneNumber || "",
-      name: user?.name || "",
-      username: user?.username || "",
+      email: user?.email || '',
+      phoneNumber: user?.phoneNumber || '',
+      name: user?.name || '',
+      username: user?.username || '',
       isPro: user?.isPro || false,
     },
   });
@@ -62,14 +62,14 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
       toast({
-        title: "Success",
-        description: "Profile updated successfully",
+        title: 'Success',
+        description: 'Profile updated successfully',
       });
     },
     onError: (error: Error) => {
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description: error.message,
       });
     },
@@ -106,7 +106,7 @@ export default function ProfilePage() {
                     <Input
                       id="email"
                       type="email"
-                      {...form.register("email")}
+                      {...form.register('email')}
                       className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                     />
                   </div>
@@ -116,16 +116,18 @@ export default function ProfilePage() {
                     <Input
                       id="phoneNumber"
                       type="tel"
-                      {...form.register("phoneNumber")}
+                      {...form.register('phoneNumber')}
                       className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name (must match name on any medical documents uploaded)</Label>
+                    <Label htmlFor="name">
+                      Name (must match name on any medical documents uploaded)
+                    </Label>
                     <Input
                       id="name"
-                      {...form.register("name")}
+                      {...form.register('name')}
                       className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                     />
                   </div>
@@ -134,7 +136,7 @@ export default function ProfilePage() {
                     <Label htmlFor="username">Username</Label>
                     <Input
                       id="username"
-                      {...form.register("username")}
+                      {...form.register('username')}
                       className="bg-white text-[#1b4332] placeholder:text-[#1b4332]/60"
                     />
                   </div>
@@ -144,9 +146,7 @@ export default function ProfilePage() {
                     className="w-full bg-white text-[#1b4332] hover:bg-white/90"
                     disabled={mutation.isPending}
                   >
-                    {mutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
+                    {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                   </Button>
                 </form>
@@ -160,7 +160,7 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <Button
-                onClick={() => window.location.href = '/health-stats'}
+                onClick={() => (window.location.href = '/health-stats')}
                 className="w-full bg-white text-[#1b4332] hover:bg-white/90"
               >
                 View Health Stats

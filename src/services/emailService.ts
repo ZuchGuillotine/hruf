@@ -6,7 +6,7 @@ const sgMail = require('@sendgrid/mail');
 export const sendEmail = async (to: string, subject: string, content: string) => {
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    
+
     const msg = {
       to,
       from: {
@@ -23,10 +23,7 @@ export const sendEmail = async (to: string, subject: string, content: string) =>
     });
 
     // Race between SendGrid request and timeout
-    const response = await Promise.race([
-      sgMail.send(msg),
-      timeoutPromise
-    ]);
+    const response = await Promise.race([sgMail.send(msg), timeoutPromise]);
 
     return response;
   } catch (error) {
@@ -36,4 +33,4 @@ export const sendEmail = async (to: string, subject: string, content: string) =>
     }
     throw error;
   }
-}; 
+};

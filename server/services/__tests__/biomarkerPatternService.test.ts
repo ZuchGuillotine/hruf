@@ -12,8 +12,8 @@ describe('BiomarkerPatternService', () => {
         value: 95,
         unit: 'mg/dL',
         confidence: 0.95,
-        tier: 'high'
-      }
+        tier: 'high',
+      },
     },
     {
       name: 'HDL with alternative notation',
@@ -23,8 +23,8 @@ describe('BiomarkerPatternService', () => {
         value: 45,
         unit: 'mg/dL',
         confidence: 0.85,
-        tier: 'medium'
-      }
+        tier: 'medium',
+      },
     },
     {
       name: 'Vitamin D with complex notation',
@@ -34,8 +34,8 @@ describe('BiomarkerPatternService', () => {
         value: 32,
         unit: 'ng/mL',
         confidence: 0.75,
-        tier: 'low'
-      }
+        tier: 'low',
+      },
     },
     {
       name: 'Multiple biomarkers in one text',
@@ -50,29 +50,29 @@ describe('BiomarkerPatternService', () => {
           value: 95,
           unit: 'mg/dL',
           confidence: 0.95,
-          tier: 'high'
+          tier: 'high',
         },
         {
           name: 'hdl',
           value: 45,
           unit: 'mg/dL',
           confidence: 0.85,
-          tier: 'medium'
+          tier: 'medium',
         },
         {
           name: 'vitaminD',
           value: 32,
           unit: 'ng/mL',
           confidence: 0.75,
-          tier: 'low'
-        }
-      ]
+          tier: 'low',
+        },
+      ],
     },
     // Edge cases
     {
       name: 'Invalid unit',
       input: 'Glucose: 95 invalid_unit',
-      expected: null // Should be filtered out by validation
+      expected: null, // Should be filtered out by validation
     },
     {
       name: 'Out of range value',
@@ -83,8 +83,8 @@ describe('BiomarkerPatternService', () => {
         unit: 'mg/dL',
         confidence: 0.95,
         tier: 'high',
-        validationStatus: 'warning'
-      }
+        validationStatus: 'warning',
+      },
     },
     {
       name: 'Unit conversion',
@@ -94,9 +94,9 @@ describe('BiomarkerPatternService', () => {
         value: 99, // 5.5 * 18
         unit: 'mg/dL',
         confidence: 0.9025, // 0.95 * 0.95 (reduced for conversion)
-        tier: 'high'
-      }
-    }
+        tier: 'high',
+      },
+    },
   ];
 
   // Helper function to compare matches
@@ -114,7 +114,7 @@ describe('BiomarkerPatternService', () => {
   // Test individual cases
   test.each(testCases)('$name', async ({ input, expected }) => {
     const results = await biomarkerPatternService.extractPatterns(input);
-    
+
     if (expected === null) {
       expect(results).toHaveLength(0);
       return;
@@ -140,12 +140,12 @@ describe('BiomarkerPatternService', () => {
       { input: 'Vitamin D: 32 ng/mL', expected: true },
       { input: 'Glucose Result = 95 mg/dL (Normal)', expected: true },
       { input: '25-OH Vitamin D Level: 32 ng/mL', expected: true },
-      
+
       // False positives (should not be found)
       { input: 'Random text with numbers: 95', expected: false },
       { input: 'Glucose: invalid mg/dL', expected: false },
       { input: 'HDL: 45 invalid_unit', expected: false },
-      
+
       // Edge cases
       { input: 'Glucose: 95 mg/dL (High)', expected: true },
       { input: 'Glucose: 95 mg/100mL', expected: true }, // Alternative unit
@@ -174,7 +174,7 @@ describe('BiomarkerPatternService', () => {
         falsePositives,
         falseNegatives,
         recall: recall.toFixed(3),
-        precision: precision.toFixed(3)
+        precision: precision.toFixed(3),
       });
 
       // Assert minimum performance requirements
@@ -212,9 +212,9 @@ describe('BiomarkerPatternService', () => {
         Vitamin D: 32 ng/mL
       `);
 
-      const glucose = results.find(r => r.name === 'glucose');
-      const hdl = results.find(r => r.name === 'hdl');
-      const vitaminD = results.find(r => r.name === 'vitaminD');
+      const glucose = results.find((r) => r.name === 'glucose');
+      const hdl = results.find((r) => r.name === 'hdl');
+      const vitaminD = results.find((r) => r.name === 'vitaminD');
 
       expect(glucose?.confidence).toBeCloseTo(0.95, 2);
       expect(hdl?.confidence).toBeCloseTo(0.85, 2);
@@ -226,4 +226,4 @@ describe('BiomarkerPatternService', () => {
       expect(results[0].confidence).toBeCloseTo(0.9025, 2); // 0.95 * 0.95
     });
   });
-}); 
+});

@@ -41,4 +41,4 @@ declare module 'express-fileupload' {
   }
 
   export = fileUpload;
-} 
+}

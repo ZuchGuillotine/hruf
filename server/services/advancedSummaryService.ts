@@ -1,15 +1,21 @@
 // server/services/advancedSummaryService.ts (summmarizes quantitative logs)
 
-import OpenAI from "openai";
-import { db } from "../../db";
-import { logSummaries, qualitativeLogs, supplementLogs, supplements, InsertLogSummary } from "../../db/schema";
-import embeddingService from "./embeddingService";
-import { eq, and, between, sql, gte, desc } from "drizzle-orm";
-import logger from "../utils/logger";
+import OpenAI from 'openai';
+import { db } from '../../db';
+import {
+  logSummaries,
+  qualitativeLogs,
+  supplementLogs,
+  supplements,
+  InsertLogSummary,
+} from '../../db/schema';
+import embeddingService from './embeddingService';
+import { eq, and, between, sql, gte, desc } from 'drizzle-orm';
+import logger from '../utils/logger';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
@@ -17,7 +23,7 @@ const openai = new OpenAI({
  */
 class AdvancedSummaryService {
   // Constants for summarization
-  private SUMMARY_MODEL = "gpt-4o-mini";
+  private SUMMARY_MODEL = 'gpt-4o-mini';
   private MAX_TOKEN_LIMIT = 16000; // Conservative token limit for input context
   private MAX_LOGS_PER_REQUEST = 50; // Maximum number of logs to summarize in one request
 
@@ -67,7 +73,9 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      logger.info(`Generating daily summary for user ${userId} on ${date.toISOString().split('T')[0]}`);
+      logger.info(
+        `Generating daily summary for user ${userId} on ${date.toISOString().split('T')[0]}`
+      );
 
       // Fetch all supplement logs for the day
       const supplementLogEntries = await db
@@ -79,7 +87,7 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
           frequency: supplements.frequency,
           takenAt: supplementLogs.takenAt,
           notes: supplementLogs.notes,
-          effects: supplementLogs.effects
+          effects: supplementLogs.effects,
         })
         .from(supplementLogs)
         .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
@@ -108,38 +116,42 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
       }
 
       // Format logs for summarization
-      const formattedSupplementLogs = supplementLogEntries.map(log => {
-        const timestamp = new Date(log.takenAt).toLocaleTimeString();
-        const effectsText = log.effects 
-          ? Object.entries(log.effects)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')
-          : 'No effects recorded';
+      const formattedSupplementLogs = supplementLogEntries
+        .map((log) => {
+          const timestamp = new Date(log.takenAt).toLocaleTimeString();
+          const effectsText = log.effects
+            ? Object.entries(log.effects)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ')
+            : 'No effects recorded';
 
-        return `[${timestamp}] Supplement: ${log.supplementName}, Dosage: ${log.dosage}, Notes: ${log.notes || 'None'}, Effects: ${effectsText}`;
-      }).join('\n');
+          return `[${timestamp}] Supplement: ${log.supplementName}, Dosage: ${log.dosage}, Notes: ${log.notes || 'None'}, Effects: ${effectsText}`;
+        })
+        .join('\n');
 
-      const formattedQualitativeLogs = qualitativeLogEntries.map(log => {
-        const timestamp = new Date(log.loggedAt).toLocaleTimeString();
+      const formattedQualitativeLogs = qualitativeLogEntries
+        .map((log) => {
+          const timestamp = new Date(log.loggedAt).toLocaleTimeString();
 
-        // Extract chat content if available
-        let content = log.content;
-        try {
-          // Check if content is JSON (chat history)
-          const parsed = JSON.parse(log.content);
-          if (Array.isArray(parsed)) {
-            // Extract only user messages from chat history
-            content = parsed
-              .filter(msg => msg.role === 'user')
-              .map(msg => msg.content)
-              .join('\n');
+          // Extract chat content if available
+          let content = log.content;
+          try {
+            // Check if content is JSON (chat history)
+            const parsed = JSON.parse(log.content);
+            if (Array.isArray(parsed)) {
+              // Extract only user messages from chat history
+              content = parsed
+                .filter((msg) => msg.role === 'user')
+                .map((msg) => msg.content)
+                .join('\n');
+            }
+          } catch (e) {
+            // Not JSON, use as is
           }
-        } catch (e) {
-          // Not JSON, use as is
-        }
 
-        return `[${timestamp}] ${content}`;
-      }).join('\n');
+          return `[${timestamp}] ${content}`;
+        })
+        .join('\n');
 
       // Construct the input for the summarization model
       const dateStr = date.toISOString().split('T')[0];
@@ -158,18 +170,19 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         model: this.SUMMARY_MODEL,
         messages: [
           {
-            role: "system",
-            content: this.DAILY_SUMMARY_PROMPT
+            role: 'system',
+            content: this.DAILY_SUMMARY_PROMPT,
           },
           {
-            role: "user",
-            content: summaryInput
-          }
+            role: 'user',
+            content: summaryInput,
+          },
         ],
-        max_tokens: 1000
+        max_tokens: 1000,
       });
 
-      const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
+      const summaryContent =
+        completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
 
       // Store summary in database
       const [summary] = await db
@@ -184,8 +197,8 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
             supplementCount: supplementLogEntries.length,
             qualitativeLogCount: qualitativeLogEntries.length,
             // Extract any significant changes mentioned in the summary
-            significantChanges: this.extractSignificantChanges(summaryContent)
-          }
+            significantChanges: this.extractSignificantChanges(summaryContent),
+          },
         })
         .returning();
 
@@ -194,9 +207,10 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         await embeddingService.createSummaryEmbedding(summary.id, summaryContent);
       }
 
-      logger.info(`Generated daily summary for user ${userId} on ${dateStr} with ID ${summary?.id}`);
+      logger.info(
+        `Generated daily summary for user ${userId} on ${dateStr} with ID ${summary?.id}`
+      );
       return summary?.id || null;
-
     } catch (error) {
       logger.error(`Error generating daily summary for user ${userId}:`, error);
       return null;
@@ -210,7 +224,11 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
    * @param endDate End date of the week
    * @returns The created summary ID
    */
-  async generateWeeklySummary(userId: number, startDate: Date, endDate: Date): Promise<number | null> {
+  async generateWeeklySummary(
+    userId: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<number | null> {
     try {
       // Fetch all daily summaries for the week
       const dailySummaries = await db
@@ -226,15 +244,19 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         .orderBy(logSummaries.startDate);
 
       if (dailySummaries.length === 0) {
-        logger.info(`No daily summaries found for user ${userId} between ${startDate.toISOString()} and ${endDate.toISOString()}`);
+        logger.info(
+          `No daily summaries found for user ${userId} between ${startDate.toISOString()} and ${endDate.toISOString()}`
+        );
         return null;
       }
 
       // Construct input for weekly summarization
-      const weeklyInput = dailySummaries.map(summary => {
-        const date = summary.startDate.toISOString().split('T')[0];
-        return `Date: ${date}\n${summary.content}`;
-      }).join('\n\n');
+      const weeklyInput = dailySummaries
+        .map((summary) => {
+          const date = summary.startDate.toISOString().split('T')[0];
+          return `Date: ${date}\n${summary.content}`;
+        })
+        .join('\n\n');
 
       // Weekly summarization prompt
       const weeklyPrompt = `
@@ -256,18 +278,19 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         model: this.SUMMARY_MODEL,
         messages: [
           {
-            role: "system",
-            content: weeklyPrompt
+            role: 'system',
+            content: weeklyPrompt,
           },
           {
-            role: "user",
-            content: weeklyInput
-          }
+            role: 'user',
+            content: weeklyInput,
+          },
         ],
-        max_tokens: 1000
+        max_tokens: 1000,
       });
 
-      const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
+      const summaryContent =
+        completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
 
       // Store weekly summary
       const [summary] = await db
@@ -280,8 +303,8 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
           endDate,
           metadata: {
             dailySummaryCount: dailySummaries.length,
-            significantChanges: this.extractSignificantChanges(summaryContent)
-          }
+            significantChanges: this.extractSignificantChanges(summaryContent),
+          },
         })
         .returning();
 
@@ -290,9 +313,10 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         await embeddingService.createSummaryEmbedding(summary.id, summaryContent);
       }
 
-      logger.info(`Generated weekly summary for user ${userId} from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} with ID ${summary?.id}`);
+      logger.info(
+        `Generated weekly summary for user ${userId} from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} with ID ${summary?.id}`
+      );
       return summary?.id || null;
-
     } catch (error) {
       logger.error(`Error generating weekly summary for user ${userId}:`, error);
       return null;
@@ -307,15 +331,24 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
 
     // Look for indicators of significant changes
     const changeIndicators = [
-      'increased', 'decreased', 'started', 'stopped', 'changed',
-      'new supplement', 'dosage change', 'notable', 'significant',
-      'improvement', 'worsening', 'side effect'
+      'increased',
+      'decreased',
+      'started',
+      'stopped',
+      'changed',
+      'new supplement',
+      'dosage change',
+      'notable',
+      'significant',
+      'improvement',
+      'worsening',
+      'side effect',
     ];
 
     // Extract sentences containing change indicators
     const sentences = summary.split(/[.!?]\s+/);
     for (const sentence of sentences) {
-      if (changeIndicators.some(indicator => sentence.toLowerCase().includes(indicator))) {
+      if (changeIndicators.some((indicator) => sentence.toLowerCase().includes(indicator))) {
         // Clean up the sentence and add to changes
         const cleanSentence = sentence.trim().replace(/^\s*[-•]\s*/, '');
         if (cleanSentence && !changes.includes(cleanSentence)) {
@@ -352,12 +385,14 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         ) AS logs
       `);
 
-      logger.info(`Found ${usersWithLogs.length} users with logs on ${date.toISOString().split('T')[0]}`);
+      logger.info(
+        `Found ${usersWithLogs.length} users with logs on ${date.toISOString().split('T')[0]}`
+      );
 
       // Process each user
       for (const user of usersWithLogs) {
         const userId = user.user_id;
-        
+
         // Check if summary already exists for this user and date
         const existingSummary = await db
           .select()
@@ -370,22 +405,27 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
             )
           )
           .limit(1);
-          
+
         if (existingSummary.length > 0) {
-          logger.info(`Daily summary already exists for user ${userId} on ${date.toISOString().split('T')[0]}`);
+          logger.info(
+            `Daily summary already exists for user ${userId} on ${date.toISOString().split('T')[0]}`
+          );
           continue;
         }
-        
+
         // Generate daily summary
         await this.generateDailySummary(userId, date);
       }
-      
+
       logger.info(`Completed daily summary processing for ${date.toISOString().split('T')[0]}`);
     } catch (error) {
-      logger.error(`Error processing daily summaries for ${date.toISOString().split('T')[0]}:`, error);
+      logger.error(
+        `Error processing daily summaries for ${date.toISOString().split('T')[0]}:`,
+        error
+      );
     }
   }
-  
+
   /**
    * Process weekly summaries for all users
    * @param endDate End date of the week (typically Sunday)
@@ -396,24 +436,26 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
       const startDate = new Date(endDate);
       startDate.setDate(startDate.getDate() - 7);
       startDate.setHours(0, 0, 0, 0);
-      
+
       // End date should be end of day
       const endOfDay = new Date(endDate);
       endOfDay.setHours(23, 59, 59, 999);
-      
+
       // Find users with daily summaries in this period
       const usersWithSummaries = await db.execute(sql`
         SELECT DISTINCT user_id
         FROM log_summaries
         WHERE summary_type = 'daily' AND start_date BETWEEN ${startDate} AND ${endOfDay}
       `);
-      
-      logger.info(`Found ${usersWithSummaries.length} users with daily summaries between ${startDate.toISOString().split('T')[0]} and ${endDate.toISOString().split('T')[0]}`);
-      
+
+      logger.info(
+        `Found ${usersWithSummaries.length} users with daily summaries between ${startDate.toISOString().split('T')[0]} and ${endDate.toISOString().split('T')[0]}`
+      );
+
       // Process each user
       for (const user of usersWithSummaries) {
         const userId = user.user_id;
-        
+
         // Check if weekly summary already exists
         const existingSummary = await db
           .select()
@@ -426,44 +468,54 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
             )
           )
           .limit(1);
-          
+
         if (existingSummary.length > 0) {
-          logger.info(`Weekly summary already exists for user ${userId} for week ending ${endDate.toISOString().split('T')[0]}`);
+          logger.info(
+            `Weekly summary already exists for user ${userId} for week ending ${endDate.toISOString().split('T')[0]}`
+          );
           continue;
         }
-        
+
         // Generate weekly summary
         await this.generateWeeklySummary(userId, startDate, endOfDay);
       }
-      
-      logger.info(`Completed weekly summary processing for week ending ${endDate.toISOString().split('T')[0]}`);
+
+      logger.info(
+        `Completed weekly summary processing for week ending ${endDate.toISOString().split('T')[0]}`
+      );
     } catch (error) {
-      logger.error(`Error processing weekly summaries for week ending ${endDate.toISOString().split('T')[0]}:`, error);
+      logger.error(
+        `Error processing weekly summaries for week ending ${endDate.toISOString().split('T')[0]}:`,
+        error
+      );
     }
   }
-  
+
   /**
    * Generate summary for a specific log entry
    * @param logId ID of the log
    * @param logType Type of log (qualitative or quantitative)
    */
-  async generateLogSummary(logId: number, logType: 'qualitative' | 'quantitative'): Promise<string | null> {
+  async generateLogSummary(
+    logId: number,
+    logType: 'qualitative' | 'quantitative'
+  ): Promise<string | null> {
     try {
       let logContent = '';
       let userId: number | null = null;
-      
+
       if (logType === 'qualitative') {
         const [log] = await db
           .select()
           .from(qualitativeLogs)
           .where(eq(qualitativeLogs.id, logId))
           .limit(1);
-          
+
         if (!log) {
           logger.error(`Qualitative log ${logId} not found`);
           return null;
         }
-        
+
         logContent = log.content;
         userId = log.userId;
       } else {
@@ -476,33 +528,33 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
             effects: supplementLogs.effects,
             name: supplements.name,
             dosage: supplements.dosage,
-            frequency: supplements.frequency
+            frequency: supplements.frequency,
           })
           .from(supplementLogs)
           .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
           .where(eq(supplementLogs.id, logId))
           .limit(1);
-          
+
         if (!log) {
           logger.error(`Quantitative log ${logId} not found`);
           return null;
         }
-        
-        const effectsText = log.effects 
+
+        const effectsText = log.effects
           ? Object.entries(log.effects)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
           : 'No effects recorded';
-          
+
         logContent = `Supplement: ${log.name}, Taken At: ${log.takenAt.toISOString()}, Dosage: ${log.dosage}, Frequency: ${log.frequency}, Notes: ${log.notes || 'None'}, Effects: ${effectsText}`;
         userId = log.userId;
       }
-      
+
       if (!userId) {
         logger.error(`User ID not found for ${logType} log ${logId}`);
         return null;
       }
-      
+
       // Generate a summary using OpenAI
       const summaryPrompt = `
       You are tasked with summarizing a single supplement log entry. Create a concise summary that captures the key information and any notable effects or observations.
@@ -511,32 +563,32 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
       
       Please provide a concise summary in 1-2 sentences focusing on the most relevant information.
       `;
-      
+
       const completion = await openai.chat.completions.create({
         model: this.SUMMARY_MODEL,
         messages: [
           {
-            role: "user",
-            content: summaryPrompt
-          }
+            role: 'user',
+            content: summaryPrompt,
+          },
         ],
-        max_tokens: 150
+        max_tokens: 150,
       });
-      
+
       const summary = completion.choices[0]?.message?.content?.trim() || null;
-      
+
       // Create embedding for the log
       if (summary) {
         await embeddingService.createLogEmbedding(logId, logContent, logType);
       }
-      
+
       return summary;
     } catch (error) {
       logger.error(`Error generating log summary for ${logType} log ${logId}:`, error);
       return null;
     }
   }
-  
+
   /**
    * Retrieves the most relevant summaries for a user query
    * @param userId User ID
@@ -548,10 +600,10 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
     try {
       // Use vector search to find similar summaries
       const similarContent = await embeddingService.findSimilarContent(query, userId, limit);
-      
+
       // Fetch the full summary content for each match
       const relevantSummaries = [];
-      
+
       for (const item of similarContent) {
         if (item.summary_id) {
           // It's a summary
@@ -560,12 +612,12 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
             .from(logSummaries)
             .where(eq(logSummaries.id, item.summary_id))
             .limit(1);
-            
+
           if (summary) {
             relevantSummaries.push({
               ...summary,
               similarity: item.similarity,
-              type: 'summary'
+              type: 'summary',
             });
           }
         } else if (item.log_id) {
@@ -576,12 +628,12 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
               .from(qualitativeLogs)
               .where(eq(qualitativeLogs.id, item.log_id))
               .limit(1);
-              
+
             if (log) {
               relevantSummaries.push({
                 ...log,
                 similarity: item.similarity,
-                type: 'qualitative_log'
+                type: 'qualitative_log',
               });
             }
           } else {
@@ -595,24 +647,24 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
                 effects: supplementLogs.effects,
                 name: supplements.name,
                 dosage: supplements.dosage,
-                frequency: supplements.frequency
+                frequency: supplements.frequency,
               })
               .from(supplementLogs)
               .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
               .where(eq(supplementLogs.id, item.log_id))
               .limit(1);
-              
+
             if (log) {
               relevantSummaries.push({
                 ...log,
                 similarity: item.similarity,
-                type: 'quantitative_log'
+                type: 'quantitative_log',
               });
             }
           }
         }
       }
-      
+
       // Sort by similarity score
       return relevantSummaries.sort((a, b) => b.similarity - a.similarity);
     } catch (error) {
@@ -631,9 +683,11 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
-      
-      logger.info(`Generating supplement pattern summary for user ${userId} for the last ${days} days`);
-      
+
+      logger.info(
+        `Generating supplement pattern summary for user ${userId} for the last ${days} days`
+      );
+
       // Fetch all supplement logs for the period
       const supplementLogEntries = await db
         .select({
@@ -643,21 +697,16 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
           frequency: supplements.frequency,
           takenAt: supplementLogs.takenAt,
           notes: supplementLogs.notes,
-          effects: supplementLogs.effects
+          effects: supplementLogs.effects,
         })
         .from(supplementLogs)
         .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
-        .where(
-          and(
-            eq(supplementLogs.userId, userId),
-            gte(supplementLogs.takenAt, cutoffDate)
-          )
-        )
+        .where(and(eq(supplementLogs.userId, userId), gte(supplementLogs.takenAt, cutoffDate)))
         .orderBy(desc(supplementLogs.takenAt))
         .execute();
 
-      const validLogs = supplementLogEntries.filter(log => log.takenAt !== null);
-      
+      const validLogs = supplementLogEntries.filter((log) => log.takenAt !== null);
+
       if (validLogs.length === 0) {
         logger.info(`No valid supplement logs found for user ${userId} in the last ${days} days`);
         return null;
@@ -681,7 +730,7 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         for (const log of logs) {
           // We know takenAt is not null because we filtered earlier
           const timestamp = new Date(log.takenAt!).toLocaleDateString();
-          const effectsText = log.effects 
+          const effectsText = log.effects
             ? Object.entries(log.effects)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join(', ')
@@ -697,18 +746,19 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
         model: this.SUMMARY_MODEL,
         messages: [
           {
-            role: "system",
-            content: this.SUPPLEMENT_SUMMARY_PROMPT
+            role: 'system',
+            content: this.SUPPLEMENT_SUMMARY_PROMPT,
           },
           {
-            role: "user",
-            content: summaryInput
-          }
+            role: 'user',
+            content: summaryInput,
+          },
         ],
-        max_tokens: 1000
+        max_tokens: 1000,
       });
 
-      const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No patterns identified.';
+      const summaryContent =
+        completion.choices[0]?.message?.content?.trim() || 'No patterns identified.';
 
       // Store summary in database
       const summaryData: InsertLogSummary = {
@@ -721,14 +771,11 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
           supplementCount: validLogs.length,
           qualitativeLogCount: 0,
           quantitativeLogCount: 0,
-          significantChanges: []
-        }
+          significantChanges: [],
+        },
       };
 
-      const [summary] = await db
-        .insert(logSummaries)
-        .values(summaryData)
-        .returning();
+      const [summary] = await db.insert(logSummaries).values(summaryData).returning();
 
       // Create embedding for the summary
       if (summary) {
@@ -737,7 +784,6 @@ Eliminate redundant daily entries and focus on meaningful changes or patterns.`;
 
       logger.info(`Generated supplement pattern summary for user ${userId}`);
       return summary?.id || null;
-
     } catch (error) {
       logger.error(`Error generating supplement pattern summary for user ${userId}:`, error);
       return null;

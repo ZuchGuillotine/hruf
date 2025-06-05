@@ -1,6 +1,6 @@
-import { pgTable, text } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { pgTable, text } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 
 export async function up(db: any) {
   await db.execute(sql`

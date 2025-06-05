@@ -1,17 +1,17 @@
-import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
-import Header from "@/components/header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import * as React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'wouter';
+import Header from '@/components/header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,10 +21,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import type { BlogPost } from "@/lib/types";
+} from '@/components/ui/alert-dialog';
+import { Plus, Pencil, Trash2, Loader2, Eye } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import type { BlogPost } from '@/lib/types';
 
 export default function AdminBlogPosts() {
   const { toast } = useToast();
@@ -45,7 +45,7 @@ export default function AdminBlogPosts() {
       const data = await res.json();
       console.log('Fetched posts:', data);
       return data;
-    }
+    },
   });
 
   const addPost = useMutation({
@@ -60,17 +60,17 @@ export default function AdminBlogPosts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
-      toast({ title: "Success", description: "Blog post added successfully" });
+      toast({ title: 'Success', description: 'Blog post added successfully' });
       setOpen(false);
       setEditingPost(null);
     },
     onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: error instanceof Error ? error.message : "Failed to add post",
-        variant: "destructive"
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add post',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const updatePost = useMutation({
@@ -85,17 +85,17 @@ export default function AdminBlogPosts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
-      toast({ title: "Success", description: "Blog post updated successfully" });
+      toast({ title: 'Success', description: 'Blog post updated successfully' });
       setOpen(false);
       setEditingPost(null);
     },
     onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: error instanceof Error ? error.message : "Failed to update post",
-        variant: "destructive" 
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update post',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const deletePost = useMutation({
@@ -108,17 +108,17 @@ export default function AdminBlogPosts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
-      toast({ title: "Success", description: "Blog post deleted successfully" });
+      toast({ title: 'Success', description: 'Blog post deleted successfully' });
       setDeleteDialogOpen(false);
       setPostToDelete(null);
     },
     onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: error instanceof Error ? error.message : "Failed to delete post",
-        variant: "destructive"
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete post',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -179,19 +179,12 @@ export default function AdminBlogPosts() {
             </DialogTrigger>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
-                <DialogTitle>
-                  {editingPost ? 'Edit Blog Post' : 'Add New Blog Post'}
-                </DialogTitle>
+                <DialogTitle>{editingPost ? 'Edit Blog Post' : 'Add New Blog Post'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="title">Title</label>
-                  <Input
-                    id="title"
-                    name="title"
-                    required
-                    defaultValue={editingPost?.title}
-                  />
+                  <Input id="title" name="title" required defaultValue={editingPost?.title} />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="excerpt">Excerpt</label>
@@ -222,9 +215,9 @@ export default function AdminBlogPosts() {
                     defaultValue={editingPost?.thumbnailUrl}
                   />
                   {editingPost?.thumbnailUrl && (
-                    <img 
-                      src={editingPost.thumbnailUrl} 
-                      alt="Thumbnail preview" 
+                    <img
+                      src={editingPost.thumbnailUrl}
+                      alt="Thumbnail preview"
                       className="mt-2 max-h-40 object-cover rounded"
                     />
                   )}
@@ -260,11 +253,7 @@ export default function AdminBlogPosts() {
               </div>
               <div className="flex gap-2 ml-4">
                 <Link href={`/learn/${post.slug}`} target="_blank">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     Preview
                   </Button>
@@ -306,7 +295,10 @@ export default function AdminBlogPosts() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

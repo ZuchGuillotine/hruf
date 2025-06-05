@@ -1,5 +1,5 @@
-import { Link } from "wouter";
-import React from "react";
+import { Link } from 'wouter';
+import React from 'react';
 
 interface FooterProps {
   className?: string;

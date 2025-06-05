@@ -1,16 +1,16 @@
-import Header from "@/components/header";
-import Footer from "@/components/footer";
-import LabUpload from "@/components/lab-upload";
-import React, { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { File, FileText, Download, Trash2, ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import Header from '@/components/header';
+import Footer from '@/components/footer';
+import LabUpload from '@/components/lab-upload';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { File, FileText, Download, Trash2, ArrowLeft } from 'lucide-react';
+import { Link } from 'wouter';
 import { useLocation } from 'wouter';
-import { BiomarkerFilter } from "@/components/BiomarkerFilter.tsx";
-import { BiomarkerHistoryChart } from "@/components/BiomarkerHistoryChart";
-import type { ApiError } from "@/lib/types";
-import { useLabChartData } from "@/hooks/use-lab-chart-data";
-import type { Series } from "@/types/chart";
+import { BiomarkerFilter } from '@/components/BiomarkerFilter.tsx';
+import { BiomarkerHistoryChart } from '@/components/BiomarkerHistoryChart';
+import type { ApiError } from '@/lib/types';
+import { useLabChartData } from '@/hooks/use-lab-chart-data';
+import type { Series } from '@/types/chart';
 
 interface LabFile {
   id: number;
@@ -60,7 +60,7 @@ export default function Labs() {
 
       if (response.ok) {
         // Update state locally instead of re-fetching
-        setLabFiles(prev => prev.filter(file => file.id !== id));
+        setLabFiles((prev) => prev.filter((file) => file.id !== id));
       } else {
         console.error('Failed to delete lab file');
       }
@@ -72,21 +72,23 @@ export default function Labs() {
   };
 
   const chartData = useMemo(() => {
-      console.log('Computing chart data with selectedNames:', selectedNames);
-      console.log('Chart data response available:', !!chartDataResponse);
-      
-      if (!chartDataResponse?.series) {
-        console.log('No chart data response or series available');
-        return [];
-      }
-      
-      const result = Array.from(selectedNames).map(name => {
-        const series = chartDataResponse.series.find(s => s.name === name);
+    console.log('Computing chart data with selectedNames:', selectedNames);
+    console.log('Chart data response available:', !!chartDataResponse);
+
+    if (!chartDataResponse?.series) {
+      console.log('No chart data response or series available');
+      return [];
+    }
+
+    const result = Array.from(selectedNames)
+      .map((name) => {
+        const series = chartDataResponse.series.find((s) => s.name === name);
         console.log(`Series for ${name}:`, series);
         return series;
-      }).filter(Boolean) as Series[];
-      console.log('Final chart data:', result);
-      return result;
+      })
+      .filter(Boolean) as Series[];
+    console.log('Final chart data:', result);
+    return result;
   }, [selectedNames, chartDataResponse]);
 
   return (
@@ -116,7 +118,9 @@ export default function Labs() {
               <CardContent className="p-6 text-center">
                 <FileText className="h-12 w-12 text-white/70 mx-auto mb-4" />
                 <p className="text-white/90 text-lg mb-2">No lab results uploaded yet</p>
-                <p className="text-white/70">Upload your first lab result to start tracking your biomarker trends</p>
+                <p className="text-white/70">
+                  Upload your first lab result to start tracking your biomarker trends
+                </p>
               </CardContent>
             </Card>
           )}

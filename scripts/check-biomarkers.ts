@@ -1,4 +1,3 @@
-
 import { db } from '../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../db/schema';
 import { eq, isNull, or, and, sql } from 'drizzle-orm';
@@ -9,7 +8,7 @@ async function checkAndReprocessBiomarkers() {
   try {
     // First check processing status and storage details
     const labId = 97; // Latest lab ID from your example
-    
+
     // Get processing status
     const [status] = await db
       .select()
@@ -28,12 +27,9 @@ async function checkAndReprocessBiomarkers() {
       .select({ count: sql`count(*)` })
       .from(biomarkerResults)
       .where(eq(biomarkerResults.labResultId, labId))
-      .then(res => Number(res[0]?.count || 0));
+      .then((res) => Number(res[0]?.count || 0));
 
-    const [labResult] = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.id, labId));
+    const [labResult] = await db.select().from(labResults).where(eq(labResults.id, labId));
 
     const metadataBiomarkers = labResult?.metadata?.biomarkers?.parsedBiomarkers?.length || 0;
 
@@ -72,7 +68,7 @@ async function checkAndReprocessBiomarkers() {
         id: labResults.id,
         uploadedAt: labResults.uploadedAt,
         fileName: labResults.fileName,
-        biomarkerCount: sql`count(${biomarkerResults.id})`
+        biomarkerCount: sql`count(${biomarkerResults.id})`,
       })
       .from(labResults)
       .leftJoin(biomarkerResults, eq(biomarkerResults.labResultId, labResults.id))
@@ -104,14 +100,13 @@ async function checkAndReprocessBiomarkers() {
         logger.error(`Failed to process lab ${lab.id}:`, {
           error: error instanceof Error ? error.message : String(error),
           labId: lab.id,
-          fileName: lab.fileName
+          fileName: lab.fileName,
         });
       }
     }
-
   } catch (error) {
     logger.error('Error in biomarker reprocessing script:', {
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
@@ -121,7 +116,7 @@ async function checkAndReprocessBiomarkers() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   checkAndReprocessBiomarkers()
     .then(() => process.exit(0))
-    .catch(error => {
+    .catch((error) => {
       console.error('Script failed:', error);
       process.exit(1);
     });

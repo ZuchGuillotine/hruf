@@ -1,14 +1,8 @@
-import { useSupplements } from "@/hooks/use-supplements";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, Trash2, Pencil, Save } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { useSupplements } from '@/hooks/use-supplements';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2, Trash2, Pencil, Save } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,18 +13,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import SupplementForm from "./supplement-form";
-import { useState, useEffect } from "react";
-import React from "react";
-import { Link } from "wouter";
+} from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import SupplementForm from './supplement-form';
+import { useState, useEffect } from 'react';
+import React from 'react';
+import { Link } from 'wouter';
 
 /**
  * SupplementList Component
@@ -58,14 +47,17 @@ export default function SupplementList() {
 
   useEffect(() => {
     // Create a new state object for tracking supplement intake
-    const newStates = supplements.reduce((acc, supplement) => {
-      if (!supplementStates[supplement.id]) {
-        acc[supplement.id] = { taken: true }; // Default to taken
-      } else {
-        acc[supplement.id] = supplementStates[supplement.id];
-      }
-      return acc;
-    }, {} as Record<number, { taken: boolean }>);
+    const newStates = supplements.reduce(
+      (acc, supplement) => {
+        if (!supplementStates[supplement.id]) {
+          acc[supplement.id] = { taken: true }; // Default to taken
+        } else {
+          acc[supplement.id] = supplementStates[supplement.id];
+        }
+        return acc;
+      },
+      {} as Record<number, { taken: boolean }>
+    );
 
     if (JSON.stringify(newStates) !== JSON.stringify(supplementStates)) {
       setSupplementStates(newStates);
@@ -81,7 +73,7 @@ export default function SupplementList() {
 
     if (today !== lastLoggedDate && supplements.length > 0 && !notificationShown) {
       toast({
-        title: "Daily Supplement Log Reminder",
+        title: 'Daily Supplement Log Reminder',
         description: "Don't forget to log your supplements for today!",
         duration: 5000,
       });
@@ -97,16 +89,16 @@ export default function SupplementList() {
   const handleSaveChanges = async () => {
     try {
       // Filter supplements marked as taken
-      const takenSupplements = supplements.filter(supp => supplementStates[supp.id]?.taken);
+      const takenSupplements = supplements.filter((supp) => supplementStates[supp.id]?.taken);
 
       console.log('Preparing to save supplement logs:', {
         supplementCount: takenSupplements.length,
         clientTime: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
       // Prepare log entries with precise timestamp preservation
-      const logsToSave = takenSupplements.map(supplement => {
+      const logsToSave = takenSupplements.map((supplement) => {
         const now = new Date();
         return {
           supplementId: supplement.id,
@@ -125,7 +117,7 @@ export default function SupplementList() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          logs: logsToSave
+          logs: logsToSave,
         }),
       });
 
@@ -138,11 +130,13 @@ export default function SupplementList() {
       console.log('Successfully saved logs:', {
         count: savedLogs.length,
         timestamp: new Date().toISOString(),
-        sampleLog: savedLogs[0] ? {
-          id: savedLogs[0].id,
-          takenAt: savedLogs[0].takenAt,
-          dateOnly: new Date(savedLogs[0].takenAt).toISOString().split('T')[0]
-        } : null
+        sampleLog: savedLogs[0]
+          ? {
+              id: savedLogs[0].id,
+              takenAt: savedLogs[0].takenAt,
+              dateOnly: new Date(savedLogs[0].takenAt).toISOString().split('T')[0],
+            }
+          : null,
       });
 
       // Update UI and store last logged date
@@ -151,20 +145,23 @@ export default function SupplementList() {
       localStorage.setItem('lastSupplementLogDate', today);
 
       toast({
-        title: "Success",
-        description: "Your supplement intake has been logged successfully.",
+        title: 'Success',
+        description: 'Your supplement intake has been logged successfully.',
       });
     } catch (error) {
       console.error('Error saving changes:', {
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save your supplement intake. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save your supplement intake. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -224,15 +221,13 @@ export default function SupplementList() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Supplement</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete this supplement? This action
-                          cannot be undone.
+                          Are you sure you want to delete this supplement? This action cannot be
+                          undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteSupplement(supplement.id)}
-                        >
+                        <AlertDialogAction onClick={() => deleteSupplement(supplement.id)}>
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -250,9 +245,9 @@ export default function SupplementList() {
                 <Switch
                   checked={supplementStates[supplement.id]?.taken ?? true}
                   onCheckedChange={(checked) => {
-                    setSupplementStates(prev => ({
+                    setSupplementStates((prev) => ({
                       ...prev,
-                      [supplement.id]: { taken: checked }
+                      [supplement.id]: { taken: checked },
                     }));
                   }}
                 />
@@ -266,30 +261,24 @@ export default function SupplementList() {
       <div className="mt-6 flex justify-between">
         {/* History Link */}
         <Link href="/supplement-history">
-          <Button className="bg-white text-[#1b4332] hover:bg-white/90">
-            My History
-          </Button>
+          <Button className="bg-white text-[#1b4332] hover:bg-white/90">My History</Button>
         </Link>
         {/* Save Changes Dialog */}
         <AlertDialog open={showSaveConfirmation} onOpenChange={setShowSaveConfirmation}>
           <AlertDialogTrigger asChild>
-            <Button className="bg-white text-[#1b4332] hover:bg-white/90">
-              Save Today
-            </Button>
+            <Button className="bg-white text-[#1b4332] hover:bg-white/90">Save Today</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Save Changes</AlertDialogTitle>
               <AlertDialogDescription>
-                Do you want to update your supplement tracking information? This will
-                record your supplement intake for today.
+                Do you want to update your supplement tracking information? This will record your
+                supplement intake for today.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSaveChanges}>
-                Save
-              </AlertDialogAction>
+              <AlertDialogAction onClick={handleSaveChanges}>Save</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

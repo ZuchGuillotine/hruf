@@ -1,20 +1,20 @@
 /**
  * Centralized configuration for Stripe price IDs
- * Used to map between product/price IDs and ensure consistency 
+ * Used to map between product/price IDs and ensure consistency
  * across different parts of the application
  */
 
 // Price ID mapping for all subscription tiers
 export const STRIPE_PRICE_MAP: Record<string, string> = {
   // Starter tier pricing
-   // Starter Monthly
-  'starter-monthly': 'price_1RKZsdAIJBVVerrJhsQhpig2',     
-  'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',      // Starter Yearly
-  
+  // Starter Monthly
+  'starter-monthly': 'price_1RKZsdAIJBVVerrJhsQhpig2',
+  'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz', // Starter Yearly
+
   // Pro tier pricing
-   // Pro Monthly
-  'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL', 
-  'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG',          // Pro Yearly
+  // Pro Monthly
+  'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',
+  'pro-yearly': 'price_1RKZwJAIJBVVerrJjGTuhgbG', // Pro Yearly
 };
 
 // Original direct checkout URLs for fallback
@@ -32,14 +32,16 @@ export function getPriceId(key: string): string {
 
 // Helper function to determine if a plan should include a trial
 export function shouldIncludeTrial(priceId: string): boolean {
-  return priceId.includes('starter') || 
-    priceId.includes('price_1OpGHMAIJBVVerrJCXB9LK8z') || 
-    priceId.includes('price_1OpGHMAIJBVVerrJvkT9T8Nw');
+  return (
+    priceId.includes('starter') ||
+    priceId.includes('price_1OpGHMAIJBVVerrJCXB9LK8z') ||
+    priceId.includes('price_1OpGHMAIJBVVerrJvkT9T8Nw')
+  );
 }
 
 // Map subscription tier names (stored in DB) to human-readable names
 export const SUBSCRIPTION_TIER_NAMES = {
-  'free': 'Free Tier',
-  'starter': 'Starter AI Essentials',
-  'pro': 'Pro Biohacker Suite'
+  free: 'Free Tier',
+  starter: 'Starter AI Essentials',
+  pro: 'Pro Biohacker Suite',
 };

@@ -1,7 +1,6 @@
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { InsertSupplement, SelectSupplement } from "@db/neon-schema";
-import { useUser } from "./use-user";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InsertSupplement, SelectSupplement } from '@db/neon-schema';
+import { useUser } from './use-user';
 
 export function useSupplements() {
   const queryClient = useQueryClient();
@@ -10,10 +9,10 @@ export function useSupplements() {
 
   // Query for active supplements
   const supplements = useQuery<SelectSupplement[]>({
-    queryKey: ["/api/supplements", user?.id],
+    queryKey: ['/api/supplements', user?.id],
     queryFn: async () => {
-      const response = await fetch("/api/supplements", {
-        credentials: "include"
+      const response = await fetch('/api/supplements', {
+        credentials: 'include',
       });
       if (!response.ok) {
         throw new Error('Failed to fetch supplements');
@@ -27,11 +26,11 @@ export function useSupplements() {
 
   const addSupplement = useMutation<SelectSupplement, Error, InsertSupplement>({
     mutationFn: async (supplement) => {
-      const res = await fetch("/api/supplements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/supplements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(supplement),
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -41,7 +40,7 @@ export function useSupplements() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/supplements'] });
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
@@ -53,10 +52,10 @@ export function useSupplements() {
   >({
     mutationFn: async ({ id, data }) => {
       const res = await fetch(`/api/supplements/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -66,7 +65,7 @@ export function useSupplements() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/supplements'] });
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });
@@ -74,17 +73,17 @@ export function useSupplements() {
   const deleteSupplement = useMutation<void, Error, number>({
     mutationFn: async (id) => {
       const res = await fetch(`/api/supplements/${id}`, {
-        method: "DELETE",
-        credentials: "include",
+        method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to delete supplement");
+        throw new Error(errorData.error || 'Failed to delete supplement');
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/supplements"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/supplements'] });
       queryClient.invalidateQueries({ queryKey: ['supplement-logs', today] });
     },
   });

@@ -16,16 +16,16 @@ async function runMigration() {
     const db = drizzle(client);
 
     console.log('Adding stripe_customer_id column to users table...');
-    
+
     // Check if the column already exists
     const checkColumnQuery = sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'users' AND column_name = 'stripe_customer_id'
     `;
-    
+
     const columnExists = await db.execute(checkColumnQuery);
-    
+
     if (columnExists.length > 0) {
       console.log('Column stripe_customer_id already exists. Skipping...');
     } else {

@@ -1,5 +1,5 @@
-import { sql } from "drizzle-orm";
-import logger from "./logger";
+import { sql } from 'drizzle-orm';
+import logger from './logger';
 
 /**
  * Utility functions for consistent date handling across the application
@@ -11,13 +11,16 @@ import logger from "./logger";
  * @param defaultValue Optional default value if timestamp is null
  * @returns Date object or null
  */
-export function safeDate(timestamp: Date | string | null, defaultValue: Date | null = null): Date | null {
+export function safeDate(
+  timestamp: Date | string | null,
+  defaultValue: Date | null = null
+): Date | null {
   if (!timestamp) return defaultValue;
-  
+
   try {
     return new Date(timestamp);
   } catch (error) {
-    logger.error("Error creating date from timestamp:", error);
+    logger.error('Error creating date from timestamp:', error);
     return defaultValue;
   }
 }
@@ -30,7 +33,7 @@ export function safeDate(timestamp: Date | string | null, defaultValue: Date | n
  */
 export function formatDate(date: Date | null, format: 'local' | 'iso' | 'time' = 'local'): string {
   if (!date) return 'Not specified';
-  
+
   try {
     switch (format) {
       case 'iso':
@@ -41,7 +44,7 @@ export function formatDate(date: Date | null, format: 'local' | 'iso' | 'time' =
         return date.toLocaleDateString();
     }
   } catch (error) {
-    logger.error("Error formatting date:", error);
+    logger.error('Error formatting date:', error);
     return 'Invalid date';
   }
 }
@@ -54,13 +57,13 @@ export function formatDate(date: Date | null, format: 'local' | 'iso' | 'time' =
  */
 export function getUtcDayBoundary(date: Date, boundary: 'start' | 'end'): Date {
   const utcDate = new Date(date);
-  
+
   if (boundary === 'start') {
     utcDate.setUTCHours(0, 0, 0, 0);
   } else {
     utcDate.setUTCHours(23, 59, 59, 999);
   }
-  
+
   return utcDate;
 }
 
@@ -83,20 +86,20 @@ export function dateRangeSql(field: string, startDate: Date, endDate: Date) {
  */
 export function isValidDate(
   date: Date | null,
-  options: { 
-    minDate?: Date,
-    maxDate?: Date,
-    allowNull?: boolean 
+  options: {
+    minDate?: Date;
+    maxDate?: Date;
+    allowNull?: boolean;
   } = {}
 ): boolean {
   if (!date) return !!options.allowNull;
-  
+
   const timestamp = date.getTime();
   if (isNaN(timestamp)) return false;
-  
+
   if (options.minDate && timestamp < options.minDate.getTime()) return false;
   if (options.maxDate && timestamp > options.maxDate.getTime()) return false;
-  
+
   return true;
 }
 
@@ -112,13 +115,13 @@ export function getSummaryDateRange(
 ): { startDate: Date; endDate: Date } {
   const endDate = getUtcDayBoundary(referenceDate, 'end');
   const startDate = new Date(endDate);
-  
+
   if (period === 'weekly') {
     startDate.setDate(startDate.getDate() - 7);
     startDate.setUTCHours(0, 0, 0, 0);
   } else {
     startDate.setUTCHours(0, 0, 0, 0);
   }
-  
+
   return { startDate, endDate };
-} 
+}

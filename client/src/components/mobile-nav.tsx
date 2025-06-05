@@ -1,44 +1,38 @@
-import * as React from "react"
-import { Link, useLocation } from "wouter"
-import { cn } from "@/lib/utils"
-import {
-  Home,
-  PlusCircle,
-  User,
-  Settings,
-  History,
-} from "lucide-react"
+import * as React from 'react';
+import { Link, useLocation } from 'wouter';
+import { cn } from '@/lib/utils';
+import { Home, PlusCircle, User, Settings, History } from 'lucide-react';
 
 export function MobileNav() {
-  const [location] = useLocation()
+  const [location] = useLocation();
 
   const navItems = [
     {
-      href: "/",
+      href: '/',
       icon: Home,
-      label: "Home",
+      label: 'Home',
     },
     {
-      href: "/history",
+      href: '/history',
       icon: History,
-      label: "History",
+      label: 'History',
     },
     {
-      href: "/add",
+      href: '/add',
       icon: PlusCircle,
-      label: "Add",
+      label: 'Add',
     },
     {
-      href: "/profile",
+      href: '/profile',
       icon: User,
-      label: "Profile",
+      label: 'Profile',
     },
     {
-      href: "/settings",
+      href: '/settings',
       icon: Settings,
-      label: "Settings",
+      label: 'Settings',
     },
-  ]
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 block border-t bg-background px-4 pb-safe md:hidden">
@@ -48,18 +42,14 @@ export function MobileNav() {
             <a className="flex flex-col items-center justify-center">
               <item.icon
                 className={cn(
-                  "h-6 w-6",
-                  location === item.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                  'h-6 w-6',
+                  location === item.href ? 'text-primary' : 'text-muted-foreground'
                 )}
               />
               <span
                 className={cn(
-                  "text-xs",
-                  location === item.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                  'text-xs',
+                  location === item.href ? 'text-primary' : 'text-muted-foreground'
                 )}
               >
                 {item.label}
@@ -69,5 +59,5 @@ export function MobileNav() {
         ))}
       </div>
     </nav>
-  )
+  );
 }

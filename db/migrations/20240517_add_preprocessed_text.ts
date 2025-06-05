@@ -50,7 +50,7 @@ async function up(db: any) {
   } catch (error) {
     logger.error('Migration failed:', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
@@ -72,7 +72,7 @@ async function down(db: any) {
   } catch (error) {
     logger.error('Rollback failed:', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
@@ -83,11 +83,11 @@ if (import.meta.url === new URL(process.argv[1], 'file:').href) {
   import('postgres').then(async ({ default: postgres }) => {
     const client = postgres(process.env.DATABASE_URL!);
     const db = drizzle(client);
-    
+
     try {
       // Check if we're rolling back
       const isRollback = process.argv.includes('--rollback');
-      
+
       if (isRollback) {
         logger.info('Executing rollback...');
         await down(db);
@@ -95,12 +95,12 @@ if (import.meta.url === new URL(process.argv[1], 'file:').href) {
         logger.info('Executing migration...');
         await up(db);
       }
-      
+
       logger.info('Migration completed successfully');
     } catch (error) {
       logger.error('Migration failed:', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       process.exit(1);
     } finally {
@@ -109,4 +109,4 @@ if (import.meta.url === new URL(process.argv[1], 'file:').href) {
   });
 }
 
-export { up, down }; 
+export { up, down };

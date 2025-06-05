@@ -79,19 +79,19 @@ class StripeService {
    */
   async updateUserStripeInfo(userId: number, data: { customerId: string; subscriptionId: string }) {
     const { customerId, subscriptionId } = data;
-    
+
     // Get the product details to determine the tier
     const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
     const productId = subscription.items.data[0].price.product as string;
     const subscriptionTier = this.getTierFromProductId(productId);
-    
+
     const [updatedUser] = await db
       .update(users)
-      .set({ 
+      .set({
         stripeCustomerId: customerId,
         subscriptionId,
         subscriptionTier,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(users.id, userId))
       .returning();
@@ -107,8 +107,8 @@ class StripeService {
   getTierFromProductId(productId: string): 'free' | 'starter' | 'pro' {
     // These should match the product IDs in your Stripe account
     const PRODUCT_MAP: Record<string, 'free' | 'starter' | 'pro'> = {
-      'prod_SF40NCVtZWsX05': 'starter', // Starter AI essentials
-      'prod_RtcuCvjOY9gHvm': 'pro',     // Pro biohacker suite
+      prod_SF40NCVtZWsX05: 'starter', // Starter AI essentials
+      prod_RtcuCvjOY9gHvm: 'pro', // Pro biohacker suite
     };
 
     return PRODUCT_MAP[productId] || 'free';
@@ -125,7 +125,7 @@ class StripeService {
       .select({
         id: users.id,
         subscriptionId: users.subscriptionId,
-        subscriptionTier: users.subscriptionTier
+        subscriptionTier: users.subscriptionTier,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -141,7 +141,7 @@ class StripeService {
         .update(users)
         .set({
           subscriptionTier: 'trial',
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(users.id, userId))
         .returning();
@@ -155,7 +155,7 @@ class StripeService {
         .update(users)
         .set({
           subscriptionTier: 'free', // Default to free if we can't determine the actual tier
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(users.id, userId))
         .returning();

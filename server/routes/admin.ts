@@ -7,12 +7,14 @@ import cors from 'cors';
 const router = express.Router();
 
 // Configure CORS for admin routes
-router.use(cors({
-  origin: process.env.ADMIN_DASHBOARD_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+router.use(
+  cors({
+    origin: process.env.ADMIN_DASHBOARD_URL || 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 // Middleware to check admin status
 const requireAdmin = async (req: any, res: any, next: any) => {
@@ -32,7 +34,7 @@ router.get('/users/subscriptions', async (req, res) => {
         id: users.id,
         email: users.email,
         subscriptionTier: users.subscriptionTier,
-        subscriptionId: users.subscriptionId
+        subscriptionId: users.subscriptionId,
       })
       .from(users);
 
@@ -52,7 +54,7 @@ router.get('/users/:userId/subscription', async (req, res) => {
         id: users.id,
         email: users.email,
         subscriptionTier: users.subscriptionTier,
-        subscriptionId: users.subscriptionId
+        subscriptionId: users.subscriptionId,
       })
       .from(users)
       .where(eq(users.id, userId))

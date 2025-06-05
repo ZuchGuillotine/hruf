@@ -1,6 +1,6 @@
-import { db } from "@db";
-import { supplementLogs, qualitativeLogs, supplements, queryChats } from "@db/schema";
-import { and, sql, desc, eq, notInArray, gte } from "drizzle-orm";
+import { db } from '@db';
+import { supplementLogs, qualitativeLogs, supplements, queryChats } from '@db/schema';
+import { and, sql, desc, eq, notInArray, gte } from 'drizzle-orm';
 
 export async function getQuantitativeLogs(userId: string, days: number = 30) {
   const userIdNum = parseInt(userId);
@@ -14,7 +14,7 @@ export async function getQuantitativeLogs(userId: string, days: number = 30) {
       dosage: supplements.dosage,
       takenAt: supplementLogs.takenAt,
       notes: supplementLogs.notes,
-      effects: supplementLogs.effects
+      effects: supplementLogs.effects,
     })
     .from(supplementLogs)
     .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
@@ -34,7 +34,7 @@ export async function getQualitativeLogs(userId: string | number, fromDate?: Dat
         content: qualitativeLogs.content,
         loggedAt: qualitativeLogs.loggedAt,
         type: qualitativeLogs.type,
-        metadata: qualitativeLogs.metadata
+        metadata: qualitativeLogs.metadata,
       })
       .from(qualitativeLogs)
       .where(
@@ -52,7 +52,7 @@ export async function getQualitativeLogs(userId: string | number, fromDate?: Dat
 
     return await query;
   } catch (error) {
-    console.error("Error fetching qualitative logs:", error);
+    console.error('Error fetching qualitative logs:', error);
     return [];
   }
 }
@@ -73,7 +73,7 @@ export async function getQueryChats(userId: string | number, fromDate?: Date) {
 
     return await query;
   } catch (error) {
-    console.error("Error fetching query chats:", error);
+    console.error('Error fetching query chats:', error);
     return [];
   }
 }

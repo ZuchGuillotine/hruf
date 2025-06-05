@@ -1,8 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 
 type Message = {
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
 };
 
@@ -22,11 +22,11 @@ export function useLLM() {
     { messages: Message[]; onStream?: (chunk: string, data?: ChatResponse) => void }
   >({
     mutationFn: async ({ messages, onStream }) => {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages }),
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -35,12 +35,12 @@ export function useLLM() {
       }
 
       // Handle streaming response
-      if (response.headers.get("content-type")?.includes("text/event-stream")) {
+      if (response.headers.get('content-type')?.includes('text/event-stream')) {
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        let fullResponse = "";
+        let fullResponse = '';
 
-        if (!reader) throw new Error("No response body");
+        if (!reader) throw new Error('No response body');
 
         try {
           while (true) {
@@ -84,14 +84,14 @@ export function useLLM() {
       return response.json();
     },
     onError: (error) => {
-      console.error("Chat error details:", error);
-    }
+      console.error('Chat error details:', error);
+    },
   });
 
   return {
     chat: chatMutation.mutateAsync,
     isLoading: chatMutation.isPending,
     limitReached,
-    resetLimitReached: () => setLimitReached(false)
+    resetLimitReached: () => setLimitReached(false),
   };
 }

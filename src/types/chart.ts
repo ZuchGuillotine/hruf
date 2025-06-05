@@ -11,7 +11,17 @@ export interface BiomarkerDataPoint {
   /** Date of the test in ISO format */
   testDate: string;
   /** Optional biomarker category */
-  category?: 'lipid' | 'metabolic' | 'thyroid' | 'vitamin' | 'mineral' | 'blood' | 'liver' | 'kidney' | 'hormone' | 'other';
+  category?:
+    | 'lipid'
+    | 'metabolic'
+    | 'thyroid'
+    | 'vitamin'
+    | 'mineral'
+    | 'blood'
+    | 'liver'
+    | 'kidney'
+    | 'hormone'
+    | 'other';
   /** Optional reference range */
   referenceRange?: string;
 }

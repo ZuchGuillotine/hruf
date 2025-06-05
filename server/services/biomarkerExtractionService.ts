@@ -1,20 +1,25 @@
 /**
-    * @description      : Service for extracting and validating biomarkers from lab reports
-    * @author           : 
-    * @group            : 
-    * @created          : 07/05/2025 - 22:56:18
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 07/05/2025
-    * - Author          : 
-    * - Modification    : Enhanced regex patterns and added more biomarkers
-**/
+ * @description      : Service for extracting and validating biomarkers from lab reports
+ * @author           :
+ * @group            :
+ * @created          : 07/05/2025 - 22:56:18
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 07/05/2025
+ * - Author          :
+ * - Modification    : Enhanced regex patterns and added more biomarkers
+ **/
 import { z } from 'zod';
 import { openai } from '../openai';
 import logger from '../utils/logger';
 import { db } from '../../db';
-import { labResults, biomarkerResults, biomarkerProcessingStatus, type SelectLabResult } from '../../db/schema';
+import {
+  labResults,
+  biomarkerResults,
+  biomarkerProcessingStatus,
+  type SelectLabResult,
+} from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import type { InsertBiomarkerResult } from '../../db/schema';
 import { BiomarkerPatternService, type PatternMatch } from './biomarkerPatternService';
@@ -43,32 +48,41 @@ const BiomarkerSchema = z.object({
   // More flexible value handling - allow string or number and convert to number
   value: z.union([
     z.number(),
-    z.string().transform(val => {
+    z.string().transform((val) => {
       const parsed = Number(val);
       if (isNaN(parsed)) {
         logger.warn(`Failed to parse biomarker value as number: ${val}`);
         return 0; // Fallback value to prevent pipeline failure
       }
       return parsed;
-    })
+    }),
   ]),
   unit: z.string().min(1),
   // More flexible category enum with proper error handling
-  category: z.string()
-    .transform(val => {
-      const validCategories = ['lipid', 'metabolic', 'thyroid', 'vitamin', 
-        'mineral', 'blood', 'liver', 'kidney', 'hormone', 'other'];
-      if (validCategories.includes(val.toLowerCase())) {
-        return val.toLowerCase();
-      }
-      logger.warn(`Invalid biomarker category: ${val}. Defaulting to 'other'`);
-      return 'other';
-    }),
+  category: z.string().transform((val) => {
+    const validCategories = [
+      'lipid',
+      'metabolic',
+      'thyroid',
+      'vitamin',
+      'mineral',
+      'blood',
+      'liver',
+      'kidney',
+      'hormone',
+      'other',
+    ];
+    if (validCategories.includes(val.toLowerCase())) {
+      return val.toLowerCase();
+    }
+    logger.warn(`Invalid biomarker category: ${val}. Defaulting to 'other'`);
+    return 'other';
+  }),
   referenceRange: z.string().optional(),
   // More flexible date handling with better error recovery
   testDate: z.union([
     z.date(),
-    z.string().transform(dateStr => {
+    z.string().transform((dateStr) => {
       try {
         // Handle ISO strings
         if (/^\d{4}-\d{2}-\d{2}T/.test(dateStr)) {
@@ -81,7 +95,9 @@ const BiomarkerSchema = z.object({
         // Handle MM/DD/YYYY format
         if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
           const [month, day, year] = dateStr.split('/');
-          return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`);
+          return new Date(
+            `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00.000Z`
+          );
         }
         // Default parsing
         const parsed = new Date(dateStr);
@@ -91,35 +107,39 @@ const BiomarkerSchema = z.object({
         }
         return parsed;
       } catch (e) {
-        logger.warn(`Error parsing date: ${e instanceof Error ? e.message : String(e)}. Using current date.`);
+        logger.warn(
+          `Error parsing date: ${e instanceof Error ? e.message : String(e)}. Using current date.`
+        );
         return new Date();
       }
-    })
+    }),
   ]),
   // More flexible status handling
-  status: z.union([
-    z.enum(['High', 'Low', 'Normal']),
-    z.string().transform(val => {
-      const normalized = val.toLowerCase();
-      if (normalized.includes('high')) return 'High';
-      if (normalized.includes('low')) return 'Low';
-      return 'Normal';
-    })
-  ]).optional(),
+  status: z
+    .union([
+      z.enum(['High', 'Low', 'Normal']),
+      z.string().transform((val) => {
+        const normalized = val.toLowerCase();
+        if (normalized.includes('high')) return 'High';
+        if (normalized.includes('low')) return 'Low';
+        return 'Normal';
+      }),
+    ])
+    .optional(),
   extractionMethod: z.enum(['regex', 'llm']).default('regex'),
   confidence: z.number().min(0).max(1).default(1.0),
-  sourceText: z.string().optional()
+  sourceText: z.string().optional(),
 });
 
 const BiomarkersArraySchema = z.array(BiomarkerSchema);
 
-export type BiomarkerCategory = 
-  | 'metabolic' 
-  | 'lipid' 
-  | 'vitamin' 
-  | 'hormone' 
-  | 'mineral' 
-  | 'protein' 
+export type BiomarkerCategory =
+  | 'metabolic'
+  | 'lipid'
+  | 'vitamin'
+  | 'hormone'
+  | 'mineral'
+  | 'protein'
   | 'thyroid'
   | 'blood'
   | 'liver'
@@ -127,191 +147,227 @@ export type BiomarkerCategory =
   | 'other';
 
 // Enhanced biomarker regex patterns with flexible ordering and better unit handling
-const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerCategory; defaultUnit: string }> = {
+const BIOMARKER_PATTERNS: Record<
+  string,
+  { pattern: RegExp; category: BiomarkerCategory; defaultUnit: string }
+> = {
   // Lipid Panel - More flexible patterns that handle fragmented text
   cholesterol: {
-    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol|Chol)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern:
+      /(?:Total Cholesterol|Cholesterol, Total|Cholesterol|Chol)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
     category: 'lipid',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
   hdl: {
-    pattern: /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern:
+      /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
     category: 'lipid',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
   ldl: {
-    pattern: /(?:LDL|LDL-C|LDL Cholesterol|Low-Density Lipoprotein)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern:
+      /(?:LDL|LDL-C|LDL Cholesterol|Low-Density Lipoprotein)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
     category: 'lipid',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
   triglycerides: {
-    pattern: /(?:Triglycerides|TG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern:
+      /(?:Triglycerides|TG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
     category: 'lipid',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
 
   // Metabolic Panel - More flexible patterns
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
   hemoglobinA1c: {
-    pattern: /(?:HbA1c|Hemoglobin A1c|A1C|Hgb A1c)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:%|mmol\/mol))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(%|mmol\/mol)|(?:%|mmol\/mol)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:HbA1c|Hemoglobin A1c|A1C|Hgb A1c)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:%|mmol\/mol))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(%|mmol\/mol)|(?:%|mmol\/mol)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: '%'
+    defaultUnit: '%',
   },
   insulin: {
-    pattern: /(?:Insulin|Fasting Insulin)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:µIU\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(µIU\/mL|pmol\/L)|(?:µIU\/mL|pmol\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:Insulin|Fasting Insulin)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:µIU\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(µIU\/mL|pmol\/L)|(?:µIU\/mL|pmol\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'µIU/mL'
+    defaultUnit: 'µIU/mL',
   },
 
   // Electrolytes - Enhanced patterns with better unit handling
   sodium: {
-    pattern: /(?:Sodium|Na)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:Sodium|Na)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'mmol/L'
+    defaultUnit: 'mmol/L',
   },
   potassium: {
-    pattern: /(?:Potassium|K)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:Potassium|K)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'mmol/L'
+    defaultUnit: 'mmol/L',
   },
   chloride: {
-    pattern: /(?:Chloride|Cl)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:Chloride|Cl)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'mmol/L'
+    defaultUnit: 'mmol/L',
   },
   co2: {
-    pattern: /(?:CO2|Carbon Dioxide|Total CO2)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:CO2|Carbon Dioxide|Total CO2)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'mmol/L'
+    defaultUnit: 'mmol/L',
   },
   anionGap: {
-    pattern: /(?:Anion Gap|AG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:Anion Gap|AG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mmol\/L|mEq\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mmol\/L|mEq\/L)|(?:mmol\/L|mEq\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'metabolic',
-    defaultUnit: 'mmol/L'
+    defaultUnit: 'mmol/L',
   },
 
   // Thyroid Panel - Enhanced patterns
   tsh: {
-    pattern: /(?:TSH|Thyroid Stimulating Hormone)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mIU\/L|µIU\/mL))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mIU\/L|µIU\/mL)|(?:mIU\/L|µIU\/mL)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:TSH|Thyroid Stimulating Hormone)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mIU\/L|µIU\/mL))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(mIU\/L|µIU\/mL)|(?:mIU\/L|µIU\/mL)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'thyroid',
-    defaultUnit: 'mIU/L'
+    defaultUnit: 'mIU/L',
   },
   t4: {
-    pattern: /(?:T4|Free T4|Thyroxine)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/dL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(ng\/dL|pmol\/L)|(?:ng\/dL|pmol\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:T4|Free T4|Thyroxine)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/dL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(ng\/dL|pmol\/L)|(?:ng\/dL|pmol\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'thyroid',
-    defaultUnit: 'ng/dL'
+    defaultUnit: 'ng/dL',
   },
   t3: {
-    pattern: /(?:T3|Free T3|Triiodothyronine)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:pg\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(pg\/mL|pmol\/L)|(?:pg\/mL|pmol\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern:
+      /(?:T3|Free T3|Triiodothyronine)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:pg\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(pg\/mL|pmol\/L)|(?:pg\/mL|pmol\/L)\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
     category: 'thyroid',
-    defaultUnit: 'pg/mL'
+    defaultUnit: 'pg/mL',
   },
 
   // Vitamins - More flexible patterns
   vitaminD: {
-    pattern: /(?:Vitamin D|25-OH Vitamin D|25-Hydroxyvitamin D|25\(OH\)D)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/mL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
+    pattern:
+      /(?:Vitamin D|25-OH Vitamin D|25-Hydroxyvitamin D|25\(OH\)D)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/mL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
     category: 'vitamin',
-    defaultUnit: 'ng/mL'
+    defaultUnit: 'ng/mL',
   },
   vitaminB12: {
-    pattern: /(?:Vitamin B12|B12|Cobalamin)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:pg\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
+    pattern:
+      /(?:Vitamin B12|B12|Cobalamin)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:pg\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
     category: 'vitamin',
-    defaultUnit: 'pg/mL'
+    defaultUnit: 'pg/mL',
   },
   folate: {
-    pattern: /(?:Folate|Folic Acid|Vitamin B9)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/mL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
+    pattern:
+      /(?:Folate|Folic Acid|Vitamin B9)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/mL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|nmol\/L)/i,
     category: 'vitamin',
-    defaultUnit: 'ng/mL'
+    defaultUnit: 'ng/mL',
   },
 
   // Minerals - More flexible patterns
   ferritin: {
-    pattern: /(?:Ferritin)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/mL|µg\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|µg\/L)/i,
+    pattern:
+      /(?:Ferritin)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/mL|µg\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/mL|µg\/L)/i,
     category: 'mineral',
-    defaultUnit: 'ng/mL'
+    defaultUnit: 'ng/mL',
   },
   iron: {
-    pattern: /(?:Iron|Serum Iron)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:µg\/dL|µmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µg\/dL|µmol\/L)/i,
+    pattern:
+      /(?:Iron|Serum Iron)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:µg\/dL|µmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µg\/dL|µmol\/L)/i,
     category: 'mineral',
-    defaultUnit: 'µg/L'
+    defaultUnit: 'µg/L',
   },
   magnesium: {
-    pattern: /(?:Magnesium|Mg)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
+    pattern:
+      /(?:Magnesium|Mg)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
     category: 'mineral',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
 
   // Blood Count - More flexible patterns
   hemoglobin: {
-    pattern: /(?:Hemoglobin|Hgb|Hb)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:g\/dL|g\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(g\/dL|g\/L)/i,
+    pattern:
+      /(?:Hemoglobin|Hgb|Hb)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:g\/dL|g\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(g\/dL|g\/L)/i,
     category: 'blood',
-    defaultUnit: 'g/dL'
+    defaultUnit: 'g/dL',
   },
   hematocrit: {
-    pattern: /(?:Hematocrit|Hct)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*%)?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(%)/i,
+    pattern:
+      /(?:Hematocrit|Hct)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*%)?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(%)/i,
     category: 'blood',
-    defaultUnit: '%'
+    defaultUnit: '%',
   },
   platelets: {
-    pattern: /(?:Platelets|PLT)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:K\/µL|10³\/µL))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(K\/µL|10³\/µL)/i,
+    pattern:
+      /(?:Platelets|PLT)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:K\/µL|10³\/µL))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(K\/µL|10³\/µL)/i,
     category: 'blood',
-    defaultUnit: 'K/µL'
+    defaultUnit: 'K/µL',
   },
 
   // Liver Function - More flexible patterns
   alt: {
-    pattern: /(?:ALT|Alanine Transaminase|SGPT)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:U\/L|IU\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(U\/L|IU\/L)/i,
+    pattern:
+      /(?:ALT|Alanine Transaminase|SGPT)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:U\/L|IU\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(U\/L|IU\/L)/i,
     category: 'liver',
-    defaultUnit: 'U/L'
+    defaultUnit: 'U/L',
   },
   ast: {
-    pattern: /(?:AST|Aspartate Transaminase|SGOT)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:U\/L|IU\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(U\/L|IU\/L)/i,
+    pattern:
+      /(?:AST|Aspartate Transaminase|SGOT)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:U\/L|IU\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(U\/L|IU\/L)/i,
     category: 'liver',
-    defaultUnit: 'U/L'
+    defaultUnit: 'U/L',
   },
   alkalinePhosphatase: {
-    pattern: /(?:Alkaline Phosphatase|ALP)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:U\/L|IU\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(U\/L|IU\/L)/i,
+    pattern:
+      /(?:Alkaline Phosphatase|ALP)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:U\/L|IU\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(U\/L|IU\/L)/i,
     category: 'liver',
-    defaultUnit: 'U/L'
+    defaultUnit: 'U/L',
   },
 
   // Kidney Function - More flexible patterns
   creatinine: {
-    pattern: /(?:Creatinine|Cr)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|µmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|µmol\/L)/i,
+    pattern:
+      /(?:Creatinine|Cr)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|µmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|µmol\/L)/i,
     category: 'kidney',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
   bun: {
-    pattern: /(?:BUN|Blood Urea Nitrogen|Urea)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
+    pattern:
+      /(?:BUN|Blood Urea Nitrogen|Urea)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mg\/dL|mmol\/L)/i,
     category: 'kidney',
-    defaultUnit: 'mg/dL'
+    defaultUnit: 'mg/dL',
   },
   egfr: {
-    pattern: /(?:eGFR|Estimated GFR|Glomerular Filtration Rate)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mL\/min\/1\.73m²))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mL\/min\/1\.73m²)/i,
+    pattern:
+      /(?:eGFR|Estimated GFR|Glomerular Filtration Rate)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mL\/min\/1\.73m²))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(mL\/min\/1\.73m²)/i,
     category: 'kidney',
-    defaultUnit: 'mL/min/1.73m²'
+    defaultUnit: 'mL/min/1.73m²',
   },
 
   // Hormones - More flexible patterns
   cortisol: {
-    pattern: /(?:Cortisol)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:µg\/dL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µg\/dL|nmol\/L)/i,
+    pattern:
+      /(?:Cortisol)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:µg\/dL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(µg\/dL|nmol\/L)/i,
     category: 'hormone',
-    defaultUnit: 'µg/dL'
+    defaultUnit: 'µg/dL',
   },
   testosterone: {
-    pattern: /(?:Testosterone|Total Testosterone)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/dL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/dL|nmol\/L)/i,
+    pattern:
+      /(?:Testosterone|Total Testosterone)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:ng\/dL|nmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(ng\/dL|nmol\/L)/i,
     category: 'hormone',
-    defaultUnit: 'ng/dL'
+    defaultUnit: 'ng/dL',
   },
   estradiol: {
-    pattern: /(?:Estradiol|E2)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:pg\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
+    pattern:
+      /(?:Estradiol|E2)\s*[:=]?\s*(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:pg\/mL|pmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal)?\s*(pg\/mL|pmol\/L)/i,
     category: 'hormone',
-    defaultUnit: 'pg/mL'
-  }
+    defaultUnit: 'pg/mL',
+  },
 };
 
 // Use the exact types from the schema
@@ -333,10 +389,10 @@ type BiomarkerProcessingMetadata = {
 export class BiomarkerExtractionService {
   private async extractWithRegex(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     const results: z.infer<typeof BiomarkerSchema>[] = [];
-    logger.info('Starting regex extraction with text:', { 
+    logger.info('Starting regex extraction with text:', {
       textLength: text.length,
       textSample: text.substring(0, 500),
-      patterns: Object.keys(BIOMARKER_PATTERNS) 
+      patterns: Object.keys(BIOMARKER_PATTERNS),
     });
 
     // Pre-process text to handle fragmented numbers
@@ -346,14 +402,17 @@ export class BiomarkerExtractionService {
       // Fix numbers with status (e.g., "3.4Low" -> "3.4 Low")
       .replace(/(\d+(?:\.\d+)?)(High|Low|Normal|H|L|N)/gi, '$1 $2')
       // Fix numbers with units
-      .replace(/(\d+(?:\.\d+)?)(mg\/dL|mmol\/L|g\/dL|g\/L|ng\/mL|µg\/L|IU\/L|mEq\/L|mm³|µL|nL|pL|fL|%|U\/L)/gi, '$1 $2');
+      .replace(
+        /(\d+(?:\.\d+)?)(mg\/dL|mmol\/L|g\/dL|g\/L|ng\/mL|µg\/L|IU\/L|mEq\/L|mm³|µL|nL|pL|fL|%|U\/L)/gi,
+        '$1 $2'
+      );
 
     // Extract test date with more flexible patterns
     const datePatterns = [
       /(?:Date|Collection Date|Report Date|Test Date):\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
       /(?:Date|Collection Date|Report Date|Test Date):\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
       /(?:Date|Collection Date|Report Date|Test Date):\s*(\w+\s+\d{1,2},?\s+\d{4})/i,
-      /Collected on (\w+\s+\d{1,2},?\s+\d{4})/i  // Add this pattern for "Collected on" format
+      /Collected on (\w+\s+\d{1,2},?\s+\d{4})/i, // Add this pattern for "Collected on" format
     ];
 
     let testDate: string | undefined;
@@ -362,10 +421,16 @@ export class BiomarkerExtractionService {
       if (dateMatch) {
         try {
           testDate = new Date(dateMatch[1]).toISOString();
-          logger.info('Found test date with regex:', { date: testDate, pattern: pattern.toString() });
+          logger.info('Found test date with regex:', {
+            date: testDate,
+            pattern: pattern.toString(),
+          });
           break;
         } catch (e) {
-          logger.warn('Failed to parse date:', { date: dateMatch[1], error: e instanceof Error ? e.message : String(e) });
+          logger.warn('Failed to parse date:', {
+            date: dateMatch[1],
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       }
     }
@@ -399,7 +464,7 @@ export class BiomarkerExtractionService {
           if (isNaN(parsedValue)) {
             logger.warn('Failed to parse biomarker value as number:', {
               biomarker: name,
-              rawValue: value
+              rawValue: value,
             });
             validationFailures++;
             continue;
@@ -413,7 +478,7 @@ export class BiomarkerExtractionService {
             category,
             source: 'regex',
             confidence: 0.9,
-            status: status ? this.normalizeStatus(status) : undefined
+            status: status ? this.normalizeStatus(status) : undefined,
           };
 
           try {
@@ -424,20 +489,23 @@ export class BiomarkerExtractionService {
               biomarker: name,
               value: parsedValue,
               unit: biomarker.unit,
-              status: biomarker.status
+              status: biomarker.status,
             });
           } catch (validationError) {
             validationFailures++;
             logger.warn('Zod validation failed for biomarker:', {
               biomarker: name,
-              error: validationError instanceof Error ? validationError.message : String(validationError)
+              error:
+                validationError instanceof Error
+                  ? validationError.message
+                  : String(validationError),
             });
           }
         } catch (parseError) {
           validationFailures++;
           logger.warn('Error processing biomarker value:', {
             biomarker: name,
-            error: parseError instanceof Error ? parseError.message : String(parseError)
+            error: parseError instanceof Error ? parseError.message : String(parseError),
           });
         }
       }
@@ -455,7 +523,7 @@ export class BiomarkerExtractionService {
         textLength: preprocessedText.length,
         totalMatches,
         validationFailures,
-        sampleText: preprocessedText.substring(0, 200) // Add sample text for debugging
+        sampleText: preprocessedText.substring(0, 200), // Add sample text for debugging
       });
     }
 
@@ -464,7 +532,7 @@ export class BiomarkerExtractionService {
       validationFailures,
       successfulExtractions,
       recallPercentage,
-      biomarkersFound: results.map(r => r.name)
+      biomarkersFound: results.map((r) => r.name),
     });
 
     return results;
@@ -474,58 +542,74 @@ export class BiomarkerExtractionService {
     try {
       logger.info('Starting LLM extraction with text length:', { textLength: text.length });
 
-      const functions = [{
-        name: "extract_lab_biomarkers",
-        description: "Extract biomarkers from medical lab report text with precise values and units",
-        parameters: {
-          type: "object",
-          properties: {
-            biomarkers: {
-              type: "array",
-              description: "Array of biomarkers extracted from lab report. Each must have name, value, unit, and category.",
-              items: {
-                type: "object",
-                required: ["name", "value", "unit", "category"],
-                properties: {
-                  name: { 
-                    type: "string",
-                    description: "Name of the biomarker (e.g., 'Glucose', 'Cholesterol')"
+      const functions = [
+        {
+          name: 'extract_lab_biomarkers',
+          description:
+            'Extract biomarkers from medical lab report text with precise values and units',
+          parameters: {
+            type: 'object',
+            properties: {
+              biomarkers: {
+                type: 'array',
+                description:
+                  'Array of biomarkers extracted from lab report. Each must have name, value, unit, and category.',
+                items: {
+                  type: 'object',
+                  required: ['name', 'value', 'unit', 'category'],
+                  properties: {
+                    name: {
+                      type: 'string',
+                      description: "Name of the biomarker (e.g., 'Glucose', 'Cholesterol')",
+                    },
+                    value: {
+                      type: 'number',
+                      description: 'Numeric value of the biomarker measurement',
+                    },
+                    unit: {
+                      type: 'string',
+                      description:
+                        "Unit of measurement (e.g., 'mg/dL', 'mmol/L'). Must not be empty.",
+                      minLength: 1,
+                    },
+                    referenceRange: {
+                      type: 'string',
+                      description: "Reference range for this biomarker (e.g., '70-99 mg/dL')",
+                    },
+                    testDate: {
+                      type: 'string',
+                      description: 'ISO date format (YYYY-MM-DD)',
+                      pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+                    },
+                    category: {
+                      type: 'string',
+                      description: 'Category of biomarker',
+                      enum: [
+                        'lipid',
+                        'metabolic',
+                        'thyroid',
+                        'vitamin',
+                        'mineral',
+                        'blood',
+                        'liver',
+                        'kidney',
+                        'hormone',
+                        'other',
+                      ],
+                    },
+                    status: {
+                      type: 'string',
+                      description: 'Status of biomarker value relative to reference range',
+                      enum: ['High', 'Low', 'Normal'],
+                    },
                   },
-                  value: { 
-                    type: "number",
-                    description: "Numeric value of the biomarker measurement"
-                  },
-                  unit: { 
-                    type: "string",
-                    description: "Unit of measurement (e.g., 'mg/dL', 'mmol/L'). Must not be empty.",
-                    minLength: 1
-                  },
-                  referenceRange: { 
-                    type: "string",
-                    description: "Reference range for this biomarker (e.g., '70-99 mg/dL')"
-                  },
-                  testDate: { 
-                    type: "string", 
-                    description: "ISO date format (YYYY-MM-DD)",
-                    pattern: "^\\d{4}-\\d{2}-\\d{2}$"
-                  },
-                  category: { 
-                    type: "string", 
-                    description: "Category of biomarker",
-                    enum: ["lipid", "metabolic", "thyroid", "vitamin","mineral", "blood", "liver", "kidney", "hormone", "other"]
-                  },
-                  status: { 
-                    type: "string",
-                    description: "Status of biomarker value relative to reference range",
-                    enum: ["High", "Low", "Normal"]
-                  }
-                }
-              }
-            }
+                },
+              },
+            },
+            required: ['biomarkers'],
           },
-          required: ["biomarkers"]
-        }
-      }];
+        },
+      ];
 
       const systemPrompt = `You are a precise medical lab report parser. Extract biomarkers with these strict requirements:
 
@@ -556,20 +640,20 @@ Ignore any text not related to biomarkers.`;
 
       // Call OpenAI with function calling
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: 'gpt-4o',
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text },
         ],
         temperature: 0.1,
-        tools: functions.map(func => ({
-          type: "function",
-          function: func
+        tools: functions.map((func) => ({
+          type: 'function',
+          function: func,
         })),
         tool_choice: {
-          type: "function",
-          function: { name: "extract_lab_biomarkers" }
-        }
+          type: 'function',
+          function: { name: 'extract_lab_biomarkers' },
+        },
       });
 
       // Extract biomarkers from the response
@@ -579,10 +663,12 @@ Ignore any text not related to biomarkers.`;
           const parsedFunction = JSON.parse(toolCall.function.arguments);
           const biomarkers = parsedFunction.biomarkers;
 
-          logger.info('LLM extraction extracted biomarkers:', { 
+          logger.info('LLM extraction extracted biomarkers:', {
             count: biomarkers.length,
-            firstBiomarker: biomarkers.length > 0 ? 
-              `${biomarkers[0].name}: ${biomarkers[0].value} ${biomarkers[0].unit}` : null
+            firstBiomarker:
+              biomarkers.length > 0
+                ? `${biomarkers[0].name}: ${biomarkers[0].value} ${biomarkers[0].unit}`
+                : null,
           });
 
           // Map to our schema and validate each biomarker
@@ -595,7 +681,7 @@ Ignore any text not related to biomarkers.`;
                 extractionMethod: 'llm',
                 source: 'llm',
                 confidence: 0.9,
-                testDate: b.testDate || new Date().toISOString().split('T')[0]
+                testDate: b.testDate || new Date().toISOString().split('T')[0],
               };
 
               // Validate
@@ -605,21 +691,21 @@ Ignore any text not related to biomarkers.`;
               logger.warn('Failed to validate LLM biomarker:', {
                 biomarker: b.name,
                 error: valErr instanceof Error ? valErr.message : String(valErr),
-                issues: valErr instanceof z.ZodError ? valErr.issues : undefined
+                issues: valErr instanceof z.ZodError ? valErr.issues : undefined,
               });
             }
           }
 
           logger.info('LLM extraction validation complete:', {
             originalCount: biomarkers.length,
-            validCount: validatedBiomarkers.length
+            validCount: validatedBiomarkers.length,
           });
 
           return validatedBiomarkers;
         } catch (parseError) {
           logger.error('Failed to parse LLM function response:', {
             error: parseError instanceof Error ? parseError.message : String(parseError),
-            rawResponse: toolCall.function.arguments
+            rawResponse: toolCall.function.arguments,
           });
         }
       } else {
@@ -630,7 +716,7 @@ Ignore any text not related to biomarkers.`;
     } catch (error) {
       logger.error('LLM extraction failed:', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       return [];
     }
@@ -650,13 +736,17 @@ Ignore any text not related to biomarkers.`;
         confidence: match.confidence,
         sourceText: match.sourceText,
         extractionMethod: 'pattern' as const,
-        status: match.validationStatus === 'valid' ? 'Normal' : 
-                match.validationStatus === 'warning' ? 'High' : 'Low',
-        testDate: new Date() // Add default test date
+        status:
+          match.validationStatus === 'valid'
+            ? 'Normal'
+            : match.validationStatus === 'warning'
+              ? 'High'
+              : 'Low',
+        testDate: new Date(), // Add default test date
       }));
     } catch (error) {
       logger.error('Error in pattern-based extraction:', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       return [];
     }
@@ -674,7 +764,10 @@ Ignore any text not related to biomarkers.`;
       const key = biomarker.name.toLowerCase();
       const existing = mergedMap.get(key);
 
-      if (!existing || (biomarker.confidence && biomarker.confidence > (existing.confidence || 0))) {
+      if (
+        !existing ||
+        (biomarker.confidence && biomarker.confidence > (existing.confidence || 0))
+      ) {
         mergedMap.set(key, biomarker);
       }
     };
@@ -704,29 +797,36 @@ Ignore any text not related to biomarkers.`;
 
         validatedBiomarkers.push(standardized);
       } catch (error) {
-        errors.push(`Validation failed for ${biomarker.name}: ${error instanceof Error ? error.message : String(error)}`);
+        errors.push(
+          `Validation failed for ${biomarker.name}: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
     return {
       parsedBiomarkers: validatedBiomarkers,
-      parsingErrors: errors
+      parsingErrors: errors,
     };
   }
 
   private getMissingCategories(existingResults: Biomarker[]): string {
     const allCategories: BiomarkerCategory[] = [
-      'lipid', 'metabolic', 'thyroid', 'vitamin', 
-      'mineral', 'blood', 'liver', 'kidney', 'hormone'
+      'lipid',
+      'metabolic',
+      'thyroid',
+      'vitamin',
+      'mineral',
+      'blood',
+      'liver',
+      'kidney',
+      'hormone',
     ];
 
     const existingCategories = new Set(
-      existingResults.map(r => r.category?.toLowerCase() as BiomarkerCategory)
+      existingResults.map((r) => r.category?.toLowerCase() as BiomarkerCategory)
     );
 
-    const missingCategories = allCategories.filter(
-      cat => !existingCategories.has(cat)
-    );
+    const missingCategories = allCategories.filter((cat) => !existingCategories.has(cat));
 
     return missingCategories.join(', ');
   }
@@ -736,14 +836,14 @@ Ignore any text not related to biomarkers.`;
     const patternService = new BiomarkerPatternService();
 
     // Convert value to number if it's a string
-    const numericValue = typeof biomarker.value === 'string' ? 
-      parseFloat(biomarker.value) : biomarker.value;
+    const numericValue =
+      typeof biomarker.value === 'string' ? parseFloat(biomarker.value) : biomarker.value;
 
     // Use the public extractPatterns method instead of private standardizeUnit
     const standardized = {
       ...biomarker,
       value: numericValue,
-      unit: biomarker.unit // Keep original unit for now
+      unit: biomarker.unit, // Keep original unit for now
     };
 
     return standardized;
@@ -764,11 +864,7 @@ Ignore any text not related to biomarkers.`;
     const patternResults = await this.extractWithPatterns(text);
 
     // 4. Merge results with confidence scoring
-    const mergedResults = this.mergeResultsWithConfidence(
-      regexResults,
-      llmResults,
-      patternResults
-    );
+    const mergedResults = this.mergeResultsWithConfidence(regexResults, llmResults, patternResults);
 
     // 5. Validate and standardize
     return this.validateAndStandardizeResults(mergedResults);
@@ -796,7 +892,7 @@ Ignore any text not related to biomarkers.`;
     logger.info(`Starting biomarker storage`, {
       labResultId,
       biomarkerCount: biomarkers.length,
-      timestamp: startTime.toISOString()
+      timestamp: startTime.toISOString(),
     });
 
     try {
@@ -809,7 +905,7 @@ Ignore any text not related to biomarkers.`;
 
       const processingMetadata = {
         biomarkerCount: biomarkers.length,
-        processingTime: Date.now() - startTime.getTime()
+        processingTime: Date.now() - startTime.getTime(),
       };
 
       if (existingStatus) {
@@ -820,48 +916,48 @@ Ignore any text not related to biomarkers.`;
             startedAt: new Date(),
             metadata: {
               ...existingStatus.metadata,
-              ...processingMetadata
-            }
+              ...processingMetadata,
+            },
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
       } else {
-        await db
-          .insert(biomarkerProcessingStatus)
-          .values({
-            labResultId,
-            status: 'processing' as const,
-            startedAt: new Date(),
-            metadata: processingMetadata
-          });
+        await db.insert(biomarkerProcessingStatus).values({
+          labResultId,
+          status: 'processing' as const,
+          startedAt: new Date(),
+          metadata: processingMetadata,
+        });
       }
 
       // Delete existing biomarkers
-      await db
-        .delete(biomarkerResults)
-        .where(eq(biomarkerResults.labResultId, labResultId));
+      await db.delete(biomarkerResults).where(eq(biomarkerResults.labResultId, labResultId));
 
       logger.info(`Deleted existing biomarkers for lab ${labResultId}`);
 
       // Prepare biomarker inserts with proper data types and validation
       const biomarkerInserts = biomarkers
-        .map(b => {
+        .map((b) => {
           try {
             const numericValue = typeof b.value === 'string' ? parseFloat(b.value) : b.value;
-            const numericConfidence = b.confidence !== undefined ?
-              (typeof b.confidence === 'string' ? parseFloat(b.confidence) : b.confidence) : 1.0;
+            const numericConfidence =
+              b.confidence !== undefined
+                ? typeof b.confidence === 'string'
+                  ? parseFloat(b.confidence)
+                  : b.confidence
+                : 1.0;
 
             // Parse and validate test date
             let testDateValue: Date;
             try {
-              testDateValue = b.testDate instanceof Date ? b.testDate :
-                new Date(b.testDate || new Date());
+              testDateValue =
+                b.testDate instanceof Date ? b.testDate : new Date(b.testDate || new Date());
               if (isNaN(testDateValue.getTime())) {
                 throw new Error('Invalid date');
               }
             } catch (dateError) {
               logger.warn(`Invalid test date for biomarker ${b.name}, using current date`, {
                 providedDate: b.testDate,
-                error: dateError instanceof Error ? dateError.message : String(dateError)
+                error: dateError instanceof Error ? dateError.message : String(dateError),
               });
               testDateValue = new Date();
             }
@@ -888,15 +984,15 @@ Ignore any text not related to biomarkers.`;
               metadata: {
                 sourceText: b.sourceText || undefined,
                 extractionTimestamp: new Date().toISOString(),
-                validationStatus: 'validated'
-              }
+                validationStatus: 'validated',
+              },
             };
 
             return insert;
           } catch (error) {
             logger.error(`Error formatting biomarker for database: ${b.name}`, {
               error: error instanceof Error ? error.message : String(error),
-              biomarker: b
+              biomarker: b,
             });
             throw error;
           }
@@ -912,7 +1008,9 @@ Ignore any text not related to biomarkers.`;
       for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
         const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
         await db.insert(biomarkerResults).values(chunk);
-        logger.info(`Inserted biomarker chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length / CHUNK_SIZE)}`);
+        logger.info(
+          `Inserted biomarker chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length / CHUNK_SIZE)}`
+        );
       }
 
       // Update lab result metadata
@@ -928,16 +1026,16 @@ Ignore any text not related to biomarkers.`;
 
       const existingMetadata = labResult.metadata || {};
       const biomarkerMetadata: BiomarkerMetadata = {
-        parsedBiomarkers: biomarkerInserts.map(b => ({
+        parsedBiomarkers: biomarkerInserts.map((b) => ({
           name: b.name,
           value: parseFloat(b.value),
           unit: b.unit,
           referenceRange: b.referenceRange || undefined,
           testDate: b.testDate.toISOString(),
-          category: b.category
+          category: b.category,
         })),
         parsingErrors: [] as string[], // Add required parsingErrors field
-        extractedAt: new Date().toISOString()
+        extractedAt: new Date().toISOString(),
       };
 
       await db
@@ -946,16 +1044,16 @@ Ignore any text not related to biomarkers.`;
           metadata: {
             ...existingMetadata,
             biomarkers: biomarkerMetadata,
-            updatedAt: new Date().toISOString()
-          }
+            updatedAt: new Date().toISOString(),
+          },
         })
         .where(eq(labResults.id, labResultId));
 
       // Update processing status to completed
       const completionMetadata = {
         processingTime: Date.now() - startTime.getTime(),
-        regexMatches: biomarkerInserts.filter(b => b.extractionMethod === 'regex').length,
-        llmExtractions: biomarkerInserts.filter(b => b.extractionMethod === 'llm').length
+        regexMatches: biomarkerInserts.filter((b) => b.extractionMethod === 'regex').length,
+        llmExtractions: biomarkerInserts.filter((b) => b.extractionMethod === 'llm').length,
       };
 
       await db
@@ -964,8 +1062,10 @@ Ignore any text not related to biomarkers.`;
           status: 'completed' as const,
           completedAt: new Date(),
           biomarkerCount: biomarkerInserts.length,
-          extractionMethod: biomarkerInserts.some(b => b.extractionMethod === 'llm') ? 'hybrid' : 'regex',
-          metadata: completionMetadata
+          extractionMethod: biomarkerInserts.some((b) => b.extractionMethod === 'llm')
+            ? 'hybrid'
+            : 'regex',
+          metadata: completionMetadata,
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
@@ -974,26 +1074,28 @@ Ignore any text not related to biomarkers.`;
         .select({ count: sql`count(*)` })
         .from(biomarkerResults)
         .where(eq(biomarkerResults.labResultId, labResultId))
-        .then(res => Number(res[0]?.count || 0));
+        .then((res) => Number(res[0]?.count || 0));
 
       if (verificationCount !== biomarkerInserts.length) {
         logger.error(`Storage verification failed for lab ${labResultId}`, {
           expected: biomarkerInserts.length,
-          found: verificationCount
+          found: verificationCount,
         });
         throw new Error('Storage verification failed');
       }
 
-      logger.info(`Successfully completed atomic storage of ${biomarkerInserts.length} biomarkers for lab ${labResultId}`, {
-        processingTime: Date.now() - startTime.getTime(),
-        biomarkerCount: biomarkerInserts.length
-      });
-
+      logger.info(
+        `Successfully completed atomic storage of ${biomarkerInserts.length} biomarkers for lab ${labResultId}`,
+        {
+          processingTime: Date.now() - startTime.getTime(),
+          biomarkerCount: biomarkerInserts.length,
+        }
+      );
     } catch (error) {
       // Update processing status to error state
       const errorMetadata = {
         processingTime: Date.now() - startTime.getTime(),
-        errorDetails: error instanceof Error ? error.message : String(error)
+        errorDetails: error instanceof Error ? error.message : String(error),
       };
 
       try {
@@ -1003,13 +1105,13 @@ Ignore any text not related to biomarkers.`;
             status: 'error' as const,
             errorMessage: error instanceof Error ? error.message : String(error),
             completedAt: new Date(),
-            metadata: errorMetadata
+            metadata: errorMetadata,
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
       } catch (statusError) {
         logger.error('Failed to update error status after storage failure:', {
           originalError: error instanceof Error ? error.message : String(error),
-          statusError: statusError instanceof Error ? statusError.message : String(statusError)
+          statusError: statusError instanceof Error ? statusError.message : String(statusError),
         });
       }
 
@@ -1017,7 +1119,7 @@ Ignore any text not related to biomarkers.`;
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         biomarkerCount: biomarkers.length,
-        processingTime: Date.now() - startTime.getTime()
+        processingTime: Date.now() - startTime.getTime(),
       });
 
       throw error;
@@ -1041,24 +1143,26 @@ Ignore any text not related to biomarkers.`;
       }
 
       // Get text content with proper fallback chain
-      textContent = labResult.metadata?.preprocessedText?.normalizedText || 
-                   labResult.metadata?.preprocessedText?.rawText ||
-                   labResult.metadata?.ocr?.text || 
-                   labResult.metadata?.summary;
+      textContent =
+        labResult.metadata?.preprocessedText?.normalizedText ||
+        labResult.metadata?.preprocessedText?.rawText ||
+        labResult.metadata?.ocr?.text ||
+        labResult.metadata?.summary;
 
       if (!textContent) {
         throw new Error(`No text content found for lab result ${labResultId}`);
       }
 
       // Update processing status to started
-      await db.update(biomarkerProcessingStatus)
+      await db
+        .update(biomarkerProcessingStatus)
         .set({
           status: 'processing',
           startedAt: startTime,
           metadata: {
             textLength: textContent.length,
-            retryCount: 0
-          }
+            retryCount: 0,
+          },
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
@@ -1066,26 +1170,34 @@ Ignore any text not related to biomarkers.`;
       const extractedBiomarkers = await this.extractBiomarkers(textContent);
       const processingTime = Date.now() - startTime.getTime();
 
-      logger.info(`Extracted ${extractedBiomarkers.parsedBiomarkers.length} biomarkers from lab result ${labResultId}`, {
-        processingTime,
-        biomarkers: extractedBiomarkers.parsedBiomarkers.map(b => b.name),
-        regexCount: extractedBiomarkers.parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
-        llmCount: extractedBiomarkers.parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length
-      });
+      logger.info(
+        `Extracted ${extractedBiomarkers.parsedBiomarkers.length} biomarkers from lab result ${labResultId}`,
+        {
+          processingTime,
+          biomarkers: extractedBiomarkers.parsedBiomarkers.map((b) => b.name),
+          regexCount: extractedBiomarkers.parsedBiomarkers.filter(
+            (b) => b.extractionMethod === 'regex'
+          ).length,
+          llmCount: extractedBiomarkers.parsedBiomarkers.filter((b) => b.extractionMethod === 'llm')
+            .length,
+        }
+      );
 
       if (extractedBiomarkers.parsedBiomarkers.length > 0) {
         // Format and store biomarkers
-        const formattedBiomarkers = extractedBiomarkers.parsedBiomarkers.map(b => ({
+        const formattedBiomarkers = extractedBiomarkers.parsedBiomarkers.map((b) => ({
           name: b.name,
           value: b.value,
           unit: b.unit,
           category: b.category || 'other',
           referenceRange: b.referenceRange,
-          testDate: b.testDate instanceof Date ? b.testDate : 
-                    new Date(b.testDate || labResult.uploadedAt || new Date()),
+          testDate:
+            b.testDate instanceof Date
+              ? b.testDate
+              : new Date(b.testDate || labResult.uploadedAt || new Date()),
           source: b.extractionMethod || 'regex',
           confidence: b.confidence || 1.0,
-          sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`
+          sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`,
         }));
 
         // Store biomarkers - this will now use sequential operations
@@ -1094,26 +1206,27 @@ Ignore any text not related to biomarkers.`;
         // Update lab metadata in a separate operation
         const existingMetadata = (labResult.metadata || {}) as LabMetadata;
         const biomarkerMetadata: BiomarkerMetadata = {
-          parsedBiomarkers: formattedBiomarkers.map(b => ({
+          parsedBiomarkers: formattedBiomarkers.map((b) => ({
             name: b.name,
             value: typeof b.value === 'string' ? parseFloat(b.value) : b.value,
             unit: b.unit,
             referenceRange: b.referenceRange,
             testDate: b.testDate instanceof Date ? b.testDate.toISOString() : b.testDate,
-            category: b.category
+            category: b.category,
           })),
           parsingErrors: extractedBiomarkers.parsingErrors || [],
-          extractedAt: new Date().toISOString()
+          extractedAt: new Date().toISOString(),
         };
 
         const updatedMetadata: LabMetadata = {
           ...existingMetadata,
           size: existingMetadata.size || 0,
           biomarkers: biomarkerMetadata,
-          preprocessedText: existingMetadata.preprocessedText // Preserve the preprocessed text
+          preprocessedText: existingMetadata.preprocessedText, // Preserve the preprocessed text
         };
 
-        await db.update(labResults)
+        await db
+          .update(labResults)
           .set({ metadata: updatedMetadata })
           .where(eq(labResults.id, labResultId));
 
@@ -1122,7 +1235,8 @@ Ignore any text not related to biomarkers.`;
         logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
 
         // Update processing status to indicate no data found
-        await db.update(biomarkerProcessingStatus)
+        await db
+          .update(biomarkerProcessingStatus)
           .set({
             status: 'completed',
             completedAt: new Date(),
@@ -1131,8 +1245,8 @@ Ignore any text not related to biomarkers.`;
               processingTime,
               regexMatches: 0,
               llmExtractions: 0,
-              retryCount: 0
-            }
+              retryCount: 0,
+            },
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
       }
@@ -1140,7 +1254,8 @@ Ignore any text not related to biomarkers.`;
       const processingTime = Date.now() - startTime.getTime();
 
       // Update processing status to error
-      await db.update(biomarkerProcessingStatus)
+      await db
+        .update(biomarkerProcessingStatus)
         .set({
           status: 'error',
           completedAt: new Date(),
@@ -1148,15 +1263,15 @@ Ignore any text not related to biomarkers.`;
             processingTime,
             retryCount: 0,
             textLength: textContent?.length || 0,
-            errorDetails: error instanceof Error ? error.message : String(error)
-          }
+            errorDetails: error instanceof Error ? error.message : String(error),
+          },
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
       logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        textLength: textContent?.length || 0
+        textLength: textContent?.length || 0,
       });
 
       throw error; // Propagate the error to be handled by the caller

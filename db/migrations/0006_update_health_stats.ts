@@ -1,6 +1,5 @@
-
-import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { sql } from "drizzle-orm";
+import { type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { sql } from 'drizzle-orm';
 
 export async function up(db: PostgresJsDatabase) {
   try {

@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
-import { useUser } from "@/hooks/use-user";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Heart, Moon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/header";
-import { Link } from "wouter";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import type { SelectHealthStats } from "@db/neon-schema";
-import SupplementStreakCard from "@/components/SupplementStreakCard"; // Added import
+import { useState, useEffect } from 'react';
+import { useUser } from '@/hooks/use-user';
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, ArrowLeft, Heart, Moon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import Header from '@/components/header';
+import { Link } from 'wouter';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import type { SelectHealthStats } from '@db/neon-schema';
+import SupplementStreakCard from '@/components/SupplementStreakCard'; // Added import
 
 type HealthStatsFormData = {
   weight?: number;
@@ -52,7 +52,7 @@ export default function HealthStatsPage() {
     queryKey: ['/api/health-stats', user?.id],
     queryFn: async () => {
       const response = await fetch('/api/health-stats', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) {
         throw new Error('Failed to fetch health stats');
@@ -67,7 +67,7 @@ export default function HealthStatsPage() {
   // Initialize form data when health stats load
   useEffect(() => {
     console.log('Health stats received:', healthStats);
-    
+
     if (healthStats) {
       form.reset({
         weight: healthStats.weight || undefined,
@@ -75,7 +75,9 @@ export default function HealthStatsPage() {
         gender: healthStats.gender || undefined,
         ethnicity: healthStats.ethnicity || undefined,
         dateOfBirth: healthStats.dateOfBirth || undefined,
-        sleepHours: healthStats.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+        sleepHours: healthStats.averageSleep
+          ? Math.floor(healthStats.averageSleep / 60)
+          : undefined,
         sleepMinutes: healthStats.averageSleep ? healthStats.averageSleep % 60 : undefined,
         profilePhotoUrl: healthStats.profilePhotoUrl || undefined,
         allergies: healthStats.allergies || '',
@@ -91,7 +93,9 @@ export default function HealthStatsPage() {
         gender: healthStats.gender,
         ethnicity: healthStats.ethnicity,
         dateOfBirth: healthStats.dateOfBirth,
-        sleepHours: healthStats.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
+        sleepHours: healthStats.averageSleep
+          ? Math.floor(healthStats.averageSleep / 60)
+          : undefined,
         sleepMinutes: healthStats.averageSleep ? healthStats.averageSleep % 60 : undefined,
         profilePhotoUrl: healthStats.profilePhotoUrl,
         allergies: healthStats.allergies || '',
@@ -104,15 +108,15 @@ export default function HealthStatsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/health-stats'] });
       toast({
-        title: "Success",
-        description: "Health stats updated successfully",
+        title: 'Success',
+        description: 'Health stats updated successfully',
       });
       setIsEditing(false);
     },
     onError: (error: Error) => {
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description: error.message,
       });
     },
@@ -121,7 +125,7 @@ export default function HealthStatsPage() {
   const onSubmit = (data: HealthStatsFormData) => {
     mutation.mutate({
       ...data,
-      averageSleep: (data.sleepHours || 0) * 60 + (data.sleepMinutes || 0)
+      averageSleep: (data.sleepHours || 0) * 60 + (data.sleepMinutes || 0),
     });
   };
 
@@ -173,7 +177,10 @@ export default function HealthStatsPage() {
                       </div>
                       <div>
                         <Label className="text-white/70">Gender</Label>
-                        <select {...form.register('gender')} className="w-full p-2 rounded-md bg-white text-black">
+                        <select
+                          {...form.register('gender')}
+                          className="w-full p-2 rounded-md bg-white text-black"
+                        >
                           <option value="">Select gender...</option>
                           <option value="male">Male</option>
                           <option value="female">Female</option>
@@ -182,7 +189,10 @@ export default function HealthStatsPage() {
                       </div>
                       <div>
                         <Label className="text-white/70">Ethnicity</Label>
-                        <select {...form.register('ethnicity')} className="w-full p-2 rounded-md bg-white text-black">
+                        <select
+                          {...form.register('ethnicity')}
+                          className="w-full p-2 rounded-md bg-white text-black"
+                        >
                           <option value="">Select ethnicity...</option>
                           <option value="african">African</option>
                           <option value="asian">Asian</option>
@@ -253,11 +263,15 @@ export default function HealthStatsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-white/70">Weight</Label>
-                        <p className="text-white">{healthStats?.weight ? `${healthStats.weight} lbs` : 'Not set'}</p>
+                        <p className="text-white">
+                          {healthStats?.weight ? `${healthStats.weight} lbs` : 'Not set'}
+                        </p>
                       </div>
                       <div>
                         <Label className="text-white/70">Height</Label>
-                        <p className="text-white">{healthStats?.height ? `${healthStats.height} inches` : 'Not set'}</p>
+                        <p className="text-white">
+                          {healthStats?.height ? `${healthStats.height} inches` : 'Not set'}
+                        </p>
                       </div>
                       <div>
                         <Label className="text-white/70">Gender</Label>
@@ -281,7 +295,9 @@ export default function HealthStatsPage() {
                       </div>
                       <div>
                         <Label className="text-white/70">Allergies</Label>
-                        <p className="text-white whitespace-pre-wrap">{healthStats?.allergies || 'None listed'}</p>
+                        <p className="text-white whitespace-pre-wrap">
+                          {healthStats?.allergies || 'None listed'}
+                        </p>
                       </div>
                     </div>
                     <div className="flex justify-center">

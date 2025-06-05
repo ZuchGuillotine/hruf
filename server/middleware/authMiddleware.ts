@@ -17,7 +17,7 @@ export const setAuthInfo = (req: Request, res: Response, next: NextFunction) => 
       sessionID: req.sessionID,
       hasSession: !!req.session,
       hasUser: !!req.user,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 

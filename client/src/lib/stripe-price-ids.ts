@@ -1,10 +1,9 @@
-
 /**
  * Stripe product and price information
- * 
+ *
  * These values need to match what is set up in your Stripe dashboard.
- * 
- * Usage: 
+ *
+ * Usage:
  * - TIERS: used directly in the subscription UI to display plans and prices
  * - PRODUCTS: used to map product IDs to their respective tiers
  */
@@ -22,49 +21,49 @@ export const TIERS = {
     MONTHLY: {
       id: 'price_1RKZsdAIJBVVerrJhsQhpig2',
       price: 21.99,
-      url: 'https://buy.stripe.com/6oEdTTeEQaWT76028b'
+      url: 'https://buy.stripe.com/6oEdTTeEQaWT76028b',
     },
     YEARLY: {
       id: 'price_1RKZsdAIJBVVerrJmp9neLDz',
       price: 184.71,
-      url: 'https://buy.stripe.com/eVa177aoAfd94XSbIM'
-    }
+      url: 'https://buy.stripe.com/eVa177aoAfd94XSbIM',
+    },
   },
   pro: {
     MONTHLY: {
       id: 'price_1RFrkBAIJBVVerrJNDRc9xSL',
       price: 49.99,
-      url: 'https://buy.stripe.com/5kA5nn8gs7KH8a428e'
+      url: 'https://buy.stripe.com/5kA5nn8gs7KH8a428e',
     },
     YEARLY: {
       id: 'price_1RKZwJAIJBVVerrJjGTuhgbG',
       price: 479.88,
-      url: 'https://buy.stripe.com/8wM8zzfIU6GD760bIP'
-    }
-  }
+      url: 'https://buy.stripe.com/8wM8zzfIU6GD760bIP',
+    },
+  },
 };
 
 // Product information for server-side tier mapping
 export const PRODUCTS = {
-  'prod_SF40NCVtZWsX05': {
+  prod_SF40NCVtZWsX05: {
     name: 'Starter AI Essentials',
-    tier: 'starter'
+    tier: 'starter',
   },
-  'prod_RtcuCvjOY9gHvm': {
+  prod_RtcuCvjOY9gHvm: {
     name: 'Pro Biohacker Suite',
-    tier: 'pro'
-  }
+    tier: 'pro',
+  },
 };
 
 // Map price IDs to their tier for utilities
 const PRICE_TO_TIER: Record<string, 'starter' | 'pro'> = {
   // Starter plan price IDs
-  'price_1OpGHMAIJBVVerrJCXB9LK8z': 'starter', // Monthly
-  'price_1RKZsdAIJBVVerrJmp9neLDz': 'starter', // Yearly
+  price_1OpGHMAIJBVVerrJCXB9LK8z: 'starter', // Monthly
+  price_1RKZsdAIJBVVerrJmp9neLDz: 'starter', // Yearly
 
   // Pro plan price IDs
-  'price_1RFrkBAIJBVVerrJNDRc9xSL': 'pro',    // Monthly
-  'price_1RKZwJAIJBVVerrJjGTuhgbG': 'pro'     // Yearly
+  price_1RFrkBAIJBVVerrJNDRc9xSL: 'pro', // Monthly
+  price_1RKZwJAIJBVVerrJjGTuhgbG: 'pro', // Yearly
 };
 
 /**

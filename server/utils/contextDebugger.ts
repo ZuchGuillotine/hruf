@@ -1,4 +1,3 @@
-
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Message } from '@/lib/types';
@@ -33,8 +32,8 @@ export async function debugContext(
   type: 'query' | 'qualitative'
 ) {
   try {
-    const systemMsg = context.messages.find(m => m.role === 'system');
-    const userMsg = context.messages.find(m => m.role === 'user');
+    const systemMsg = context.messages.find((m) => m.role === 'system');
+    const userMsg = context.messages.find((m) => m.role === 'user');
 
     const debugData: DebugData = {
       timestamp: new Date().toISOString(),
@@ -46,22 +45,19 @@ export async function debugContext(
       messages: context.messages,
       tokenEstimates: {
         total: context.messages.reduce((sum, msg) => sum + (msg.content?.length || 0) / 4, 0),
-        byMessage: context.messages.map(msg => ({
+        byMessage: context.messages.map((msg) => ({
           role: msg.role,
           tokens: (msg.content?.length || 0) / 4,
-          preview: msg.content?.substring(0, 100) || ''
-        }))
+          preview: msg.content?.substring(0, 100) || '',
+        })),
       },
-      contextComponents: analyzeContext(context.messages)
+      contextComponents: analyzeContext(context.messages),
     };
 
     const filename = `${type}_context_${userId}_${debugData.timestamp.replace(/:/g, '-')}.json`;
     const debugDir = join(process.cwd(), 'debug_logs');
-    
-    await writeFile(
-      join(debugDir, filename),
-      JSON.stringify(debugData, null, 2)
-    );
+
+    await writeFile(join(debugDir, filename), JSON.stringify(debugData, null, 2));
 
     console.log(`Debug log created: ${filename}`);
   } catch (error) {
@@ -70,12 +66,12 @@ export async function debugContext(
 }
 
 function analyzeContext(messages: Message[]) {
-  const userMessage = messages.find(m => m.role === 'user')?.content || '';
-  
+  const userMessage = messages.find((m) => m.role === 'user')?.content || '';
+
   return {
     hasHealthStats: userMessage.includes('Health Stats:'),
     hasSupplementLogs: userMessage.includes('Supplement Logs:'),
     hasQualitativeObservations: userMessage.includes('Previous Observations:'),
-    hasRecentSummaries: userMessage.includes('Recent Summaries:')
+    hasRecentSummaries: userMessage.includes('Recent Summaries:'),
   };
 }

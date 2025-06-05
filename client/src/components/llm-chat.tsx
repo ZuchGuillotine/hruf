@@ -88,7 +88,11 @@ export default function LLMChat() {
         if (!streamingResponse) {
           setMessages((prev) => [
             ...prev.slice(0, prev.length - 1),
-            { role: 'assistant', content: "I'm sorry, there was a timeout while generating a response. Please try again." }
+            {
+              role: 'assistant',
+              content:
+                "I'm sorry, there was a timeout while generating a response. Please try again.",
+            },
           ]);
           setStreamingResponse('');
         }
@@ -113,7 +117,10 @@ export default function LLMChat() {
 
             setMessages((prev) => [
               ...prev.slice(0, prev.length - 1),
-              { role: 'assistant', content: "I'm sorry, there was an error generating a response. Please try again." }
+              {
+                role: 'assistant',
+                content: "I'm sorry, there was an error generating a response. Please try again.",
+              },
             ]);
             setStreamingResponse('');
           } else if (data.streaming === false) {
@@ -124,7 +131,7 @@ export default function LLMChat() {
             if (fullResponse) {
               const updatedMessages = [
                 ...messages.slice(0, messages.length - 1),
-                { role: 'assistant', content: fullResponse }
+                { role: 'assistant', content: fullResponse },
               ];
               setMessages(updatedMessages);
 
@@ -132,16 +139,16 @@ export default function LLMChat() {
               (async () => {
                 try {
                   await fetch('/api/chat/save', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    content: JSON.stringify(updatedMessages),
-                    type: 'chat',
-                    tags: ['ai_conversation'],
-                  }),
-                });
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      content: JSON.stringify(updatedMessages),
+                      type: 'chat',
+                      tags: ['ai_conversation'],
+                    }),
+                  });
                 } catch (saveError) {
                   console.error('Failed to auto-save chat:', saveError);
                 }
@@ -149,7 +156,7 @@ export default function LLMChat() {
             } else {
               setMessages((prev) => [
                 ...prev.slice(0, prev.length - 1),
-                { role: 'assistant', content: "I don't have a response for that." }
+                { role: 'assistant', content: "I don't have a response for that." },
               ]);
             }
 
@@ -160,7 +167,7 @@ export default function LLMChat() {
             setStreamingResponse((prev) => prev + newContent);
             setMessages((prev) => [
               ...prev.slice(0, prev.length - 1),
-              { role: 'assistant', content: fullResponse }
+              { role: 'assistant', content: fullResponse },
             ]);
           }
         } catch (parseError) {
@@ -184,26 +191,29 @@ export default function LLMChat() {
         setIsLoading(false);
 
         // Preserve user message and handle error state
-        const errorMessage = "I apologize, but there was an error connecting to the AI service. Please try again.";
+        const errorMessage =
+          'I apologize, but there was an error connecting to the AI service. Please try again.';
 
         setMessages((prev) => {
-          const userMessages = prev.filter(msg => msg.role === 'user');
+          const userMessages = prev.filter((msg) => msg.role === 'user');
           const lastUserMessage = userMessages[userMessages.length - 1];
 
           return [
-            ...prev.filter(msg => msg.role === 'user'),
-            { role: 'assistant', content: fullResponse || errorMessage }
+            ...prev.filter((msg) => msg.role === 'user'),
+            { role: 'assistant', content: fullResponse || errorMessage },
           ];
         });
       };
-
     } catch (error: any) {
       console.error('Error:', error);
       setIsLoading(false);
 
       setMessages((prev) => [
         ...prev.slice(0, prev.length - 1),
-        { role: 'assistant', content: "I'm sorry, an unexpected error occurred. Please try again." }
+        {
+          role: 'assistant',
+          content: "I'm sorry, an unexpected error occurred. Please try again.",
+        },
       ]);
 
       toast({
@@ -233,31 +243,25 @@ export default function LLMChat() {
       if (!response.ok) throw new Error('Failed to save chat');
 
       toast({
-        title: "Success",
-        description: "Chat saved successfully",
+        title: 'Success',
+        description: 'Chat saved successfully',
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save chat",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to save chat',
+        variant: 'destructive',
       });
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      {limitReached && (
-        <LimitReachedNotification onClose={resetLimitReached} />
-      )}
+      {limitReached && <LimitReachedNotification onClose={resetLimitReached} />}
       {error && error.includes('monthly chat limit') ? (
         <LimitReachedNotification message={error} onClose={() => setError(null)} />
       ) : (
-        error && (
-          <div className="text-red-500 mb-4">
-            {error}
-          </div>
-        )
+        error && <div className="text-red-500 mb-4">{error}</div>
       )}
       <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
@@ -265,15 +269,16 @@ export default function LLMChat() {
             <Card
               key={index}
               className={`${
-                message.role === 'assistant'
-                  ? 'bg-white/10 text-white'
-                  : 'bg-white text-[#1b4332]'
+                message.role === 'assistant' ? 'bg-white/10 text-white' : 'bg-white text-[#1b4332]'
               }`}
             >
               <CardContent className="p-4">
                 <p className="text-sm whitespace-pre-wrap">
                   {message.content}
-                  {isLoading && index === messages.length - 1 && message.role === 'assistant' && '▋'}
+                  {isLoading &&
+                    index === messages.length - 1 &&
+                    message.role === 'assistant' &&
+                    '▋'}
                 </p>
               </CardContent>
             </Card>

@@ -7,25 +7,25 @@ import logger from '../utils/logger';
 
 /**
  * Test suite for the ServiceInitializer
- * 
+ *
  * These tests verify proper initialization and shutdown of services
- * 
+ *
  * Run tests with: npm test -- --testPathPattern=serviceInitializer
  */
 
 // Mock services
 jest.mock('../services/embeddingService', () => ({
   embeddingService: {
-    generateEmbedding: jest.fn().mockResolvedValue(new Array(1536).fill(0.1))
-  }
+    generateEmbedding: jest.fn().mockResolvedValue(new Array(1536).fill(0.1)),
+  },
 }));
 
 jest.mock('../cron/summaryManager', () => ({
   summaryTaskManager: {
     startDailySummaryTask: jest.fn(),
     startWeeklySummaryTask: jest.fn(),
-    stopAllTasks: jest.fn()
-  }
+    stopAllTasks: jest.fn(),
+  },
 }));
 
 describe('Service Initializer Tests', () => {

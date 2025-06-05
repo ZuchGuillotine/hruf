@@ -1,4 +1,3 @@
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -27,16 +26,16 @@ export class ErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
-    
+
     // Log error to an error reporting service if available
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
   }
@@ -57,7 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <div className="mt-4 p-4 bg-gray-100 rounded overflow-auto max-h-48 text-xs">
                   <p className="font-bold">Error:</p>
                   <p className="text-red-600">{this.state.error.toString()}</p>
-                  
+
                   {this.state.errorInfo && (
                     <>
                       <p className="font-bold mt-2">Component Stack:</p>
@@ -70,7 +69,7 @@ export class ErrorBoundary extends Component<Props, State> {
               )}
             </CardContent>
             <CardFooter className="flex justify-center">
-              <Button 
+              <Button
                 onClick={() => {
                   this.setState({ hasError: false });
                   window.location.href = '/';

@@ -6,7 +6,10 @@ import { db } from '../../db';
 import { qualitativeLogs } from '../../db/schema';
 import { checkUserLLMLimit } from '../utils/userLimits';
 
-export async function* qualitativeChatWithAI(userId: string | number | undefined, userQuery: string) {
+export async function* qualitativeChatWithAI(
+  userId: string | number | undefined,
+  userQuery: string
+) {
   try {
     // Convert userId to number for consistent handling
     const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : (userId as number);
@@ -14,7 +17,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
     // Check user limits if we have a valid user ID
     if (!isNaN(userIdNum)) {
       const limitStatus = await checkUserLLMLimit(userIdNum);
-      
+
       // If user has reached their limit and is on trial, inform them
       if (limitStatus.hasReachedLimit && limitStatus.isOnTrial) {
         logger.info('User reached daily chat limit:', {
@@ -22,13 +25,14 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
           currentCount: limitStatus.currentCount,
           isPro: limitStatus.isPro,
           isOnTrial: limitStatus.isOnTrial,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         yield {
-          error: 'You have reached your daily limit of 10 AI interactions. Please upgrade to continue using this feature.',
+          error:
+            'You have reached your daily limit of 10 AI interactions. Please upgrade to continue using this feature.',
           limitReached: true,
-          streaming: false
+          streaming: false,
         };
         return;
       }
@@ -44,7 +48,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
     logger.info('Qualitative chat request:', {
       userId,
       messageCount: context.messages.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Create a unique request ID to track this request
@@ -56,7 +60,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
       requestId,
       model: MODELS.QUALITATIVE_CHAT,
       messageCount: context.messages.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -74,7 +78,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
           chunkSize: chunk.response?.length || 0,
           isError: !!chunk.error,
           isFirstChunk,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
 
         // Check for errors
@@ -82,7 +86,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
           logger.error(`Error in chat stream chunk:`, {
             requestId,
             error: chunk.error,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
           yield { error: chunk.error, streaming: false };
           return;
@@ -105,7 +109,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
         try {
           const conversationData = [
             { role: 'user' as const, content: userQuery },
-            { role: 'assistant' as const, content: fullResponse }
+            { role: 'assistant' as const, content: fullResponse },
           ];
 
           // Insert as qualitative log
@@ -114,36 +118,33 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
             throw new Error('Invalid user ID format');
           }
 
-          await db
-            .insert(qualitativeLogs)
-            .values({
-              userId: userIdNum,
-              content: JSON.stringify(conversationData),
-              type: 'chat',
-              tags: ['ai_conversation'],
-              metadata: {
-                savedAt: new Date().toISOString(),
-                model: MODELS.QUALITATIVE_CHAT,
-                requestId,
-                messageCount: conversationData.length,
-                totalLength: fullResponse.length
-              }
-            });
+          await db.insert(qualitativeLogs).values({
+            userId: userIdNum,
+            content: JSON.stringify(conversationData),
+            type: 'chat',
+            tags: ['ai_conversation'],
+            metadata: {
+              savedAt: new Date().toISOString(),
+              model: MODELS.QUALITATIVE_CHAT,
+              requestId,
+              messageCount: conversationData.length,
+              totalLength: fullResponse.length,
+            },
+          });
         } catch (dbError) {
           logger.error(`Failed to save chat log:`, {
             requestId,
             error: dbError instanceof Error ? dbError.message : String(dbError),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
-
     } catch (streamError) {
       logger.error(`Stream processing error:`, {
         requestId,
         error: streamError instanceof Error ? streamError.message : String(streamError),
         stack: streamError instanceof Error ? streamError.stack : undefined,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       yield { error: 'Error processing chat stream', streaming: false };
     }
@@ -152,7 +153,7 @@ export async function* qualitativeChatWithAI(userId: string | number | undefined
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     yield { error: 'Error in qualitative chat service', streaming: false };
   }

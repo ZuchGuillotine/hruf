@@ -1,8 +1,7 @@
-
-import { supplementReference } from "@db/schema";
-import { db } from "@db";
-import { sql } from "drizzle-orm";
-import { Trie } from "../utils/trie";
+import { supplementReference } from '@db/schema';
+import { db } from '@db';
+import { sql } from 'drizzle-orm';
+import { Trie } from '../utils/trie';
 
 class SupplementService {
   private trie: Trie;
@@ -23,30 +22,30 @@ class SupplementService {
 
   async initialize() {
     try {
-      console.log("Initializing supplement service...");
-      
+      console.log('Initializing supplement service...');
+
       // Load most frequently accessed supplements first
       const commonSupplements = await db
         .select({
           id: supplementReference.id,
           name: supplementReference.name,
-          category: supplementReference.category
+          category: supplementReference.category,
         })
         .from(supplementReference)
         .limit(this.PAGE_SIZE);
 
       this.trie = new Trie();
       this.loadSupplements(commonSupplements);
-      
+
       this.initialized = true;
       this.scheduleCacheRefresh();
-      
+
       // Load remaining supplements in background
       this.loadRemainingSupplements();
-      
-      console.log("Supplement service initialized with common supplements");
+
+      console.log('Supplement service initialized with common supplements');
     } catch (error) {
-      console.error("Error initializing supplement service:", error);
+      console.error('Error initializing supplement service:', error);
       throw error;
     }
   }
@@ -60,25 +59,25 @@ class SupplementService {
 
   private async loadRemainingSupplements() {
     let offset = this.PAGE_SIZE;
-    
+
     while (true) {
       const supplements = await db
         .select({
           id: supplementReference.id,
           name: supplementReference.name,
-          category: supplementReference.category
+          category: supplementReference.category,
         })
         .from(supplementReference)
         .offset(offset)
         .limit(this.PAGE_SIZE);
 
       if (supplements.length === 0) break;
-      
+
       this.loadSupplements(supplements);
       offset += this.PAGE_SIZE;
-      
+
       // Small delay to prevent overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
@@ -90,7 +89,7 @@ class SupplementService {
   async search(query: string, limit: number = 4) {
     try {
       if (!this.initialized) {
-        console.warn("Supplement service not initialized, initializing now...");
+        console.warn('Supplement service not initialized, initializing now...');
         await this.initialize();
       }
 
@@ -98,7 +97,7 @@ class SupplementService {
 
       // Try trie search first
       const trieResults = this.trie.search(query, limit);
-      
+
       if (trieResults.length >= limit) {
         return trieResults;
       }
@@ -108,7 +107,7 @@ class SupplementService {
         .select({
           id: supplementReference.id,
           name: supplementReference.name,
-          category: supplementReference.category
+          category: supplementReference.category,
         })
         .from(supplementReference)
         .where(sql`LOWER(name) LIKE LOWER(${`%${query}%`})`)
@@ -116,7 +115,7 @@ class SupplementService {
 
       return [...trieResults, ...dbResults];
     } catch (error) {
-      console.error("Error in supplement search:", error);
+      console.error('Error in supplement search:', error);
       return [];
     }
   }

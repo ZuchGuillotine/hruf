@@ -52,7 +52,7 @@ export async function sendEmail(emailData: EmailData): Promise<boolean> {
       text: emailData.text,
       html: emailData.html,
       templateId: emailData.templateId,
-      dynamicTemplateData: emailData.dynamicTemplateData
+      dynamicTemplateData: emailData.dynamicTemplateData,
     };
 
     // Send email
@@ -82,6 +82,6 @@ export async function sendWelcomeEmail(email: string, username: string): Promise
     to: email,
     subject: 'Welcome to Stack Tracker',
     text: `Hello ${username}, welcome to Stack Tracker! Thank you for joining our platform.`,
-    html: `<p>Hello ${username},</p><p>Welcome to Stack Tracker! Thank you for joining our platform.</p>`
+    html: `<p>Hello ${username},</p><p>Welcome to Stack Tracker! Thank you for joining our platform.</p>`,
   });
 }

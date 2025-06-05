@@ -1,12 +1,12 @@
-import { SelectSupplementReference } from "@db/schema";
+import { SelectSupplementReference } from '@db/schema';
 
 /**
  * TrieNode class represents a node in the Trie data structure
  * Used for efficient prefix-based searching of supplement names
  */
 class TrieNode {
-  children: Map<string, TrieNode>;     // Maps characters to child nodes
-  isEndOfWord: boolean;                // Marks if this node represents a complete word
+  children: Map<string, TrieNode>; // Maps characters to child nodes
+  isEndOfWord: boolean; // Marks if this node represents a complete word
   data: SelectSupplementReference | null; // Stores supplement data at complete words
 
   constructor() {
@@ -19,7 +19,7 @@ class TrieNode {
 /**
  * Calculates the Levenshtein distance between two strings
  * Used for fuzzy matching when exact matches aren't found
- * 
+ *
  * @param str1 First string to compare
  * @param str2 Second string to compare
  * @returns Number representing the edit distance between strings
@@ -27,7 +27,9 @@ class TrieNode {
 function levenshteinDistance(str1: string, str2: string): number {
   const m = str1.length;
   const n = str2.length;
-  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const dp: number[][] = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0));
 
   for (let i = 0; i <= m; i++) {
     dp[i][0] = i;
@@ -42,9 +44,9 @@ function levenshteinDistance(str1: string, str2: string): number {
         dp[i][j] = dp[i - 1][j - 1];
       } else {
         dp[i][j] = Math.min(
-          dp[i - 1][j - 1] + 1,  // substitution
-          dp[i - 1][j] + 1,      // deletion
-          dp[i][j - 1] + 1       // insertion
+          dp[i - 1][j - 1] + 1, // substitution
+          dp[i - 1][j] + 1, // deletion
+          dp[i][j - 1] + 1 // insertion
         );
       }
     }
@@ -56,7 +58,7 @@ function levenshteinDistance(str1: string, str2: string): number {
 /**
  * Normalizes vitamin and supplement names for consistent searching
  * Handles common misspellings and variations in supplement names
- * 
+ *
  * @param input Raw supplement name input
  * @returns Normalized string for consistent matching
  */
@@ -68,7 +70,7 @@ function normalizeVitaminName(input: string): string {
 
   // Common vitamin spelling patterns
   normalized = normalized
-    .replace(/vit+a*min/g, 'vitamin')  // Handle repeated letters
+    .replace(/vit+a*min/g, 'vitamin') // Handle repeated letters
     .replace(/vitamiin/g, 'vitamin')
     .replace(/vitmin/g, 'vitamin')
     .replace(/vitamen/g, 'vitamin')
@@ -84,7 +86,7 @@ function normalizeVitaminName(input: string): string {
 export class Trie {
   private root: TrieNode;
   private supplements: Map<string, SelectSupplementReference>;
-  private baseMaxDistance: number = 2;  // Base Levenshtein distance for fuzzy matching
+  private baseMaxDistance: number = 2; // Base Levenshtein distance for fuzzy matching
 
   constructor() {
     this.root = new TrieNode();
@@ -206,9 +208,9 @@ export class Trie {
    * Used for collecting all matches for a prefix
    */
   private _findAllWords(
-    node: TrieNode, 
-    prefix: string, 
-    results: SelectSupplementReference[], 
+    node: TrieNode,
+    prefix: string,
+    results: SelectSupplementReference[],
     limit: number
   ) {
     if (results.length >= limit) return;

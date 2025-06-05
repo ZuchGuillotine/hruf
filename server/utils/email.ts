@@ -1,4 +1,3 @@
-
 import { sendEmail } from '../services/emailService';
 import logger from './logger';
 
@@ -121,7 +120,11 @@ export async function sendWelcomeEmail(to: string, username: string): Promise<vo
 /**
  * Sends a notification about suspicious login activity.
  */
-export async function sendSecurityAlertEmail(to: string, location: string, device: string): Promise<void> {
+export async function sendSecurityAlertEmail(
+  to: string,
+  location: string,
+  device: string
+): Promise<void> {
   const msg = {
     to,
     from: process.env.SENDGRID_FROM_EMAIL,

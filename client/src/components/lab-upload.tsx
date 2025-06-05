@@ -1,12 +1,11 @@
-
-import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
-import { Button } from "@/components/ui/button";
-import { Upload, File, Check, X, ArrowRight, Lock } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { Link } from "wouter";
-import { useUser } from "@/hooks/use-user";
-import { Card } from "@/components/ui/card";
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Button } from '@/components/ui/button';
+import { Upload, File, Check, X, ArrowRight, Lock } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
+import { useUser } from '@/hooks/use-user';
+import { Card } from '@/components/ui/card';
 
 interface LabUploadProps {
   onUploadSuccess?: () => void;
@@ -21,14 +20,14 @@ const defaultAllowedTypes = {
   'application/pdf': ['.pdf'],
   'application/msword': ['.doc'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'image/*': ['.png', '.jpg', '.jpeg']
+  'image/*': ['.png', '.jpg', '.jpeg'],
 };
 
-export default function LabUpload({ 
-  onUploadSuccess, 
+export default function LabUpload({
+  onUploadSuccess,
   maxFiles = 5,
   allowedFileTypes = defaultAllowedTypes,
-  uploadEndpoint = '/api/labs'
+  uploadEndpoint = '/api/labs',
 }: LabUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -53,35 +52,39 @@ export default function LabUpload({
     );
   }
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    // For core tier, limit to 3 files total
-    if (user?.subscriptionTier === 'core') {
-      const totalFiles = (user.labUploadsCount || 0) + acceptedFiles.length;
-      if (totalFiles > 3) {
-        toast({
-          title: "Upload limit reached",
-          description: "Core tier is limited to 3 lab uploads. Upgrade to Pro for unlimited uploads.",
-          variant: "destructive"
-        });
-        return;
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      // For core tier, limit to 3 files total
+      if (user?.subscriptionTier === 'core') {
+        const totalFiles = (user.labUploadsCount || 0) + acceptedFiles.length;
+        if (totalFiles > 3) {
+          toast({
+            title: 'Upload limit reached',
+            description:
+              'Core tier is limited to 3 lab uploads. Upgrade to Pro for unlimited uploads.',
+            variant: 'destructive',
+          });
+          return;
+        }
       }
-    }
 
-    setFiles(prev => {
-      const newFiles = [...prev, ...acceptedFiles];
-      return newFiles.slice(0, maxFiles);
-    });
-  }, [maxFiles, user]);
+      setFiles((prev) => {
+        const newFiles = [...prev, ...acceptedFiles];
+        return newFiles.slice(0, maxFiles);
+      });
+    },
+    [maxFiles, user]
+  );
 
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: allowedFileTypes,
     maxFiles,
-    multiple: true
+    multiple: true,
   });
 
   const handleUpload = async () => {
@@ -95,14 +98,14 @@ export default function LabUpload({
         const response = await fetch(uploadEndpoint, {
           method: 'POST',
           body: formData,
-          credentials: 'include'
+          credentials: 'include',
         });
 
         if (!response.ok) {
           const data = await response.json();
           if (response.status === 429) {
             toast({
-              title: "Upload limit reached",
+              title: 'Upload limit reached',
               description: (
                 <div className="flex flex-col gap-2">
                   <span>{data.message}</span>
@@ -111,7 +114,7 @@ export default function LabUpload({
                   </Link>
                 </div>
               ),
-              variant: "destructive"
+              variant: 'destructive',
             });
             return;
           }
@@ -121,7 +124,7 @@ export default function LabUpload({
 
       setFiles([]);
       toast({
-        title: "Success",
+        title: 'Success',
         description: (
           <div className="flex items-center gap-2">
             <span className="text-yellow-500 text-xl">★</span>
@@ -131,19 +134,19 @@ export default function LabUpload({
             </Link>
           </div>
         ),
-        duration: 3000
+        duration: 3000,
       });
-      
+
       if (onUploadSuccess) {
         onUploadSuccess();
       }
     } catch (error) {
       console.error('Upload failed:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to upload lab results",
-        variant: "destructive",
-        duration: 3000
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to upload lab results',
+        variant: 'destructive',
+        duration: 3000,
       });
     } finally {
       setUploading(false);
@@ -152,7 +155,7 @@ export default function LabUpload({
 
   const allowedExtensions = Object.values(allowedFileTypes)
     .flat()
-    .map(ext => ext.replace('.', '').toUpperCase())
+    .map((ext) => ext.replace('.', '').toUpperCase())
     .join(', ');
 
   const uploadLimit = user?.subscriptionTier === 'core' ? 3 : Infinity;
@@ -165,18 +168,16 @@ export default function LabUpload({
           Remaining uploads: {remainingUploads} of {uploadLimit}
         </div>
       )}
-      
-      <div 
-        {...getRootProps()} 
+
+      <div
+        {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
           ${isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'}`}
       >
         <input {...getInputProps()} />
         <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
         <p className="mt-2 font-medium">Drag & drop lab files here, or click to select</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Supported formats: {allowedExtensions}
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Supported formats: {allowedExtensions}</p>
         <p className="text-xs text-muted-foreground mt-1">
           Maximum {maxFiles} file{maxFiles !== 1 ? 's' : ''} per upload
         </p>
@@ -185,7 +186,10 @@ export default function LabUpload({
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file, index) => (
-            <div key={file.name} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+            <div
+              key={file.name}
+              className="flex items-center justify-between p-2 bg-muted/30 rounded"
+            >
               <div className="flex items-center gap-2 text-sm">
                 <File className="h-4 w-4" />
                 <span className="truncate max-w-[200px]">{file.name}</span>
@@ -200,11 +204,7 @@ export default function LabUpload({
               </Button>
             </div>
           ))}
-          <Button 
-            onClick={handleUpload} 
-            disabled={uploading}
-            className="w-full"
-          >
+          <Button onClick={handleUpload} disabled={uploading} className="w-full">
             {uploading ? (
               <span>Uploading...</span>
             ) : (

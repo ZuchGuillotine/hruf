@@ -1,10 +1,9 @@
-
 import express, { type Express } from 'express';
-import { 
+import {
   generateDailySummary,
   generateWeeklySummary,
   getSummaries,
-  triggerRealtimeSummarization
+  triggerRealtimeSummarization,
 } from '../controllers/summaryController';
 
 // Setup summary routes
@@ -15,7 +14,7 @@ function setupSummaryRoutes(app: Express) {
   // Auth middleware for all routes
   router.use((req, res, next) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
+      return res.status(401).json({ error: 'Authentication required' });
     }
     next();
   });
@@ -23,10 +22,10 @@ function setupSummaryRoutes(app: Express) {
   // Summary generation routes
   router.post('/daily', generateDailySummary);
   router.post('/weekly', generateWeeklySummary);
-  
+
   // Summary retrieval routes
   router.get('/', getSummaries);
-  
+
   // Trigger real-time summarization
   router.post('/realtime', triggerRealtimeSummarization);
 

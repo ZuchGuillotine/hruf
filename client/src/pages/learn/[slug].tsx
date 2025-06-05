@@ -1,13 +1,13 @@
-import { Fragment } from "react";
-import { useRoute } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import LandingHeader from "@/components/landing-header";
-import Footer from "@/components/footer";
-import { Loader2 } from "lucide-react";
-import type { BlogPost } from "@/lib/types";
+import { Fragment } from 'react';
+import { useRoute } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import LandingHeader from '@/components/landing-header';
+import Footer from '@/components/footer';
+import { Loader2 } from 'lucide-react';
+import type { BlogPost } from '@/lib/types';
 
 export default function BlogPostPage() {
-  const [, params] = useRoute("/learn/:slug");
+  const [, params] = useRoute('/learn/:slug');
   const slug = params?.slug;
 
   const { data: post, isLoading } = useQuery<BlogPost>({
@@ -17,7 +17,7 @@ export default function BlogPostPage() {
       if (!res.ok) throw new Error('Failed to fetch post');
       return res.json();
     },
-    enabled: !!slug
+    enabled: !!slug,
   });
 
   if (isLoading) {
@@ -51,7 +51,7 @@ export default function BlogPostPage() {
       <LandingHeader />
       <main className="container mx-auto py-12 px-4 max-w-4xl">
         <article className="prose prose-lg mx-auto">
-          <img 
+          <img
             src={post.thumbnailUrl}
             alt={post.title}
             className="w-full h-[400px] object-cover rounded-lg mb-8"
