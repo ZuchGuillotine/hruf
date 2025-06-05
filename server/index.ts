@@ -83,7 +83,7 @@ if (!sessionSecret || sessionSecret.length < 32) {
   );
 }
 
-const sessionConfig = {
+const sessionConfig: session.SessionOptions = {
   secret: sessionSecret || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false, // Don't create sessions until something is stored
@@ -92,19 +92,45 @@ const sessionConfig = {
     ttl: DAY_IN_MS, // Session TTL (time to live)
   }),
   cookie: {
-    secure: app.get('env') === 'production', // HTTPS only in production
-    httpOnly: true, // Prevent JavaScript access to cookies
-    maxAge: DAY_IN_MS,
-    sameSite: app.get('env') === 'production' ? ('none' as const) : ('lax' as const), // Allow cross-site requests in production with HTTPS
-    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
   },
-  name: 'stacktracker.sid', // Custom name to avoid default "connect.sid"
 };
 
 // Apply secure cookies only with HTTPS in production
-if (app.get('env') === 'production' && sessionConfig.cookie.sameSite === 'none') {
-  sessionConfig.cookie.secure = true; // Must be secure if sameSite is none
+if (app.get('env') === 'production') {
+  sessionConfig.cookie!.secure = true; // Must be secure if sameSite is none
 }
+
+// HEALTH CHECK ENDPOINTS - specific paths only
+// These endpoints respond immediately without any service dependencies
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime())
+  });
+});
+
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+app.get('/ready', (req, res) => {
+  res.status(200).json({
+    status: "ready",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/readiness', (req, res) => {
+  res.status(200).json({
+    status: "ready",
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Core middleware setup - order is important
 app.use(session(sessionConfig));
@@ -144,14 +170,14 @@ app.get(['/health', '/api/health'], (req, res) => {
   return healthCheck(req, res);
 });
 
-// Setup routes and error handling
+// Register all API routes first
 setupQueryRoutes(app);
 setupSummaryRoutes(app);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/admin', adminRoutes);
 const server = registerRoutes(app);
 
-// Global error handling middleware
+// Global error handling middleware for API routes
 app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -291,8 +317,13 @@ async function handleShutdown() {
   console.log('Received shutdown signal, closing server...');
 
   try {
-    // Shutdown services gracefully
-    await serviceInitializer.shutdownServices();
+    // Shutdown services gracefully only if they were initialized
+    try {
+      const { serviceInitializer } = await import('./services/serviceInitializer');
+      await serviceInitializer.shutdownServices();
+    } catch (error) {
+      console.log('Service initializer not loaded, skipping service shutdown');
+    }
 
     // Close server connections
     server.close(() => {

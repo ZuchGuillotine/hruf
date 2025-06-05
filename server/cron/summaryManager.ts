@@ -1,9 +1,23 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 05/06/2025 - 14:00:36
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 05/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/cron/summaryManager.ts
 
 import { advancedSummaryService } from '../services/advancedSummaryService';
 import { labSummaryService } from '../services/labSummaryService';
-import cron from 'node-cron';
+import { db } from '../../db';
 import { sql } from 'drizzle-orm';
+import { labResults } from '../../db/schema';
+import cron from 'node-cron';
 import logger from '../utils/logger';
 
 /**
@@ -12,7 +26,7 @@ import logger from '../utils/logger';
 class SummaryTaskManager {
   private dailyInterval: NodeJS.Timeout | null = null;
   private weeklyInterval: NodeJS.Timeout | null = null;
-  private labProcessingTask: ReturnType<typeof cron.schedule> | null = null;
+  private labProcessingTask: cron.ScheduledTask | null = null;
 
   /**
    * Start the daily summary task
@@ -154,10 +168,7 @@ class SummaryTaskManager {
       const todaySummaryId = await advancedSummaryService.generateDailySummary(userId, today);
 
       // Also generate or ensure yesterday's summary exists
-      const yesterdaySummaryId = await advancedSummaryService.generateDailySummary(
-        userId,
-        yesterday
-      );
+      const yesterdaySummaryId = await advancedSummaryService.generateDailySummary(userId, yesterday);
 
       logger.info(`Real-time summary completed for user ${userId}:`, {
         todaySummaryId,
@@ -172,29 +183,16 @@ class SummaryTaskManager {
   }
 
   /**
-   * Stop all scheduled tasks
-   */
-  /**
-   * Start lab results processing task
-   * @param hour Hour of the day to run the task (0-23)
-   */
-  /**
    * Start lab results processing task
    * @param hour Hour of the day to run the task (0-23)
    */
   startLabProcessingTask(hour: number = 3): void {
     const cronSchedule = `0 0 ${hour} * * *`; // Run at specified hour daily
-
-    logger.info(`Scheduling lab processing task to run at ${hour}:00 AM daily`);
-
     this.labProcessingTask = cron.schedule(cronSchedule, async () => {
-      try {
-        logger.info('Running scheduled lab processing task');
-        await this.processUnprocessedLabResults();
-      } catch (error) {
-        logger.error('Error in scheduled lab processing task:', error);
-      }
+      logger.info('Starting scheduled lab results processing');
+      await this.processUnprocessedLabResults();
     });
+    logger.info(`Lab processing task scheduled for ${hour}:00 AM daily`);
   }
 
   /**
@@ -255,12 +253,6 @@ class SummaryTaskManager {
     if (this.labProcessingTask) {
       this.labProcessingTask.stop();
       this.labProcessingTask = null;
-    }
-
-    if (this.labProcessingTask) {
-      this.labProcessingTask.stop();
-      this.labProcessingTask = null;
-      logger.info('Lab processing task stopped');
     }
 
     logger.info('All summary tasks stopped');

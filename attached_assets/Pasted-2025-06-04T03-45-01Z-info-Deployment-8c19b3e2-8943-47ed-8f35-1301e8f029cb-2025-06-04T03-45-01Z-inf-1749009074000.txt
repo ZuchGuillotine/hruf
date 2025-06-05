@@ -1,0 +1,165 @@
+2025-06-04T03:45:01Z info: Deployment: 8c19b3e2-8943-47ed-8f35-1301e8f029cb
+2025-06-04T03:45:01Z info: Build: 2d478653-b97c-4978-8a73-9969fbe6cd00
+2025-06-04T03:45:01Z info: Connecting to builder
+2025-06-04T03:45:03Z info: Builder connected
+2025-06-04T03:45:03Z info: Installing packages
+2025-06-04T03:45:03Z info: Starting Build
+
+> rest-express@1.0.0 build
+> npm run build:client && npm run build:server
+
+
+
+> rest-express@1.0.0 build:client
+> vite build
+
+
+vite v5.4.19 building for production...
+
+transforming...
+
+✓ 2903 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+../dist/index.html                         4.14 kB │ gzip:   1.42 kB
+
+../dist/assets/index-DX6Ro_MC.css         98.62 kB │ gzip:  15.92 kB
+
+../dist/assets/contact-Bsgoteni.js         0.78 kB │ gzip:   0.41 kB
+
+../dist/assets/index-BOQHE2sn.js           1.01 kB │ gzip:   0.47 kB
+
+../dist/assets/index-D0YWOcpj.js           1.80 kB │ gzip:   0.86 kB
+../dist/assets/_slug_-D9BOA4o1.js          2.92 kB │ gzip:   1.10 kB
+
+../dist/assets/blog-DCc-8IJ7.js            6.40 kB │ gzip:   2.22 kB
+
+../dist/assets/query-vendor-D2zxK6I_.js   38.90 kB │ gzip:  11.62 kB
+
+../dist/assets/ui-vendor-Dfzj-_mw.js      83.35 kB │ gzip:  27.97 kB
+
+../dist/assets/react-vendor-DrrtegDc.js  146.48 kB │ gzip:  47.82 kB
+
+../dist/assets/index-2q0lh3Tn.js         831.09 kB │ gzip: 229.06 kB
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+✓ built in 8.58s
+
+
+> rest-express@1.0.0 build:server
+> esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server
+
+
+
+  dist/server/index.js  341.0kb
+
+⚡ Done in 223ms
+
+npm notice
+npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+npm notice To update run: npm install -g npm@11.4.1
+npm notice
+
+2025-06-04T03:45:24Z info: Pushing pid1 binary layer...
+2025-06-04T03:45:25Z info: Pushing Repl layer...
+2025-06-04T03:45:25Z info: Pushing hosting layer...
+2025-06-04T03:45:25Z info: Retrieved cached nix layer
+2025-06-04T03:45:26Z info: Created pid1 binary layer
+2025-06-04T03:45:26Z info: Created hosting layer
+2025-06-04T03:45:56Z info: Created Repl layer
+2025-06-04T03:45:57Z info: Pushed image manifest
+2025-06-04T03:45:58Z info: Pushed soci index manifest
+2025-06-04T03:46:02Z info: Creating Autoscale service
+  templateIds: {
+  },
+SendGrid Configuration: {
+DATABASE_URL at db/index.ts: postgresql://neondb_owner:npg_kgdQ1p6UmPiA@ep-lucky-mode-a4qmis4i.us-east-1.aws.neon.tech/neondb?sslmode=require
+starting up user application
+info: Embedding service initialized with LRU cache {"timestamp":"2025-06-04T03:46:39.888Z"}
+  environment: 'development',
+Google OAuth Configuration: {
+}
+    hasCustomDomain: true,
+  environment: 'development',
+    hasBaseUrl: false
+  timestamp: '2025-06-04T03:46:39.936Z'
+    hasReplSlug: true,
+  hasClientId: true,
+    PASSWORD_RESET: 'd-xxxxxxxxxxxxx',
+  envVars: {
+  callbackUrl: 'https://workspace.BenjaminCox.repl.co/auth/google/callback',
+  fromEmail: 'accounts@stacktracker.io',
+    DRIP_2: 'd-xxxxxxxxxxxxx',
+}
+    DRIP_3: 'd-xxxxxxxxxxxxx'
+  hasClientSecret: true,
+    hasReplOwner: true,
+  callbackUrl: 'https://workspace.BenjaminCox.repl.co/auth/google/callback',
+forwarding local port 5000 to external port 80 (mapped as 1104)
+  IS_PRODUCTION: true
+  timestamp: '2025-06-04T03:46:39.930Z'
+    DRIP_1: 'd-xxxxxxxxxxxxx',
+Google OAuth Configuration: {
+    WELCOME: 'd-fe1c448989a34f4697885de8d504b960',
+    hasCustomDomain: true,
+  host: '0.0.0.0',
+  isProd: false,
+  apiKeyExists: true,
+}
+    hasReplSlug: true,
+  },
+  REPLIT_DEPLOYMENT: '1',
+  isProd: false,
+  envVars: {
+  hasClientSecret: true,
+    hasReplOwner: true,
+  NODE_ENV: undefined,
+Server started successfully, health checks are now available
+}
+  hasClientId: true,
+Server startup configuration: {
+Supplement service initialized for lazy loading
+}
+    hasBaseUrl: false
+  port: 5000,
+  isProduction: true
+  nodeEnv: undefined,
+  }
+    TWO_FACTOR: 'd-xxxxxxxxxxxxx',
+  REPL_SLUG: 'workspace',
+  replitDeployment: '1',
+Environment check: {
+3:46:39 AM [express] Server started successfully on 0.0.0.0:5000
+🚀 Server running on 0.0.0.0:5000 (production)
+Production mode - serving static files from: /home/runner/workspace/dist
+info: Initializing supplement services... {"timestamp":"2025-06-04T03:46:42.057Z"}
+info: Lab results services initialized successfully {"timestamp":"2025-06-04T03:46:42.057Z"}
+info: PGVector services initialized successfully {"timestamp":"2025-06-04T03:46:42.451Z"}
+info: Scheduled tasks not started in development/deployment mode {"timestamp":"2025-06-04T03:46:42.451Z"}
+info: Preloading PDF processing modules... {"timestamp":"2025-06-04T03:46:42.053Z"}
+info: Starting background service initialization... {"timestamp":"2025-06-04T03:46:42.049Z"}
+info: Supplement services initialized successfully {"timestamp":"2025-06-04T03:46:42.057Z"}
+info: OpenAI embedding generation verified successfully {"timestamp":"2025-06-04T03:46:42.384Z"}
+Starting background service initialization...
+info: Initializing summarization services... {"timestamp":"2025-06-04T03:46:42.052Z"}
+info: EmbeddingService initialized successfully {"timestamp":"2025-06-04T03:46:42.451Z"}
+info: Initializing PGVector services... {"timestamp":"2025-06-04T03:46:42.049Z"}
+info: Uploads directory verified with correct permissions {"timestamp":"2025-06-04T03:46:42.053Z"}
+Supplement service initialized for lazy loading
+info: Initializing lab results services... {"timestamp":"2025-06-04T03:46:42.053Z"}
+Supplement service configured for lazy loading
+info: Initializing EmbeddingService... {"timestamp":"2025-06-04T03:46:42.050Z"}
+info: Background service initialization completed {"timestamp":"2025-06-04T03:46:42.451Z"}
+info: Summarization services initialized successfully {"timestamp":"2025-06-04T03:46:42.385Z"}
+info: PDF processing module loaded successfully {"timestamp":"2025-06-04T03:46:42.128Z"}
+Background service initialization completed successfully
+2025-06-04T03:48:34Z error: The deployment is failing health checks. This can happen if the application isn't responding, responds with an error, or doesn't respond in time. Health checks are sent to the / endpoint by default and must respond as soon as possible. Make sure that the / endpoint is implemented and returns a 200 status code in a timely manner. Avoid doing expensive or long running operations on the / endpoint, prefer deferring them to a different route. Check the logs for more information.

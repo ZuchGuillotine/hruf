@@ -41,9 +41,24 @@ export async function setupVite(app: Express, server: Server) {
     appType: 'custom',
   });
 
-  app.use(vite.middlewares);
-  app.use('*', async (req, res, next) => {
+  // Only handle non-API routes with Vite middleware
+  app.use((req, res, next) => {
+    // Skip API routes and let Express handle them
+    if (req.originalUrl.startsWith('/api/')) {
+      return next();
+    }
+    // Apply Vite middleware for frontend routes
+    vite.middlewares(req, res, next);
+  });
+
+  // Handle frontend routes (non-API) with Vite
+  app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
+
+    // Skip API routes - let them be handled by Express
+    if (url.startsWith('/api/')) {
+      return next();
+    }
 
     try {
       const clientTemplate = path.resolve(__dirname, '..', 'client', 'index.html');
@@ -61,69 +76,33 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Try multiple possible static file locations
-  const possiblePaths = [
-    path.resolve(__dirname, 'public'),
-    path.resolve(__dirname, '..', 'dist', 'public'),
-    path.resolve(process.cwd(), 'dist', 'public'),
-    path.resolve(process.cwd(), 'dist'),
-  ];
+  // When server is compiled to dist/server/, the frontend build is at dist/
+  // So we need to go up one directory from the server output location
+  const distPath = path.resolve(__dirname, "..");
 
-  let distPath = null;
+  console.log('Static file serving configuration:', {
+    __dirname,
+    distPath,
+    exists: fs.existsSync(distPath),
+    indexExists: fs.existsSync(path.join(distPath, 'index.html'))
+  });
 
-  // Find the first existing path
-  for (const checkPath of possiblePaths) {
-    console.log('Checking for static files at:', checkPath);
-    if (fs.existsSync(checkPath)) {
-      const indexPath = path.join(checkPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        distPath = checkPath;
-        console.log('✅ Found static files with index.html at:', distPath);
-        break;
-      } else {
-        console.log('❌ No index.html found at:', checkPath);
-      }
-    } else {
-      console.log("❌ Directory doesn't exist:", checkPath);
-    }
+  // Check if index.html exists
+  const indexPath = path.join(distPath, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    throw new Error(
+      `Could not find index.html at: ${indexPath}`,
+    );
   }
-
-  if (!distPath) {
-    console.error('❌ No valid static file directory found!');
-    console.error('Searched paths:', possiblePaths);
-    console.error('Current working directory:', process.cwd());
-    console.error('__dirname:', __dirname);
-
-    // List contents of potential directories for debugging
-    for (const checkPath of possiblePaths) {
-      try {
-        const parentDir = path.dirname(checkPath);
-        if (fs.existsSync(parentDir)) {
-          console.error(`Contents of ${parentDir}:`, fs.readdirSync(parentDir));
-        }
-      } catch (error) {
-        console.error(`Error reading ${checkPath}:`, error);
-      }
-    }
-
-    throw new Error('Could not find the build directory with index.html');
-  }
-
-  console.log('✅ Using static files from:', distPath);
-  console.log('Static directory contents:', fs.readdirSync(distPath));
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use('*', (_req, res) => {
-    const indexPath = path.resolve(distPath, 'index.html');
-    console.log('Serving index.html from:', indexPath);
-
-    if (!fs.existsSync(indexPath)) {
-      console.error('index.html not found at:', indexPath);
-      return res.status(404).send('index.html not found');
+  // Fall through to index.html if the file doesn't exist
+  app.use("*", (req, res) => {
+    // Skip API routes
+    if (req.originalUrl.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API route not found' });
     }
-
     res.sendFile(indexPath);
   });
 }

@@ -66,122 +66,119 @@ export function registerRoutes(app: Express): Server {
   app.use('/api', postPaymentRouter);
 
   // Legacy post-payment registration route
-  app.use(
-    '/api',
-    express.Router().post('/register-post-payment', async (req, res) => {
+  app.use('/api', express.Router().post('/register-post-payment', async (req, res) => {
+    try {
+      // Validate request data
+      const { username, email, password, sessionId, subscriptionTier, purchaseId } = req.body;
+
+      if (!username || !email || !password || !sessionId) {
+        return res.status(400).json({ 
+          message: 'Invalid registration data', 
+          errors: 'Missing required fields'
+        });
+      }
+
+      // Check if user already exists
+      const existingUserCount = await db
+        .select({ count: sql`count(*)` })
+        .from(users)
+        .where(eq(users.email, email))
+        .then(rows => Number(rows[0]?.count || '0'));
+
+      if (existingUserCount > 0) {
+        return res.status(400).json({ message: 'User with this email already exists' });
+      }
+
+      // Verify Stripe session exists and is valid
+      let stripeSubscriptionId = null;
+      let verified = false;
+      let verifiedTier = subscriptionTier || 'starter';
+
       try {
-        // Validate request data
-        const { username, email, password, sessionId, subscriptionTier, purchaseId } = req.body;
+        if (sessionId) {
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+          const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-        if (!username || !email || !password || !sessionId) {
-          return res.status(400).json({
-            message: 'Invalid registration data',
-            errors: 'Missing required fields',
-          });
-        }
+          if (session && session.payment_status === 'paid') {
+            verified = true;
 
-        // Check if user already exists
-        const existingUserCount = await db
-          .select({ count: sql`count(*)` })
-          .from(users)
-          .where(eq(users.email, email))
-          .then((rows) => Number(rows[0]?.count || '0'));
+            // Set subscription ID if available
+            if (session.subscription) {
+              stripeSubscriptionId = session.subscription as string;
 
-        if (existingUserCount > 0) {
-          return res.status(400).json({ message: 'User with this email already exists' });
-        }
+              // Get more details about the subscription
+              const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
 
-        // Verify Stripe session exists and is valid
-        let stripeSubscriptionId = null;
-        let verified = false;
-        let verifiedTier = subscriptionTier || 'starter';
+              // Set the verified tier based on the product
+              if (subscription && subscription.items?.data[0]?.price?.product) {
+                const productId = subscription.items.data[0].price.product;
 
-        try {
-          if (sessionId) {
-            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-            const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-            if (session && session.payment_status === 'paid') {
-              verified = true;
-
-              // Set subscription ID if available
-              if (session.subscription) {
-                stripeSubscriptionId = session.subscription as string;
-
-                // Get more details about the subscription
-                const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-
-                // Set the verified tier based on the product
-                if (subscription && subscription.items?.data[0]?.price?.product) {
-                  const productId = subscription.items.data[0].price.product;
-
-                  // Map product IDs to subscription tiers
-                  if (typeof productId === 'string') {
-                    if (productId === 'prod_SF40NCVtZWsX05') {
-                      verifiedTier = 'starter';
-                    } else if (productId === 'prod_RtcuCvjOY9gHvm') {
-                      verifiedTier = 'pro';
-                    }
+                // Map product IDs to subscription tiers
+                if (typeof productId === 'string') {
+                  if (productId === 'prod_SF40NCVtZWsX05') {
+                    verifiedTier = 'starter';
+                  } else if (productId === 'prod_RtcuCvjOY9gHvm') {
+                    verifiedTier = 'pro';
                   }
                 }
               }
             }
           }
-        } catch (error) {
-          console.error('Error verifying Stripe session:', error);
-          // We'll still create the account, but as free tier
-          verified = false;
-          verifiedTier = 'free';
         }
-
-        // Create the user account with crypto for password hashing
-        const salt = crypto.randomBytes(16).toString('hex');
-        const buf = crypto.scryptSync(password, salt, 64);
-        const hashedPassword = `${buf.toString('hex')}.${salt}`;
-
-        // Create the user account
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            username,
-            email,
-            password: hashedPassword,
-            subscriptionTier: verified ? verifiedTier : 'free',
-            stripeSubscriptionId,
-            stripeCustomerId: null, // Will be updated later if needed
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            emailVerified: true, // Auto-verify post-payment users
-          })
-          .returning();
-
-        if (!newUser) {
-          return res.status(500).json({ message: 'Failed to create user account' });
-        }
-
-        // Log the user in (create a session)
-        req.login(newUser, (err) => {
-          if (err) {
-            console.error('Error logging in after registration:', err);
-            return res.status(500).json({ message: 'Account created but login failed' });
-          }
-
-          // Return success with user data (excluding sensitive fields)
-          const { password, ...userWithoutPassword } = newUser;
-          return res.status(201).json({
-            message: 'Account created successfully',
-            user: userWithoutPassword,
-          });
-        });
-      } catch (error: any) {
-        console.error('Error in post-payment registration:', error);
-        res.status(500).json({
-          message: 'Registration failed',
-          error: error.message,
-        });
+      } catch (error) {
+        console.error('Error verifying Stripe session:', error);
+        // We'll still create the account, but as free tier
+        verified = false;
+        verifiedTier = 'free';
       }
-    })
-  );
+
+      // Create the user account with crypto for password hashing
+      const salt = crypto.randomBytes(16).toString('hex');
+      const buf = crypto.scryptSync(password, salt, 64);
+      const hashedPassword = `${buf.toString('hex')}.${salt}`;
+
+      // Create the user account
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          username,
+          email,
+          password: hashedPassword,
+          subscriptionTier: verified ? verifiedTier : 'free',
+          stripeSubscriptionId,
+          stripeCustomerId: null, // Will be updated later if needed
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          emailVerified: true, // Auto-verify post-payment users
+        })
+        .returning();
+
+      if (!newUser) {
+        return res.status(500).json({ message: 'Failed to create user account' });
+      }
+
+      // Log the user in (create a session)
+      req.login(newUser, (err) => {
+        if (err) {
+          console.error('Error logging in after registration:', err);
+          return res.status(500).json({ message: 'Account created but login failed' });
+        }
+
+        // Return success with user data (excluding sensitive fields)
+        const { password, ...userWithoutPassword } = newUser;
+        return res.status(201).json({ 
+          message: 'Account created successfully',
+          user: userWithoutPassword
+        });
+      });
+    } catch (error: any) {
+      console.error('Error in post-payment registration:', error);
+      res.status(500).json({ 
+        message: 'Registration failed',
+        error: error.message
+      });
+    }
+  }));
 
   // Middleware to check admin role
   const requireAdmin = (req: Request, res: Response, next: Function) => {
@@ -1362,7 +1359,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Remove base route - let Vite serve the React application
+  // Health check endpoints
+  app.get('/api/health-check', healthCheck); // API health check endpoint
 
   // Add the ChatGPT endpoint
   app.post('/api/chat', async (req, res) => {

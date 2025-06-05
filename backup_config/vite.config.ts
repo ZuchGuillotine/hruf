@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -18,19 +17,5 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist/server/public'),
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'wouter'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-label'],
-          'query-vendor': ['@tanstack/react-query'],
-        }
-      }
-    }
   },
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-    strictPort: false
-  }
 });

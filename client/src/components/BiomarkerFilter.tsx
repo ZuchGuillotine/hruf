@@ -15,7 +15,7 @@ const CATEGORY_COLORS = {
   kidney: 'bg-teal-100 hover:bg-teal-200 border-teal-300',
   hormone: 'bg-pink-100 hover:bg-pink-200 border-pink-300',
   mineral: 'bg-indigo-100 hover:bg-indigo-200 border-indigo-300',
-  other: 'bg-gray-100 hover:bg-gray-200 border-gray-300',
+  other: 'bg-gray-100 hover:bg-gray-200 border-gray-300'
 } as const;
 
 type CategoryType = keyof typeof CATEGORY_COLORS;

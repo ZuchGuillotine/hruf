@@ -10,19 +10,25 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Card } from '@/components/ui/card';
-import type { Series } from '@/types/chart';
+import type { Series } from '../../../src/types/chart';
+
+interface ChartPoint {
+  testDate: string;
+  value: number;
+  status?: string;
+}
 
 const CHART_COLORS = {
-  lipid: '#ef4444', // red-500
-  metabolic: '#3b82f6', // blue-500
-  thyroid: '#10b981', // emerald-500
-  vitamin: '#f59e0b', // amber-500
-  blood: '#8b5cf6', // violet-500
-  liver: '#f97316', // orange-500
-  kidney: '#06b6d4', // cyan-500
-  hormone: '#ec4899', // pink-500
-  mineral: '#6366f1', // indigo-500
-  other: '#6b7280', // gray-500
+  lipid: '#FF6B6B',
+  metabolic: '#4ECDC4',
+  thyroid: '#45B7D1',
+  vitamin: '#96CEB4',
+  blood: '#D4A5A5',
+  liver: '#FFA07A',
+  kidney: '#20B2AA',
+  hormone: '#FFB6C1',
+  mineral: '#9370DB',
+  other: '#666666'
 };
 
 interface BiomarkerHistoryChartProps {
@@ -47,7 +53,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
     if (!series?.length) return [];
 
     // Get all unique dates
-    const dates = Array.from(new Set(series.flatMap((s) => s.points.map((p) => p.testDate)))).sort(
+    const dates = Array.from(new Set(series.flatMap((s) => s.points.map((p: ChartPoint) => p.testDate)))).sort(
       (a, b) => new Date(a).getTime() - new Date(b).getTime()
     );
 
@@ -60,7 +66,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
 
       // Add values for each series
       series.forEach((s) => {
-        const point = s.points.find((p) => p.testDate === date);
+        const point = s.points.find((p: ChartPoint) => p.testDate === date);
         if (point) {
           dataPoint[s.name] = point.value;
           dataPoint[`${s.name}_unit`] = s.unit;
@@ -69,28 +75,6 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
       });
 
       return dataPoint;
-    });
-
-    return dates.map((date) => {
-      const entry: Record<string, any> = {
-        testDate: date,
-        formattedDate: new Date(date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }),
-      };
-
-      series.forEach((s) => {
-        if (s && s.points) {
-          const point = s.points.find((p) => p.testDate === date);
-          if (point) {
-            entry[s.name] = point.value;
-            entry[`${s.name}_unit`] = s.unit;
-          }
-        }
-      });
-      return entry;
     });
   }, [series]);
 
@@ -244,3 +228,4 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
     </div>
   );
 }
+

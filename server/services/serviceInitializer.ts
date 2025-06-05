@@ -4,6 +4,7 @@ import embeddingService from './embeddingService';
 import { advancedSummaryService } from './advancedSummaryService';
 import { summaryTaskManager } from '../cron/summaryManager';
 import { labSummaryService } from './labSummaryService';
+import { supplementService } from './supplements';
 import logger from '../utils/logger';
 
 /**
@@ -11,38 +12,65 @@ import logger from '../utils/logger';
  */
 class ServiceInitializer {
   /**
-   * Initialize all services in the correct order
+   * Initialize all services in the correct order (non-blocking)
    */
   async initializeServices(): Promise<void> {
+    // Skip all expensive operations during deployment mode
+    const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                             process.env.REPLIT_DEPLOYMENT === '1' ||
+                             process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                             process.env.VERCEL === '1' ||
+                             process.env.NETLIFY === 'true';
+    
+    logger.info('ServiceInitializer deployment check:', {
+      REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+      isDeploymentMode,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
+    if (isDeploymentMode) {
+      logger.info('DEPLOYMENT MODE DETECTED IN SERVICE INITIALIZER - SKIPPING ALL SERVICE INITIALIZATION');
+      return;
+    }
+
+    logger.info('Starting background service initialization...');
+
+    // Initialize services with individual error handling to prevent one failure from stopping others
+    const initPromises = [
+      this.initializePGVector().catch(error => {
+        logger.error('PGVector initialization failed (continuing):', error);
+      }),
+      this.initializeSummarization().catch(error => {
+        logger.error('Summarization initialization failed (continuing):', error);
+      }),
+      this.initializeLabServices().catch(error => {
+        logger.error('Lab services initialization failed (continuing):', error);
+      }),
+      this.initializeSupplementService().catch(error => {
+        logger.error('Supplement service initialization failed (continuing):', error);
+      })
+    ];
+
+    // Wait for all services to attempt initialization
+    await Promise.allSettled(initPromises);
+
+    // Start scheduled tasks if in production mode (but not deployment mode)
     try {
-      logger.info('Starting service initialization...');
-
-      // Initialize PGVector services first
-      await this.initializePGVector();
-
-      // Initialize summarization services
-      await this.initializeSummarization();
-
-      // Initialize lab results services
-      await this.initializeLabServices();
-
-      // Start scheduled tasks if in production mode
-      if (process.env.NODE_ENV === 'production') {
+      const isDeploymentMode = process.env.REPLIT_DEPLOYMENT === 'true' || 
+                               process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                               process.env.VERCEL === '1' ||
+                               process.env.NETLIFY === 'true';
+      
+      if (process.env.NODE_ENV === 'production' && !isDeploymentMode) {
         this.startScheduledTasks();
       } else {
-        logger.info('Scheduled tasks not started in development mode');
+        logger.info('Scheduled tasks not started in development/deployment mode');
       }
-
-      logger.info('Service initialization completed successfully');
     } catch (error) {
-      logger.error('Service initialization failed:', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-
-      // Even if initialization fails, we'll continue running the app
-      // This allows the app to function with reduced capabilities
+      logger.error('Failed to start scheduled tasks (continuing):', error);
     }
+
+    logger.info('Background service initialization completed');
   }
 
   /**
@@ -113,13 +141,11 @@ class ServiceInitializer {
         logger.info('Preloading PDF processing modules...');
         try {
           // Dynamically import pdf-parse to ensure it's loaded correctly
-          import('pdf-parse')
-            .then(() => {
-              logger.info('PDF processing module loaded successfully');
-            })
-            .catch((err) => {
-              logger.warn('PDF processing module preload warning (non-fatal):', err);
-            });
+          import('pdf-parse').then(() => {
+            logger.info('PDF processing module loaded successfully');
+          }).catch(err => {
+            logger.warn('PDF processing module preload warning (non-fatal):', err);
+          });
         } catch (moduleError) {
           logger.warn('Module preloading warning (non-fatal):', moduleError);
         }
@@ -132,6 +158,23 @@ class ServiceInitializer {
     } catch (error) {
       logger.error('Lab services initialization failed:', error);
       // Continue even if lab services fail to initialize
+    }
+  }
+
+  /**
+   * Initialize supplement services
+   */
+  private async initializeSupplementService(): Promise<void> {
+    try {
+      logger.info('Initializing supplement services...');
+
+      // Initialize supplement service (non-blocking)
+      supplementService.initialize(); // Don't await - let it run in background
+
+      logger.info('Supplement services initialized successfully');
+    } catch (error) {
+      logger.error('Supplement service initialization failed:', error);
+      // Continue even if supplement service fails to initialize
     }
   }
 
