@@ -209,15 +209,12 @@ if (!process.env.NODE_ENV && isDeployment) {
   console.log('Forced NODE_ENV to production for deployment');
 }
 
-// Force production mode for deployment - be more aggressive about detecting deployment
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || 
-                      process.env.REPLIT_DEPLOYMENT === 'true' ||
+// Force development mode in Replit unless explicitly deployed
+const IS_PRODUCTION = process.env.REPLIT_DEPLOYMENT === 'true' ||
                       process.env.RAILWAY_ENVIRONMENT === 'production' ||
                       process.env.VERCEL === '1' ||
                       process.env.NETLIFY === 'true' ||
-                      !process.env.REPL_SLUG || // If not in Replit dev environment, assume production
-                      process.argv.includes('--production') ||
-                      process.env.PORT !== undefined; // If PORT is set externally, likely production
+                      process.argv.includes('--production');
 
 console.log('Environment check:', {
   NODE_ENV: process.env.NODE_ENV,
