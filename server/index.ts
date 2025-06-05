@@ -112,17 +112,8 @@ if (app.get('env') === 'production') {
   sessionConfig.cookie!.secure = true; // Must be secure if sameSite is none
 }
 
-// HEALTH CHECK ENDPOINTS FIRST - before any other routing
+// HEALTH CHECK ENDPOINTS - specific paths only
 // These endpoints respond immediately without any service dependencies
-app.get('/', (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
-    version: "1.0.0"
-  });
-});
-
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: "healthy",
