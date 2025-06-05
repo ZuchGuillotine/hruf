@@ -1,4 +1,3 @@
-
 /**
  * Research document interface that matches the database schema
  */
@@ -18,7 +17,7 @@ export interface ResearchDocument {
 }
 
 export interface Message {
-  role: "system" | "user" | "assistant";
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 

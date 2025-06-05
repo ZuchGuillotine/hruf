@@ -1,0 +1,540 @@
+2025-05-31T16:55:50Z info: Deployment: 8c19b3e2-8943-47ed-8f35-1301e8f029cb
+2025-05-31T16:55:50Z info: Build: f4599feb-80b2-4ac1-8fc7-790e09695b65
+2025-05-31T16:55:50Z info: Connecting to builder
+2025-05-31T16:55:54Z info: Builder connected
+2025-05-31T16:55:54Z info: Installing packages
+2025-05-31T16:55:54Z info: Starting Build
+
+up to date, audited 1009 packages in 6s
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+npm notice
+npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+npm notice To update run: npm install -g npm@11.4.1
+npm notice
+
+
+> rest-express@1.0.0 build
+> npm run build:client && npm run build:server
+
+
+
+> rest-express@1.0.0 build:client
+> vite build
+
+
+vite v5.4.19 building for production...
+
+transforming...
+
+✓ 2903 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+../dist/index.html                         4.14 kB │ gzip:   1.42 kB
+
+../dist/assets/index-DX6Ro_MC.css         98.62 kB │ gzip:  15.92 kB
+../dist/assets/contact-Bsgoteni.js         0.78 kB │ gzip:   0.41 kB
+../dist/assets/index-BOQHE2sn.js           1.01 kB │ gzip:   0.47 kB
+../dist/assets/index-D0YWOcpj.js           1.80 kB │ gzip:   0.86 kB
+
+../dist/assets/_slug_-D9BOA4o1.js          2.92 kB │ gzip:   1.10 kB
+
+../dist/assets/blog-DCc-8IJ7.js            6.40 kB │ gzip:   2.22 kB
+../dist/assets/query-vendor-D2zxK6I_.js   38.90 kB │ gzip:  11.62 kB
+../dist/assets/ui-vendor-Dfzj-_mw.js      83.35 kB │ gzip:  27.97 kB
+../dist/assets/react-vendor-DrrtegDc.js  146.48 kB │ gzip:  47.82 kB
+../dist/assets/index-2q0lh3Tn.js         831.09 kB │ gzip: 229.06 kB
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+✓ built in 15.39s
+
+
+> rest-express@1.0.0 build:server
+> esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server
+
+
+▲ [WARNING] Duplicate member "loadSupplementsInBackground" in class body [duplicate-class-member]
+
+    server/services/supplements.ts:88:16:
+      88 │   private async loadSupplementsInBackground() {
+         ╵                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "loadSupplementsInBackground" is here:
+
+    server/services/supplements.ts:52:16:
+      52 │   private async loadSupplementsInBackground() {
+         ╵                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] Duplicate member "startLabProcessingTask" in class body [duplicate-class-member]
+
+    server/cron/summaryManager.ts:227:2:
+      227 │   startLabProcessingTask(hour: number = 3): void {
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "startLabProcessingTask" is here:
+
+    server/cron/summaryManager.ts:166:2:
+      166 │   startLabProcessingTask(hour: number = 2): void {
+          ╵   ~~~~~~~~~~~~~~~~~~~~~~
+
+
+2 warnings
+
+  dist/server/index.js  349.4kb
+
+⚡ Done in 276ms
+
+2025-05-31T16:56:27Z info: Pushing pid1 binary layer...
+2025-05-31T16:56:28Z info: Created pid1 binary layer
+2025-05-31T16:56:29Z info: Pushing hosting layer...
+2025-05-31T16:56:29Z info: Pushing Repl layer...
+2025-05-31T16:56:29Z info: Retrieved cached nix layer
+2025-05-31T16:56:29Z info: Created hosting layer
+2025-05-31T16:57:01Z info: Created Repl layer
+2025-05-31T16:57:02Z info: Pushed image manifest
+2025-05-31T16:57:02Z info: Pushed soci index manifest
+2025-05-31T16:57:06Z info: Creating Autoscale service
+    DRIP_2: 'd-xxxxxxxxxxxxx',
+  callbackUrl: 'https://workspace.BenjaminCox.repl.co/auth/google/callback',
+DATABASE_URL at db/index.ts: postgresql://neondb_owner:npg_kgdQ1p6UmPiA@ep-lucky-mode-a4qmis4i.us-east-1.aws.neon.tech/neondb?sslmode=require
+> rest-express@1.0.0 start
+Google OAuth Configuration: {
+starting up user application
+  isProd: true,
+> NODE_ENV=production REPLIT_DEPLOYMENT=true node dist/server/index.js
+  },
+    TWO_FACTOR: 'd-xxxxxxxxxxxxx',
+forwarding local port 5000 to external port 80 (mapped as 1104)
+    PASSWORD_RESET: 'd-xxxxxxxxxxxxx',
+  callbackUrl: 'https://workspace.BenjaminCox.repl.co/auth/google/callback',
+  hasClientSecret: true,
+  hasClientId: true,
+    hasReplOwner: true,
+  hasClientSecret: true,
+  envVars: {
+  NODE_ENV: 'production',
+info: Embedding service initialized with LRU cache {"timestamp":"2025-05-31T16:58:45.974Z"}
+    hasCustomDomain: true,
+    hasReplOwner: true,
+  }
+    WELCOME: 'd-fe1c448989a34f4697885de8d504b960',
+  timestamp: '2025-05-31T16:58:45.992Z'
+SendGrid Configuration: {
+Google OAuth Configuration: {
+    DRIP_3: 'd-xxxxxxxxxxxxx'
+  templateIds: {
+}
+Supplement service initialized (background loading will start after app is ready)
+  hasClientId: true,
+    hasCustomDomain: true,
+}
+4:58:46 PM [express] Server started successfully on 0.0.0.0:5000
+  environment: 'production',
+  timestamp: '2025-05-31T16:58:45.997Z'
+  host: '0.0.0.0',
+}
+    DRIP_1: 'd-xxxxxxxxxxxxx',
+  IS_PRODUCTION: true
+  },
+Starting supplement service initialization...
+info: Preloading PDF processing modules... {"timestamp":"2025-05-31T16:58:46.099Z"}
+  apiKeyExists: true,
+info: Starting background service initialization... {"timestamp":"2025-05-31T16:58:46.096Z"}
+    hasReplSlug: true,
+  envVars: {
+Starting supplement service initialization...
+  replitDeployment: 'true',
+Starting background service initialization...
+    hasBaseUrl: false
+  environment: 'production',
+Production mode - serving static files from: /home/runner/workspace/dist
+  REPLIT_DEPLOYMENT: 'true',
+    hasBaseUrl: false
+🚀 Server running on 0.0.0.0:5000 (production)
+info: Lab results services initialized successfully {"timestamp":"2025-05-31T16:58:46.101Z"}
+  isProduction: true
+Server startup configuration: {
+info: Initializing EmbeddingService... {"timestamp":"2025-05-31T16:58:46.097Z"}
+  port: 5000,
+}
+info: Supplement services initialized successfully {"timestamp":"2025-05-31T16:58:46.106Z"}
+info: Initializing lab results services... {"timestamp":"2025-05-31T16:58:46.098Z"}
+info: Initializing supplement services... {"timestamp":"2025-05-31T16:58:46.106Z"}
+Supplement service initialized (background loading will start after app is ready)
+    hasReplSlug: true,
+info: Initializing PGVector services... {"timestamp":"2025-05-31T16:58:46.097Z"}
+  nodeEnv: 'production',
+info: Uploads directory verified with correct permissions {"timestamp":"2025-05-31T16:58:46.099Z"}
+}
+info: Initializing summarization services... {"timestamp":"2025-05-31T16:58:46.098Z"}
+  isProd: true,
+Environment check: {
+  fromEmail: 'accounts@stacktracker.io',
+info: PDF processing module loaded successfully {"timestamp":"2025-05-31T16:58:46.180Z"}
+info: OpenAI embedding generation verified successfully {"timestamp":"2025-05-31T16:58:46.413Z"}
+info: Summarization services initialized successfully {"timestamp":"2025-05-31T16:58:46.413Z"}
+Started At: 5/20/2025, 5:27:15 AM
+Biomarker Count: 19
+Processing Status:
+info: Starting scheduled tasks... {"timestamp":"2025-05-31T16:58:46.414Z"}
+info: Weekly summary task will first run in 9 hours {"timestamp":"2025-05-31T16:58:46.414Z"}
+info: Daily summary task will first run in 481 minutes {"timestamp":"2025-05-31T16:58:46.414Z"}
+Completed At: 5/20/2025, 5:27:16 AM
+info: Starting weekly summary task to run on Sunday at 2:00 AM {"timestamp":"2025-05-31T16:58:46.414Z"}
+------------------
+Starting background supplement loading...
+info: PGVector services initialized successfully {"timestamp":"2025-05-31T16:58:46.399Z"}
+info: EmbeddingService initialized successfully {"timestamp":"2025-05-31T16:58:46.399Z"}
+info: Scheduled tasks started successfully {"timestamp":"2025-05-31T16:58:46.415Z"}
+Loading 100 supplements into trie
+info: Starting daily summary task to run at 1:00 AM daily {"timestamp":"2025-05-31T16:58:46.414Z"}
+info: Starting weekly summary task to run on Sunday at 2:00 AM {"timestamp":"2025-05-31T16:58:46.415Z"}
+Status: completed
+Adding supplement: Vitamin B3 (Nicotinamide)
+Background service initialization completed successfully
+Adding supplement: Vitamin B1
+info: Lab processing task scheduled for 3:00 AM daily {"timestamp":"2025-05-31T16:58:46.415Z"}
+info: Daily summary task will first run in 481 minutes {"timestamp":"2025-05-31T16:58:46.415Z"}
+Adding supplement: Vitamin B2 (Riboflavin)
+info: Background service initialization completed {"timestamp":"2025-05-31T16:58:46.415Z"}
+Adding supplement: Vitamin E (Alpha-tocopherol)
+info: Starting daily summary task to run at 1:00 AM daily {"timestamp":"2025-05-31T16:58:46.415Z"}
+Adding supplement: Vitamin K1 (Phylloquinone)
+Adding supplement: Vitamin E
+Adding supplement: Vitamin B3
+Adding supplement: L-Glutamine
+Adding supplement: Vitamin A (Retinyl Palmitate)
+Loading 100 supplements into service
+Background loading: Starting to load supplements into trie...
+Adding supplement: Zinc
+Adding supplement: Vitamin C (Ascorbic Acid)
+Adding supplement: Vitamin B3 (Niacin)
+Adding supplement: Vitamin B12
+Adding supplement: Vitamin B9
+Adding supplement: Vitamin B6 (Pyridoxamine)
+Adding supplement: Magnesium (Citrate)
+Adding supplement: Vitamin B2
+Adding supplement: Vitamin B3 (Niacinamide)
+Adding supplement: Vitamin E (Mixed Tocopherols)
+Adding supplement: Magnesium
+Adding supplement: Vitamin B5
+Adding supplement: Vitamin B1 (Thiamine)
+Adding supplement: Vitamin B1 (Thiamin)
+Adding supplement: Vitamin B7
+info: Weekly summary task will first run in 9 hours {"timestamp":"2025-05-31T16:58:46.415Z"}
+Adding supplement: Selenium (Selenomethionine)
+Adding supplement: Calcium (Carbonate)
+Adding supplement: Vitamin K
+Adding supplement: Echinacea Purpurea Root
+Adding supplement: Vitamin B9 (Folic Acid)
+Adding supplement: Vitamin B6 (Pyridoxal-5-Phosphate)
+Adding supplement: Vitamin A
+Adding supplement: Vitamin K (Phylloquinone)
+Adding supplement: Ginger Root
+Cron jobs started
+Adding supplement: Calcium (Citrate)
+Adding supplement: Vitamin C
+Finished loading supplements into trie
+Adding supplement: Creatine HCL
+Adding supplement: Calcium (Calcium Gluconate)
+Adding supplement: Vitamin K2 (Menaquinone)
+Adding supplement: Vitamin B7 (Biotin)
+Adding supplement: Vitamin B6 (Pyridoxine)
+Adding supplement: Echinacea Extract
+Adding supplement: Vitamin B5 (Calcium Pantothenate)
+Adding supplement: Magnesium (Oxide)
+Adding supplement: Calcium
+Adding supplement: Vitamin D
+Adding supplement: Vitamin D2 (Ergocalciferol)
+Adding supplement: Vitamin D3 (Cholecalciferol)
+Adding supplement: Vitamin E (Delta-Tocopherol)
+Adding supplement: Zinc (Zinc Citrate)
+Adding supplement: Echinacea
+Adding supplement: Iron
+Adding supplement: Iron (Ferric Citrate)
+Adding supplement: Magnesium (Magnesium Glycinate)
+Adding supplement: Vitamin K2 (MK-7)
+Adding supplement: Vitamin D (Ergocalciferol)
+Adding supplement: Ginger
+Adding supplement: Vitamin E (Gamma-Tocopherol)
+Adding supplement: Turmeric Root
+Adding supplement: Vitamin B12 (Methylcobalamin)
+Adding supplement: Vitamin B3 (Nicotinic Acid)
+Adding supplement: Turmeric
+Adding supplement: Zinc (Gluconate)
+Adding supplement: Iron (Ferrous Sulfate)
+Adding supplement: Vitamin B12 (Cyanocobalamin)
+Adding supplement: L-Theanine
+Adding supplement: Vitamin E (Alpha-Tocopherol)
+Adding supplement: Acai Berry Extract
+Adding supplement: Zinc (Picolinate)
+Adding supplement: Vitamin C (Calcium Ascorbate)
+Adding supplement: Iron (Iron Bisglycinate)
+Loading 100 supplements into trie
+Adding supplement: Andrographis (General)
+Adding supplement: Acetyl-L-Carnitine (General)
+Adding supplement: Iron (Ferrous Gluconate)
+Adding supplement: Selenium
+Adding supplement: Vitamin E (Tocopherol)
+Loading 100 supplements into service
+Adding supplement: Vitamin B9 (Methylfolate)
+Adding supplement: Ashwagandha (General)
+Adding supplement: Vitamin B6
+Adding supplement: Zinc (Zinc Carnosine)
+Adding supplement: Ginger Extract
+Adding supplement: Copper (Copper Sebacate)
+Adding supplement: Andrographis Paniculata Extract
+Adding supplement: Vitamin K2 (MK-4)
+Adding supplement: Vitamin A (Beta Carotene)
+Adding supplement: Agmatine Sulfate
+Adding supplement: Magnesium (Magnesium Malate)
+Adding supplement: Agmatine (General)
+Adding supplement: Vitamin B9 (Folate)
+Adding supplement: Turmeric (Curcumin)
+Adding supplement: Zinc (Zinc Gluconate)
+Adding supplement: Acai Berry Powder
+Adding supplement: Creatine
+Adding supplement: Calcium (Calcium Carbonate)
+Adding supplement: Aged Garlic Extract Powder
+Adding supplement: Arginine Alpha-Ketoglutarate
+Adding supplement: Iodine (Kelp Extract)
+Adding supplement: Calcium (Gluconate)
+Adding supplement: Probiotics
+Adding supplement: Vitamin A (Beta-Carotene)
+Adding supplement: Vitamin C (Sodium Ascorbate)
+Adding supplement: Vitamin B12 (Hydroxocobalamin)
+Adding supplement: Vitamin B6 (Pyridoxal)
+Adding supplement: Ashwagandha Extract (KSM-66)
+Adding supplement: Vanadium (Vanadyl Sulfate)
+Adding supplement: Ashwagandha Root Powder
+Adding supplement: Copper (Copper Gluconate)
+Adding supplement: Magnesium (Magnesium Aspartate)
+Adding supplement: Black Cohosh Root Extract
+Adding supplement: Copper (Copper Bisglycinate)
+Adding supplement: Devil's Claw Root Extract
+Adding supplement: Selenium (Sodium Selenite)
+Adding supplement: Alpha Lipoic Acid (R-ALA)
+Adding supplement: Horny Goat Weed Extract
+Adding supplement: Calcium (Calcium Orotate)
+Adding supplement: Vitamin A (Retinol)
+Adding supplement: Zinc (Citrate)
+Adding supplement: Selenium (Selenium Yeast)
+Adding supplement: Goldenseal Root Extract
+Adding supplement: Vitamin C (Ascorbyl Palmitate)
+Adding supplement: Zinc (Zinc Picolinate)
+Adding supplement: Burdock Root Extract
+Adding supplement: Feverfew Extract
+Adding supplement: Astaxanthin (General)
+Adding supplement: Alpha Lipoic Acid (Racemic)
+Adding supplement: Astragalus Root Extract
+Adding supplement: Green Tea Leaf Extract
+Adding supplement: Vitamin E (Tocotrienols)
+Adding supplement: Vitamin C (Magnesium Ascorbate)
+Adding supplement: Omega-3
+Adding supplement: Vitamin C (Potassium Ascorbate)
+Adding supplement: Vitamin E (Beta-Tocopherol)
+Adding supplement: Alfalfa (General)
+Adding supplement: White Willow Bark Extract
+Adding supplement: Acai (General)
+Adding supplement: Magnesium (Glycinate)
+Adding supplement: Cranberry Extract
+Adding supplement: Manganese (Manganese Gluconate)
+Adding supplement: Creatine Monohydrate
+Adding supplement: Magnesium (Magnesium Citrate)
+Adding supplement: Lavender Flower Extract
+    unit: 'mg/dL',
+Adding supplement: Oregano Oil
+Adding supplement: Ginseng (Panax) Root Extract
+----------------------------------
+Adding supplement: Manganese (Manganese Citrate)
+Adding supplement: Chamomile Flower Extract
+    confidence: '0.9',
+    category: 'metabolic',
+Adding supplement: Calcium (Calcium Lactate)
+Adding supplement: Horse Chestnut Seed Extract
+Adding supplement: Algae Oil (General)
+Adding supplement: Boron (Boron Glycinate)
+Biomarkers in dedicated table: 19
+Adding supplement: Astaxanthin (Haematococcus pluvialis)
+Adding supplement: Vitamin D (Cholecalciferol)
+      sourceText: 'Value: 74106 mg/dL',
+Adding supplement: Sage Leaf Extract
+    labResultId: 97,
+Adding supplement: Calcium (Calcium Citrate)
+Adding supplement: Hawthorn Berry Extract
+Sample from biomarker_results table:
+Adding supplement: Acetyl-L-Carnitine HCL
+Adding supplement: Lemon Balm Leaf Extract
+Adding supplement: Molybdenum (Sodium Molybdate)
+Background loading: Processed 100 supplements so far...
+Adding supplement: Dong Quai Root Extract
+Adding supplement: Chromium (Chromium Nicotinate)
+  },
+Adding supplement: Ashwagandha Extract (Sensoril)
+Adding supplement: Zinc (Zinc Oxide)
+    labResultId: 97,
+Adding supplement: Nettle Leaf Extract
+Adding supplement: Passionflower Extract
+Adding supplement: Magnesium (Magnesium Oxide)
+Adding supplement: Cat's Claw Bark Extract
+Adding supplement: Vitamin B12 (Adenosylcobalamin)
+Adding supplement: Chromium (Chromium Polynicotinate)
+Adding supplement: Red Yeast Rice
+Adding supplement: Arginine (General)
+    id: 7,
+    extractionMethod: 'regex',
+    confidence: '0.9',
+    unit: 'mmol/L',
+  },
+Adding supplement: Vitamin B5 (Pantothenic Acid)
+Adding supplement: Echinacea Purpurea Extract
+    labResultId: 97,
+Biomarkers in metadata: 19
+    id: 6,
+Adding supplement: Elderberry Fruit Extract
+Adding supplement: Rosemary Leaf Extract
+      validationStatus: 'validated',
+    updatedAt: 2025-05-20T05:27:15.904Z
+    status: null,
+    createdAt: 2025-05-20T05:27:15.904Z,
+Adding supplement: Alpha Lipoic Acid (General)
+[
+Adding supplement: Skullcap Herb Extract
+Adding supplement: Cinnamon Bark Extract
+Storage Comparison:
+    testDate: 2023-01-07T00:00:00.000Z,
+Adding supplement: Grape Seed Extract
+Adding supplement: Allicin (General)
+      extractionTimestamp: '2025-05-20T05:27:15.885Z'
+Adding supplement: Iron (Ferrous Fumarate)
+    },
+    testDate: 2023-01-07T00:00:00.000Z,
+
+
+    name: 'Potassium',
+    confidence: '0.9',
+Adding supplement: Rose Hips Extract
+    unit: 'mg/dL',
+    name: 'glucose',
+      extractionTimestamp: '2025-05-20T05:27:15.885Z'
+  {
+      extractionTimestamp: '2025-05-20T05:27:15.885Z'
+Adding supplement: St. John's Wort Extract
+]
+    testDate: '2023-01-07T00:00:00.000Z'
+    value: '74106',
+Adding supplement: Peppermint Leaf Extract
+    referenceRange: '136 - 145 mmol/L',
+Sample from metadata:
+Has Preprocessed Text: true
+Adding supplement: Magnesium (Magnesium Taurate)
+    name: 'glucose',
+    extractionMethod: 'llm',
+    extractionMethod: 'llm',
+Adding supplement: Alpha GPC (General)
+    createdAt: 2025-05-20T05:27:15.904Z,
+  {
+  },
+    unit: 'mmol/L',
+Adding supplement: Licorice Root Extract
+Upload Date: 5/20/2025, 3:26:47 AM
+  {
+Adding supplement: Aged Garlic Extract (General)
+Adding supplement: Ashwagandha Root Extract
+    metadata: {
+----------------
+  {
+Lab ID: 97
+  },
+    testDate: 2023-01-07T00:00:00.000Z,
+    name: 'Sodium',
+    status: null,
+      sourceText: 'Value: 138 mmol/L',
+Background loading: Processed 200 supplements so far...
+    value: '138',
+Adding supplement: Kava Kava Root Extract
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+  {
+--------------------
+Adding supplement: Turmeric Root Extract (Curcuminoids)
+    category: 'other',
+    metadata: {
+    referenceRange: '3.5 - 5.1 mmol/L'
+    category: 'other',
+  }
+    unit: 'mmol/L',
+info: No labs found requiring biomarker reprocessing {"timestamp":"2025-05-31T16:58:46.683Z"}
+Adding supplement: Hops Flower Extract
+    value: 138,
+Adding supplement: Chasteberry Fruit Extract
+    value: 74106,
+Adding supplement: L-Arginine
+npm notice
+Adding supplement: Dandelion Root Extract
+Adding supplement: Fenugreek Seed Extract
+info: Starting biomarker data check and reprocessing {"timestamp":"2025-05-31T16:58:46.646Z"}
+npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+    id: 8,
+npm notice
+  {
+Adding supplement: Milk Thistle Seed Extract
+    createdAt: 2025-05-20T05:27:15.904Z,
+]
+    unit: 'mmol/L',
+    name: 'Potassium',
+[
+npm notice To update run: npm install -g npm@11.4.1
+  }
+-------------------
+Adding supplement: Garlic Bulb Extract
+Adding supplement: Ginger Root Extract
+    referenceRange: null,
+Adding supplement: Molybdenum (Molybdenum Glycinate)
+    updatedAt: 2025-05-20T05:27:15.904Z
+    name: 'Sodium',
+    value: 3.4,
+      validationStatus: 'validated',
+Adding supplement: Sarsaparilla Root Extract
+    category: 'other',
+    status: null,
+    testDate: '2023-01-07T00:00:00.000Z',
+Storage Details:
+    metadata: {
+Adding supplement: Thyme Leaf Extract
+    testDate: '2023-01-07T00:00:00.000Z',
+    },
+Adding supplement: Valerian Root Extract
+      sourceText: 'Value: 3.4 mmol/L',
+    category: 'metabolic',
+Finished loading supplements into trie
+    referenceRange: '136 - 145 mmol/L'
+Processing Metadata: { regexMatches: 1, llmExtractions: 18, processingTime: 357 }
+      validationStatus: 'validated',
+    updatedAt: 2025-05-20T05:27:15.904Z
+    value: '3.4',
+command finished successfully with exit code 0
+    category: 'other',
+    referenceRange: '3.5 - 5.1 mmol/L',
+    },
+main done, exiting
+2025-05-31T16:59:34Z error: The deployment is failing health checks. This can happen if the application isn't responding, responds with an error, or doesn't respond in time. Health checks are sent to the / endpoint by default and must respond as soon as possible. Make sure that the / endpoint is implemented and returns a 200 status code in a timely manner. Avoid doing expensive or long running operations on the / endpoint, prefer deferring them to a different route. Check the logs for more information.

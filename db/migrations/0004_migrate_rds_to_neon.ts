@@ -1,5 +1,4 @@
-
-import { sql } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 
 export async function up(db: any) {
   await db.execute(sql`

@@ -1,5 +1,4 @@
-
-import { sql } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 
 // Migration to convert sleep duration from hours (stored as decimal) to minutes (stored as integer)
 // This improves data consistency and makes calculations more precise

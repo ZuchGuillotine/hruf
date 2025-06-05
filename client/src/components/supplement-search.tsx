@@ -1,20 +1,16 @@
-import * as React from "react";
+import * as React from 'react';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 
 interface Supplement {
   id: number;
@@ -31,7 +27,7 @@ interface SupplementSearchProps {
 
 export function SupplementSearch({ value, onChange, className }: SupplementSearchProps) {
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = React.useState('');
   const [customValue, setCustomValue] = React.useState(value);
 
   // Update customValue when value prop changes
@@ -51,7 +47,7 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
       const data = await res.json();
       // Remove duplicates based on supplement ID
       const uniqueData = data.reduce((acc: Supplement[], curr: Supplement) => {
-        if (!acc.find(item => item.id === curr.id)) {
+        if (!acc.find((item) => item.id === curr.id)) {
           acc.push(curr);
         }
         return acc;
@@ -75,11 +71,11 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between bg-white text-[#1b4332] border-none hover:bg-white/90",
+            'w-full justify-between bg-white text-[#1b4332] border-none hover:bg-white/90',
             className
           )}
         >
-          {customValue || "Select or type a supplement name..."}
+          {customValue || 'Select or type a supplement name...'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -117,8 +113,8 @@ export function SupplementSearch({ value, onChange, className }: SupplementSearc
                   </div>
                   <Check
                     className={cn(
-                      "ml-auto h-4 w-4",
-                      value === supplement.name ? "opacity-100" : "opacity-0"
+                      'ml-auto h-4 w-4',
+                      value === supplement.name ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                 </CommandItem>

@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": false,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": true,
+    "emitDeclarationOnly": false,
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["packages/core/src/*"],
+      "@core/db": ["packages/core/db"],
+      "@core/db/*": ["packages/core/db/*"],
+      "@db": ["packages/core/db"],
+      "@db/*": ["packages/core/db/*"],
+      "@backend/*": ["packages/backend/src/*"],
+      "@services/*": ["packages/backend/src/services/*"],
+      "@ui/*": ["packages/ui/src/*"],
+      "@stacktracker/ui": ["packages/ui/src"],
+      "@stacktracker/ui/*": ["packages/ui/src/*"],
+      "@stacktracker/mobile-ui": ["packages/mobile-ui/src"],
+      "@stacktracker/mobile-ui/*": ["packages/mobile-ui/src/*"],
+      "@/*": [
+        "apps/web/client/src/*",
+        "packages/backend/src/*",
+        "packages/core/src/*",
+        "packages/shared-components/src/*",
+        "packages/ui/src/*",
+        "packages/mobile-ui/src/*",
+        "scripts/*"
+      ],
+      "@scripts/*": ["scripts/*"]
+    },
+    "types": ["jest", "node", "vite/client"]
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "apps/mobile/**/*",
+    "packages/mobile-ui/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+} 

@@ -1,9 +1,23 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 05/06/2025 - 14:00:36
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 05/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 // server/cron/summaryManager.ts
 
 import { advancedSummaryService } from '../services/advancedSummaryService';
 import { labSummaryService } from '../services/labSummaryService';
-import cron from 'node-cron';
+import { db } from '../../db';
 import { sql } from 'drizzle-orm';
+import { labResults } from '../../db/schema';
+import cron from 'node-cron';
 import logger from '../utils/logger';
 
 /**
@@ -12,7 +26,7 @@ import logger from '../utils/logger';
 class SummaryTaskManager {
   private dailyInterval: NodeJS.Timeout | null = null;
   private weeklyInterval: NodeJS.Timeout | null = null;
-  private labProcessingTask: ReturnType<typeof cron.schedule> | null = null;
+  private labProcessingTask: cron.ScheduledTask | null = null;
 
   /**
    * Start the daily summary task
@@ -36,7 +50,9 @@ class SummaryTaskManager {
     }
 
     const timeUntilFirstRun = nextRun.getTime() - now.getTime();
-    logger.info(`Daily summary task will first run in ${Math.round(timeUntilFirstRun / (60 * 1000))} minutes`);
+    logger.info(
+      `Daily summary task will first run in ${Math.round(timeUntilFirstRun / (60 * 1000))} minutes`
+    );
 
     // Set timeout for first run
     setTimeout(() => {
@@ -44,9 +60,12 @@ class SummaryTaskManager {
       this.runDailySummaryTask();
 
       // Set up interval to run daily
-      this.dailyInterval = setInterval(() => {
-        this.runDailySummaryTask();
-      }, 24 * 60 * 60 * 1000); // 24 hours
+      this.dailyInterval = setInterval(
+        () => {
+          this.runDailySummaryTask();
+        },
+        24 * 60 * 60 * 1000
+      ); // 24 hours
     }, timeUntilFirstRun);
   }
 
@@ -59,7 +78,9 @@ class SummaryTaskManager {
       clearInterval(this.weeklyInterval);
     }
 
-    logger.info(`Starting weekly summary task to run on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]} at ${hour}:00 AM`);
+    logger.info(
+      `Starting weekly summary task to run on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]} at ${hour}:00 AM`
+    );
 
     // Calculate time until first run
     const now = new Date();
@@ -76,7 +97,9 @@ class SummaryTaskManager {
     }
 
     const timeUntilFirstRun = nextRun.getTime() - now.getTime();
-    logger.info(`Weekly summary task will first run in ${Math.round(timeUntilFirstRun / (60 * 60 * 1000))} hours`);
+    logger.info(
+      `Weekly summary task will first run in ${Math.round(timeUntilFirstRun / (60 * 60 * 1000))} hours`
+    );
 
     // Set timeout for first run
     setTimeout(() => {
@@ -84,9 +107,12 @@ class SummaryTaskManager {
       this.runWeeklySummaryTask();
 
       // Set up interval to run weekly
-      this.weeklyInterval = setInterval(() => {
-        this.runWeeklySummaryTask();
-      }, 7 * 24 * 60 * 60 * 1000); // 7 days
+      this.weeklyInterval = setInterval(
+        () => {
+          this.runWeeklySummaryTask();
+        },
+        7 * 24 * 60 * 60 * 1000
+      ); // 7 days
     }, timeUntilFirstRun);
   }
 
@@ -133,22 +159,22 @@ class SummaryTaskManager {
 
       // Today's date
       const today = new Date();
-      
+
       // Also look at recent days to ensure we have sufficient data
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      
+
       // Generate summary for today's data
       const todaySummaryId = await advancedSummaryService.generateDailySummary(userId, today);
-      
+
       // Also generate or ensure yesterday's summary exists
       const yesterdaySummaryId = await advancedSummaryService.generateDailySummary(userId, yesterday);
-      
+
       logger.info(`Real-time summary completed for user ${userId}:`, {
         todaySummaryId,
-        yesterdaySummaryId
+        yesterdaySummaryId,
       });
-      
+
       return;
     } catch (error) {
       logger.error(`Error running real-time summary for user ${userId}:`, error);
@@ -157,29 +183,16 @@ class SummaryTaskManager {
   }
 
   /**
-   * Stop all scheduled tasks
-   */
-  /**
-   * Start lab results processing task
-   * @param hour Hour of the day to run the task (0-23)
-   */
-  /**
    * Start lab results processing task
    * @param hour Hour of the day to run the task (0-23)
    */
   startLabProcessingTask(hour: number = 3): void {
     const cronSchedule = `0 0 ${hour} * * *`; // Run at specified hour daily
-    
-    logger.info(`Scheduling lab processing task to run at ${hour}:00 AM daily`);
-    
     this.labProcessingTask = cron.schedule(cronSchedule, async () => {
-      try {
-        logger.info('Running scheduled lab processing task');
-        await this.processUnprocessedLabResults();
-      } catch (error) {
-        logger.error('Error in scheduled lab processing task:', error);
-      }
+      logger.info('Starting scheduled lab results processing');
+      await this.processUnprocessedLabResults();
     });
+    logger.info(`Lab processing task scheduled for ${hour}:00 AM daily`);
   }
 
   /**
@@ -191,14 +204,12 @@ class SummaryTaskManager {
       const unprocessedLabs = await db
         .select()
         .from(labResults)
-        .where(
-          sql`metadata->>'summary' IS NULL OR metadata->>'summary' = ''`
-        );
-      
+        .where(sql`metadata->>'summary' IS NULL OR metadata->>'summary' = ''`);
+
       logger.info(`Found ${unprocessedLabs.length} unprocessed lab results`);
-      
+
       const failures: number[] = [];
-      
+
       // Process each unprocessed lab
       for (const lab of unprocessedLabs) {
         try {
@@ -209,9 +220,9 @@ class SummaryTaskManager {
             failures.push(lab.id);
             logger.error(`Failed to generate summary for lab ${lab.id}`);
           }
-          
+
           // Add a small delay to avoid API rate limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } catch (error) {
           failures.push(lab.id);
           logger.error(`Error processing lab result ${lab.id}:`, error);
@@ -221,7 +232,7 @@ class SummaryTaskManager {
       if (failures.length > 0) {
         logger.error(`Failed to process ${failures.length} labs: ${failures.join(', ')}`);
       }
-      
+
       logger.info('Completed processing of unprocessed lab results');
     } catch (error) {
       logger.error('Error in processing unprocessed lab results:', error);
@@ -242,12 +253,6 @@ class SummaryTaskManager {
     if (this.labProcessingTask) {
       this.labProcessingTask.stop();
       this.labProcessingTask = null;
-    }
-
-    if (this.labProcessingTask) {
-      this.labProcessingTask.stop();
-      this.labProcessingTask = null;
-      logger.info('Lab processing task stopped');
     }
 
     logger.info('All summary tasks stopped');

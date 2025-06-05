@@ -1,11 +1,10 @@
-
-import { db } from "../index";
-import { sql } from "drizzle-orm";
-import logger from "../../server/utils/logger";
+import { db } from '../index';
+import { sql } from 'drizzle-orm';
+import logger from '../../server/utils/logger';
 
 async function main() {
   try {
-    logger.info("Starting migration: Create log_summaries table with metadata");
+    logger.info('Starting migration: Create log_summaries table with metadata');
 
     // Create the table
     await db.execute(sql`
@@ -59,9 +58,9 @@ async function main() {
         EXECUTE FUNCTION update_log_summaries_timestamp()
     `);
 
-    logger.info("Successfully completed migration: Create log_summaries table with metadata");
+    logger.info('Successfully completed migration: Create log_summaries table with metadata');
   } catch (error) {
-    logger.error("Error during migration:", error);
+    logger.error('Error during migration:', error);
     throw error;
   }
 }
@@ -81,8 +80,8 @@ export async function up() {
 
 export async function down() {
   try {
-    logger.info("Starting rollback: Drop log_summaries table");
-    
+    logger.info('Starting rollback: Drop log_summaries table');
+
     // Drop trigger first
     await db.execute(sql`
       DROP TRIGGER IF EXISTS update_log_summaries_timestamp ON log_summaries
@@ -98,9 +97,9 @@ export async function down() {
       DROP TABLE IF EXISTS log_summaries
     `);
 
-    logger.info("Successfully completed rollback");
+    logger.info('Successfully completed rollback');
   } catch (error) {
-    logger.error("Error during rollback:", error);
+    logger.error('Error during rollback:', error);
     throw error;
   }
 }

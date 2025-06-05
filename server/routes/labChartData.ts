@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
@@ -9,7 +8,10 @@ import logger from '../utils/logger';
 const router = express.Router();
 
 const querySchema = z.object({
-  biomarkers: z.string().optional().transform(val => val?.split(',').filter(Boolean) || []),
+  biomarkers: z
+    .string()
+    .optional()
+    .transform((val) => val?.split(',').filter(Boolean) || []),
   page: z
     .string()
     .optional()
@@ -27,7 +29,7 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
     logger.info('Retrieving biomarker chart data', {
       userId,
       biomarkerCount: biomarkerNames.length,
-      biomarkers: biomarkerNames
+      biomarkers: biomarkerNames,
     });
 
     const results = await db
@@ -38,7 +40,7 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
         testDate: biomarkerResults.testDate,
         category: biomarkerResults.category,
         status: biomarkerResults.status,
-        labResultId: biomarkerResults.labResultId
+        labResultId: biomarkerResults.labResultId,
       })
       .from(biomarkerResults)
       .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
@@ -53,27 +55,34 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
     logger.info('Raw database query results:', {
       resultCount: results.length,
       sampleResults: results.slice(0, 5),
-      distinctBiomarkers: [...new Set(results.map(r => r.name))],
-      dateRange: results.length > 0 ? {
-        earliest: results[0].testDate,
-        latest: results[results.length - 1].testDate
-      } : null
+      distinctBiomarkers: [...new Set(results.map((r) => r.name))],
+      dateRange:
+        results.length > 0
+          ? {
+              earliest: results[0].testDate,
+              latest: results[results.length - 1].testDate,
+            }
+          : null,
     });
 
     logger.info('Retrieved biomarker data', {
       userId,
       resultCount: results.length,
-      uniqueBiomarkers: [...new Set(results.map(r => r.name))],
-      dateRange: results.length > 0 ? {
-        start: results[0].testDate,
-        end: results[results.length - 1].testDate
-      } : null
+      uniqueBiomarkers: [...new Set(results.map((r) => r.name))],
+      dateRange:
+        results.length > 0
+          ? {
+              start: results[0].testDate,
+              end: results[results.length - 1].testDate,
+            }
+          : null,
     });
 
     // Process and validate data
-    const processedResults = results.map(result => {
-      const numericValue = typeof result.value === 'string' ? parseFloat(result.value) : result.value;
-      
+    const processedResults = results.map((result) => {
+      const numericValue =
+        typeof result.value === 'string' ? parseFloat(result.value) : result.value;
+
       return {
         name: result.name,
         value: numericValue,
@@ -81,32 +90,32 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
         testDate: result.testDate.toISOString(),
         category: result.category || 'other',
         status: result.status || null,
-        labResultId: result.labResultId
+        labResultId: result.labResultId,
       };
     });
 
     // Validate data integrity
-    const invalidResults = processedResults.filter(r => {
+    const invalidResults = processedResults.filter((r) => {
       return isNaN(r.value) || !r.unit || !r.testDate || !r.name;
     });
 
     if (invalidResults.length > 0) {
       logger.warn('Found invalid biomarker results', {
         invalidCount: invalidResults.length,
-        examples: invalidResults.slice(0, 3)
+        examples: invalidResults.slice(0, 3),
       });
     }
 
     // Filter out invalid results
-    const validResults = processedResults.filter(r => 
-      !isNaN(r.value) && r.unit && r.testDate && r.name
+    const validResults = processedResults.filter(
+      (r) => !isNaN(r.value) && r.unit && r.testDate && r.name
     );
 
     logger.info('Processed biomarker data', {
       originalCount: results.length,
       processedCount: processedResults.length,
       validCount: validResults.length,
-      invalidCount: invalidResults.length
+      invalidCount: invalidResults.length,
     });
 
     return validResults;
@@ -114,7 +123,7 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
     logger.error('Error retrieving biomarker chart data', {
       userId,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
@@ -124,10 +133,10 @@ router.get('/', async (req, res) => {
   try {
     if (!req.user?.id) {
       logger.warn('Unauthorized biomarker data access attempt');
-      return res.status(401).json({ 
-        success: false, 
+      return res.status(401).json({
+        success: false,
         error: 'Authentication required',
-        data: []
+        data: [],
       });
     }
 
@@ -135,13 +144,13 @@ router.get('/', async (req, res) => {
     if (!validationResult.success) {
       logger.warn('Invalid query parameters', {
         errors: validationResult.error.issues,
-        query: req.query
+        query: req.query,
       });
       return res.status(400).json({
         success: false,
         error: 'Invalid query parameters',
         details: validationResult.error.issues,
-        data: []
+        data: [],
       });
     }
 
@@ -153,11 +162,11 @@ router.get('/', async (req, res) => {
     logger.info('Retrieved biomarker chart data:', {
       userId: req.user.id,
       biomarkerCount: data.length,
-      uniqueBiomarkers: [...new Set(data.map(d => d.name))],
+      uniqueBiomarkers: [...new Set(data.map((d) => d.name))],
       requestedBiomarkers: biomarkers,
       page,
       pageSize,
-      sampleData: data.slice(0, 3) // Log first 3 records for debugging
+      sampleData: data.slice(0, 3), // Log first 3 records for debugging
     });
 
     const paginatedData = data.slice(offset, offset + pageSize);
@@ -171,30 +180,32 @@ router.get('/', async (req, res) => {
         page,
         pageSize,
         total: data.length,
-        totalPages: Math.ceil(data.length / pageSize)
+        totalPages: Math.ceil(data.length / pageSize),
       },
       metadata: {
-        uniqueBiomarkers: [...new Set(data.map(d => d.name))].length,
-        categories: [...new Set(data.map(d => d.category))],
-        dateRange: data.length > 0 ? {
-          earliest: Math.min(...data.map(d => new Date(d.testDate).getTime())),
-          latest: Math.max(...data.map(d => new Date(d.testDate).getTime()))
-        } : null
-      }
+        uniqueBiomarkers: [...new Set(data.map((d) => d.name))].length,
+        categories: [...new Set(data.map((d) => d.category))],
+        dateRange:
+          data.length > 0
+            ? {
+                earliest: Math.min(...data.map((d) => new Date(d.testDate).getTime())),
+                latest: Math.max(...data.map((d) => new Date(d.testDate).getTime())),
+              }
+            : null,
+      },
     });
-
   } catch (error) {
     logger.error('Error retrieving biomarker chart data:', {
       userId: req.user?.id,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve biomarker chart data',
       data: [],
-      hasBiomarkers: false
+      hasBiomarkers: false,
     });
   }
 });
@@ -216,12 +227,12 @@ router.get('/debug', async (req, res) => {
       success: true,
       userId: req.user.id,
       rawDataSample: rawResults,
-      totalCount: rawResults.length
+      totalCount: rawResults.length,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });

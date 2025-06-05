@@ -1,4 +1,3 @@
-
 import cron from 'node-cron';
 import { checkAndReprocessBiomarkers } from '../../scripts/check-biomarkers';
 import logger from '../utils/logger';
@@ -11,7 +10,7 @@ export const processMissingBiomarkersCron = cron.schedule('0 2 * * *', async () 
     logger.info('Completed scheduled biomarker reprocessing check');
   } catch (error) {
     logger.error('Error in biomarker reprocessing cron:', {
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });

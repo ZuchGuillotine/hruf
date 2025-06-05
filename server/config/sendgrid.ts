@@ -26,7 +26,7 @@ export const EMAIL_TEMPLATES = {
 console.log('SendGrid Configuration:', {
   apiKeyExists: !!apiKey,
   fromEmail,
-  templateIds: EMAIL_TEMPLATES
+  templateIds: EMAIL_TEMPLATES,
 });
 
 // Set the API key for SendGrid
@@ -66,11 +66,7 @@ export async function sendTemplateEmail(
 }
 
 // Two-factor authentication email
-export async function send2FAEmail(
-  to: string,
-  code: string,
-  expiresIn: string
-): Promise<boolean> {
+export async function send2FAEmail(to: string, code: string, expiresIn: string): Promise<boolean> {
   return sendTemplateEmail(to, EMAIL_TEMPLATES.TWO_FACTOR, {
     code,
     expiresIn,
@@ -79,10 +75,7 @@ export async function send2FAEmail(
 }
 
 // Welcome email
-export async function sendWelcomeEmail(
-  to: string,
-  username: string
-): Promise<boolean> {
+export async function sendWelcomeEmail(to: string, username: string): Promise<boolean> {
   return sendTemplateEmail(to, EMAIL_TEMPLATES.WELCOME, {
     username,
     loginUrl: 'https://stacktracker.com/login',

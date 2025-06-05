@@ -11,17 +11,17 @@ interface LimitStatus {
    * Whether the user has reached their daily limit
    */
   hasReachedLimit: boolean;
-  
+
   /**
    * The current count of LLM requests for the day
    */
   currentCount: number;
-  
+
   /**
    * Whether the user is on a paid subscription (not on trial)
    */
   isPaidTier: boolean;
-  
+
   /**
    * Whether the user is on a free trial
    */
@@ -42,7 +42,7 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     const userResult = await db
       .select({
         subscriptionTier: users.subscriptionTier,
-        trialEndsAt: users.trialEndsAt
+        trialEndsAt: users.trialEndsAt,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -60,15 +60,14 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     }
 
     const { subscriptionTier, trialEndsAt } = userResult[0];
-    
+
     // Check if user is on a paid tier (pro, premium, etc.)
     const isPaidTier = subscriptionTier === 'pro' || subscriptionTier === 'premium';
-    
+
     // Determine if the user is on a trial based on subscription tier and trial end date
-    const isOnTrial = 
-      !isPaidTier && 
-      (subscriptionTier === 'trial' || 
-       (trialEndsAt && new Date() < new Date(trialEndsAt)));
+    const isOnTrial =
+      !isPaidTier &&
+      (subscriptionTier === 'trial' || (trialEndsAt && new Date() < new Date(trialEndsAt)));
 
     // If the user is on a paid subscription, they have no limit
     if (isPaidTier) {
@@ -90,28 +89,16 @@ export async function checkUserLLMLimit(userId: number): Promise<LimitStatus> {
     const qualitativeLogsCount = await db
       .select({ count: count() })
       .from(qualitativeLogs)
-      .where(
-        and(
-          eq(qualitativeLogs.userId, userId),
-          gte(qualitativeLogs.createdAt, startOfDay)
-        )
-      );
+      .where(and(eq(qualitativeLogs.userId, userId), gte(qualitativeLogs.createdAt, startOfDay)));
 
     // Count query chats for today
     const queryChatsCount = await db
       .select({ count: count() })
       .from(queryChats)
-      .where(
-        and(
-          eq(queryChats.userId, userId),
-          gte(queryChats.createdAt, startOfDay)
-        )
-      );
+      .where(and(eq(queryChats.userId, userId), gte(queryChats.createdAt, startOfDay)));
 
     // Total AI interactions for today
-    const totalCount = 
-      (qualitativeLogsCount[0]?.count || 0) + 
-      (queryChatsCount[0]?.count || 0);
+    const totalCount = (qualitativeLogsCount[0]?.count || 0) + (queryChatsCount[0]?.count || 0);
 
     // Check if the user has reached their daily limit
     const hasReachedLimit = !!isOnTrial && totalCount >= DAILY_FREE_LIMIT;

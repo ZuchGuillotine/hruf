@@ -1,4 +1,3 @@
-
 import { sql } from '@vercel/postgres';
 import { db } from '../../db';
 import logger from '../utils/logger';

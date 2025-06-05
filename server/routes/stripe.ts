@@ -11,18 +11,18 @@ const router = Router();
 router.use((req, res, next) => {
   const allowedOrigins = [
     'https://stacktracker.io',
-    process.env.REPLIT_URL || 'https://stacktracker.replit.app'
+    process.env.REPLIT_URL || 'https://stacktracker.replit.app',
   ];
-  
+
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
-  
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -40,20 +40,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 // Stripe webhook handler
 router.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
-  
+
   try {
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+    const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      
+
       // Retrieve session with expanded line items
       const expandedSession = await stripe.checkout.sessions.retrieve(session.id, {
-        expand: ['line_items', 'line_items.data.price.product']
+        expand: ['line_items', 'line_items.data.price.product'],
       });
 
       const productId = expandedSession.line_items?.data[0]?.price?.product as string;
@@ -66,11 +62,11 @@ router.post('/webhook', async (req, res) => {
         // Update user's subscription tier
         await db
           .update(users)
-          .set({ 
+          .set({
             subscriptionTier,
             stripeCustomerId: expandedSession.customer as string,
             subscriptionId: expandedSession.subscription as string,
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(users.email, customerEmail));
 
@@ -99,12 +95,12 @@ router.post('/create-checkout-session', async (req, res) => {
       priceId,
       isAuthenticated: req.isAuthenticated?.(),
       user: req.user,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Get the price from Stripe to verify it exists
     const price = await stripe.prices.retrieve(priceId);
-    
+
     if (!price) {
       return res.status(404).json({ error: 'Price not found' });
     }
@@ -119,14 +115,16 @@ router.post('/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'subscription',
-      success_url: successUrl || `${req.protocol}://${req.get('host')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url:
+        successUrl ||
+        `${req.protocol}://${req.get('host')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${req.protocol}://${req.get('host')}`,
     };
 
     // If user is logged in, use their email
     if (req.isAuthenticated() && req.user?.email) {
       sessionOptions.customer_email = req.user.email;
-    } 
+    }
     // If email was provided in request, use that (for non-authenticated users)
     else if (customerEmail) {
       sessionOptions.customer_email = customerEmail;
@@ -135,7 +133,7 @@ router.post('/create-checkout-session', async (req, res) => {
     // Add metadata to track guest checkouts
     sessionOptions.metadata = {
       ...sessionOptions.metadata,
-      isGuestCheckout: (!req.isAuthenticated()).toString()
+      isGuestCheckout: (!req.isAuthenticated()).toString(),
     };
 
     const session = await stripe.checkout.sessions.create(sessionOptions);
@@ -169,9 +167,9 @@ router.get('/checkout-session/:sessionId', async (req, res) => {
 
     // If the session doesn't exist or is not complete, return an error
     if (!session || session.status !== 'complete') {
-      return res.status(404).json({ 
-        error: 'Invalid or incomplete session', 
-        status: session?.status 
+      return res.status(404).json({
+        error: 'Invalid or incomplete session',
+        status: session?.status,
       });
     }
 
@@ -213,18 +211,18 @@ router.post('/update-subscription', async (req, res) => {
 
     // If the session doesn't exist or is not complete, return an error
     if (!session || session.status !== 'complete') {
-      return res.status(404).json({ 
-        error: 'Invalid or incomplete session', 
-        status: session?.status 
+      return res.status(404).json({
+        error: 'Invalid or incomplete session',
+        status: session?.status,
       });
     }
 
     const subscriptionId = session.subscription as string;
-    
+
     // Get the product details to determine the tier
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     const productId = subscription.items.data[0].price.product as string;
-    
+
     // Get the customer ID from the subscription
     const customerId = subscription.customer as string;
 
@@ -240,12 +238,12 @@ router.post('/update-subscription', async (req, res) => {
       .where(eq(users.id, req.user.id))
       .returning();
 
-    res.json({ 
-      success: true, 
-      user: { 
-        id: updatedUser.id, 
-        subscriptionTier: updatedUser.subscriptionTier 
-      } 
+    res.json({
+      success: true,
+      user: {
+        id: updatedUser.id,
+        subscriptionTier: updatedUser.subscriptionTier,
+      },
     });
   } catch (error: any) {
     console.error('Error updating subscription:', error.message);

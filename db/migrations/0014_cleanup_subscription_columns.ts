@@ -1,4 +1,3 @@
-
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
@@ -34,7 +33,7 @@ async function main() {
       ALTER TABLE users
       DROP COLUMN IF EXISTS subscription_status
     `);
-    
+
     console.log('✅ Successfully cleaned up subscription columns');
     return Promise.resolve();
   } catch (error) {
@@ -76,7 +75,7 @@ export async function down() {
       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS subscription_status TEXT
     `);
-    
+
     console.log('✅ Successfully restored subscription columns');
     return Promise.resolve();
   } catch (error) {

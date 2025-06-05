@@ -10,40 +10,52 @@ import { advancedSummaryService } from './advancedSummaryService';
 import { debugContext } from '../utils/contextDebugger';
 import { labSummaryService } from './labSummaryService';
 
-export async function constructUserContext(userId: string, userQuery: string): Promise<{ messages: Message[] }> {
+export async function constructUserContext(
+  userId: string,
+  userQuery: string
+): Promise<{ messages: Message[] }> {
   try {
     const userIdNum = parseInt(userId);
     if (isNaN(userIdNum)) {
       throw new Error('Invalid user ID');
     }
 
-    logger.info(`Building context for user ${userId} with query: "${userQuery.substring(0, 50)}..."`);
+    logger.info(
+      `Building context for user ${userId} with query: "${userQuery.substring(0, 50)}..."`
+    );
 
     // Check if we need to trigger a real-time summary
     try {
       await summaryTaskManager.runRealtimeSummary(userIdNum);
       logger.info('Real-time summary successfully triggered');
     } catch (error) {
-      logger.warn(`Real-time summary generation failed but continuing with context building: ${error}`);
+      logger.warn(
+        `Real-time summary generation failed but continuing with context building: ${error}`
+      );
     }
 
     // Fetch user's health stats
     const userHealthStats = await db.query.healthStats.findFirst({
-      where: eq(healthStats.userId, userIdNum)
+      where: eq(healthStats.userId, userIdNum),
     });
 
     // Format health stats data if available
-    const healthStatsContext = userHealthStats ? `
+    const healthStatsContext = userHealthStats
+      ? `
 Weight: ${userHealthStats.weight || 'Not provided'} lbs
 Height: ${userHealthStats.height || 'Not provided'} inches
 Gender: ${userHealthStats.gender || 'Not provided'}
 Date of Birth: ${userHealthStats.dateOfBirth || 'Not provided'}
 Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.averageSleep / 60)}h ${userHealthStats.averageSleep % 60}m` : 'Not provided'}
 Allergies: ${userHealthStats.allergies || 'None listed'}
-` : 'No health stats data available.';
+`
+      : 'No health stats data available.';
 
     // Get direct supplement context using the service
-    const directSupplementContext = await supplementLookupService.getSupplementContext(userIdNum, userQuery);
+    const directSupplementContext = await supplementLookupService.getSupplementContext(
+      userIdNum,
+      userQuery
+    );
 
     // Get relevant content with error handling and fallback
     logger.info(`Retrieving relevant content with expanded search`);
@@ -54,16 +66,16 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
       // Log what we found
       const contentTypes = {
-        summary: relevantContent.filter(item => item.type === 'summary').length,
-        qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
-        quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+        summary: relevantContent.filter((item) => item.type === 'summary').length,
+        qualitative_log: relevantContent.filter((item) => item.type === 'qualitative_log').length,
+        quantitative_log: relevantContent.filter((item) => item.type === 'quantitative_log').length,
       };
 
       logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
     } catch (vectorError) {
       logger.error(`Vector retrieval error, falling back to recent summaries:`, {
         error: vectorError instanceof Error ? vectorError.message : String(vectorError),
-        stack: vectorError instanceof Error ? vectorError.stack : undefined
+        stack: vectorError instanceof Error ? vectorError.stack : undefined,
       });
 
       // Fall back to direct database queries for recent content
@@ -83,25 +95,26 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
     // Process summaries
-    relevantContent.filter(item => item.type === 'summary').forEach(summary => {
-      const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
-      const summaryEntry = `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
+    relevantContent
+      .filter((item) => item.type === 'summary')
+      .forEach((summary) => {
+        const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
+        const summaryEntry = `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
 
-      // Determine if this is a recent or historical summary
-      if (new Date(summary.endDate) >= twoWeeksAgo) {
-        recentSummaryContent += summaryEntry;
-      } else {
-        historicalSummaryContent += summaryEntry;
-      }
-    });
+        // Determine if this is a recent or historical summary
+        if (new Date(summary.endDate) >= twoWeeksAgo) {
+          recentSummaryContent += summaryEntry;
+        } else {
+          historicalSummaryContent += summaryEntry;
+        }
+      });
 
     // Process qualitative logs - with proper filtering
-    const qualitativeLogs = relevantContent.filter(item => 
-      item.type === 'qualitative_log' && 
-      item.type !== 'query' // Explicitly exclude query logs
+    const qualitativeLogs = relevantContent.filter(
+      (item) => item.type === 'qualitative_log' && item.type !== 'query' // Explicitly exclude query logs
     );
 
-    qualitativeLogs.forEach(log => {
+    qualitativeLogs.forEach((log) => {
       let content = log.content;
 
       try {
@@ -109,8 +122,8 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         const parsed = JSON.parse(log.content);
         if (Array.isArray(parsed)) {
           content = parsed
-            .filter(msg => msg.role === 'user')
-            .map(msg => msg.content)
+            .filter((msg) => msg.role === 'user')
+            .map((msg) => msg.content)
             .join(' | ');
         }
       } catch (e) {
@@ -121,18 +134,20 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     });
 
     // Process quantitative logs
-    relevantContent.filter(item => item.type === 'quantitative_log').forEach(log => {
-      const effectsText = log.effects
-        ? Object.entries(log.effects)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join(', ')
-        : 'No effects recorded';
+    relevantContent
+      .filter((item) => item.type === 'quantitative_log')
+      .forEach((log) => {
+        const effectsText = log.effects
+          ? Object.entries(log.effects)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
+          : 'No effects recorded';
 
-      quantitativeLogContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
-    });
+        quantitativeLogContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
+      });
 
     // FALLBACK: Add recent summaries if vector search returns insufficient results
-    if (relevantContent.filter(item => item.type === 'summary').length < 2) {
+    if (relevantContent.filter((item) => item.type === 'summary').length < 2) {
       logger.info('Insufficient vector search results, fetching recent logs as fallback');
 
       // Get the most recent summaries regardless of relevance
@@ -161,24 +176,28 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
     - Fallback summaries: ${supplementLogContent ? 'Yes' : 'No'}
     - Direct supplement context: ${directSupplementContext ? 'Yes' : 'No'}`);
 
-        // Get lab results summaries
+    // Get lab results summaries
     let labResultsContext = '';
     try {
-      const relevantLabResults = await labSummaryService.findRelevantLabResults(parseInt(userId), userQuery, 3);
+      const relevantLabResults = await labSummaryService.findRelevantLabResults(
+        parseInt(userId),
+        userQuery,
+        3
+      );
 
       if (relevantLabResults.length > 0) {
         labResultsContext = "User's Lab Test Results:\n";
         for (const lab of relevantLabResults) {
           const labDate = new Date(lab.uploadedAt).toLocaleDateString();
-          
+
           // First try to get OCR text from Google Vision result
           let extractedText = lab.metadata?.ocr?.text;
-          
+
           // If no OCR text, try PDF parsed text
           if (!extractedText) {
             extractedText = lab.metadata?.parsedText;
           }
-          
+
           // Finally try generic extracted text field
           if (!extractedText) {
             extractedText = lab.metadata?.extractedText;
@@ -188,7 +207,7 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
             logger.info(`Found extracted text for lab ${lab.id}:`, {
               textLength: extractedText.length,
               source: lab.metadata?.ocr ? 'OCR' : 'PDF',
-              fileName: lab.fileName
+              fileName: lab.fileName,
             });
             labResultsContext += `[${labDate}] ${lab.fileName}:\n${extractedText}\n\n`;
           } else if (lab.metadata?.summary) {
@@ -207,8 +226,10 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // Construct the final context message
     const messages: Message[] = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
-      { role: "user" as const, content: `
+      { role: 'system' as const, content: SYSTEM_PROMPT },
+      {
+        role: 'user' as const,
+        content: `
 User Context - Health Statistics:
 ${healthStatsContext}
 
@@ -230,7 +251,8 @@ ${quantitativeLogContent || supplementLogContent || 'No relevant supplement logs
 
 User Query:
 ${userQuery}
-` }
+`,
+      },
     ];
 
     logger.info(`Context successfully built for user ${userId} with token-efficient approach`);
@@ -242,18 +264,18 @@ ${userQuery}
 
     return context;
   } catch (error) {
-    logger.error("Error constructing user context:", {
+    logger.error('Error constructing user context:', {
       userId,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     // Fallback to basic prompt on error
     return {
       messages: [
-        { role: "system" as const, content: SYSTEM_PROMPT },
-        { role: "user" as const, content: userQuery }
-      ]
+        { role: 'system' as const, content: SYSTEM_PROMPT },
+        { role: 'user' as const, content: userQuery },
+      ],
     };
   }
 }
@@ -267,12 +289,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
     const recentSummaries = await db
       .select()
       .from(logSummaries)
-      .where(
-        and(
-          eq(logSummaries.userId, userId),
-          eq(logSummaries.summaryType, 'daily')
-        )
-      )
+      .where(and(eq(logSummaries.userId, userId), eq(logSummaries.summaryType, 'daily')))
       .orderBy(desc(logSummaries.createdAt))
       .limit(3);
 
@@ -281,7 +298,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
       result.push({
         ...summary,
         type: 'summary',
-        similarity: 0.8
+        similarity: 0.8,
       });
     }
 
@@ -289,12 +306,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
     const recentLogs = await db
       .select()
       .from(qualitativeLogs)
-      .where(
-        and(
-          eq(qualitativeLogs.userId, userId),
-          notInArray(qualitativeLogs.type, ['query'])
-        )
-      )
+      .where(and(eq(qualitativeLogs.userId, userId), notInArray(qualitativeLogs.type, ['query'])))
       .orderBy(desc(qualitativeLogs.createdAt))
       .limit(5);
 
@@ -303,7 +315,7 @@ async function getFallbackRelevantContent(userId: number): Promise<any[]> {
       result.push({
         ...log,
         type: 'qualitative_log',
-        similarity: 0.7
+        similarity: 0.7,
       });
     }
 

@@ -14,8 +14,8 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY environment variable is required');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { 
-  apiVersion: '2023-10-16' 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16',
 });
 
 /**
@@ -59,17 +59,17 @@ router.post('/register-post-payment', async (req, res) => {
     // Verify the session with Stripe
     try {
       const session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['line_items', 'line_items.data.price.product']
+        expand: ['line_items', 'line_items.data.price.product'],
       });
-      
+
       if (session.payment_status !== 'paid') {
         return res.status(400).json({ message: 'Payment has not been completed' });
       }
-      
+
       // Verify email matches if available in session
       if (session.customer_details?.email && session.customer_details.email !== email) {
-        return res.status(400).json({ 
-          message: 'Email does not match the one used for payment' 
+        return res.status(400).json({
+          message: 'Email does not match the one used for payment',
         });
       }
 
@@ -85,22 +85,19 @@ router.post('/register-post-payment', async (req, res) => {
       }
     } catch (err: any) {
       console.error('Error verifying Stripe session:', err);
-      return res.status(400).json({ 
-        message: 'Unable to verify payment session. Please contact support.' 
+      return res.status(400).json({
+        message: 'Unable to verify payment session. Please contact support.',
       });
     }
 
     // Check if username or email already exists
     const existingUser = await db.query.users.findFirst({
-      where: (users, { or, eq }) => or(
-        eq(users.username, username),
-        eq(users.email, email)
-      )
+      where: (users, { or, eq }) => or(eq(users.username, username), eq(users.email, email)),
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
-        message: 'Username or email already exists' 
+      return res.status(400).json({
+        message: 'Username or email already exists',
       });
     }
 
@@ -110,8 +107,8 @@ router.post('/register-post-payment', async (req, res) => {
       const customer = await stripe.customers.create({
         email,
         metadata: {
-          username
-        }
+          username,
+        },
       });
       stripeCustomerId = customer.id;
     } catch (error) {
@@ -119,16 +116,19 @@ router.post('/register-post-payment', async (req, res) => {
     }
 
     // Create user record
-    const [user] = await db.insert(users).values({
-      username,
-      email,
-      password: await hashPassword(password),
-      subscriptionTier,
-      stripeCustomerId,
-      purchaseId,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
+    const [user] = await db
+      .insert(users)
+      .values({
+        username,
+        email,
+        password: await hashPassword(password),
+        subscriptionTier,
+        stripeCustomerId,
+        purchaseId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
 
     // Log the user in and establish session
     req.logIn(user, (err) => {
@@ -136,18 +136,18 @@ router.post('/register-post-payment', async (req, res) => {
         console.error('Error logging in user:', err);
         return res.status(500).json({ message: 'Failed to log in' });
       }
-      
+
       // Success - return user without password
       const { password, ...userWithoutPassword } = user;
       return res.status(201).json({
         ...userWithoutPassword,
-        isAuthenticated: true
+        isAuthenticated: true,
       });
     });
   } catch (err: any) {
     console.error('Post-payment registration error:', err);
-    return res.status(500).json({ 
-      message: 'Registration failed. Please try again or contact support.' 
+    return res.status(500).json({
+      message: 'Registration failed. Please try again or contact support.',
     });
   }
 });

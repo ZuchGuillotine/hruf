@@ -1,0 +1,1297 @@
+{
+  "version": "41.0.0",
+  "artifacts": {
+    "StackTrackerInfraStackV3.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "StackTrackerInfraStackV3.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "StackTrackerInfraStackV3": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://881490119784/us-west-2",
+      "properties": {
+        "templateFile": "StackTrackerInfraStackV3.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "Environment": "staging",
+          "ManagedBy": "CDK",
+          "Project": "StackTracker"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-deploy-role-881490119784-us-west-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-cfn-exec-role-881490119784-us-west-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-881490119784-us-west-2/2c079d97c0541f123247d05a29fdb365578f1fc6b0247e97799244ac31ad0a6b.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "StackTrackerInfraStackV3.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-lookup-role-881490119784-us-west-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "StackTrackerInfraStackV3.assets"
+      ],
+      "metadata": {
+        "/StackTrackerInfraStackV3": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "Environment",
+                "Value": "staging"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "CDK"
+              },
+              {
+                "Key": "Project",
+                "Value": "StackTracker"
+              }
+            ]
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpcName": "*",
+              "maxAzs": "*",
+              "natGateways": "*",
+              "subnetConfiguration": [
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Public"
+                },
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Private"
+                },
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Isolated"
+                }
+              ],
+              "enableDnsHostnames": true,
+              "enableDnsSupport": true
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPC312672F2"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet1Subnet9BAD6C9F"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet1RouteTable4029C464"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet1RouteTableAssociation807324E8"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet1DefaultRoute4DF85233"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet1EIPD6E66E5D"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet1NATGateway0F64B4B5"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet2SubnetDA60B8A7"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet2RouteTable33828B7D"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet2RouteTableAssociation991C1B7C"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PublicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPublicSubnet2DefaultRoute59941B3D"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet1Subnet0B7C8E72"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet1RouteTable71CCEAF6"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet1RouteTableAssociationDAF4DB30"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet1DefaultRouteEFE2A2F3"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet2Subnet0741B41F"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet2RouteTableDD64BAE2"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet2RouteTableAssociation40036BFA"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/PrivateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCPrivateSubnet2DefaultRoute31EEA642"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIsolatedSubnet1Subnet60779DEC"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIsolatedSubnet1RouteTableE447399C"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIsolatedSubnet1RouteTableAssociationD52D53F0"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIsolatedSubnet2SubnetD3AAD45E"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIsolatedSubnet2RouteTableA0244AE7"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IsolatedSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIsolatedSubnet2RouteTableAssociation83AB5911"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCIGWA6CDAC5D"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCVPCGW9EA639BB"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/RestrictDefaultSecurityGroupCustomResource": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/RestrictDefaultSecurityGroupCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCRestrictDefaultSecurityGroupCustomResourceA76125A0"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/SecretsManagerEndpoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "service": {
+                "privateDnsDefault": true,
+                "name": "*",
+                "port": "*"
+              },
+              "subnets": {
+                "subnetType": "Isolated"
+              }
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/SecretsManagerEndpoint/SecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/SecretsManagerEndpoint/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCSecretsManagerEndpointSecurityGroup388793BB"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/SecretsManagerEndpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCSecretsManagerEndpoint54590ACF"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/RDSEndpoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "service": {
+                "privateDnsDefault": true,
+                "name": "*",
+                "port": "*"
+              },
+              "subnets": {
+                "subnetType": "Isolated"
+              }
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/RDSEndpoint/SecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/RDSEndpoint/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCRDSEndpointSecurityGroup092E3F17"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/RDSEndpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCRDSEndpoint68256C0F"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/S3Endpoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "service": {
+                "name": "*"
+              },
+              "subnets": [
+                {
+                  "subnetType": "Isolated"
+                }
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerVPC/S3Endpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerVPCS3Endpoint99BC131B"
+          }
+        ],
+        "/StackTrackerInfraStackV3/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/StackTrackerInfraStackV3/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+          }
+        ],
+        "/StackTrackerInfraStackV3/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ApplicationSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "securityGroupName": "*",
+              "description": "*",
+              "allowAllOutbound": true
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/ApplicationSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApplicationSecurityGroup3903A0DC"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": false
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*"
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroup7319C0F6"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSecurityGroup/from StackTrackerInfraStackV3ApplicationSecurityGroup9AB62CF4:5432": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroupfromStackTrackerInfraStackV3ApplicationSecurityGroup9AB62CF45432B0C0362C"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSubnetGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "subnetGroupName": "*",
+              "description": "*",
+              "vpcSubnets": {
+                "subnets": [
+                  "*",
+                  "*",
+                  "*",
+                  "*"
+                ]
+              }
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSubnetGroup/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSubnetGroup"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSecretV3": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secretName": "*",
+              "generateSecretString": {
+                "secretStringTemplate": "*",
+                "generateStringKey": "*",
+                "excludePunctuation": true,
+                "passwordLength": "*"
+              },
+              "description": "*"
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSecretV3/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecretV38354E0F1"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseParameterGroupV3": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "engine": {
+                "engineType": "*",
+                "engineVersion": {
+                  "fullVersion": "*",
+                  "majorVersion": "*"
+                },
+                "parameterGroupFamily": "*",
+                "engineFamily": "*",
+                "defaultUsername": "*"
+              },
+              "parameters": "*",
+              "description": "*"
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseEndpoint"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseNote": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseNote"
+          }
+        ],
+        "/StackTrackerInfraStackV3/UploadsBucket": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "versioned": true,
+              "encryption": "S3_MANAGED",
+              "blockPublicAccess": "*",
+              "removalPolicy": "retain",
+              "cors": [
+                {
+                  "allowedMethods": [
+                    "GET",
+                    "POST",
+                    "PUT"
+                  ],
+                  "allowedOrigins": "*",
+                  "allowedHeaders": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addCorsRule": [
+                {
+                  "allowedMethods": [
+                    "GET",
+                    "POST",
+                    "PUT"
+                  ],
+                  "allowedOrigins": "*",
+                  "allowedHeaders": "*"
+                },
+                "*",
+                "*"
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/UploadsBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UploadsBucket5E5E9B64"
+          }
+        ],
+        "/StackTrackerInfraStackV3/TestInstanceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/TestInstanceRole/ImportTestInstanceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/StackTrackerInfraStackV3/TestInstanceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TestInstanceRole5518C8D3"
+          }
+        ],
+        "/StackTrackerInfraStackV3/TestInstanceRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/TestInstanceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TestInstanceRoleDefaultPolicyC7EABD87"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseTestInstance": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "instanceType": "*",
+              "machineImage": "*",
+              "securityGroup": "*",
+              "userData": "*",
+              "role": "*"
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseTestInstance/InstanceProfile": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseTestInstanceInstanceProfileAB31C302"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseTestInstance/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseTestInstance7AABCDB5"
+          }
+        ],
+        "/StackTrackerInfraStackV3/SsmParameterValue:--aws--service--ami-amazon-linux-latest--al2023-ami-kernel-6.1-x86_64:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SsmParameterValueawsserviceamiamazonlinuxlatestal2023amikernel61x8664C96584B6F00A464EAD1953AFF4B05118Parameter"
+          }
+        ],
+        "/StackTrackerInfraStackV3/TestInstanceId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TestInstanceId"
+          }
+        ],
+        "/StackTrackerInfraStackV3/VpcId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VpcId"
+          }
+        ],
+        "/StackTrackerInfraStackV3/PrivateSubnetIds": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnetIds"
+          }
+        ],
+        "/StackTrackerInfraStackV3/PublicSubnetIds": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnetIds"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabasePort": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabasePort"
+          }
+        ],
+        "/StackTrackerInfraStackV3/DatabaseSecretArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecretArn"
+          }
+        ],
+        "/StackTrackerInfraStackV3/UploadsBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UploadsBucketName"
+          }
+        ],
+        "/StackTrackerInfraStackV3/UploadsBucketArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UploadsBucketArn"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkServiceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                },
+                {
+                  "managedPolicyArn": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkServiceRole/ImportElasticBeanstalkServiceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ElasticBeanstalkServiceRoleA03BC2E6"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkInstanceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                },
+                {
+                  "managedPolicyArn": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkInstanceRole/ImportElasticBeanstalkInstanceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkInstanceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ElasticBeanstalkInstanceRoleF8F2F8C4"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkInstanceRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkInstanceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ElasticBeanstalkInstanceRoleDefaultPolicyA6F02B5C"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkInstanceProfile": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ElasticBeanstalkInstanceProfile"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerApplication": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerApplication"
+          }
+        ],
+        "/StackTrackerInfraStackV3/StackTrackerEnvironment": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerEnvironment"
+          }
+        ],
+        "/StackTrackerInfraStackV3/ElasticBeanstalkEnvironmentUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ElasticBeanstalkEnvironmentUrl"
+          }
+        ],
+        "/StackTrackerInfraStackV3/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/StackTrackerInfraStackV3/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/StackTrackerInfraStackV3/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "StackTrackerInfraStackV3"
+    },
+    "StackTrackerMonitoringStackV3.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "StackTrackerMonitoringStackV3.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "StackTrackerMonitoringStackV3": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://881490119784/us-west-2",
+      "properties": {
+        "templateFile": "StackTrackerMonitoringStackV3.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "Environment": "staging",
+          "ManagedBy": "CDK",
+          "Project": "StackTracker"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-deploy-role-881490119784-us-west-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-cfn-exec-role-881490119784-us-west-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-881490119784-us-west-2/519041fc8c994f2f554b0b846eccdf914e0465637e938b541a4f222c3ac0142d.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "StackTrackerMonitoringStackV3.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-lookup-role-881490119784-us-west-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "StackTrackerMonitoringStackV3.assets"
+      ],
+      "metadata": {
+        "/StackTrackerMonitoringStackV3": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "Environment",
+                "Value": "staging"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "CDK"
+              },
+              {
+                "Key": "Project",
+                "Value": "StackTracker"
+              }
+            ]
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/StackTrackerDashboard": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "dashboardName": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                },
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                },
+                "*"
+              ]
+            }
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/StackTrackerDashboard/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerDashboard63CE2A97"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/DatabaseCPUAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "datapointsToAlarm": "*",
+              "alarmDescription": "*"
+            }
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/DatabaseCPUAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseCPUAlarmB69066CC"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/DatabaseConnectionsAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "datapointsToAlarm": "*",
+              "alarmDescription": "*"
+            }
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/DatabaseConnectionsAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseConnectionsAlarm3643818C"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/EBHealthAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "datapointsToAlarm": "*",
+              "alarmDescription": "*"
+            }
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/EBHealthAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EBHealthAlarm31F30830"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/StackTrackerWAF": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StackTrackerWAF"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/WafAclArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WafAclArn"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/StackTrackerMonitoringStackV3/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "StackTrackerMonitoringStackV3"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  },
+  "minimumCliVersion": "2.1005.0"
+}

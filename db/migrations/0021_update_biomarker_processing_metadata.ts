@@ -1,5 +1,5 @@
-import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { sql } from "drizzle-orm";
+import { type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { sql } from 'drizzle-orm';
 import logger from '../../server/utils/logger';
 import { db } from '../index';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
@@ -16,19 +16,19 @@ type ColumnInfo = {
 export async function up(db: NeonHttpDatabase<typeof schema>) {
   try {
     logger.info('Starting migration: Update biomarker processing metadata schema');
-    
+
     // Create backup table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS biomarker_processing_status_backup AS 
       SELECT * FROM biomarker_processing_status
     `);
-    
+
     // Update the metadata column type
     await db.execute(sql`
       ALTER TABLE biomarker_processing_status
       ALTER COLUMN metadata TYPE jsonb USING metadata::jsonb
     `);
-    
+
     // Update the column comment
     await db.execute(sql`
       COMMENT ON COLUMN biomarker_processing_status.metadata IS '{
@@ -57,14 +57,14 @@ export async function up(db: NeonHttpDatabase<typeof schema>) {
     }
 
     logger.info('Successfully updated biomarker processing status metadata schema', {
-      verification: firstRow
+      verification: firstRow,
     });
   } catch (error) {
     logger.error('Error updating biomarker processing status metadata schema:', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     // Attempt to restore from backup
     try {
       const backupExists = await db.execute(sql`
@@ -74,7 +74,7 @@ export async function up(db: NeonHttpDatabase<typeof schema>) {
           AND table_name = 'biomarker_processing_status_backup'
         )
       `);
-      
+
       if (backupExists.rows?.[0]?.exists) {
         await db.execute(sql`
           INSERT INTO biomarker_processing_status 
@@ -90,10 +90,10 @@ export async function up(db: NeonHttpDatabase<typeof schema>) {
       }
     } catch (restoreError) {
       logger.error('Failed to restore from backup:', {
-        error: restoreError instanceof Error ? restoreError.message : String(restoreError)
+        error: restoreError instanceof Error ? restoreError.message : String(restoreError),
       });
     }
-    
+
     throw error;
   } finally {
     // Clean up backup table
@@ -103,7 +103,7 @@ export async function up(db: NeonHttpDatabase<typeof schema>) {
       `);
     } catch (cleanupError) {
       logger.warn('Failed to clean up backup table:', {
-        error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
+        error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
       });
     }
   }
@@ -113,7 +113,7 @@ export async function up(db: NeonHttpDatabase<typeof schema>) {
 export async function down(db: NeonHttpDatabase<typeof schema>) {
   try {
     logger.info('Starting migration rollback: Revert biomarker processing metadata schema');
-    
+
     // Create backup before rollback
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS biomarker_processing_status_backup AS 
@@ -125,7 +125,7 @@ export async function down(db: NeonHttpDatabase<typeof schema>) {
       ALTER TABLE biomarker_processing_status
       ALTER COLUMN metadata TYPE jsonb USING metadata::jsonb
     `);
-    
+
     // Update the column comment
     await db.execute(sql`
       COMMENT ON COLUMN biomarker_processing_status.metadata IS '{
@@ -150,14 +150,14 @@ export async function down(db: NeonHttpDatabase<typeof schema>) {
     }
 
     logger.info('Successfully reverted biomarker processing status metadata schema', {
-      verification: firstRow
+      verification: firstRow,
     });
   } catch (error) {
     logger.error('Error reverting biomarker processing status metadata schema:', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     // Attempt to restore from backup
     try {
       const backupExists = await db.execute(sql`
@@ -167,7 +167,7 @@ export async function down(db: NeonHttpDatabase<typeof schema>) {
           AND table_name = 'biomarker_processing_status_backup'
         )
       `);
-      
+
       if (backupExists.rows?.[0]?.exists) {
         await db.execute(sql`
           INSERT INTO biomarker_processing_status 
@@ -183,10 +183,10 @@ export async function down(db: NeonHttpDatabase<typeof schema>) {
       }
     } catch (restoreError) {
       logger.error('Failed to restore from backup:', {
-        error: restoreError instanceof Error ? restoreError.message : String(restoreError)
+        error: restoreError instanceof Error ? restoreError.message : String(restoreError),
       });
     }
-    
+
     throw error;
   } finally {
     // Clean up backup table
@@ -196,7 +196,7 @@ export async function down(db: NeonHttpDatabase<typeof schema>) {
       `);
     } catch (cleanupError) {
       logger.warn('Failed to clean up backup table:', {
-        error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
+        error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
       });
     }
   }
@@ -207,8 +207,8 @@ if (import.meta.url === new URL(process.argv[1], 'file:').href) {
   up(db as NeonHttpDatabase<typeof schema>).catch((error) => {
     logger.error('Migration failed:', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     process.exit(1);
   });
-} 
+}

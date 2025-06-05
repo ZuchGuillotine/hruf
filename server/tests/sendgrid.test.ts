@@ -1,11 +1,10 @@
-
 import { sendEmail } from '../services/emailService';
 import * as sgMail from '@sendgrid/mail';
 
 // Mock SendGrid
 jest.mock('@sendgrid/mail', () => ({
   setApiKey: jest.fn(),
-  send: jest.fn().mockResolvedValue([{ statusCode: 202 }])
+  send: jest.fn().mockResolvedValue([{ statusCode: 202 }]),
 }));
 
 describe('SendGrid Email Service', () => {
@@ -15,7 +14,7 @@ describe('SendGrid Email Service', () => {
       to: 'test@example.com',
       subject: 'Test Email',
       text: 'This is a test email',
-      html: '<p>This is a test email</p>'
+      html: '<p>This is a test email</p>',
     };
 
     // Act
@@ -23,10 +22,12 @@ describe('SendGrid Email Service', () => {
 
     // Assert
     expect(sgMail.send).toHaveBeenCalled();
-    expect(sgMail.send).toHaveBeenCalledWith(expect.objectContaining({
-      to: 'test@example.com',
-      subject: 'Test Email'
-    }));
+    expect(sgMail.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'test@example.com',
+        subject: 'Test Email',
+      })
+    );
     expect(result).toBe(true);
   });
 
@@ -36,7 +37,7 @@ describe('SendGrid Email Service', () => {
       to: 'test@example.com',
       subject: 'Error Test Email',
       text: 'This should fail',
-      html: '<p>This should fail</p>'
+      html: '<p>This should fail</p>',
     };
 
     // Mock a failure for this test

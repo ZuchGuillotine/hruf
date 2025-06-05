@@ -1,6 +1,6 @@
-import { sql } from "drizzle-orm";
-import { pgTable, serial, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { type AnyPgColumn } from "drizzle-orm/pg-core";
+import { sql } from 'drizzle-orm';
+import { pgTable, serial, text, integer, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export async function up(db: any) {
   // Enable required extensions

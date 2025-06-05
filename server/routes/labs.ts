@@ -18,12 +18,16 @@ import { debugLabResults } from '../controllers/debugController';
 router.use('/chart-data', labChartDataRouter);
 
 // Debug endpoint - only accessible by admins
-router.get('/debug/:labId?', (req, res, next) => {
-  if (!req.user?.isAdmin) {
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
-  next();
-}, debugLabResults);
+router.get(
+  '/debug/:labId?',
+  (req, res, next) => {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    next();
+  },
+  debugLabResults
+);
 
 // Configure file upload middleware
 const uploadMiddleware = fileUpload({
@@ -35,7 +39,7 @@ const uploadMiddleware = fileUpload({
   debug: true,
   createParentPath: true,
   parseNested: true,
-  abortOnLimit: true
+  abortOnLimit: true,
 });
 
 // Get all lab results for a user
@@ -45,7 +49,7 @@ router.get('/', async (req, res) => {
       .select()
       .from(labResults)
       .where(eq(labResults.userId, req.user!.id))
-      .orderBy(labResults.uploadedAt, "desc");
+      .orderBy(labResults.uploadedAt, 'desc');
 
     logger.info(`Retrieved ${results.length} lab results for user ${req.user!.id}`);
     res.json(results);
@@ -53,7 +57,7 @@ router.get('/', async (req, res) => {
     logger.error('Error fetching lab results:', {
       userId: req.user!.id,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     res.status(500).json({ error: 'Failed to fetch lab results' });
   }
@@ -68,7 +72,7 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
 
     const file = req.files.file as fileUpload.UploadedFile;
     const uploadDir = path.join(process.cwd(), 'uploads');
-    
+
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -87,24 +91,27 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
     let preprocessedText;
     try {
       const fileBuffer = fs.readFileSync(filePath);
-      preprocessedText = await labTextPreprocessingService.preprocessLabText(fileBuffer, file.mimetype);
-      
+      preprocessedText = await labTextPreprocessingService.preprocessLabText(
+        fileBuffer,
+        file.mimetype
+      );
+
       logger.info('Lab text pre-processing complete', {
         fileName: file.name,
         mimeType: file.mimetype,
         textLength: preprocessedText.normalizedText.length,
-        qualityMetrics: preprocessedText.metadata.qualityMetrics
+        qualityMetrics: preprocessedText.metadata.qualityMetrics,
       });
     } catch (preprocessError) {
       logger.error('Error pre-processing lab text:', {
         fileName: file.name,
         error: preprocessError instanceof Error ? preprocessError.message : String(preprocessError),
-        stack: preprocessError instanceof Error ? preprocessError.stack : undefined
+        stack: preprocessError instanceof Error ? preprocessError.stack : undefined,
       });
       // Continue with upload even if pre-processing fails
       preprocessedText = null;
     }
-    
+
     // Save file info to database with enhanced metadata
     const [result] = await db
       .insert(labResults)
@@ -123,14 +130,16 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
           mimeType: file.mimetype,
           md5: file.md5,
           // Add pre-processed text data if available
-          ...(preprocessedText ? {
-            preprocessedText: {
-              rawText: preprocessedText.rawText,
-              normalizedText: preprocessedText.normalizedText,
-              processingMetadata: preprocessedText.metadata
-            }
-          } : {})
-        }
+          ...(preprocessedText
+            ? {
+                preprocessedText: {
+                  rawText: preprocessedText.rawText,
+                  normalizedText: preprocessedText.normalizedText,
+                  processingMetadata: preprocessedText.metadata,
+                },
+              }
+            : {}),
+        },
       })
       .returning();
 
@@ -140,35 +149,38 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
       fileUrl: relativeUrl,
       userId: req.user!.id,
       fileSize: file.size,
-      hasPreprocessedText: !!preprocessedText
+      hasPreprocessedText: !!preprocessedText,
     });
 
     // Trigger background summarization with pre-processed text if available
     try {
       const textToSummarize = preprocessedText?.normalizedText || preprocessedText?.rawText;
-      
-      labSummaryService.summarizeLabResult(result.id, textToSummarize)
+
+      labSummaryService
+        .summarizeLabResult(result.id, textToSummarize)
         .then((summary) => {
           if (summary) {
             logger.info(`Background summary generation completed for lab ID ${result.id}`);
           } else {
-            logger.warn(`Background summary generation completed but returned null for lab ID ${result.id}`);
+            logger.warn(
+              `Background summary generation completed but returned null for lab ID ${result.id}`
+            );
           }
         })
-        .catch(summaryError => {
+        .catch((summaryError) => {
           logger.error('Background summary generation failed:', {
             labId: result.id,
             error: summaryError instanceof Error ? summaryError.message : String(summaryError),
-            stack: summaryError instanceof Error ? summaryError.stack : undefined
+            stack: summaryError instanceof Error ? summaryError.stack : undefined,
           });
         });
-        
+
       logger.info('Background summary generation started for lab ID:', result.id);
     } catch (summaryError) {
       logger.error('Failed to initiate lab summarization:', {
         labId: result.id,
         error: summaryError instanceof Error ? summaryError.message : String(summaryError),
-        stack: summaryError instanceof Error ? summaryError.stack : undefined
+        stack: summaryError instanceof Error ? summaryError.stack : undefined,
       });
     }
 
@@ -178,7 +190,7 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
       userId: req.user!.id,
       fileName: req.files?.file ? (req.files.file as fileUpload.UploadedFile).name : 'unknown',
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     res.status(500).json({ error: 'Failed to upload lab result' });
   }
@@ -187,14 +199,10 @@ router.post('/', uploadMiddleware, checkLabUploadLimit, async (req, res) => {
 // Delete lab result
 router.delete('/:id', async (req, res) => {
   const labId = parseInt(req.params.id);
-  
+
   try {
     // First fetch the record to get file path
-    const [labRecord] = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.id, labId))
-      .limit(1);
+    const [labRecord] = await db.select().from(labResults).where(eq(labResults.id, labId)).limit(1);
 
     if (!labRecord) {
       logger.warn(`Attempted to delete non-existent lab result: ${labId}`);
@@ -202,46 +210,44 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Delete database record
-    await db
-      .delete(labResults)
-      .where(eq(labResults.id, labId));
+    await db.delete(labResults).where(eq(labResults.id, labId));
 
     // Delete physical file if it exists
     try {
       const filePath = path.join(process.cwd(), labRecord.fileUrl);
-      
+
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         logger.info(`Deleted lab result file:`, {
           labId,
           filePath,
-          fileName: labRecord.fileName
+          fileName: labRecord.fileName,
         });
       } else {
         logger.warn(`Lab result file not found during deletion:`, {
           labId,
           filePath,
-          fileName: labRecord.fileName
+          fileName: labRecord.fileName,
         });
       }
     } catch (fileError) {
       logger.error('Error deleting lab result file:', {
         labId,
         error: fileError instanceof Error ? fileError.message : String(fileError),
-        stack: fileError instanceof Error ? fileError.stack : undefined
+        stack: fileError instanceof Error ? fileError.stack : undefined,
       });
     }
 
-    res.json({ 
+    res.json({
       message: 'Lab result deleted successfully',
       labId,
-      fileName: labRecord.fileName
+      fileName: labRecord.fileName,
     });
   } catch (error) {
     logger.error('Error deleting lab result:', {
       labId,
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     res.status(500).json({ error: 'Failed to delete lab result' });
   }

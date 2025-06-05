@@ -10,7 +10,7 @@ export const debugLabResults = async (req: Request, res: Response) => {
   }
 
   const { labId } = req.params;
-  
+
   try {
     if (labId) {
       // Get specific lab result with both biomarker sources
@@ -20,17 +20,17 @@ export const debugLabResults = async (req: Request, res: Response) => {
           fileName: labResults.fileName,
           uploadedAt: labResults.uploadedAt,
           metadata: labResults.metadata,
-          biomarkers: biomarkerResults
+          biomarkers: biomarkerResults,
         })
         .from(labResults)
         .leftJoin(biomarkerResults, eq(biomarkerResults.labResultId, labResults.id))
         .where(eq(labResults.id, parseInt(labId)))
         .limit(1);
-      
+
       if (!labResult) {
         return res.status(404).json({ error: 'Lab result not found' });
       }
-      
+
       // Get all biomarkers from the table for this lab
       const tableBiomarkers = await db
         .select()
@@ -40,7 +40,7 @@ export const debugLabResults = async (req: Request, res: Response) => {
 
       // Extract biomarker info from metadata for comparison
       const metadataBiomarkers = labResult.metadata?.biomarkers?.parsedBiomarkers || [];
-      
+
       return res.status(200).json({
         labResult: {
           id: labResult.id,
@@ -49,26 +49,26 @@ export const debugLabResults = async (req: Request, res: Response) => {
           biomarkerComparison: {
             tableCount: tableBiomarkers.length,
             metadataCount: metadataBiomarkers.length,
-            tableBiomarkers: tableBiomarkers.map(b => ({
+            tableBiomarkers: tableBiomarkers.map((b) => ({
               name: b.name,
               value: b.value,
               unit: b.unit,
               category: b.category,
               testDate: b.testDate,
-              status: b.status
+              status: b.status,
             })),
-            metadataBiomarkers: metadataBiomarkers.map(b => ({
+            metadataBiomarkers: metadataBiomarkers.map((b) => ({
               name: b.name,
               value: b.value,
               unit: b.unit,
               category: b.category,
-              testDate: b.testDate
+              testDate: b.testDate,
             })),
             extractedAt: labResult.metadata?.biomarkers?.extractedAt,
             hasOcr: !!labResult.metadata?.ocr,
-            hasParsedText: !!labResult.metadata?.parsedText
-          }
-        }
+            hasParsedText: !!labResult.metadata?.parsedText,
+          },
+        },
       });
     } else {
       // Get summary of all lab results with biomarker counts from both sources
@@ -79,13 +79,13 @@ export const debugLabResults = async (req: Request, res: Response) => {
           uploadedAt: labResults.uploadedAt,
           userId: labResults.userId,
           metadata: labResults.metadata,
-          biomarkerCount: sql<number>`count(${biomarkerResults.id})`
+          biomarkerCount: sql<number>`count(${biomarkerResults.id})`,
         })
         .from(labResults)
         .leftJoin(biomarkerResults, eq(biomarkerResults.labResultId, labResults.id))
         .groupBy(labResults.id);
-      
-      const summary = results.map(result => {
+
+      const summary = results.map((result) => {
         const metadataBiomarkers = result.metadata?.biomarkers?.parsedBiomarkers || [];
         return {
           id: result.id,
@@ -94,19 +94,21 @@ export const debugLabResults = async (req: Request, res: Response) => {
           userId: result.userId,
           biomarkerCounts: {
             table: Number(result.biomarkerCount) || 0,
-            metadata: metadataBiomarkers.length
+            metadata: metadataBiomarkers.length,
           },
-          biomarkerNames: metadataBiomarkers.map(b => b.name),
+          biomarkerNames: metadataBiomarkers.map((b) => b.name),
           extractedAt: result.metadata?.biomarkers?.extractedAt,
-          hasDiscrepancy: Number(result.biomarkerCount) !== metadataBiomarkers.length
+          hasDiscrepancy: Number(result.biomarkerCount) !== metadataBiomarkers.length,
         };
       });
-      
-      return res.status(200).json({ 
+
+      return res.status(200).json({
         summary,
         totalLabResults: results.length,
-        labsWithBiomarkers: summary.filter(s => s.biomarkerCounts.table > 0 || s.biomarkerCounts.metadata > 0).length,
-        labsWithDiscrepancies: summary.filter(s => s.hasDiscrepancy).length
+        labsWithBiomarkers: summary.filter(
+          (s) => s.biomarkerCounts.table > 0 || s.biomarkerCounts.metadata > 0
+        ).length,
+        labsWithDiscrepancies: summary.filter((s) => s.hasDiscrepancy).length,
       });
     }
   } catch (error) {

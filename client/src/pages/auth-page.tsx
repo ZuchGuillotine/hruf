@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   Card,
   CardContent,
@@ -7,18 +7,18 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useUser } from "@/hooks/use-user";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import Footer from "@/components/footer";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import LandingHeader from "@/components/landing-header";
-import BackgroundWords from "@/components/background-words";
-import { ValueProposition } from "@/components/ValueProposition";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useUser } from '@/hooks/use-user';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import Footer from '@/components/footer';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import LandingHeader from '@/components/landing-header';
+import BackgroundWords from '@/components/background-words';
+import { ValueProposition } from '@/components/ValueProposition';
 import { useLocation } from 'wouter';
 
 type FormData = {
@@ -36,7 +36,11 @@ export default function AuthPage() {
   const { login, register } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { handleSubmit, register: registerField, formState: { isSubmitting } } = useForm<FormData>();
+  const {
+    handleSubmit,
+    register: registerField,
+    formState: { isSubmitting },
+  } = useForm<FormData>();
 
   // Check URL parameters for Google OAuth callback
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function AuthPage() {
         console.log('Starting login process');
         const loginResponse = await login(data);
         console.log('Login attempt response:', loginResponse);
-        
+
         if (loginResponse.ok) {
           if ('redirectUrl' in loginResponse && loginResponse.redirectUrl) {
             console.log('Redirecting to:', loginResponse.redirectUrl);
@@ -83,8 +87,8 @@ export default function AuthPage() {
       console.error('Authentication error:', error);
 
       let errorMessage = isLogin
-        ? "Login failed. Please check your credentials."
-        : "Registration failed. Please try again.";
+        ? 'Login failed. Please check your credentials.'
+        : 'Registration failed. Please try again.';
 
       if (error.response?.data) {
         errorMessage = error.response.data.message || errorMessage;
@@ -96,8 +100,8 @@ export default function AuthPage() {
         setLocation('/subscription');
       } else {
         toast({
-          variant: "destructive",
-          title: isLogin ? "Login Error" : "Registration Error",
+          variant: 'destructive',
+          title: isLogin ? 'Login Error' : 'Registration Error',
           description: error.message || errorMessage,
           duration: 5000,
         });
@@ -114,13 +118,15 @@ export default function AuthPage() {
             <CardHeader>
               <CardTitle>Check Your Email</CardTitle>
               <CardDescription>
-                We've sent a verification link to your email address. Please click the link to verify your account.
+                We've sent a verification link to your email address. Please click the link to
+                verify your account.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Alert>
                 <AlertDescription>
-                  The verification link will expire in 24 hours. If you don't see the email in your inbox, please check your spam folder.
+                  The verification link will expire in 24 hours. If you don't see the email in your
+                  inbox, please check your spam folder.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -170,11 +176,11 @@ export default function AuthPage() {
           <div className={`flex justify-center w-full ${isLogin ? 'col-span-2 lg:mx-auto' : ''}`}>
             <Card className="auth-card w-[90%] max-w-[380px] mx-auto shadow-lg relative z-50 bg-white/95 backdrop-blur-sm">
               <CardHeader className="text-center">
-                <CardTitle>{isLogin ? "Login" : "Start for Free"}</CardTitle>
+                <CardTitle>{isLogin ? 'Login' : 'Start for Free'}</CardTitle>
                 <CardDescription>
                   {isLogin
-                    ? "Sign in to your account using your email or username"
-                    : "Join StackTracker to improve your supplementation protocol"}
+                    ? 'Sign in to your account using your email or username'
+                    : 'Join StackTracker to improve your supplementation protocol'}
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleSubmit(onSubmit)}>
@@ -187,31 +193,27 @@ export default function AuthPage() {
                       <Input
                         id="username"
                         type="text"
-                        {...registerField("username")}
+                        {...registerField('username')}
                         required={!isLogin}
                       />
                     </div>
                   )}
                   <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium">
-                      {isLogin ? "Email or Username" : "Email"}
+                      {isLogin ? 'Email or Username' : 'Email'}
                     </label>
                     <Input
                       id="email"
-                      type={isLogin ? "text" : "email"}
-                      {...registerField("email")}
-                      placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
+                      type={isLogin ? 'text' : 'email'}
+                      {...registerField('email')}
+                      placeholder={isLogin ? 'Enter your email or username' : 'Enter your email'}
                     />
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="password" className="text-sm font-medium">
                       Password
                     </label>
-                    <Input
-                      id="password"
-                      type="password"
-                      {...registerField("password")}
-                    />
+                    <Input id="password" type="password" {...registerField('password')} />
                   </div>
 
                   {/* Google OAuth separator and button temporarily disabled */}
@@ -241,24 +243,14 @@ export default function AuthPage() {
                   */}
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isLogin ? "Sign In" : "Sign Up"}
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isLogin ? 'Sign In' : 'Sign Up'}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => setIsLogin(!isLogin)}
-                  >
+                  <Button type="button" variant="link" onClick={() => setIsLogin(!isLogin)}>
                     {isLogin
                       ? "Don't have an account? Sign up"
-                      : "Already have an account? Sign in"}
+                      : 'Already have an account? Sign in'}
                   </Button>
                 </CardFooter>
               </form>

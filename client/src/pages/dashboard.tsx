@@ -1,21 +1,16 @@
-import Header from "@/components/header";
-import SupplementList from "@/components/supplement-list";
-import SupplementForm from "@/components/supplement-form";
-import LLMChat from "@/components/llm-chat";
-import Footer from "@/components/footer";
-import { useState, Suspense } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, Moon, FileIcon, ArrowRight, Loader2 } from "lucide-react";
-import { Link } from "wouter";
-import ProfileCompletionNotification from "@/components/profile-completion-notification";
-import { useUser } from "@/hooks/use-user";
+import Header from '@/components/header';
+import SupplementList from '@/components/supplement-list';
+import SupplementForm from '@/components/supplement-form';
+import LLMChat from '@/components/llm-chat';
+import Footer from '@/components/footer';
+import { useState, Suspense } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Scale, Moon, FileIcon, ArrowRight, Loader2 } from 'lucide-react';
+import { Link } from 'wouter';
+import ProfileCompletionNotification from '@/components/profile-completion-notification';
+import { useUser } from '@/hooks/use-user';
 
 export default function Dashboard() {
   const { isLoading: isUserLoading } = useUser();
@@ -31,11 +26,13 @@ export default function Dashboard() {
           <h2 className="text-2xl font-semibold mb-4 text-white">Stack Chat Assistant</h2>
           <p className="text-white/90 mb-4">How are you feeling?</p>
           <div className="h-[300px]">
-            <Suspense fallback={
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-white/70" />
-              </div>
-            }>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-white/70" />
+                </div>
+              }
+            >
               <LLMChat />
             </Suspense>
           </div>
@@ -60,22 +57,26 @@ export default function Dashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">Bloodwork and Tests</h2>
             <Link href="/labs">
-              <Button
-                className="bg-white text-[#1b4332] hover:bg-white/90"
-              >
-                View Labs
-              </Button>
+              <Button className="bg-white text-[#1b4332] hover:bg-white/90">View Labs</Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link href="/labs">
               <Card className="bg-white/10 border-none text-white hover:bg-white/20 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between py-3">
-                  <CardTitle className="text-sm font-medium pr-8 mb-2">Get intelligent feedback on biomarkers like lipids, metabolites, and more</CardTitle>
-                  <img src="/images/blood-est-results.jpeg" alt="Lab Analysis" className="h-24 w-24 object-cover text-white/70" />
+                  <CardTitle className="text-sm font-medium pr-8 mb-2">
+                    Get intelligent feedback on biomarkers like lipids, metabolites, and more
+                  </CardTitle>
+                  <img
+                    src="/images/blood-est-results.jpeg"
+                    alt="Lab Analysis"
+                    className="h-24 w-24 object-cover text-white/70"
+                  />
                 </CardHeader>
                 <CardContent className="pt-0 pb-3">
-                  <div className="text-sm font-medium flex items-center">Upload a picture, pdf, or doc <ArrowRight className="h-4 w-4 ml-1" /></div>
+                  <div className="text-sm font-medium flex items-center">
+                    Upload a picture, pdf, or doc <ArrowRight className="h-4 w-4 ml-1" />
+                  </div>
                 </CardContent>
               </Card>
             </Link>
@@ -87,11 +88,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-white">Health Overview</h2>
             <Link href="/health-stats">
-              <Button
-                className="bg-white text-[#1b4332] hover:bg-white/90"
-              >
-                View Full Stats
-              </Button>
+              <Button className="bg-white text-[#1b4332] hover:bg-white/90">View Full Stats</Button>
             </Link>
           </div>
 

@@ -1,0 +1,21 @@
+{
+  "version": "41.0.0",
+  "files": {
+    "a2e98078c1dab73fc6043e6aebc7c27b74d6eb964bb8851e9da07cf37a7f0ba2": {
+      "displayName": "StackTrackerMonitoringStackV2 Template",
+      "source": {
+        "path": "StackTrackerMonitoringStackV2.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "881490119784-us-west-2": {
+          "bucketName": "cdk-hnb659fds-assets-881490119784-us-west-2",
+          "objectKey": "a2e98078c1dab73fc6043e6aebc7c27b74d6eb964bb8851e9da07cf37a7f0ba2.json",
+          "region": "us-west-2",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::881490119784:role/cdk-hnb659fds-file-publishing-role-881490119784-us-west-2"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

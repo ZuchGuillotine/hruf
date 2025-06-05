@@ -15,15 +15,15 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
         error: 'Missing required fields',
         details: {
           email: !email ? 'Email is required' : undefined,
-          password: !password ? 'Password is required' : undefined
-        }
+          password: !password ? 'Password is required' : undefined,
+        },
       });
       return;
     }
 
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email)
+      where: eq(users.email, email),
     });
 
     if (existingUser) {
@@ -35,18 +35,21 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
     const verificationToken = crypto.randomBytes(20).toString('hex');
 
     // Create new user with trial status
-    const [user] = await db.insert(users).values({
-      email,
-      password, // Note: Password should be hashed before saving
-      username: email.split('@')[0],
-      verificationToken,
-      emailVerified: false,
-      isAdmin: false,
-      subscriptionTier: 'trial',
-      subscriptionId: null, // Explicitly set to null for trial users
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
+    const [user] = await db
+      .insert(users)
+      .values({
+        email,
+        password, // Note: Password should be hashed before saving
+        username: email.split('@')[0],
+        verificationToken,
+        emailVerified: false,
+        isAdmin: false,
+        subscriptionTier: 'trial',
+        subscriptionId: null, // Explicitly set to null for trial users
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
 
     // Ensure trial status is set
     await stripeService.updateTrialStatus(user.id);
@@ -78,23 +81,23 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       from: 'accounts@stacktracker.io', // Add the from field
       subject,
       text,
-      html
+      html,
     });
 
     console.log('Signup verification email sent:', {
       to: email,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Signup successful. Please check your email to verify your account.',
       userId: user.id,
-      requiresVerification: true
+      requiresVerification: true,
     });
   } catch (error) {
     console.error('Signup error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     next(error);
   }
@@ -110,7 +113,7 @@ export async function verifyEmail(req: Request, res: Response, next: NextFunctio
     }
 
     const user = await db.query.users.findFirst({
-      where: eq(users.verificationToken, token)
+      where: eq(users.verificationToken, token),
     });
 
     if (!user) {
@@ -125,10 +128,10 @@ export async function verifyEmail(req: Request, res: Response, next: NextFunctio
 
     await db
       .update(users)
-      .set({ 
-        emailVerified: true, 
+      .set({
+        emailVerified: true,
         verificationToken: null,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
 
@@ -136,7 +139,7 @@ export async function verifyEmail(req: Request, res: Response, next: NextFunctio
   } catch (error) {
     console.error('Email verification error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     next(error);
   }

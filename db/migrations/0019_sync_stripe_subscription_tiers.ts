@@ -1,4 +1,3 @@
-
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 import Stripe from 'stripe';
@@ -10,20 +9,20 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16'
+  apiVersion: '2023-10-16',
 });
 
 // Map price IDs to subscription tiers
 const PRICE_TIERS: Record<string, 'free' | 'starter' | 'pro'> = {
-  'price_1RKZsdAIJBVVerrJhsQhpig2': 'starter', // Starter Monthly
-  'price_1RKZsdAIJBVVerrJmp9neLDz': 'starter', // Starter Yearly
-  'price_1RFrkBAIJBVVerrJNDRc9xSL': 'pro',     // Pro Monthly
-  'price_1RKZwJAIJBVVerrJjGTuhgbG': 'pro'      // Pro Yearly
+  price_1RKZsdAIJBVVerrJhsQhpig2: 'starter', // Starter Monthly
+  price_1RKZsdAIJBVVerrJmp9neLDz: 'starter', // Starter Yearly
+  price_1RFrkBAIJBVVerrJNDRc9xSL: 'pro', // Pro Monthly
+  price_1RKZwJAIJBVVerrJjGTuhgbG: 'pro', // Pro Yearly
 };
 
 export async function up() {
   console.log('Starting subscription tier sync migration...');
-  
+
   try {
     // Test database connection
     await db.execute(sql`SELECT 1`);
@@ -32,7 +31,7 @@ export async function up() {
     // First get all Stripe customers
     const customers = await stripe.customers.list({
       limit: 100,
-      expand: ['data.subscriptions']
+      expand: ['data.subscriptions'],
     });
 
     console.log(`Found ${customers.data.length} customers in Stripe`);
@@ -41,11 +40,11 @@ export async function up() {
     for (const customer of customers.data) {
       try {
         console.log(`Processing Stripe customer: ${customer.email}`);
-        
+
         const subscriptions = await stripe.subscriptions.list({
           customer: customer.id,
           status: 'active',
-          limit: 1
+          limit: 1,
         });
 
         if (!subscriptions.data.length) {
@@ -84,7 +83,7 @@ export async function up() {
 
         if (user) {
           console.log(`Found matching user: ${user.email}`);
-          
+
           // Update user with all Stripe info
           await db.execute(sql`
             UPDATE users 
@@ -94,12 +93,11 @@ export async function up() {
                 updated_at = NOW()
             WHERE id = ${user.id}
           `);
-          
+
           console.log(`Updated ${user.email} from ${user.subscription_tier} to ${newTier}`);
         } else {
           console.log(`WARNING: No matching user found for Stripe customer ${customer.email}`);
         }
-
       } catch (err) {
         console.error(`Error processing Stripe customer ${customer.email}:`, err);
       }

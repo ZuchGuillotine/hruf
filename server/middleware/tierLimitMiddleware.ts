@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from 'express';
 import { tierLimitService } from '../services/tierLimitService';
 import logger from '../utils/logger';
@@ -13,11 +12,11 @@ export const checkLLMLimit = async (req: Request, res: Response, next: NextFunct
     if (!canUseAI) {
       logger.warn('LLM limit reached:', {
         userId: req.user!.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return res.status(429).json({
         error: 'AI usage limit reached',
-        message: 'Please upgrade your subscription to continue using AI features'
+        message: 'Please upgrade your subscription to continue using AI features',
       });
     }
 
@@ -25,7 +24,7 @@ export const checkLLMLimit = async (req: Request, res: Response, next: NextFunct
   } catch (error) {
     logger.error('Error checking LLM limit:', {
       userId: req.user?.id,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     next(error);
   }
@@ -41,11 +40,11 @@ export const checkLabUploadLimit = async (req: Request, res: Response, next: Nex
     if (!canUploadLab) {
       logger.warn('Lab upload limit reached:', {
         userId: req.user!.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return res.status(429).json({
         error: 'Lab upload limit reached',
-        message: 'Please upgrade your subscription to upload more lab results'
+        message: 'Please upgrade your subscription to upload more lab results',
       });
     }
 
@@ -53,7 +52,7 @@ export const checkLabUploadLimit = async (req: Request, res: Response, next: Nex
   } catch (error) {
     logger.error('Error checking lab upload limit:', {
       userId: req.user?.id,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     next(error);
   }

@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { Switch, Route } from 'wouter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -45,7 +44,7 @@ export function AppRouter() {
         <Route path="/verify-email" component={VerifyEmailPage} />
         <Route path="/privacy-policy" component={PrivacyPolicyPage} />
         <Route path="/terms-of-service" component={TermsOfServicePage} />
-        
+
         {/* Protected routes with lazy loading and error boundaries */}
         <Route path="/dashboard">
           <ErrorBoundary>
@@ -54,7 +53,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/supplements">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -62,7 +61,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/supplements/:id">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -70,7 +69,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/supplements/list">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -78,7 +77,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/daily-tracker">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -86,7 +85,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/chat">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -94,7 +93,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/profile">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -102,7 +101,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/health-stats">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -110,7 +109,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/blog">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -118,7 +117,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/blog/:slug">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -126,7 +125,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/research">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -134,7 +133,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/research/:slug">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -142,7 +141,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         <Route path="/query">
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -150,7 +149,7 @@ export function AppRouter() {
             </Suspense>
           </ErrorBoundary>
         </Route>
-        
+
         {/* 404 route */}
         <Route component={NotFoundPage} />
       </Switch>

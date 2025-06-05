@@ -1,7 +1,6 @@
-
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { useEffect, useState } from 'react';
 
 export default function SupplementStreakCard() {
   const [streak, setStreak] = useState(0);
@@ -30,12 +29,14 @@ export default function SupplementStreakCard() {
         <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-semibold">Supplement Logging Streak</h3>
-            <span className="text-lg font-medium">{streak} / {maxStreak} days</span>
+            <span className="text-lg font-medium">
+              {streak} / {maxStreak} days
+            </span>
           </div>
           <Progress value={progress} className="h-2" />
           <p className="text-sm text-muted-foreground">
-            {streak === 0 
-              ? "Start your streak by logging your supplements today!"
+            {streak === 0
+              ? 'Start your streak by logging your supplements today!'
               : `Keep going! You're ${maxStreak - streak} days away from your 90-day goal!`}
           </p>
         </div>

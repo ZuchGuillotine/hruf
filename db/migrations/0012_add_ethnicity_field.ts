@@ -1,6 +1,5 @@
-
-import { sql } from "drizzle-orm";
-import { db } from "../index";
+import { sql } from 'drizzle-orm';
+import { db } from '../index';
 
 async function up() {
   try {

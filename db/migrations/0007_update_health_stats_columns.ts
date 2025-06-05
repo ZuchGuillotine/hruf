@@ -1,6 +1,5 @@
-
 import { db } from '../index';
-import { sql } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 
 async function main() {
   console.log('Starting migration...');
@@ -39,7 +38,6 @@ async function main() {
       ADD CONSTRAINT health_stats_pkey PRIMARY KEY (user_id)
     `);
     console.log('Added primary key constraint');
-
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;
@@ -57,7 +55,7 @@ export async function up(db: any) {
       WHERE user_id IS NULL 
       OR user_id NOT IN (SELECT id FROM users)
     `);
-    
+
     await db.execute(sql`
       DELETE FROM health_stats h1 
       WHERE EXISTS (

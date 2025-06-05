@@ -1,7 +1,6 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import LandingHeader from "@/components/landing-header";
-import Footer from "@/components/footer";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import LandingHeader from '@/components/landing-header';
+import Footer from '@/components/footer';
 
 export default function ContactPage() {
   return (
@@ -15,7 +14,10 @@ export default function ContactPage() {
             </CardHeader>
             <CardContent>
               <p className="text-lg">
-                Contact us at: <a href="mailto:accountsuccess@stacktracker.io" className="underline">accountsuccess@stacktracker.io</a>
+                Contact us at:{' '}
+                <a href="mailto:accountsuccess@stacktracker.io" className="underline">
+                  accountsuccess@stacktracker.io
+                </a>
               </p>
             </CardContent>
           </Card>

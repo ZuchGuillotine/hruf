@@ -1,0 +1,237 @@
+{
+ "Resources": {
+  "StackTrackerDashboard63CE2A97": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"widgets\":[{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"RDS CPU Utilization\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/RDS\",\"CPUUtilization\",\"DBInstanceIdentifier\",\"stacktracker-db-v3\"],[\"AWS/RDS\",\"FreeableMemory\",\"DBInstanceIdentifier\",\"stacktracker-db-v3\",{\"yAxis\":\"right\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"RDS Connections\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/RDS\",\"DatabaseConnections\",\"DBInstanceIdentifier\",\"stacktracker-db-v3\"]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":12,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"RDS Storage\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/RDS\",\"FreeStorageSpace\",\"DBInstanceIdentifier\",\"stacktracker-db-v3\"]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":0,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"EB Environment Health\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/ElasticBeanstalk\",\"EnvironmentHealth\",\"EnvironmentName\",\"stacktracker-env-v3\",{\"period\":60}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":6,\"height\":6,\"x\":6,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"EB CPU Utilization\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/ElasticBeanstalk\",\"CPUUtilization\",\"EnvironmentName\",\"stacktracker-env-v3\",{\"period\":60}]],\"yAxis\":{}}}]}"
+      ]
+     ]
+    },
+    "DashboardName": "StackTracker-Monitoring"
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerMonitoringStackV3/StackTrackerDashboard/Resource"
+   }
+  },
+  "DatabaseCPUAlarmB69066CC": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmDescription": "Database CPU utilization is too high",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "DatapointsToAlarm": 2,
+    "Dimensions": [
+     {
+      "Name": "DBInstanceIdentifier",
+      "Value": "stacktracker-db-v3"
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "CPUUtilization",
+    "Namespace": "AWS/RDS",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerMonitoringStackV3/DatabaseCPUAlarm/Resource"
+   }
+  },
+  "DatabaseConnectionsAlarm3643818C": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmDescription": "Database connection count is too high",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "DatapointsToAlarm": 2,
+    "Dimensions": [
+     {
+      "Name": "DBInstanceIdentifier",
+      "Value": "stacktracker-db-v3"
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "DatabaseConnections",
+    "Namespace": "AWS/RDS",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerMonitoringStackV3/DatabaseConnectionsAlarm/Resource"
+   }
+  },
+  "EBHealthAlarm31F30830": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmDescription": "EB environment health is degraded",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "DatapointsToAlarm": 2,
+    "Dimensions": [
+     {
+      "Name": "EnvironmentName",
+      "Value": "stacktracker-env-v3"
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "EnvironmentHealth",
+    "Namespace": "AWS/ElasticBeanstalk",
+    "Period": 60,
+    "Statistic": "Average",
+    "Threshold": 0.8
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerMonitoringStackV3/EBHealthAlarm/Resource"
+   }
+  },
+  "StackTrackerWAF": {
+   "Type": "AWS::WAFv2::WebACL",
+   "Properties": {
+    "DefaultAction": {
+     "Allow": {}
+    },
+    "Rules": [
+     {
+      "Action": {
+       "Block": {}
+      },
+      "Name": "AuthRateLimit",
+      "Priority": 1,
+      "Statement": {
+       "RateBasedStatement": {
+        "AggregateKeyType": "IP",
+        "Limit": 100,
+        "ScopeDownStatement": {
+         "ByteMatchStatement": {
+          "FieldToMatch": {
+           "UriPath": {}
+          },
+          "PositionalConstraint": "STARTS_WITH",
+          "SearchString": "/auth",
+          "TextTransformations": [
+           {
+            "Priority": 1,
+            "Type": "NONE"
+           }
+          ]
+         }
+        }
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "AuthRateLimitMetric",
+       "SampledRequestsEnabled": true
+      }
+     },
+     {
+      "Name": "SQLInjectionProtection",
+      "OverrideAction": {
+       "None": {}
+      },
+      "Priority": 2,
+      "Statement": {
+       "ManagedRuleGroupStatement": {
+        "Name": "AWSManagedRulesSQLiRuleSet",
+        "VendorName": "AWS"
+       }
+      },
+      "VisibilityConfig": {
+       "CloudWatchMetricsEnabled": true,
+       "MetricName": "SQLInjectionMetric",
+       "SampledRequestsEnabled": true
+      }
+     }
+    ],
+    "Scope": "REGIONAL",
+    "VisibilityConfig": {
+     "CloudWatchMetricsEnabled": true,
+     "MetricName": "StackTrackerWAFMetric",
+     "SampledRequestsEnabled": true
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerMonitoringStackV3/StackTrackerWAF"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+WQPW/CMBCGfwsekXFJhkqwIRirtmqrMkSouuSc+CCxkX1JBiv/vSJNGDp36+TX790995GqZPOo1gvow6rAy6qmXMV3huIioQ9fsahdiz1wYVQ8QDC5A49ZFDjrZ2i02IqlGGQUgHgkrDQHsc2i6MFbslUY4/L+/Uxng5DNpI2myvBEGp2lOP0x8zSc5L609z3krgbfZFE0mj0VYvsLP0jBxutgXI0TUndQt8Dk7Kv25HCeA4Hh6shy+HAjdfLhpg86FJ6ut6r7qf5By/HYY9ogeyi7VO1Le9T5bv803EIvLV9bHqR1qNU5PHTpWiUblSzOgWjlW8vUaPX2834D2qY32qkCAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerMonitoringStackV3/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "WafAclArn": {
+   "Description": "WAF ACL ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "StackTrackerWAF",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "StackTrackerWafAclArnV3"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

@@ -48,7 +48,7 @@ export default function SubscriptionPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ priceId }),
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -65,9 +65,9 @@ export default function SubscriptionPage() {
     } catch (error) {
       console.error('Error creating checkout session:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to start subscription process. Please try again."
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to start subscription process. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -87,13 +87,13 @@ export default function SubscriptionPage() {
 
           <div className="space-y-4">
             {/* Free Trial Option */}
-            <Button 
+            <Button
               onClick={() => handleSubscribe('monthlyWithTrial')}
               disabled={loading}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {loading ? "Processing..." : "Start 28-Day Free Trial"}
+              {loading ? 'Processing...' : 'Start 28-Day Free Trial'}
             </Button>
 
             <div className="relative">
@@ -106,22 +106,22 @@ export default function SubscriptionPage() {
             </div>
 
             {/* Monthly Option */}
-            <Button 
+            <Button
               onClick={() => handleSubscribe('monthly')}
               disabled={loading}
               className="w-full"
             >
-              {loading ? "Processing..." : "Monthly - $21.99/month"}
+              {loading ? 'Processing...' : 'Monthly - $21.99/month'}
             </Button>
 
             {/* Yearly Option */}
-            <Button 
+            <Button
               onClick={() => handleSubscribe('yearly')}
               disabled={loading}
               variant="outline"
               className="w-full"
             >
-              {loading ? "Processing..." : "Yearly - $184.71/year (Save 30%)"}
+              {loading ? 'Processing...' : 'Yearly - $184.71/year (Save 30%)'}
             </Button>
           </div>
 
@@ -146,7 +146,7 @@ export default function SubscriptionPage() {
       </div>
       {/* Only show modal for new registrations */}
       {new URLSearchParams(window.location.search).has('newUser') && (
-        <PaymentOptionsModal isOpen={true} onClose={() => window.location.href = '/'} />
+        <PaymentOptionsModal isOpen={true} onClose={() => (window.location.href = '/')} />
       )}
     </div>
   );

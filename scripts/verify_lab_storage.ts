@@ -39,12 +39,12 @@ async function verifyLabStorage() {
         hasBiomarkersObject: !!result.metadata?.biomarkers,
         hasParsedBiomarkers: !!biomarkerData?.parsedBiomarkers,
         metadataKeys: Object.keys(result.metadata || {}),
-        biomarkerDataKeys: Object.keys(biomarkerData || {})
+        biomarkerDataKeys: Object.keys(biomarkerData || {}),
       });
 
       if (biomarkers.length > 0) {
         console.log('\nBiomarker Examples:');
-        biomarkers.slice(0, 3).forEach(b => {
+        biomarkers.slice(0, 3).forEach((b) => {
           console.log(`- ${b.name}: ${b.value} ${b.unit}`);
         });
       }
@@ -57,7 +57,6 @@ async function verifyLabStorage() {
 
       console.log('\n' + '='.repeat(50) + '\n');
     }
-
   } catch (error) {
     console.error('Error verifying lab storage:', error);
   } finally {

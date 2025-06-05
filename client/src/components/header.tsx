@@ -9,7 +9,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History, HelpCircle, FileText, Menu } from 'lucide-react';
+import {
+  LogOut,
+  User,
+  LineChart,
+  Database,
+  Home,
+  BookOpen,
+  Info,
+  History,
+  HelpCircle,
+  FileText,
+  Menu,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -102,9 +114,7 @@ export default function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.name || user?.username}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

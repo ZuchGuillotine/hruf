@@ -1,6 +1,5 @@
-
 import { db } from '../index';
-import { sql } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 
 async function main() {
   console.log('Starting lab_results table migration...');
@@ -23,7 +22,7 @@ async function main() {
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_lab_results_user_id ON lab_results(user_id);
     `);
-    
+
     console.log('Lab results migration completed successfully');
   } catch (error) {
     console.error('Migration failed:', error);

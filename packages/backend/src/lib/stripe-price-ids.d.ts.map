@@ -1,0 +1,1 @@
+{"version":3,"file":"stripe-price-ids.d.ts","sourceRoot":"","sources":["stripe-price-ids.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAGH,eAAO,MAAM,gBAAgB,EAAE,MAAM,CAAC,MAAM,EAAE,MAAM,CAUnD,CAAC;AAGF,eAAO,MAAM,oBAAoB;;;;;CAKhC,CAAC;AAGF,wBAAgB,UAAU,CAAC,GAAG,EAAE,MAAM,GAAG,MAAM,CAE9C;AAGD,wBAAgB,kBAAkB,CAAC,OAAO,EAAE,MAAM,GAAG,OAAO,CAI3D;AAGD,eAAO,MAAM,uBAAuB;;;;CAInC,CAAC"}

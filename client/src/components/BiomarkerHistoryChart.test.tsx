@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { BiomarkerHistoryChart } from './BiomarkerHistoryChart';
@@ -12,7 +11,7 @@ jest.mock('@/components/ui/chart', () => ({
     </div>
   ),
   ChartTooltip: () => <div data-testid="chart-tooltip" />,
-  ChartLegend: () => <div data-testid="chart-legend" />
+  ChartLegend: () => <div data-testid="chart-legend" />,
 }));
 
 describe('BiomarkerHistoryChart', () => {

@@ -1,19 +1,18 @@
-
 import { db } from '../index';
 import { sql } from 'drizzle-orm';
 
 async function main() {
   console.log('Starting migration: Adding ai_interactions_count column...');
-  
+
   try {
     await db.execute(sql`
       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS ai_interactions_count INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS ai_interactions_reset TIMESTAMPTZ;
     `);
-    
+
     console.log('✅ Successfully added ai_interactions_count column');
-    
+
     return Promise.resolve();
   } catch (error) {
     console.error('Migration failed:', error);

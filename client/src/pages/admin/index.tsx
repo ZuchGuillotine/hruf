@@ -1,8 +1,7 @@
-
-import { Fragment } from "react";
-import { Link } from "wouter";
-import Header from "@/components/header";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Fragment } from 'react';
+import { Link } from 'wouter';
+import Header from '@/components/header';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   return (

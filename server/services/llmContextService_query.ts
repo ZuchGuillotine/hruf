@@ -1,28 +1,33 @@
 /**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 13/03/2025 - 16:16:27
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 13/03/2025
-    * - Author          : 
-    * - Modification    : 
-    **/
+ * @description      :
+ * @author           :
+ * @group            :
+ * @created          : 13/03/2025 - 16:16:27
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 13/03/2025
+ * - Author          :
+ * - Modification    :
+ **/
 // server/services/llmContextService_query.ts
 
-import { Message } from "@/lib/types";
-import { db } from "../../db";
-import { healthStats, supplementLogs, qualitativeLogs, logSummaries, supplements } from "../../db/schema";
-import { eq, count, and, gte, desc } from "drizzle-orm";
-import { advancedSummaryService } from "./advancedSummaryService";
-import { summaryTaskManager } from "../cron/summaryManager";
-import { supplementLookupService } from "./supplementLookupService";
-import logger from "../utils/logger";
+import { Message } from '@/lib/types';
+import { db } from '../../db';
+import {
+  healthStats,
+  supplementLogs,
+  qualitativeLogs,
+  logSummaries,
+  supplements,
+} from '../../db/schema';
+import { eq, count, and, gte, desc } from 'drizzle-orm';
+import { advancedSummaryService } from './advancedSummaryService';
+import { summaryTaskManager } from '../cron/summaryManager';
+import { supplementLookupService } from './supplementLookupService';
+import logger from '../utils/logger';
 import { debugContext } from '../utils/contextDebugger';
 import { labSummaryService } from './labSummaryService'; // Added import
-
 
 /**
  * Check if the user has any logs or summaries in the database
@@ -49,11 +54,13 @@ async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
       .from(logSummaries)
       .where(eq(logSummaries.userId, userId));
 
-    logger.info(`User ${userId} has ${supplementCount?.count || 0} supplement logs, ${qualitativeCount?.count || 0} qualitative logs, and ${summaryCount?.count || 0} summaries`);
+    logger.info(
+      `User ${userId} has ${supplementCount?.count || 0} supplement logs, ${qualitativeCount?.count || 0} qualitative logs, and ${summaryCount?.count || 0} summaries`
+    );
 
     return (
-      (supplementCount?.count || 0) > 0 || 
-      (qualitativeCount?.count || 0) > 0 || 
+      (supplementCount?.count || 0) > 0 ||
+      (qualitativeCount?.count || 0) > 0 ||
       (summaryCount?.count || 0) > 0
     );
   } catch (error) {
@@ -61,7 +68,6 @@ async function checkUserHasAnyLogs(userId: number): Promise<boolean> {
     return false;
   }
 }
-
 
 import { Message } from '../lib/types';
 import { QUERY_SYSTEM_PROMPT } from '../openai';
@@ -75,17 +81,19 @@ import { supplementLookupService } from './supplementLookupService';
 import { advancedSummaryService } from './advancedSummaryService';
 import { healthStatsService } from './healthStatsService'; // Added import
 
-
-export async function constructQueryContext(userId: number | null, userQuery: string): Promise<{ messages: Message[] }> {
+export async function constructQueryContext(
+  userId: number | null,
+  userQuery: string
+): Promise<{ messages: Message[] }> {
   try {
     // If user is not authenticated, return basic context
     if (userId === null || userId === undefined) {
       logger.info('User not authenticated, returning basic context');
       return {
         messages: [
-          { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
-          { role: "user" as const, content: userQuery }
-        ]
+          { role: 'system' as const, content: QUERY_SYSTEM_PROMPT },
+          { role: 'user' as const, content: userQuery },
+        ],
       };
     }
 
@@ -101,21 +109,26 @@ export async function constructQueryContext(userId: number | null, userQuery: st
 
     // Fetch user's health stats
     const userHealthStats = await db.query.healthStats.findFirst({
-      where: eq(healthStats.userId, userId)
+      where: eq(healthStats.userId, userId),
     });
 
     // Format health stats data if available
-    const healthStatsContext = userHealthStats ? `
+    const healthStatsContext = userHealthStats
+      ? `
 Weight: ${userHealthStats.weight || 'Not provided'} lbs
 Height: ${userHealthStats.height || 'Not provided'} inches
 Gender: ${userHealthStats.gender || 'Not provided'}
 Date of Birth: ${userHealthStats.dateOfBirth || 'Not provided'}
 Average Sleep: ${userHealthStats.averageSleep ? `${Math.floor(userHealthStats.averageSleep / 60)}h ${userHealthStats.averageSleep % 60}m` : 'Not provided'}
 Allergies: ${userHealthStats.allergies || 'None listed'}
-` : 'No health stats data available.';
+`
+      : 'No health stats data available.';
 
     // Get direct supplement context
-    const directSupplementContext = await supplementLookupService.getSupplementContext(userId, userQuery); //Fixed userId parameter
+    const directSupplementContext = await supplementLookupService.getSupplementContext(
+      userId,
+      userQuery
+    ); //Fixed userId parameter
 
     // Build context content
     let contextContent = '';
@@ -126,17 +139,14 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         .select()
         .from(logSummaries)
         .where(
-          and(
-            eq(logSummaries.userId, userId),
-            eq(logSummaries.summaryType, 'supplement_pattern')
-          )
+          and(eq(logSummaries.userId, userId), eq(logSummaries.summaryType, 'supplement_pattern'))
         )
         .orderBy(desc(logSummaries.createdAt))
         .limit(2);
 
       if (recentSummaries.length > 0) {
-        contextContent += "Recent Supplement Patterns:\n";
-        recentSummaries.forEach(summary => {
+        contextContent += 'Recent Supplement Patterns:\n';
+        recentSummaries.forEach((summary) => {
           const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
           contextContent += `[${dateRange}]\n${summary.content}\n\n`;
         });
@@ -160,8 +170,8 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
         .limit(3);
 
       if (dailySummaries.length > 0) {
-        contextContent += "Recent Daily Summaries:\n";
-        dailySummaries.forEach(summary => {
+        contextContent += 'Recent Daily Summaries:\n';
+        dailySummaries.forEach((summary) => {
           const date = new Date(summary.startDate).toLocaleDateString();
           contextContent += `[${date}]\n${summary.content}\n\n`;
         });
@@ -177,9 +187,10 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
         // Log what we found
         const contentTypes = {
-          summary: relevantContent.filter(item => item.type === 'summary').length,
-          qualitative_log: relevantContent.filter(item => item.type === 'qualitative_log').length,
-          quantitative_log: relevantContent.filter(item => item.type === 'quantitative_log').length
+          summary: relevantContent.filter((item) => item.type === 'summary').length,
+          qualitative_log: relevantContent.filter((item) => item.type === 'qualitative_log').length,
+          quantitative_log: relevantContent.filter((item) => item.type === 'quantitative_log')
+            .length,
         };
 
         logger.info(`Retrieved ${relevantContent.length} relevant items:`, contentTypes);
@@ -189,24 +200,23 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       }
 
       // Process summaries from relevant content
-      const summaries = relevantContent.filter(item => item.type === 'summary');
+      const summaries = relevantContent.filter((item) => item.type === 'summary');
       if (summaries.length > 0) {
-        contextContent += "Relevant Summary Information:\n";
-        summaries.forEach(summary => {
+        contextContent += 'Relevant Summary Information:\n';
+        summaries.forEach((summary) => {
           const dateRange = `${new Date(summary.startDate).toLocaleDateString()} to ${new Date(summary.endDate).toLocaleDateString()}`;
           contextContent += `[${summary.summaryType.toUpperCase()} SUMMARY: ${dateRange}]\n${summary.content}\n\n`;
         });
       }
 
       // Process qualitative logs - IMPORTANT: Only include non-query logs
-      const qualitativeLogs = relevantContent.filter(item => 
-        item.type === 'qualitative_log' && 
-        item.type !== 'query' // Explicitly filter out query logs
+      const qualitativeLogs = relevantContent.filter(
+        (item) => item.type === 'qualitative_log' && item.type !== 'query' // Explicitly filter out query logs
       );
 
       if (qualitativeLogs.length > 0) {
-        contextContent += "Relevant User Observations:\n";
-        qualitativeLogs.forEach(log => {
+        contextContent += 'Relevant User Observations:\n';
+        qualitativeLogs.forEach((log) => {
           let content = log.content;
 
           // Try to extract meaningful content from JSON if applicable
@@ -214,8 +224,8 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
             const parsed = JSON.parse(log.content);
             if (Array.isArray(parsed)) {
               content = parsed
-                .filter(msg => msg.role === 'user')
-                .map(msg => msg.content)
+                .filter((msg) => msg.role === 'user')
+                .map((msg) => msg.content)
                 .join(' | ');
             }
           } catch (e) {
@@ -228,10 +238,10 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
       }
 
       // Process quantitative logs
-      const quantitativeLogs = relevantContent.filter(item => item.type === 'quantitative_log');
+      const quantitativeLogs = relevantContent.filter((item) => item.type === 'quantitative_log');
       if (quantitativeLogs.length > 0) {
-        contextContent += "Relevant Supplement Logs:\n";
-        quantitativeLogs.forEach(log => {
+        contextContent += 'Relevant Supplement Logs:\n';
+        quantitativeLogs.forEach((log) => {
           const effectsText = log.effects
             ? Object.entries(log.effects)
                 .map(([key, value]) => `${key}: ${value}`)
@@ -256,22 +266,17 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
             dosage: supplements.dosage,
             takenAt: supplementLogs.takenAt,
             effects: supplementLogs.effects,
-            notes: supplementLogs.notes
+            notes: supplementLogs.notes,
           })
           .from(supplementLogs)
           .leftJoin(supplements, eq(supplements.id, supplementLogs.supplementId))
-          .where(
-            and(
-              eq(supplementLogs.userId, userId),
-              gte(supplementLogs.takenAt, recentDate)
-            )
-          )
+          .where(and(eq(supplementLogs.userId, userId), gte(supplementLogs.takenAt, recentDate)))
           .orderBy(desc(supplementLogs.takenAt))
           .limit(10);
 
         if (recentLogs.length > 0) {
-          contextContent = "Recent Supplement History (Last 7 Days):\n";
-          recentLogs.forEach(log => {
+          contextContent = 'Recent Supplement History (Last 7 Days):\n';
+          recentLogs.forEach((log) => {
             const effectsText = log.effects
               ? Object.entries(log.effects)
                   .map(([key, value]) => `${key}: ${value}`)
@@ -281,26 +286,30 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
             contextContent += `[${new Date(log.takenAt).toLocaleDateString()}] ${log.name} (${log.dosage}): ${effectsText}\n`;
           });
         } else {
-          contextContent = "No supplement history found for this query.\n";
+          contextContent = 'No supplement history found for this query.\n';
         }
       }
     } catch (contentError) {
       logger.error(`Error building query context content:`, contentError);
-      contextContent = "Error retrieving supplement history. Proceeding with limited context.\n";
+      contextContent = 'Error retrieving supplement history. Proceeding with limited context.\n';
     }
 
     // Get lab results context
     let labResultsContext = '';
     if (userId) {
       try {
-        const relevantLabResults = await labSummaryService.findRelevantLabResults(userId, userQuery, 2);
+        const relevantLabResults = await labSummaryService.findRelevantLabResults(
+          userId,
+          userQuery,
+          2
+        );
 
         if (relevantLabResults.length > 0) {
-          labResultsContext = "Recent Lab Test Results:\n";
+          labResultsContext = 'Recent Lab Test Results:\n';
 
           for (const lab of relevantLabResults) {
             const labDate = new Date(lab.uploadedAt).toLocaleDateString();
-            labResultsContext += `[${labDate}] ${lab.fileName}: ${lab.metadata?.summary || "No summary available"}\n\n`;
+            labResultsContext += `[${labDate}] ${lab.fileName}: ${lab.metadata?.summary || 'No summary available'}\n\n`;
           }
         }
       } catch (labError) {
@@ -311,8 +320,10 @@ Allergies: ${userHealthStats.allergies || 'None listed'}
 
     // Construct the final context message
     const messages: Message[] = [
-      { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
-      { role: "user" as const, content: `
+      { role: 'system' as const, content: QUERY_SYSTEM_PROMPT },
+      {
+        role: 'user' as const,
+        content: `
 User Health Profile:
 ${healthStatsContext}
 
@@ -324,7 +335,8 @@ ${contextContent}
 
 User Query:
 ${userQuery}
-` }
+`,
+      },
     ];
 
     logger.info(`Query context built successfully for user ${userId}`);
@@ -339,15 +351,15 @@ ${userQuery}
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       userId: userId || 'anonymous',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Fallback to basic context
     return {
       messages: [
-        { role: "system" as const, content: QUERY_SYSTEM_PROMPT },
-        { role: "user" as const, content: userQuery }
-      ]
+        { role: 'system' as const, content: QUERY_SYSTEM_PROMPT },
+        { role: 'user' as const, content: userQuery },
+      ],
     };
   }
 }

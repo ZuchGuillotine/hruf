@@ -1,36 +1,37 @@
 /**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 17/05/2025 - 01:14:44
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 17/05/2025
-    * - Author          : 
-    * - Modification    : 
-**/
-import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { type Express } from "express";
-import { users } from "@db/schema";
-import { db } from "@db";
-import { eq } from "drizzle-orm";
-import { IVerifyOptions, Strategy as LocalStrategy } from "passport-local";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
-import { insertUserSchema } from "@db/schema";
-import { or } from "drizzle-orm";
+ * @description      :
+ * @author           :
+ * @group            :
+ * @created          : 17/05/2025 - 01:14:44
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 17/05/2025
+ * - Author          :
+ * - Modification    :
+ **/
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { type Express } from 'express';
+import { users } from '@db/schema';
+import { db } from '@db';
+import { eq } from 'drizzle-orm';
+import { IVerifyOptions, Strategy as LocalStrategy } from 'passport-local';
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+import { insertUserSchema } from '@db/schema';
+import { or } from 'drizzle-orm';
 
 // Constants
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // Simplified callback URL determination
 const getCallbackURL = () => {
-  const baseUrl = process.env.BASE_URL || 
-                 (process.env.REPL_SLUG && process.env.REPL_OWNER 
-                  ? `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER}.repl.co` 
-                  : 'http://127.0.0.1:5000');
+  const baseUrl =
+    process.env.BASE_URL ||
+    (process.env.REPL_SLUG && process.env.REPL_OWNER
+      ? `https://${process.env.REPL_SLUG.toLowerCase()}.${process.env.REPL_OWNER}.repl.co`
+      : 'http://127.0.0.1:5000');
 
   return `${baseUrl}/auth/google/callback`;
 };
@@ -38,18 +39,14 @@ const getCallbackURL = () => {
 const scryptAsync = promisify(scrypt);
 const crypto = {
   hash: async (password: string) => {
-    const salt = randomBytes(16).toString("hex");
+    const salt = randomBytes(16).toString('hex');
     const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-    return `${buf.toString("hex")}.${salt}`;
+    return `${buf.toString('hex')}.${salt}`;
   },
   compare: async (suppliedPassword: string, storedPassword: string) => {
-    const [hashedPassword, salt] = storedPassword.split(".");
-    const hashedPasswordBuf = Buffer.from(hashedPassword, "hex");
-    const suppliedPasswordBuf = (await scryptAsync(
-      suppliedPassword,
-      salt,
-      64
-    )) as Buffer;
+    const [hashedPassword, salt] = storedPassword.split('.');
+    const hashedPasswordBuf = Buffer.from(hashedPassword, 'hex');
+    const suppliedPasswordBuf = (await scryptAsync(suppliedPassword, salt, 64)) as Buffer;
     return timingSafeEqual(hashedPasswordBuf, suppliedPasswordBuf);
   },
   randomBytes: randomBytes,
@@ -70,27 +67,26 @@ declare global {
   }
 }
 
-
 // Get the environment-specific callback URL
 //const getCallbackURL = (app: Express) => {
 //  const isProd = app.get("env") === "production";
 //  const customDomain = process.env.CUSTOM_DOMAIN;
 //  let callbackURL;
 
-  // Determine callback URL based on environment
+// Determine callback URL based on environment
 //  if (isProd && customDomain) {
 //    callbackURL = `https://${customDomain}/auth/google/callback`;
 //  } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    // For Replit development environment - match exact casing from Google Console
+// For Replit development environment - match exact casing from Google Console
 //    const replSlug = process.env.REPL_SLUG.toLowerCase();
 //    const replOwner = process.env.REPL_OWNER; // Keep original casing
 //    callbackURL = `https://${replSlug}.${replOwner}.repl.co/auth/google/callback`;
 //  } else {
-    // Local development fallback
+// Local development fallback
 //    callbackURL = `http://0.0.0.0:5000/auth/google/callback`;
 //  }
 
-  // Log the callback URL determination process
+// Log the callback URL determination process
 //  console.log('Callback URL Determination:', {
 //    isProd,
 //    customDomain,
@@ -120,14 +116,13 @@ export function setupAuth(app: Express) {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
+      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
       if (!user) {
-        console.log('User not found during deserialization:', { id, timestamp: new Date().toISOString() });
+        console.log('User not found during deserialization:', {
+          id,
+          timestamp: new Date().toISOString(),
+        });
         return done(null, false);
       }
 
@@ -137,14 +132,14 @@ export function setupAuth(app: Express) {
       console.error('Deserialization error:', {
         error: err instanceof Error ? err.message : 'Unknown error',
         stack: err instanceof Error ? err.stack : undefined,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       done(err);
     }
   });
 
   // Google OAuth Strategy Configuration
-  const isProd = app.get("env") === "production";
+  const isProd = app.get('env') === 'production';
   // Use production credentials for both environments
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID_PROD;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET_PROD;
@@ -152,7 +147,7 @@ export function setupAuth(app: Express) {
 
   // Enhanced logging for OAuth configuration
   console.log('Google OAuth Configuration:', {
-    environment: app.get("env"),
+    environment: app.get('env'),
     callbackUrl: CALLBACK_URL,
     isProd,
     hasClientId: !!GOOGLE_CLIENT_ID,
@@ -161,9 +156,9 @@ export function setupAuth(app: Express) {
       hasReplSlug: !!process.env.REPL_SLUG,
       hasReplOwner: !!process.env.REPL_OWNER,
       hasCustomDomain: !!process.env.CUSTOM_DOMAIN,
-      hasBaseUrl: !!process.env.BASE_URL
+      hasBaseUrl: !!process.env.BASE_URL,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   // Validate OAuth configuration
@@ -175,108 +170,106 @@ export function setupAuth(app: Express) {
       missingClientSecret: !GOOGLE_CLIENT_SECRET,
       error: error.message,
       stack: error.stack,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     throw error;
   }
 
   passport.use(
-  new GoogleStrategy(
-    {
-      clientID: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: getCallbackURL(),
-      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        console.log('Google OAuth callback received:', {
-          profileId: profile.id,
-          email: profile.emails?.[0]?.value,
-          timestamp: new Date().toISOString()
-        });
-
-        if (!profile.emails || !profile.emails[0]?.value) {
-          console.error('OAuth Error: No email found in Google profile', {
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: getCallbackURL(),
+        userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo',
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          console.log('Google OAuth callback received:', {
             profileId: profile.id,
-            timestamp: new Date().toISOString()
+            email: profile.emails?.[0]?.value,
+            timestamp: new Date().toISOString(),
           });
-          return done(new Error('No email found in Google profile'), null);
+
+          if (!profile.emails || !profile.emails[0]?.value) {
+            console.error('OAuth Error: No email found in Google profile', {
+              profileId: profile.id,
+              timestamp: new Date().toISOString(),
+            });
+            return done(new Error('No email found in Google profile'), null);
+          }
+
+          const email = profile.emails[0].value;
+
+          // Find existing user
+          let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+          // If user doesn't exist, create new user
+          if (!user) {
+            console.log('Creating new user from Google OAuth:', {
+              email,
+              displayName: profile.displayName,
+              timestamp: new Date().toISOString(),
+            });
+
+            const [newUser] = await db
+              .insert(users)
+              .values({
+                email: email,
+                username:
+                  profile.displayName?.replace(/\s+/g, '_').toLowerCase() || email.split('@')[0],
+                name: profile.displayName || null,
+                emailVerified: true, // Google has already verified the email
+                password: crypto.randomBytes(32).toString('hex'), // Generate random password
+                subscriptionTier: 'free',
+                profilePhotoUrl: profile.photos?.[0]?.value || null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .returning();
+
+            user = newUser;
+
+            console.log('New user created successfully:', {
+              userId: user.id,
+              email: user.email,
+              timestamp: new Date().toISOString(),
+            });
+          }
+
+          return done(null, user);
+        } catch (error) {
+          console.error('Google auth error:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          return done(error as Error);
         }
-
-        const email = profile.emails[0].value;
-
-        // Find existing user
-        let [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, email))
-          .limit(1);
-
-        // If user doesn't exist, create new user
-        if (!user) {
-          console.log('Creating new user from Google OAuth:', {
-            email,
-            displayName: profile.displayName,
-            timestamp: new Date().toISOString()
-          });
-
-          const [newUser] = await db
-            .insert(users)
-            .values({
-              email: email,
-              username: profile.displayName?.replace(/\s+/g, '_').toLowerCase() || email.split('@')[0],
-              name: profile.displayName || null,
-              emailVerified: true, // Google has already verified the email
-              password: crypto.randomBytes(32).toString('hex'), // Generate random password
-              subscriptionTier: 'free',
-              profilePhotoUrl: profile.photos?.[0]?.value || null,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            })
-            .returning();
-
-          user = newUser;
-
-          console.log('New user created successfully:', {
-            userId: user.id,
-            email: user.email,
-            timestamp: new Date().toISOString()
-          });
-        }
-
-        return done(null, user);
-      } catch (error) {
-        console.error('Google auth error:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-          timestamp: new Date().toISOString()
-        });
-        return done(error as Error);
       }
-    }
-  )
-);
+    )
+  );
 
   // Add enhanced logging for initial authentication request
-  app.get('/auth/google',
+  app.get(
+    '/auth/google',
     (req, res, next) => {
       console.log('OAuth Initiation Request:', {
         path: req.path,
         headers: {
           host: req.headers.host,
           referer: req.headers.referer,
-          origin: req.headers.origin
+          origin: req.headers.origin,
         },
         environment: {
-          isProd: app.get("env") === "production",
+          isProd: app.get('env') === 'production',
           clientIdExists: !!GOOGLE_CLIENT_ID,
           clientSecretExists: !!GOOGLE_CLIENT_SECRET,
           replSlug: process.env.REPL_SLUG,
-          replOwner: process.env.REPL_OWNER
+          replOwner: process.env.REPL_OWNER,
         },
         callbackUrl: CALLBACK_URL,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       const configErrors = [];
@@ -288,7 +281,7 @@ export function setupAuth(app: Express) {
         console.error('Google OAuth configuration error:', {
           missing: configErrors,
           environment: isProd ? 'production' : 'development',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         return res.status(500).send(error);
       }
@@ -297,12 +290,13 @@ export function setupAuth(app: Express) {
     },
     passport.authenticate('google', {
       scope: ['profile', 'email'],
-      prompt: 'select_account'
+      prompt: 'select_account',
     })
   );
 
   // Enhanced callback handling
-  app.get('/auth/google/callback',
+  app.get(
+    '/auth/google/callback',
     (req, res, next) => {
       console.log('Received Google OAuth callback:', {
         query: req.query,
@@ -314,14 +308,14 @@ export function setupAuth(app: Express) {
         requestOrigin: req.headers.origin,
         cookies: Object.keys(req.cookies || {}),
         session: req.session ? 'exists' : 'missing',
-        sessionId: req.sessionID
+        sessionId: req.sessionID,
       });
 
       if (req.query.error) {
         console.error('Google OAuth error in callback:', {
           error: req.query.error,
           description: req.query.error_description,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         return res.redirect('/login?error=' + encodeURIComponent(String(req.query.error)));
       }
@@ -333,95 +327,90 @@ export function setupAuth(app: Express) {
       res.redirect('/');
     }
   );
-  // Local auth routes 
-  app.post("/api/register", async (req, res, next) => {
+  // Local auth routes
+  app.post('/api/register', async (req, res, next) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
         return res
           .status(400)
-          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+          .send('Invalid input: ' + result.error.issues.map((i) => i.message).join(', '));
       }
 
       const { email, username, password, stripeSessionId, purchaseIdentifier } = result.data;
-      
+
       console.log('Registration request:', {
         username,
         email,
         hasStripeSession: !!stripeSessionId,
         hasPurchaseId: !!purchaseIdentifier,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Check if user already exists with either email or username
       const [existingUser] = await db
         .select()
         .from(users)
-        .where(
-          or(
-            eq(users.email, email),
-            eq(users.username, username)
-          )
-        )
+        .where(or(eq(users.email, email), eq(users.username, username)))
         .limit(1);
 
       if (existingUser) {
         if (existingUser.email === email) {
-          return res.status(400).send("Email already registered");
+          return res.status(400).send('Email already registered');
         }
-        return res.status(400).send("Username already taken");
+        return res.status(400).send('Username already taken');
       }
 
       // Hash password
       const hashedPassword = await crypto.hash(password);
 
       // Set up default user values
-      let userValues: any = {
+      const userValues: any = {
         ...result.data,
         password: hashedPassword,
       };
-      
+
       // Check if this user is registering after a payment (has stripeSessionId)
       if (stripeSessionId) {
         try {
           // Import Stripe to get the session
           const Stripe = require('stripe');
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-          
+
           // Retrieve the checkout session
           const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
-          
+
           if (session.payment_status === 'paid') {
             console.log('Found paid session for new user:', {
               sessionId: stripeSessionId,
               email,
               subscriptionId: session.subscription,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
-            
+
             // Extract subscription information
             userValues.subscriptionTier = 'pro'; // Depends on your pricing, adjust as needed
-            
+
             // If subscription was created, store subscription and customer IDs
             if (session.subscription) {
               // Get subscription details
               const subscription = await stripe.subscriptions.retrieve(session.subscription);
               userValues.stripeSubscriptionId = session.subscription;
               userValues.stripeCustomerId = session.customer;
-              
+
               console.log('Added subscription info to new user:', {
                 customerId: session.customer,
                 subscriptionId: session.subscription,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
               });
             }
           } else {
             console.log('Stripe session not paid:', {
               sessionId: stripeSessionId,
               status: session.payment_status,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
-            
+
             // Set up free tier for users who didn't complete payment
             userValues.subscriptionTier = 'free'; // Free tier with no trial end date
           }
@@ -430,9 +419,9 @@ export function setupAuth(app: Express) {
             error: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : undefined,
             sessionId: stripeSessionId,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
-          
+
           // Default to free tier if there's an error processing the session
           userValues.subscriptionTier = 'free';
         }
@@ -442,10 +431,7 @@ export function setupAuth(app: Express) {
       }
 
       // Create user with appropriate status based on registration path
-      const [newUser] = await db
-        .insert(users)
-        .values(userValues)
-        .returning();
+      const [newUser] = await db.insert(users).values(userValues).returning();
 
       // Send welcome email
       try {
@@ -459,7 +445,7 @@ export function setupAuth(app: Express) {
           name: error.name,
           message: error.message,
           stack: error.stack,
-          response: error.response?.body
+          response: error.response?.body,
         });
         // Don't block registration if email fails
       }
@@ -467,7 +453,7 @@ export function setupAuth(app: Express) {
       req.login(newUser, (err) => {
         if (err) return next(err);
         return res.json({
-          message: "Registration successful",
+          message: 'Registration successful',
           user: {
             id: newUser.id,
             username: newUser.username,
@@ -483,13 +469,13 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error, user: Express.User, info: IVerifyOptions) => {
+  app.post('/api/login', (req, res, next) => {
+    passport.authenticate('local', (err: Error, user: Express.User, info: IVerifyOptions) => {
       if (err) {
         console.error('Login error:', {
           error: err.message,
           stack: err.stack,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         return next(err);
       }
@@ -503,7 +489,7 @@ export function setupAuth(app: Express) {
           console.error('Session login error:', {
             error: loginErr.message,
             stack: loginErr.stack,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
           return next(loginErr);
         }
@@ -511,11 +497,11 @@ export function setupAuth(app: Express) {
         console.log('User logged in successfully:', {
           userId: user.id,
           email: user.email,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
 
         return res.json({
-          message: "Login successful",
+          message: 'Login successful',
           user: {
             id: user.id,
             username: user.username,
@@ -524,17 +510,17 @@ export function setupAuth(app: Express) {
             phoneNumber: user.phoneNumber,
             subscriptionTier: user.subscriptionTier,
           },
-          redirectUrl: "/" // Add explicit redirect URL
+          redirectUrl: '/', // Add explicit redirect URL
         });
       });
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post('/api/logout', (req, res) => {
     console.log('Logging out user:', {
       userId: req.user?.id,
       email: req.user?.email,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     req.logout((err) => {
@@ -542,67 +528,66 @@ export function setupAuth(app: Express) {
         console.error('Logout error:', {
           error: err.message,
           stack: err.stack,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        return res.status(500).json({ error: "Logout failed" });
+        return res.status(500).json({ error: 'Logout failed' });
       }
-      res.json({ message: "Logged out successfully" });
+      res.json({ message: 'Logged out successfully' });
     });
   });
 
   // User info endpoint
-  app.get("/api/user", (req, res) => {
+  app.get('/api/user', (req, res) => {
     console.log('User info request:', {
       isAuthenticated: req.isAuthenticated(),
       hasUser: !!req.user,
       userId: req.user?.id,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({ error: 'Not authenticated' });
     }
     res.json(req.user);
   });
 
   // Debug endpoint to check session
-  app.get("/api/debug/session", (req, res) => {
+  app.get('/api/debug/session', (req, res) => {
     res.json({
       isAuthenticated: req.isAuthenticated(),
       hasSession: !!req.session,
       sessionID: req.sessionID,
-      user: req.user ? {
-        id: req.user.id,
-        email: req.user.email,
-      } : null,
+      user: req.user
+        ? {
+            id: req.user.id,
+            email: req.user.email,
+          }
+        : null,
     });
   });
 }
 
-passport.use(new LocalStrategy({ usernameField: 'email' }, async (emailOrUsername, password, done) => {
-  try {
-    // Check if input matches either email or username
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(
-        or(
-          eq(users.email, emailOrUsername),
-          eq(users.username, emailOrUsername)
-        )
-      )
-      .limit(1);
+passport.use(
+  new LocalStrategy({ usernameField: 'email' }, async (emailOrUsername, password, done) => {
+    try {
+      // Check if input matches either email or username
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(or(eq(users.email, emailOrUsername), eq(users.username, emailOrUsername)))
+        .limit(1);
 
-    if (!user) {
-      return done(null, false, { message: 'Incorrect email/username or password' });
+      if (!user) {
+        return done(null, false, { message: 'Incorrect email/username or password' });
+      }
+      const isValid = await crypto.compare(password, user.password);
+      if (!isValid) {
+        return done(null, false, { message: 'Incorrect email/username or password' });
+      }
+      return done(null, user);
+    } catch (error) {
+      console.error('Local authentication error:', error);
+      done(error);
     }
-    const isValid = await crypto.compare(password, user.password);
-    if (!isValid) {
-      return done(null, false, { message: 'Incorrect email/username or password' });
-    }
-    return done(null, user);
-  } catch (error) {
-    console.error('Local authentication error:', error);
-    done(error);
-  }
-}));
+  })
+);

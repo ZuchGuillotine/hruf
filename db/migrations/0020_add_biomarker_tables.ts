@@ -1,58 +1,82 @@
-import { type PostgresJsDatabase, drizzle } from "drizzle-orm/postgres-js";
-import { sql } from "drizzle-orm";
-import { pgTable, serial, integer, text, timestamp, numeric, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { labResults } from "../schema";
+import { type PostgresJsDatabase, drizzle } from 'drizzle-orm/postgres-js';
+import { sql } from 'drizzle-orm';
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  timestamp,
+  numeric,
+  jsonb,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+import { labResults } from '../schema';
 
 // Main biomarker results table
-export const biomarkerResults = pgTable("biomarker_results", {
-  id: serial("id").primaryKey(),
-  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "CASCADE" }).notNull(),
-  name: text("name").notNull(),
-  value: numeric("value").notNull(),
-  unit: text("unit").notNull(),
-  category: text("category").notNull(),
-  referenceRange: text("reference_range"),
-  testDate: timestamp("test_date").notNull(),
-  status: text("status"),
-  extractionMethod: text("extraction_method").notNull(),
-  confidence: numeric("confidence"),
-  metadata: jsonb("metadata").$type<{
+export const biomarkerResults = pgTable('biomarker_results', {
+  id: serial('id').primaryKey(),
+  labResultId: integer('lab_result_id')
+    .references(() => labResults.id, { onDelete: 'CASCADE' })
+    .notNull(),
+  name: text('name').notNull(),
+  value: numeric('value').notNull(),
+  unit: text('unit').notNull(),
+  category: text('category').notNull(),
+  referenceRange: text('reference_range'),
+  testDate: timestamp('test_date').notNull(),
+  status: text('status'),
+  extractionMethod: text('extraction_method').notNull(),
+  confidence: numeric('confidence'),
+  metadata: jsonb('metadata').$type<{
     sourceText?: string;
     extractionTimestamp?: string;
     validationStatus?: string;
     notes?: string;
   }>(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: timestamp('created_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
 });
 
 // Biomarker processing status tracking
-export const biomarkerProcessingStatus = pgTable("biomarker_processing_status", {
-  labResultId: integer("lab_result_id").references(() => labResults.id, { onDelete: "CASCADE" }).primaryKey(),
-  status: text("status").notNull(),
-  extractionMethod: text("extraction_method"),
-  biomarkerCount: integer("biomarker_count"),
-  errorMessage: text("error_message"),
-  startedAt: timestamp("started_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  completedAt: timestamp("completed_at"),
-  metadata: jsonb("metadata").$type<{
+export const biomarkerProcessingStatus = pgTable('biomarker_processing_status', {
+  labResultId: integer('lab_result_id')
+    .references(() => labResults.id, { onDelete: 'CASCADE' })
+    .primaryKey(),
+  status: text('status').notNull(),
+  extractionMethod: text('extraction_method'),
+  biomarkerCount: integer('biomarker_count'),
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  completedAt: timestamp('completed_at'),
+  metadata: jsonb('metadata').$type<{
     regexMatches?: number;
     llmExtractions?: number;
     processingTime?: number;
     retryCount?: number;
   }>(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: timestamp('created_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
 });
 
 // Reference data for biomarkers
-export const biomarkerReference = pgTable("biomarker_reference", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  category: text("category").notNull(),
-  defaultUnit: text("default_unit").notNull(),
-  description: text("description"),
-  metadata: jsonb("metadata").$type<{
+export const biomarkerReference = pgTable('biomarker_reference', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  category: text('category').notNull(),
+  defaultUnit: text('default_unit').notNull(),
+  description: text('description'),
+  metadata: jsonb('metadata').$type<{
     commonNames?: string[];
     normalRanges?: {
       gender?: string;
@@ -62,8 +86,12 @@ export const biomarkerReference = pgTable("biomarker_reference", {
     }[];
     importance?: number;
   }>(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: timestamp('created_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
 });
 
 // Migration up function
@@ -133,7 +161,6 @@ export async function up(db: PostgresJsDatabase) {
         ('cholesterol', 'lipid', 'mg/dL', 'Total cholesterol level', '{"commonNames": ["Total Cholesterol"], "normalRanges": [{"range": "125-200", "unit": "mg/dL"}], "importance": 1}'::jsonb)
       ON CONFLICT (name) DO NOTHING;
     `);
-
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;

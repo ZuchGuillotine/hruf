@@ -6,9 +6,9 @@ async function sendTwoFactorAuthEmail(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  res.status(501).json({ 
-    message: "Email service not implemented",
-    details: "Email functionality is currently unavailable"
+  res.status(501).json({
+    message: 'Email service not implemented',
+    details: 'Email functionality is currently unavailable',
   });
 }
 

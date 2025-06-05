@@ -1,4 +1,3 @@
-
 import { db } from '../db';
 import { labResults } from '../db/schema';
 import { eq } from 'drizzle-orm';
@@ -8,11 +7,7 @@ import { ImageAnnotatorClient } from '@google-cloud/vision';
 
 async function debugOCR(labId: number) {
   try {
-    const [labResult] = await db
-      .select()
-      .from(labResults)
-      .where(eq(labResults.id, labId))
-      .limit(1);
+    const [labResult] = await db.select().from(labResults).where(eq(labResults.id, labId)).limit(1);
 
     if (!labResult) {
       console.error(`Lab result ${labId} not found`);
@@ -28,29 +23,32 @@ async function debugOCR(labId: number) {
     }
 
     const fileBuffer = fs.readFileSync(filePath);
-    
+
     console.log('Starting OCR process...');
     const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
     const client = new ImageAnnotatorClient({ credentials });
 
     const [result] = await client.documentTextDetection({
-      image: { content: fileBuffer.toString('base64') }
+      image: { content: fileBuffer.toString('base64') },
     });
 
     const text = result.fullTextAnnotation?.text || '';
-    
+
     console.log('\n=== OCR Results ===');
     console.log('Text length:', text.length);
     console.log('\nFirst 1000 characters:');
     console.log(text.substring(0, 1000));
     console.log('\nLast 1000 characters:');
     console.log(text.substring(Math.max(0, text.length - 1000)));
-    
+
     // Write full results to debug file
-    const debugPath = path.join(process.cwd(), 'debug_logs', `ocr_debug_${labId}_${Date.now()}.txt`);
+    const debugPath = path.join(
+      process.cwd(),
+      'debug_logs',
+      `ocr_debug_${labId}_${Date.now()}.txt`
+    );
     fs.writeFileSync(debugPath, text);
     console.log(`\nFull OCR results written to: ${debugPath}`);
-
   } catch (error) {
     console.error('Debug OCR error:', error);
   }

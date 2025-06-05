@@ -1,12 +1,17 @@
-
-import { Fragment } from "react";
-import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import LandingHeader from "@/components/landing-header";
-import Footer from "@/components/footer";
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Loader2 } from "lucide-react";
-import type { ResearchDocument } from "@/lib/types";
+import { Fragment } from 'react';
+import { Link } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import LandingHeader from '@/components/landing-header';
+import Footer from '@/components/footer';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Loader2 } from 'lucide-react';
+import type { ResearchDocument } from '@/lib/types';
 
 const DOCS_PER_PAGE = 6;
 
@@ -19,7 +24,7 @@ export default function ResearchPage() {
       const res = await fetch('/api/research');
       if (!res.ok) throw new Error('Failed to fetch research documents');
       return res.json();
-    }
+    },
   });
 
   const startIndex = (page - 1) * DOCS_PER_PAGE;
@@ -49,15 +54,18 @@ export default function ResearchPage() {
           {paginatedDocuments.map((document) => (
             <article key={document.id} className="bg-white rounded-lg shadow-md overflow-hidden">
               {document.thumbnailUrl && (
-                <img 
-                  src={document.thumbnailUrl} 
+                <img
+                  src={document.thumbnailUrl}
                   alt={document.title}
                   className="w-full h-48 object-cover"
                 />
               )}
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-2">
-                  <Link href={`/research/${document.slug}`} className="text-primary hover:underline">
+                  <Link
+                    href={`/research/${document.slug}`}
+                    className="text-primary hover:underline"
+                  >
                     {document.title}
                   </Link>
                 </h2>

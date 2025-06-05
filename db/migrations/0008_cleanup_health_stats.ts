@@ -1,6 +1,5 @@
-
 import { db } from '../index';
-import { sql } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 
 async function main() {
   console.log('Starting cleanup migration...');

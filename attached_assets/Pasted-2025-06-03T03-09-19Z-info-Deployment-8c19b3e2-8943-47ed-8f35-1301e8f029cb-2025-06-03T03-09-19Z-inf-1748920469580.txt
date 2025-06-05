@@ -1,0 +1,97 @@
+2025-06-03T03:09:19Z info: Deployment: 8c19b3e2-8943-47ed-8f35-1301e8f029cb
+2025-06-03T03:09:19Z info: Build: 02262a2f-2126-48ba-b3da-08d686880d8f
+2025-06-03T03:09:19Z info: Connecting to builder
+2025-06-03T03:09:22Z info: Builder connected
+2025-06-03T03:09:23Z info: Installing packages
+2025-06-03T03:09:23Z info: Starting Build
+
+up to date, audited 1009 packages in 4s
+
+  run `npm fund` for details
+
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+npm notice
+npm notice New minor version of npm available! 11.3.0 -> 11.4.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+npm notice To update run: npm install -g npm@11.4.1
+npm notice
+
+
+> rest-express@1.0.0 build
+> npm run build:client && npm run build:server
+
+
+
+> rest-express@1.0.0 build:client
+> vite build
+
+
+vite v5.4.19 building for production...
+
+transforming...
+
+✓ 2903 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+../dist/index.html                         4.14 kB │ gzip:   1.42 kB
+
+../dist/assets/index-D0YWOcpj.js           1.80 kB │ gzip:   0.86 kB
+
+../dist/assets/query-vendor-D2zxK6I_.js   38.90 kB │ gzip:  11.62 kB
+
+../dist/assets/ui-vendor-Dfzj-_mw.js      83.35 kB │ gzip:  27.97 kB
+
+../dist/assets/react-vendor-DrrtegDc.js  146.48 kB │ gzip:  47.82 kB
+
+✓ built in 8.44s
+
+
+> rest-express@1.0.0 build:server
+> esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server
+
+
+
+  dist/server/index.js  347.5kb
+
+⚡ Done in 187ms
+
+2025-06-03T03:09:45Z info: Pushing pid1 binary layer...
+2025-06-03T03:09:47Z info: Pushing Repl layer...
+2025-06-03T03:09:47Z info: Pushing hosting layer...
+2025-06-03T03:09:47Z info: Retrieved cached nix layer
+2025-06-03T03:09:47Z info: Created pid1 binary layer
+2025-06-03T03:09:47Z info: Created hosting layer
+2025-06-03T03:10:20Z info: Created Repl layer
+2025-06-03T03:10:20Z info: Pushed image manifest
+2025-06-03T03:10:21Z info: Pushed soci index manifest
+2025-06-03T03:10:26Z info: Creating Autoscale service
+forwarding local port 5000 to external port 80 (mapped as 1104)
+    DRIP_3: 'd-xxxxxxxxxxxxx'
+  isProd: false,
+}
+  replitDeployment: '1',
+  isProduction: false
+  port: 5000,
+Adding supplement: Vitamin K2 (MK-7)
+Adding supplement: Calcium (Calcium Orotate)
+Adding supplement: Acetyl-L-Carnitine HCL
+Adding supplement: Chrysin
+Adding supplement: Papain
+Adding supplement: Borage Oil (General)
+Adding supplement: S-Adenosylmethionine (SAM-e)
+Loading 100 supplements into service
+Adding supplement: Fasoracetam
+Adding supplement: 1-Androsterone
+Background loading completed. Total supplements loaded: 549
+    category: 'metabolic',
+2025-06-03T03:11:48Z error: The deployment is failing health checks. This can happen if the application isn't responding, responds with an error, or doesn't respond in time. Health checks are sent to the / endpoint by default and must respond as soon as possible. Make sure that the / endpoint is implemented and returns a 200 status code in a timely manner. Avoid doing expensive or long running operations on the / endpoint, prefer deferring them to a different route. Check the logs for more information.

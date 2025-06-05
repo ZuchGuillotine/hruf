@@ -1,13 +1,7 @@
 import { useUser } from '../hooks/use-user';
 import { Button } from './ui/button';
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { CalendarIcon, CheckCircleIcon } from 'lucide-react';
 import { useLocation } from 'wouter';
 
@@ -26,9 +20,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
     try {
       // Get the appropriate price ID from our helper
       const { PRODUCTS } = await import('@/lib/stripe-price-ids');
-      const priceId = isYearly 
-        ? PRODUCTS.PRO.tiers.YEARLY.id
-        : PRODUCTS.PRO.tiers.MONTHLY.id;
+      const priceId = isYearly ? PRODUCTS.PRO.tiers.YEARLY.id : PRODUCTS.PRO.tiers.MONTHLY.id;
 
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -56,7 +48,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
     try {
       const response = await fetch('/api/stripe/start-free-trial', {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -90,7 +82,7 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
       case 'signup':
         return 'Start your journey with StackTracker Pro and unlock all features!';
       case 'usage_limit':
-        return 'You\'ve reached your daily limit of 5 AI interactions. Upgrade to Pro for unlimited access!';
+        return "You've reached your daily limit of 5 AI interactions. Upgrade to Pro for unlimited access!";
       case 'trial_expiring':
         return 'Your trial period is ending soon. Upgrade now to keep accessing all features!';
       default:
@@ -103,33 +95,29 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
       <div className="space-y-2">
         {/* Free Trial Option */}
         {reason === 'signup' && (
-          <Button 
+          <Button
             onClick={handleStartTrial}
             disabled={loading}
             className="w-full bg-green-600 hover:bg-green-700 mb-4"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {loading ? "Starting Trial..." : "Start 28-Day Free Trial"}
+            {loading ? 'Starting Trial...' : 'Start 28-Day Free Trial'}
           </Button>
         )}
 
         {/* Monthly Option */}
-        <Button 
-          onClick={() => handleSubscribe(false)} 
-          disabled={loading}
-          className="w-full"
-        >
-          {loading ? "Processing..." : "Monthly - $21.99/month"}
+        <Button onClick={() => handleSubscribe(false)} disabled={loading} className="w-full">
+          {loading ? 'Processing...' : 'Monthly - $21.99/month'}
         </Button>
 
         {/* Yearly Option */}
-        <Button 
-          onClick={() => handleSubscribe(true)} 
+        <Button
+          onClick={() => handleSubscribe(true)}
           disabled={loading}
           variant="outline"
           className="w-full mt-2"
         >
-          {loading ? "Processing..." : "Yearly - $184.71/year (Save 30%)"}
+          {loading ? 'Processing...' : 'Yearly - $184.71/year (Save 30%)'}
         </Button>
       </div>
 
@@ -154,8 +142,8 @@ export function SubscriptionCheck({ showAsModal = false, reason }: SubscriptionC
 
   return showAsModal ? (
     <Dialog open={true} onOpenChange={undefined}>
-      <DialogContent 
-        className="sm:max-w-[425px]" 
+      <DialogContent
+        className="sm:max-w-[425px]"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}

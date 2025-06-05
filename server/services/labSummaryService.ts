@@ -1,22 +1,22 @@
-import OpenAI from "openai";
-import { db } from "../../db";
-import { labResults } from "../../db/schema";
-import { and, eq, desc } from "drizzle-orm";
-import embeddingService from "./embeddingService";
-import { biomarkerExtractionService } from "./biomarkerExtractionService";
-import logger from "../utils/logger";
-import path from "path";
-import fs from "fs";
-import { fileTypeFromBuffer } from "file-type";
+import OpenAI from 'openai';
+import { db } from '../../db';
+import { labResults } from '../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+import embeddingService from './embeddingService';
+import { biomarkerExtractionService } from './biomarkerExtractionService';
+import logger from '../utils/logger';
+import path from 'path';
+import fs from 'fs';
+import { fileTypeFromBuffer } from 'file-type';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 class LabSummaryService {
   // Constants for summarization
-  private SUMMARY_MODEL = "gpt-4o-mini";
+  private SUMMARY_MODEL = 'gpt-4o-mini';
   private MAX_TOKEN_LIMIT = 16000;
   private MAX_LABS_PER_REQUEST = 50;
 
@@ -59,22 +59,25 @@ class LabSummaryService {
       const fileBuffer = fs.readFileSync(filePath);
       const fileType = await fileTypeFromBuffer(fileBuffer);
 
-      let textContent = "";
+      let textContent = '';
 
-      if (labResult.fileType === 'application/pdf' || (fileType && fileType.mime === 'application/pdf')) {
+      if (
+        labResult.fileType === 'application/pdf' ||
+        (fileType && fileType.mime === 'application/pdf')
+      ) {
         try {
           // Dynamically import pdf-parse
-          const pdfParse = await import('pdf-parse').then(module => module.default);
+          const pdfParse = await import('pdf-parse').then((module) => module.default);
 
           logger.info(`Processing PDF file: ${filePath}`, {
             fileSize: fileBuffer.length,
-            fileName: labResult.fileName
+            fileName: labResult.fileName,
           });
 
           // Parse PDF directly from buffer
           const pdfData = await pdfParse(fileBuffer, {
             max: 0,
-            version: 'v1.10.100' // Force specific PDF.js version
+            version: 'v1.10.100', // Force specific PDF.js version
           });
 
           textContent = pdfData.text;
@@ -84,21 +87,22 @@ class LabSummaryService {
           }
 
           // Extract biomarkers in parallel with other processing
-          const biomarkerPromise = biomarkerExtractionService.extractBiomarkers(textContent)
+          const biomarkerPromise = biomarkerExtractionService
+            .extractBiomarkers(textContent)
             .then(async (biomarkerResults) => {
               logger.info(`Extracted biomarkers for lab result ${labResultId}`, {
-                biomarkerCount: biomarkerResults.parsedBiomarkers.length
+                biomarkerCount: biomarkerResults.parsedBiomarkers.length,
               });
               return biomarkerResults;
             })
-            .catch(error => {
+            .catch((error) => {
               logger.error(`Error extracting biomarkers for lab result ${labResultId}:`, error);
               return null;
             });
 
           // Wait for biomarker extraction before updating metadata
           const biomarkerResults = await biomarkerPromise;
-          
+
           // Explicitly process biomarkers and store them in the database
           try {
             await biomarkerExtractionService.processLabResult(labResultId);
@@ -115,8 +119,8 @@ class LabSummaryService {
                 ...labResult.metadata,
                 parsedText: textContent,
                 parseDate: new Date().toISOString(),
-                biomarkers: biomarkerResults || undefined
-              }
+                biomarkers: biomarkerResults || undefined,
+              },
             })
             .where(eq(labResults.id, labResultId));
 
@@ -124,12 +128,12 @@ class LabSummaryService {
           logger.info(`Updated lab result ${labResultId} metadata:`, {
             hasBiomarkers: !!biomarkerResults,
             biomarkerCount: biomarkerResults?.parsedBiomarkers?.length || 0,
-            parseDate: new Date().toISOString()
+            parseDate: new Date().toISOString(),
           });
 
           logger.info(`Successfully parsed PDF for lab result ${labResultId}`, {
             textLength: textContent.length,
-            hasBiomarkers: !!biomarkerResults
+            hasBiomarkers: !!biomarkerResults,
           });
         } catch (error) {
           logger.error('Error parsing PDF:', {
@@ -138,38 +142,41 @@ class LabSummaryService {
             filePath,
             fileName: labResult.fileName,
             fileUrl: labResult.fileUrl,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
 
           // Fallback to basic metadata
           textContent = `Lab result file: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
-          File type: PDF. This is a PDF document that could not be parsed. Notes: ${labResult.notes || "No notes provided"}`;
+          File type: PDF. This is a PDF document that could not be parsed. Notes: ${labResult.notes || 'No notes provided'}`;
         }
-      } else if (labResult.fileType.startsWith('image/') || (fileType && fileType.mime && fileType.mime.startsWith('image/'))) {
+      } else if (
+        labResult.fileType.startsWith('image/') ||
+        (fileType && fileType.mime && fileType.mime.startsWith('image/'))
+      ) {
         try {
           logger.info(`Starting OCR processing for lab result ${labResultId}`, {
             fileName: labResult.fileName,
             fileType: labResult.fileType,
-            fileSize: fileBuffer.length
+            fileSize: fileBuffer.length,
           });
 
           const { ImageAnnotatorClient } = await import('@google-cloud-vision');
           const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
           const client = new ImageAnnotatorClient({
-            credentials
+            credentials,
           });
 
           // Configure options for better handling of medical data
           const request = {
             image: {
-              content: fileBuffer.toString('base64')
+              content: fileBuffer.toString('base64'),
             },
             imageContext: {
               languageHints: ['en'], // English language hint
               textDetectionParams: {
-                enableTextDetectionConfidenceScore: true
-              }
-            }
+                enableTextDetectionConfidenceScore: true,
+              },
+            },
           };
 
           const [result] = await client.documentTextDetection(request);
@@ -179,9 +186,12 @@ class LabSummaryService {
           // Log detailed OCR results to help debug recognition issues
           logger.info(`Detailed OCR results for lab ${labResultId}:`, {
             rawText: text,
-            textByLines: text.split('\n').map(line => line.trim()).filter(Boolean),
+            textByLines: text
+              .split('\n')
+              .map((line) => line.trim())
+              .filter(Boolean),
             characterCount: text.length,
-            lineCount: text.split('\n').length
+            lineCount: text.split('\n').length,
           });
 
           // Log full OCR results for debugging
@@ -189,14 +199,14 @@ class LabSummaryService {
             text: text,
             textLength: text ? text.length : 0,
             hasContent: !!text,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
 
           // Log first and last 500 characters to verify content boundaries
           logger.info(`OCR content boundaries for lab ${labResultId}:`, {
             start: text.substring(0, 500),
             end: text.substring(Math.max(0, text.length - 500)),
-            totalLength: text.length
+            totalLength: text.length,
           });
 
           if (!text || text.trim().length === 0) {
@@ -208,7 +218,7 @@ class LabSummaryService {
           // Verify text was extracted
           logger.info(`OCR text content sample for lab result ${labResultId}:`, {
             sample: text.substring(0, 100), // Log first 100 chars
-            fullLength: text.length
+            fullLength: text.length,
           });
 
           // First update the metadata with text content
@@ -224,10 +234,10 @@ class LabSummaryService {
                   engineVersion: 'google-vision',
                   parameters: {
                     language: 'en',
-                    mode: 'document'
-                  }
-                }
-              }
+                    mode: 'document',
+                  },
+                },
+              },
             })
             .where(eq(labResults.id, labResultId));
 
@@ -252,13 +262,13 @@ class LabSummaryService {
                   engineVersion: 'google-vision',
                   parameters: {
                     language: 'en',
-                    mode: 'document'
-                  }
+                    mode: 'document',
+                  },
                 },
                 extractedText: textContent,
                 extractionMethod: 'google-vision',
-                extractionDate: new Date().toISOString()
-              }
+                extractionDate: new Date().toISOString(),
+              },
             })
             .where(eq(labResults.id, labResultId));
 
@@ -277,8 +287,8 @@ class LabSummaryService {
                     engineVersion: 'google-vision',
                     parameters: {
                       language: 'en',
-                      mode: 'document'
-                    }
+                      mode: 'document',
+                    },
                   },
                   extractedText: textContent,
                   extractionMethod: 'google-vision',
@@ -286,9 +296,9 @@ class LabSummaryService {
                   biomarkers: {
                     parsedBiomarkers: biomarkerResults.parsedBiomarkers,
                     parsingErrors: biomarkerResults.parsingErrors,
-                    extractedAt: new Date().toISOString()
-                  }
-                }
+                    extractedAt: new Date().toISOString(),
+                  },
+                },
               })
               .where(eq(labResults.id, labResultId));
           }
@@ -296,32 +306,33 @@ class LabSummaryService {
           logger.info(`Successfully extracted and stored OCR text for lab result ${labResultId}`, {
             textLength: text.length,
             method: 'ocr',
-            hasBiomarkers: !!biomarkerResults
+            hasBiomarkers: !!biomarkerResults,
           });
 
           logger.info(`Successfully extracted text from image for lab result ${labResultId}`, {
-            textLength: text.length
+            textLength: text.length,
           });
         } catch (ocrError) {
           logger.error('Error performing OCR on image:', {
             error: ocrError instanceof Error ? ocrError.message : String(ocrError),
             stack: ocrError instanceof Error ? ocrError.stack : undefined,
             filePath,
-            fileName: labResult.fileName
+            fileName: labResult.fileName,
           });
 
           textContent = `Image lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
-          File type: ${labResult.fileType}. OCR processing failed. Notes: ${labResult.notes || "No notes provided"}`;
+          File type: ${labResult.fileType}. OCR processing failed. Notes: ${labResult.notes || 'No notes provided'}`;
         }
       } else if (
         labResult.fileType === 'application/msword' ||
-        labResult.fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        labResult.fileType ===
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ) {
         textContent = `Document lab result: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
         This is a document file that contains lab results. The file type is ${labResult.fileType}.`;
       } else {
         textContent = `Lab result file: ${labResult.fileName}, uploaded on ${new Date(labResult.uploadedAt).toLocaleDateString()}. 
-        File type: ${labResult.fileType}. Notes: ${labResult.notes || "No notes provided"}`;
+        File type: ${labResult.fileType}. Notes: ${labResult.notes || 'No notes provided'}`;
       }
 
       if (labResult.notes) {
@@ -332,18 +343,19 @@ class LabSummaryService {
         model: this.SUMMARY_MODEL,
         messages: [
           {
-            role: "system",
-            content: this.LAB_SUMMARY_PROMPT
+            role: 'system',
+            content: this.LAB_SUMMARY_PROMPT,
           },
           {
-            role: "user",
-            content: `Here is a lab result to summarize:\n\n${textContent}`
-          }
+            role: 'user',
+            content: `Here is a lab result to summarize:\n\n${textContent}`,
+          },
         ],
-        max_tokens: 1000
+        max_tokens: 1000,
       });
 
-      const summaryContent = completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
+      const summaryContent =
+        completion.choices[0]?.message?.content?.trim() || 'No summary generated.';
 
       await db
         .update(labResults)
@@ -351,8 +363,8 @@ class LabSummaryService {
           metadata: {
             ...labResult.metadata,
             summary: summaryContent,
-            summarizedAt: new Date().toISOString()
-          }
+            summarizedAt: new Date().toISOString(),
+          },
         })
         .where(eq(labResults.id, labResultId));
 
@@ -360,12 +372,11 @@ class LabSummaryService {
 
       logger.info(`Generated summary for lab result ${labResultId}`);
       return summaryContent;
-
     } catch (error) {
       logger.error(`Error summarizing lab result ${labResultId}:`, {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return null;
     }
@@ -388,7 +399,7 @@ class LabSummaryService {
             id: labResult.id,
             fileName: labResult.fileName,
             uploadedAt: labResult.uploadedAt,
-            summary: labResult.metadata.summary
+            summary: labResult.metadata.summary,
           });
         } else {
           const summary = await this.summarizeLabResult(labResult.id);
@@ -397,7 +408,7 @@ class LabSummaryService {
               id: labResult.id,
               fileName: labResult.fileName,
               uploadedAt: labResult.uploadedAt,
-              summary
+              summary,
             });
           }
         }
@@ -415,11 +426,7 @@ class LabSummaryService {
       const recentLabs = await db
         .select()
         .from(labResults)
-        .where(
-          and(
-            eq(labResults.userId, userId)
-          )
-        )
+        .where(and(eq(labResults.userId, userId)))
         .orderBy(desc(labResults.uploadedAt))
         .limit(limit);
 
@@ -429,7 +436,7 @@ class LabSummaryService {
             .then(() => {
               logger.info(`Background summary generated for lab ${lab.id}`);
             })
-            .catch(error => {
+            .catch((error) => {
               logger.error(`Error generating background summary for lab ${lab.id}:`, error);
             });
         }

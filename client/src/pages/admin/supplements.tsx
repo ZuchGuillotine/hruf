@@ -1,5 +1,5 @@
-import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -16,16 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import type { SelectSupplementReference, InsertSupplementReference } from "@db/rds-schema";
-import Header from "@/components/header";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useForm } from 'react-hook-form';
+import type { SelectSupplementReference, InsertSupplementReference } from '@db/rds-schema';
+import Header from '@/components/header';
 
 type FormData = {
   name: string;
@@ -43,12 +43,12 @@ export default function AdminSupplements() {
 
   const form = useForm<FormData>({
     defaultValues: {
-      name: "",
-      category: "",
-      alternativeNames: "",
-      description: "",
-      source: "",
-      sourceUrl: "",
+      name: '',
+      category: '',
+      alternativeNames: '',
+      description: '',
+      source: '',
+      sourceUrl: '',
     },
   });
 
@@ -61,7 +61,7 @@ export default function AdminSupplements() {
       const supplement: Partial<InsertSupplementReference> = {
         name: data.name,
         category: data.category,
-        alternativeNames: data.alternativeNames.split(',').map(name => name.trim()),
+        alternativeNames: data.alternativeNames.split(',').map((name) => name.trim()),
         description: data.description,
         source: data.source,
         sourceUrl: data.sourceUrl,
@@ -81,14 +81,14 @@ export default function AdminSupplements() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/supplements'] });
-      toast({ title: "Success", description: "Supplement added successfully" });
+      toast({ title: 'Success', description: 'Supplement added successfully' });
       setOpen(false);
       form.reset();
     },
     onError: (error: Error) => {
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description: error.message,
       });
     },
@@ -129,66 +129,40 @@ export default function AdminSupplements() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    {...form.register("name")}
-                    required
-                  />
+                  <Input id="name" {...form.register('name')} required />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    {...form.register("category")}
-                    required
-                  />
+                  <Input id="category" {...form.register('category')} required />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="alternativeNames">
-                    Alternative Names (comma-separated)
-                  </Label>
+                  <Label htmlFor="alternativeNames">Alternative Names (comma-separated)</Label>
                   <Input
                     id="alternativeNames"
-                    {...form.register("alternativeNames")}
+                    {...form.register('alternativeNames')}
                     placeholder="e.g., Vitamin C, Ascorbic Acid"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    {...form.register("description")}
-                  />
+                  <Textarea id="description" {...form.register('description')} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="source">Source</Label>
-                  <Input
-                    id="source"
-                    {...form.register("source")}
-                  />
+                  <Input id="source" {...form.register('source')} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="sourceUrl">Source URL</Label>
-                  <Input
-                    id="sourceUrl"
-                    type="url"
-                    {...form.register("sourceUrl")}
-                  />
+                  <Input id="sourceUrl" type="url" {...form.register('sourceUrl')} />
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={addSupplement.isPending}
-                >
-                  {addSupplement.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                <Button type="submit" className="w-full" disabled={addSupplement.isPending}>
+                  {addSupplement.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Add Supplement
                 </Button>
               </form>

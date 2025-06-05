@@ -1,0 +1,70 @@
+Below is a pragmatic, “fast-to-green” game-plan that gets a working version live on AWS as quickly as possible, without abandoning the mono-repo goals you already invested in.
+────────────────────────────────────────
+PICK THE CODE BASE TO DEPLOY
+────────────────────────────────────────
+Use the branch you are on now (“this repo”). Rationale:
+npm run build already completes – so runtime JS is emitted.
+All AWS-related CDK code/config is present here.
+The TypeScript errors are type-check-only; they don’t break the emitted JS.
+It saves you from back-porting AWS plumbing into an older replit-only branch.
+If someone is nervous about shipping code with red type checks, you can hot-patch the single blocking file (LimitReachedNotification.tsx) in <30 seconds, but it is optional for prod because you rely on esbuild, not tsc, for the actual build.
+────────────────────────────────────────
+FREEZE & CLEAN THE BRANCH
+────────────────────────────────────────
+Apply to .env
+Run
+git add .
+git commit -m "🟢 deploy-freeze: build is green, skipping type-check"
+git tag deploy-freeze-$(date +%Y%m%d)
+git push && git push --tags
+Discard or keep the stashed, half-finished mono-repo edits; they don’t affect the dist output.
+────────────────────────────────────────
+CONTAINERISE THE APP (LOCAL TEST)
+────────────────────────────────────────
+Create Dockerfile in the repo root:
+Apply to .env
+ 
+Test locally:
+Apply to .env
+Run
+app
+Hit localhost:8080 to confirm API + static assets work.
+────────────────────────────────────────
+PUSH IMAGE TO AWS (ECR) & DEPLOY (EB)
+────────────────────────────────────────
+If you already generated CDK stacks for ECR and Elastic Beanstalk you can skip to “eb deploy”.
+If not, the quickest manual path:
+Create an ECR repo:
+Apply to .env
+Run
+app
+Tag & push:
+Apply to .env
+Run
+)
+Elastic Beanstalk single-container Dockerrun:
+Create Dockerrun.aws.json in repo root:
+Apply to .env
+}
+Initialise EB and deploy:
+Apply to .env
+Run
+deploy
+(If you prefer CDK: define an elasticbeanstalk.CfnApplication & CfnEnvironment, include an S3-asset that uploads Dockerrun.aws.json + .platform/nginx/conf.d overrides if you need path rewrites.)
+────────────────────────────────────────
+CONFIGURE ENVIRONMENT VARIABLES
+────────────────────────────────────────
+RDS: DATABASE_URL or individual DB_HOST, DB_USER, etc.
+S3: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET, etc.
+CORS / JWT secrets.
+Elastic Beanstalk console → Configuration → “Software”.
+Or pass them via --option-settings in CDK/EB CLI.
+────────────────────────────────────────
+POST-DEPLOY CHECKLIST
+────────────────────────────────────────
+Verify health in EB dashboard is “green”.
+Open the public URL and smoke-test pages + API routes.
+Set up Route 53 / CloudFront if you need a custom domain & HTTPS.
+Optional: enable EB rolling updates + CloudWatch alarms.
+────────────────────────────────────────
+GET BACK TO THE MONO-REPO

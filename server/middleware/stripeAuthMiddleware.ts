@@ -11,7 +11,7 @@ import { eq } from 'drizzle-orm';
 export const handleStripeRedirects = async (req: Request, res: Response, next: NextFunction) => {
   // Check for Stripe redirect parameters
   const isStripeRedirect = req.query.session_id;
-  
+
   if (!isStripeRedirect) {
     return next();
   }
@@ -22,7 +22,7 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
       sessionId,
       path: req.path,
       method: req.method,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // If user is already authenticated, no need to re-authenticate
@@ -30,28 +30,29 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
       console.log('User already authenticated during Stripe redirect', {
         userId: req.user?.id,
         sessionId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       // If this is a success redirect and we have setup_complete parameter,
       // redirect the user to the dashboard after updating subscription
       if (req.query.setup_complete === 'true') {
         // Process the subscription and ensure user status is updated
         try {
-          const stripe = await import('stripe').then(module => 
-            new module.default(process.env.STRIPE_SECRET_KEY!));
-            
+          const stripe = await import('stripe').then(
+            (module) => new module.default(process.env.STRIPE_SECRET_KEY!)
+          );
+
           const session = await stripe.checkout.sessions.retrieve(sessionId);
-          
+
           // Update user subscription status based on the session
           if (session.subscription) {
             const { stripeService } = await import('../services/stripe');
             await stripeService.handleSubscriptionUpdated(session.subscription as any);
-            
+
             console.log('Updated subscription status after Stripe redirect', {
               userId: req.user?.id,
               subscriptionId: session.subscription,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
           }
         } catch (subError) {
@@ -59,42 +60,39 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
             error: subError,
             userId: req.user?.id,
             sessionId,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
-      
+
       return next();
     }
 
     // If session exists but user data is missing, we need to re-establish the user data
     if (req.session) {
       // Try to get user ID from Stripe's client_reference_id (stored during checkout creation)
-      const stripe = await import('stripe').then(module => 
-        new module.default(process.env.STRIPE_SECRET_KEY!));
-      
+      const stripe = await import('stripe').then(
+        (module) => new module.default(process.env.STRIPE_SECRET_KEY!)
+      );
+
       const session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['subscription']
+        expand: ['subscription'],
       });
-      
-      // Get user ID from client_reference_id 
+
+      // Get user ID from client_reference_id
       const userId = parseInt(session.client_reference_id || '0', 10);
-      
+
       if (userId) {
         // Get user from database
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-          
+        const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
         if (user) {
           // Update subscription status
           if (session.subscription) {
             const { stripeService } = await import('../services/stripe');
             await stripeService.handleSubscriptionUpdated(session.subscription as any);
           }
-          
+
           // Re-establish session auth
           req.login(user, (err) => {
             if (err) {
@@ -102,15 +100,15 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
                 error: err.message,
                 userId,
                 sessionId,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
               });
             } else {
               console.log('Successfully restored user session after Stripe redirect', {
                 userId,
                 sessionId,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
               });
-              
+
               // If this was a setup_complete redirect, redirect to the dashboard
               if (req.query.setup_complete === 'true') {
                 return res.redirect('/');
@@ -122,11 +120,11 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
         }
       }
     }
-    
+
     console.log('Unable to restore user session from Stripe redirect', {
       sessionId,
       hasSession: !!req.session,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     next();
   } catch (error: any) {
@@ -134,7 +132,7 @@ export const handleStripeRedirects = async (req: Request, res: Response, next: N
       error: error.message,
       stack: error.stack,
       path: req.path,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     next();
   }

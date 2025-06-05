@@ -22,21 +22,23 @@ import Footer from '@/components/footer';
 import Header from '@/components/header';
 
 // Form validation schema
-const formSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: 'Username must be at least 3 characters' })
-    .max(50, { message: 'Username must be less than 50 characters' }),
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters' })
-    .max(100, { message: 'Password must be less than 100 characters' }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+const formSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, { message: 'Username must be at least 3 characters' })
+      .max(50, { message: 'Username must be less than 50 characters' }),
+    email: z.string().email({ message: 'Please enter a valid email address' }),
+    password: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters' })
+      .max(100, { message: 'Password must be less than 100 characters' }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export default function PaymentSuccess() {
   const [location, navigate] = useLocation();
@@ -76,17 +78,14 @@ export default function PaymentSuccess() {
     // Fetch session details from our backend
     const fetchSession = async () => {
       try {
-        const response = await apiRequest(
-          'GET',
-          `/api/stripe/checkout-session/${sessionId}`
-        );
-        
+        const response = await apiRequest('GET', `/api/stripe/checkout-session/${sessionId}`);
+
         if (!response.ok) {
           throw new Error('Failed to verify payment session');
         }
 
         const data = await response.json();
-        
+
         // Pre-fill the email field if available from Stripe
         if (data.customerEmail) {
           form.setValue('email', data.customerEmail);
@@ -94,7 +93,7 @@ export default function PaymentSuccess() {
 
         // Determine subscription tier from the price ID
         const tier = getTierFromPriceId(data.priceId);
-        
+
         setSessionData({
           sessionId,
           priceId: data.priceId,
@@ -120,7 +119,7 @@ export default function PaymentSuccess() {
 
     try {
       setIsLoading(true);
-      
+
       // Create user account with payment information
       const response = await apiRequest('POST', '/api/post-payment/register', {
         username: values.username,
@@ -140,7 +139,7 @@ export default function PaymentSuccess() {
         title: 'Account created!',
         description: 'Welcome to StackTracker! You are now logged in.',
       });
-      
+
       // Redirect to dashboard
       navigate('/dashboard');
     } catch (error: any) {
@@ -201,11 +200,7 @@ export default function PaymentSuccess() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="email" 
-                            placeholder="Enter email" 
-                            {...field} 
-                          />
+                          <Input type="email" placeholder="Enter email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -219,11 +214,7 @@ export default function PaymentSuccess() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Create password" 
-                            {...field} 
-                          />
+                          <Input type="password" placeholder="Create password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -237,22 +228,14 @@ export default function PaymentSuccess() {
                       <FormItem>
                         <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Confirm password" 
-                            {...field} 
-                          />
+                          <Input type="password" placeholder="Confirm password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

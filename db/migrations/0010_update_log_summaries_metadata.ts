@@ -1,8 +1,7 @@
-
-import { db } from "../index";
-import { sql } from "drizzle-orm";
-import { logSummaries } from "../schema";
-import logger from "../../server/utils/logger";
+import { db } from '../index';
+import { sql } from 'drizzle-orm';
+import { logSummaries } from '../schema';
+import logger from '../../server/utils/logger';
 
 /**
  * Migration to update log_summaries metadata schema
@@ -12,7 +11,7 @@ import logger from "../../server/utils/logger";
  */
 async function main() {
   try {
-    logger.info("Starting migration: Update log_summaries metadata schema");
+    logger.info('Starting migration: Update log_summaries metadata schema');
 
     // Step 1: Create a function to safely update metadata
     await db.execute(sql`
@@ -85,9 +84,9 @@ async function main() {
         EXECUTE FUNCTION validate_log_summary_metadata();
     `);
 
-    logger.info("Successfully completed migration: Update log_summaries metadata schema");
+    logger.info('Successfully completed migration: Update log_summaries metadata schema');
   } catch (error) {
-    logger.error("Error during migration:", error);
+    logger.error('Error during migration:', error);
     throw error;
   }
 }
@@ -108,7 +107,7 @@ export async function up() {
 
 export async function down() {
   try {
-    logger.info("Starting rollback: Update log_summaries metadata schema");
+    logger.info('Starting rollback: Update log_summaries metadata schema');
 
     // Remove the trigger and function
     await db.execute(sql`
@@ -117,9 +116,9 @@ export async function down() {
       DROP FUNCTION IF EXISTS update_log_summary_metadata();
     `);
 
-    logger.info("Successfully completed rollback: Update log_summaries metadata schema");
+    logger.info('Successfully completed rollback: Update log_summaries metadata schema');
   } catch (error) {
-    logger.error("Error during rollback:", error);
+    logger.error('Error during rollback:', error);
     throw error;
   }
 }

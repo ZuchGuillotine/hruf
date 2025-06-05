@@ -12,7 +12,11 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ onSignup }: SignupFormProps) {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const { toast } = useToast();
@@ -47,12 +51,11 @@ export function SignupForm({ onSignup }: SignupFormProps) {
       if (onSignup) {
         onSignup(result);
       }
-
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
+        variant: 'destructive',
+        title: 'Error',
         description: error.message || 'Failed to create account',
       });
     } finally {
@@ -68,32 +71,36 @@ export function SignupForm({ onSignup }: SignupFormProps) {
             <div>
               <Input
                 placeholder="Email"
-                {...register('email', { 
-                  required: 'Email is required', 
-                  pattern: { 
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
-                    message: 'Invalid email address' 
-                  } 
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Invalid email address',
+                  },
                 })}
                 className="w-full"
               />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>}
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>
+              )}
             </div>
 
             <div>
               <Input
                 type="password"
                 placeholder="Password"
-                {...register('password', { 
-                  required: 'Password is required', 
-                  minLength: { 
-                    value: 8, 
-                    message: 'Password must be at least 8 characters' 
-                  } 
+                {...register('password', {
+                  required: 'Password is required',
+                  minLength: {
+                    value: 8,
+                    message: 'Password must be at least 8 characters',
+                  },
                 })}
                 className="w-full"
               />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message?.toString()}</p>}
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password.message?.toString()}</p>
+              )}
             </div>
 
             <div>
@@ -102,7 +109,9 @@ export function SignupForm({ onSignup }: SignupFormProps) {
                 {...register('username', { required: 'Username is required' })}
                 className="w-full"
               />
-              {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username.message?.toString()}</p>}
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username.message?.toString()}</p>
+              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -112,12 +121,7 @@ export function SignupForm({ onSignup }: SignupFormProps) {
         </CardContent>
       </Card>
 
-      {showSubscriptionModal && (
-        <SubscriptionCheck 
-          showAsModal={true}
-          reason="signup"
-        />
-      )}
+      {showSubscriptionModal && <SubscriptionCheck showAsModal={true} reason="signup" />}
     </>
   );
 }

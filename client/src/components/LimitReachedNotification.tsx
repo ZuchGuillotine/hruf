@@ -1,28 +1,49 @@
+/**
+ * @description      :
+ * @author           :
+ * @group            :
+ * @created          : 05/06/2025 - 09:54:36
+ *
+ * MODIFICATION LOG
+ * - Version         : 1.0.0
+ * - Date            : 05/06/2025
+ * - Author          :
+ * - Modification    :
+ **/
 import React from 'react';
-import { Alert, AlertTitle, AlertDescription, AlertCircle } from '@chakra-ui/react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
-function LabUpload() {
-  // ... (Other component logic, assumed unchanged)
-
-  const isUploadLimitReached =  // ... (Logic to determine if upload limit is reached, assumed unchanged)
-
-  return (
-    <div>
-      {/* ... (Other UI elements, assumed unchanged) */}
-      {isUploadLimitReached && (
-        <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-900/20 mb-6">
-          <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-          <AlertTitle className="text-gray-900 dark:text-gray-100 font-semibold ml-2">
-            Upload Limit Reached
-          </AlertTitle>
-          <AlertDescription className="ml-7 text-gray-700 dark:text-gray-300">
-            You have reached your lab analysis upload limit. To continue, please upgrade your plan.
-          </AlertDescription>
-        </Alert>
-      )}
-      {/* ... (Rest of the component, assumed unchanged) */}
-    </div>
-  );
+interface LimitReachedNotificationProps {
+  /**
+   * When true, the alert is rendered. Pass the value returned by your plan-checking logic.
+   */
+  isUploadLimitReached: boolean;
 }
 
-export default LabUpload;
+/**
+ * Renders an informational alert when the current user has reached their plan's
+ * upload limit. Use this component inside the part of the UI where users
+ * attempt to upload labs so that it appears in context.
+ */
+const LimitReachedNotification: React.FC<LimitReachedNotificationProps> = ({
+  isUploadLimitReached,
+}) => {
+  if (!isUploadLimitReached) {
+    return null;
+  }
+
+  return (
+    <Alert className="mb-6">
+      <InfoIcon className="h-4 w-4" />
+      <div>
+        <AlertTitle className="font-semibold">Upload Limit Reached</AlertTitle>
+        <AlertDescription>
+          You have reached your lab analysis upload limit. To continue, please upgrade your plan.
+        </AlertDescription>
+      </div>
+    </Alert>
+  );
+};
+
+export default LimitReachedNotification;
