@@ -112,14 +112,8 @@ async function checkAndReprocessBiomarkers() {
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  checkAndReprocessBiomarkers()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error('Script failed:', error);
-      process.exit(1);
-    });
-}
+// This script should only be called via import, not directly
+// Removed direct execution to prevent Docker container from exiting
+// Use: import { checkAndReprocessBiomarkers } from './scripts/check-biomarkers'
 
 export { checkAndReprocessBiomarkers };

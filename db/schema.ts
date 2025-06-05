@@ -8,11 +8,24 @@ import {
   jsonb,
   date,
   numeric,
-  vector,
+  customType,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
+
+// Define a custom vector type
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string): number[] {
+    return JSON.parse(value);
+  },
+});
 
 // User account management and authentication
 export const users = pgTable('users', {
@@ -424,7 +437,7 @@ export const logEmbeddings = pgTable('log_embeddings', {
   id: serial('id').primaryKey(),
   logId: integer('log_id').notNull(),
   logType: text('log_type').notNull(), // 'qualitative' or 'quantitative'
-  embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+  embedding: vector('embedding').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -432,7 +445,7 @@ export const logEmbeddings = pgTable('log_embeddings', {
 export const summaryEmbeddings = pgTable('summary_embeddings', {
   id: serial('id').primaryKey(),
   summaryId: integer('summary_id').notNull(),
-  embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+  embedding: vector('embedding').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
