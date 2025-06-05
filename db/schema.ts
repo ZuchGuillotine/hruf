@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 05/06/2025 - 12:08:50
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 05/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import {
   pgTable,
   text,
