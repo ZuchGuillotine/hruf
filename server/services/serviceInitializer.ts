@@ -46,9 +46,10 @@ class ServiceInitializer {
       this.initializeLabServices().catch(error => {
         logger.error('Lab services initialization failed (continuing):', error);
       }),
-      this.initializeSupplementService().catch(error => {
-        logger.error('Supplement service initialization failed (continuing):', error);
-      })
+      // Comment out supplement service initialization to fix deployment health checks
+      // this.initializeSupplementService().catch(error => {
+      //   logger.error('Supplement service initialization failed (continuing):', error);
+      // })
     ];
 
     // Wait for all services to attempt initialization
@@ -166,12 +167,12 @@ class ServiceInitializer {
    */
   private async initializeSupplementService(): Promise<void> {
     try {
-      logger.info('Initializing supplement services...');
+      logger.info('Supplement service initialization commented out for deployment health checks');
+      
+      // Comment out supplement service initialization to fix deployment health checks
+      // supplementService.initialize(); // Don't await - let it run in background
 
-      // Initialize supplement service (non-blocking)
-      supplementService.initialize(); // Don't await - let it run in background
-
-      logger.info('Supplement services initialized successfully');
+      logger.info('Supplement services initialization skipped');
     } catch (error) {
       logger.error('Supplement service initialization failed:', error);
       // Continue even if supplement service fails to initialize

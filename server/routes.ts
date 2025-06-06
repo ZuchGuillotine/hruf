@@ -925,8 +925,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Initialize supplement service
-  supplementService.initialize().catch(console.error);
+  // Comment out supplement service initialization to fix deployment health checks
+  // supplementService.initialize().catch(console.error);
 
   // Supplement search endpoint
   app.get("/api/supplements/search", async (req, res) => {
