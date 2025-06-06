@@ -919,8 +919,13 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Initialize supplement service
-  supplementService.initialize().catch(console.error);
+  // Initialize supplement service with a delay to ensure DB is ready
+  setTimeout(() => {
+    supplementService.initialize().catch(error => {
+      console.error("Failed to initialize supplement service:", error);
+      // Continue running even if supplement service fails
+    });
+  }, 5000); // 5 second delay
 
   // Supplement search endpoint
   app.get("/api/supplements/search", async (req, res) => {

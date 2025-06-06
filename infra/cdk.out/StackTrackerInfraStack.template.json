@@ -1,0 +1,1219 @@
+{
+ "Resources": {
+  "StackTrackerVPC312672F2": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/Resource"
+   }
+  },
+  "StackTrackerVPCPublicSubnet1Subnet9BAD6C9F": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2a",
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1/Subnet"
+   }
+  },
+  "StackTrackerVPCPublicSubnet1RouteTable4029C464": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1/RouteTable"
+   }
+  },
+  "StackTrackerVPCPublicSubnet1RouteTableAssociation807324E8": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPublicSubnet1RouteTable4029C464"
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCPublicSubnet1Subnet9BAD6C9F"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "StackTrackerVPCPublicSubnet1DefaultRoute4DF85233": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "StackTrackerVPCIGWA6CDAC5D"
+    },
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPublicSubnet1RouteTable4029C464"
+    }
+   },
+   "DependsOn": [
+    "StackTrackerVPCVPCGW9EA639BB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "StackTrackerVPCPublicSubnet1EIPD6E66E5D": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1/EIP"
+   }
+  },
+  "StackTrackerVPCPublicSubnet1NATGateway0F64B4B5": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "StackTrackerVPCPublicSubnet1EIPD6E66E5D",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCPublicSubnet1Subnet9BAD6C9F"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "StackTrackerVPCPublicSubnet1DefaultRoute4DF85233",
+    "StackTrackerVPCPublicSubnet1RouteTableAssociation807324E8"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet1/NATGateway"
+   }
+  },
+  "StackTrackerVPCPublicSubnet2SubnetDA60B8A7": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2b",
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet2/Subnet"
+   }
+  },
+  "StackTrackerVPCPublicSubnet2RouteTable33828B7D": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet2/RouteTable"
+   }
+  },
+  "StackTrackerVPCPublicSubnet2RouteTableAssociation991C1B7C": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPublicSubnet2RouteTable33828B7D"
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCPublicSubnet2SubnetDA60B8A7"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "StackTrackerVPCPublicSubnet2DefaultRoute59941B3D": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "StackTrackerVPCIGWA6CDAC5D"
+    },
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPublicSubnet2RouteTable33828B7D"
+    }
+   },
+   "DependsOn": [
+    "StackTrackerVPCVPCGW9EA639BB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet1Subnet0B7C8E72": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2a",
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet1/Subnet"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet1RouteTable71CCEAF6": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet1/RouteTable"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet1RouteTableAssociationDAF4DB30": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPrivateSubnet1RouteTable71CCEAF6"
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCPrivateSubnet1Subnet0B7C8E72"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet1/RouteTableAssociation"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet1DefaultRouteEFE2A2F3": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "StackTrackerVPCPublicSubnet1NATGateway0F64B4B5"
+    },
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPrivateSubnet1RouteTable71CCEAF6"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet1/DefaultRoute"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet2Subnet0741B41F": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2b",
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet2/Subnet"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet2RouteTableDD64BAE2": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet2/RouteTable"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet2RouteTableAssociation40036BFA": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPrivateSubnet2RouteTableDD64BAE2"
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCPrivateSubnet2Subnet0741B41F"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet2/RouteTableAssociation"
+   }
+  },
+  "StackTrackerVPCPrivateSubnet2DefaultRoute31EEA642": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "StackTrackerVPCPublicSubnet1NATGateway0F64B4B5"
+    },
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCPrivateSubnet2RouteTableDD64BAE2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/PrivateSubnet2/DefaultRoute"
+   }
+  },
+  "StackTrackerVPCIsolatedSubnet1Subnet60779DEC": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2a",
+    "CidrBlock": "10.0.4.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet1/Subnet"
+   }
+  },
+  "StackTrackerVPCIsolatedSubnet1RouteTableE447399C": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet1/RouteTable"
+   }
+  },
+  "StackTrackerVPCIsolatedSubnet1RouteTableAssociationD52D53F0": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCIsolatedSubnet1RouteTableE447399C"
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCIsolatedSubnet1Subnet60779DEC"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet1/RouteTableAssociation"
+   }
+  },
+  "StackTrackerVPCIsolatedSubnet2SubnetD3AAD45E": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-west-2b",
+    "CidrBlock": "10.0.5.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet2/Subnet"
+   }
+  },
+  "StackTrackerVPCIsolatedSubnet2RouteTableA0244AE7": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet2/RouteTable"
+   }
+  },
+  "StackTrackerVPCIsolatedSubnet2RouteTableAssociation83AB5911": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "StackTrackerVPCIsolatedSubnet2RouteTableA0244AE7"
+    },
+    "SubnetId": {
+     "Ref": "StackTrackerVPCIsolatedSubnet2SubnetD3AAD45E"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IsolatedSubnet2/RouteTableAssociation"
+   }
+  },
+  "StackTrackerVPCIGWA6CDAC5D": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/IGW"
+   }
+  },
+  "StackTrackerVPCVPCGW9EA639BB": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "StackTrackerVPCIGWA6CDAC5D"
+    },
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/VPCGW"
+   }
+  },
+  "StackTrackerVPCRestrictDefaultSecurityGroupCustomResourceA76125A0": {
+   "Type": "Custom::VpcRestrictDefaultSG",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E",
+      "Arn"
+     ]
+    },
+    "DefaultSecurityGroupId": {
+     "Fn::GetAtt": [
+      "StackTrackerVPC312672F2",
+      "DefaultSecurityGroup"
+     ]
+    },
+    "Account": "881490119784"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/RestrictDefaultSecurityGroupCustomResource/Default"
+   }
+  },
+  "StackTrackerVPCSecretsManagerEndpointSecurityGroup388793BB": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "StackTrackerInfraStack/StackTrackerVPC/SecretsManagerEndpoint/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::GetAtt": [
+        "StackTrackerVPC312672F2",
+        "CidrBlock"
+       ]
+      },
+      "Description": {
+       "Fn::Join": [
+        "",
+        [
+         "from ",
+         {
+          "Fn::GetAtt": [
+           "StackTrackerVPC312672F2",
+           "CidrBlock"
+          ]
+         },
+         ":443"
+        ]
+       ]
+      },
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/SecretsManagerEndpoint/SecurityGroup/Resource"
+   }
+  },
+  "StackTrackerVPCSecretsManagerEndpoint54590ACF": {
+   "Type": "AWS::EC2::VPCEndpoint",
+   "Properties": {
+    "PrivateDnsEnabled": true,
+    "SecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "StackTrackerVPCSecretsManagerEndpointSecurityGroup388793BB",
+       "GroupId"
+      ]
+     }
+    ],
+    "ServiceName": "com.amazonaws.us-west-2.secretsmanager",
+    "SubnetIds": [
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet1Subnet60779DEC"
+     },
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet2SubnetD3AAD45E"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ],
+    "VpcEndpointType": "Interface",
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/SecretsManagerEndpoint/Resource"
+   }
+  },
+  "StackTrackerVPCRDSEndpointSecurityGroup092E3F17": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "StackTrackerInfraStack/StackTrackerVPC/RDSEndpoint/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::GetAtt": [
+        "StackTrackerVPC312672F2",
+        "CidrBlock"
+       ]
+      },
+      "Description": {
+       "Fn::Join": [
+        "",
+        [
+         "from ",
+         {
+          "Fn::GetAtt": [
+           "StackTrackerVPC312672F2",
+           "CidrBlock"
+          ]
+         },
+         ":443"
+        ]
+       ]
+      },
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/RDSEndpoint/SecurityGroup/Resource"
+   }
+  },
+  "StackTrackerVPCRDSEndpoint68256C0F": {
+   "Type": "AWS::EC2::VPCEndpoint",
+   "Properties": {
+    "PrivateDnsEnabled": true,
+    "SecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "StackTrackerVPCRDSEndpointSecurityGroup092E3F17",
+       "GroupId"
+      ]
+     }
+    ],
+    "ServiceName": "com.amazonaws.us-west-2.rds",
+    "SubnetIds": [
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet1Subnet60779DEC"
+     },
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet2SubnetD3AAD45E"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ],
+    "VpcEndpointType": "Interface",
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/RDSEndpoint/Resource"
+   }
+  },
+  "StackTrackerVPCS3Endpoint99BC131B": {
+   "Type": "AWS::EC2::VPCEndpoint",
+   "Properties": {
+    "RouteTableIds": [
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet1RouteTableE447399C"
+     },
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet2RouteTableA0244AE7"
+     }
+    ],
+    "ServiceName": {
+     "Fn::Join": [
+      "",
+      [
+       "com.amazonaws.",
+       {
+        "Ref": "AWS::Region"
+       },
+       ".s3"
+      ]
+     ]
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "stacktracker-vpc"
+     }
+    ],
+    "VpcEndpointType": "Gateway",
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/StackTrackerVPC/S3Endpoint/Resource"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ],
+    "Policies": [
+     {
+      "PolicyName": "Inline",
+      "PolicyDocument": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress"
+         ],
+         "Resource": [
+          {
+           "Fn::Join": [
+            "",
+            [
+             "arn:aws:ec2:us-west-2:881490119784:security-group/",
+             {
+              "Fn::GetAtt": [
+               "StackTrackerVPC312672F2",
+               "DefaultSecurityGroup"
+              ]
+             }
+            ]
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-881490119784-us-west-2",
+     "S3Key": "7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "__entrypoint__.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Description": "Lambda function for removing all inbound/outbound rules from the VPC default security group"
+   },
+   "DependsOn": [
+    "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200",
+    "aws:asset:property": "Code"
+   }
+  },
+  "ApplicationSecurityGroup3903A0DC": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for StackTracker application",
+    "GroupName": "stacktracker-app-sg",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/ApplicationSecurityGroup/Resource"
+   }
+  },
+  "DatabaseSecurityGroup7319C0F6": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for StackTracker RDS instance",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": {
+     "Ref": "StackTrackerVPC312672F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/DatabaseSecurityGroup/Resource"
+   }
+  },
+  "DatabaseSecurityGroupfromStackTrackerInfraStackApplicationSecurityGroupBBBD8C355432B8176740": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow application to connect to database",
+    "FromPort": 5432,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "DatabaseSecurityGroup7319C0F6",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ApplicationSecurityGroup3903A0DC",
+      "GroupId"
+     ]
+    },
+    "ToPort": 5432
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/DatabaseSecurityGroup/from StackTrackerInfraStackApplicationSecurityGroupBBBD8C35:5432"
+   }
+  },
+  "DatabaseSecret86DBB7B3": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludePunctuation": true,
+     "GenerateStringKey": "password",
+     "PasswordLength": 16,
+     "SecretStringTemplate": "{\"username\":\"stacktracker_admin\"}"
+    },
+    "Name": "stacktracker/db-credentials"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/DatabaseSecret/Resource"
+   }
+  },
+  "DatabaseSecretAttachment9A63A3D4": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "DatabaseSecret86DBB7B3"
+    },
+    "TargetId": {
+     "Ref": "DatabaseB269D8BB"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/DatabaseSecret/Attachment/Resource"
+   }
+  },
+  "DatabaseParameterGroupC9757D64": {
+   "Type": "AWS::RDS::DBParameterGroup",
+   "Properties": {
+    "Description": "Parameter group for postgres15",
+    "Family": "postgres15",
+    "Parameters": {
+     "max_connections": "100"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/DatabaseParameterGroup/Resource"
+   }
+  },
+  "DatabaseSubnetGroup7D60F180": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for Database database",
+    "SubnetIds": [
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet1Subnet60779DEC"
+     },
+     {
+      "Ref": "StackTrackerVPCIsolatedSubnet2SubnetD3AAD45E"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/Database/SubnetGroup/Default"
+   }
+  },
+  "DatabaseB269D8BB": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBName": "stacktracker",
+    "DBParameterGroupName": {
+     "Ref": "DatabaseParameterGroupC9757D64"
+    },
+    "DBSubnetGroupName": {
+     "Ref": "DatabaseSubnetGroup7D60F180"
+    },
+    "Engine": "postgres",
+    "EngineVersion": "15.8",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DatabaseSecret86DBB7B3"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DatabaseSecret86DBB7B3"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "MaxAllocatedStorage": 100,
+    "PreferredBackupWindow": "03:00-04:00",
+    "PreferredMaintenanceWindow": "Mon:04:00-Mon:05:00",
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "DatabaseSecurityGroup7319C0F6",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Snapshot",
+   "DeletionPolicy": "Snapshot",
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/Database/Resource"
+   }
+  },
+  "UploadsBucket5E5E9B64": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "CorsConfiguration": {
+     "CorsRules": [
+      {
+       "AllowedHeaders": [
+        "*"
+       ],
+       "AllowedMethods": [
+        "GET",
+        "POST",
+        "PUT"
+       ],
+       "AllowedOrigins": [
+        "*"
+       ]
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/UploadsBucket/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+1X224bNxD9lvDRoNXYAQzEb7q4jtDYEiTFBSoIAUWO1rQokuVlFXWhfy942dXKdQIHDVI99GnJIYdz5nAu3MvOxfurzts3ZGvPKVufC77sVFNH6BqTrf1cAb3sVA+azitUanpPNoCu0RnCaEO+dP+yeSKJuyUOtmRXS6xfSnB9JVe88IY4riS6nleIcmbuiF03is2BSWO200Ew9kvBKdrj12sYXhIH36MytEoQBwztFxiBJEsBA2k/KOuChkXXznhorUy91sq4JN8vcH8lH8Z9nLBO48nzCpGScEGWXHC3+0PJ2nKp6ZDlccDXE4quGy51OmSoR/Ij8ZI+1sa5Lq/6z7YTa3khh7q86jJmwNqR7BvIHKOzSMFJoIhAGLtvogNdz9EZWpwMwNNAkUIpBVAYTZR3MAtBd5AfZF1rFeXxgGZzGNwMx+FzIBvnlPjhkbkiwp4A5/8OxukgOREYp4PkfxgnByNWqKF0YCQ09SX1vzzrOkfo4wakw3HfilB40PRGMq24dOn9UHdhMCWngK4rpFONGkg7gBXxwtW1tNW0U9ONbOQGboPqV3p5oOxnmVrgKVBvuNvdGuV1y8nc+oayCHROvID0/CFyKAWXkCTJPlVSAg1k168nL/mfHvL1xtwM4niBi7Z/P8dKYLHlZesRyMBSw3UTJxgRIdS2K8TIu6XykuXH0tFpr9GKKF50LygkqIvcONvgclDWYYdzdL4iEpsoaF/9/Kt3/5LxDHSPLVADzm6IJAWYTjWN83BYHLQYLECCCU06Lkyd4bKIEdeaz2Cjg9XnKnHxN9hlOXyhwjMYe0mdz7mbrl4Ta7fKsI8gC/eYnGzgG3A4fWbEFOAOidzgzQZcXG8VhJfV9tgw26nGxJANODB1aoAsuIxUp1GmNEKPggcwNqKu0MoL0UxzSXtSpi3aB7/aJn4lGy52RyceiVjK+k8WTPuum0Nsk1JLLtlMDaV1RFKoH63R5UHv2C88II4siYV697cdtVwWAgKEiXLxjrpaC05JKxn+SzIOmVHq/EvzrQKIEc9ut3wMyUzD+tQpQ4r2D+PLK0fVxWa6MaIGGEjHiagLFstct/JnSeja6wm4sLPhRxtYgTHAenH5dy6Z2j5fuyNcOpAB/fGGIyLrcE9k1LH8zxL23cwZ2KiSiLESnO5aSTXotUwlQR1be2zfdaqep+tYTMoUAMAOf6rU7GpQ03ef77r33dubQaApNPv0JOhSCrZm9DkIA45wGV4UyqTyF0szsDtwj4rFy7m9mSGMxqNp/HyahbvKu0aGF7zpL1n4AQhrsmuRa3pfmUO/+sE2Yhs7pGzia7/HE7DKGwrzBe5769SmEcSACz9TWfBsfWxUyRmYHrGAu9aGwkwKLougM/JOe7fHUjHoPNlfysu3nYv3nYs3T5bzc+Ol4xvoTNL3bweV02pvEQAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "StackTrackerInfraStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "VpcId": {
+   "Description": "VPC ID",
+   "Value": {
+    "Ref": "StackTrackerVPC312672F2"
+   },
+   "Export": {
+    "Name": "StackTrackerVpcIdV2"
+   }
+  },
+  "PrivateSubnetIds": {
+   "Description": "Private Subnet IDs",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Ref": "StackTrackerVPCPrivateSubnet1Subnet0B7C8E72"
+      },
+      ",",
+      {
+       "Ref": "StackTrackerVPCPrivateSubnet2Subnet0741B41F"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "StackTrackerPrivateSubnetIdsV2"
+   }
+  },
+  "PublicSubnetIds": {
+   "Description": "Public Subnet IDs",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Ref": "StackTrackerVPCPublicSubnet1Subnet9BAD6C9F"
+      },
+      ",",
+      {
+       "Ref": "StackTrackerVPCPublicSubnet2SubnetDA60B8A7"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "StackTrackerPublicSubnetIdsV2"
+   }
+  },
+  "DatabaseEndpoint": {
+   "Description": "Database endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "DatabaseB269D8BB",
+     "Endpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "StackTrackerDatabaseEndpointV2"
+   }
+  },
+  "DatabasePort": {
+   "Description": "Database port",
+   "Value": {
+    "Fn::GetAtt": [
+     "DatabaseB269D8BB",
+     "Endpoint.Port"
+    ]
+   },
+   "Export": {
+    "Name": "StackTrackerDatabasePortV2"
+   }
+  },
+  "DatabaseSecretArn": {
+   "Description": "Database secret ARN",
+   "Value": {
+    "Ref": "DatabaseSecret86DBB7B3"
+   },
+   "Export": {
+    "Name": "StackTrackerDatabaseSecretArnV2"
+   }
+  },
+  "UploadsBucketName": {
+   "Description": "S3 bucket for uploads",
+   "Value": {
+    "Ref": "UploadsBucket5E5E9B64"
+   },
+   "Export": {
+    "Name": "StackTrackerUploadsBucketNameV2"
+   }
+  },
+  "UploadsBucketArn": {
+   "Description": "S3 bucket ARN for uploads",
+   "Value": {
+    "Fn::GetAtt": [
+     "UploadsBucket5E5E9B64",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "StackTrackerUploadsBucketArnV2"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

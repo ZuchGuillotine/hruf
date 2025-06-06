@@ -38,6 +38,8 @@ import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
 import { healthCheck } from './utils/healthCheck';
 import fs from 'fs';
+import { checkAndReprocessBiomarkers } from '../scripts/check-biomarkers';
+import logger from './utils/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -199,6 +201,20 @@ async function initializeAndStart() {
         // Initialize services after server is running
         await serviceInitializer.initializeServices();
         console.log('Background initialization completed successfully');
+
+        // Find where checkAndReprocessBiomarkers is called and modify it
+        const SKIP_BIOMARKER_PROCESSING = true; // Temporary flag to isolate SSL issues
+        if (!SKIP_BIOMARKER_PROCESSING) {
+            try {
+                await checkAndReprocessBiomarkers();
+            } catch (error) {
+                logger.error('Error in biomarker reprocessing script:', {
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
+        } else {
+            logger.info('Skipping biomarker processing during SSL debugging');
+        }
       } catch (error) {
         console.error('Failed to initialize background services:', error);
       }

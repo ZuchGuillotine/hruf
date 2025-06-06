@@ -1,5 +1,21 @@
 ## [Unreleased]
 
+## Fixed (June 6, 2025)
+- Docker Container SSL Certificate Issues:
+  - Fixed "self-signed certificate in certificate chain" error when connecting to AWS RDS
+  - Resolved certificate filename mismatch (stcert.pem vs rds-combined-ca-bundle.pem)
+  - Added ES module support for __dirname in db/index.ts
+  - Implemented multiple certificate path fallbacks for Docker environment
+  - Enhanced SSL configuration with proper certificate loading
+  - Added comprehensive logging for SSL debugging
+  - Fixed supplement service initialization timing issue
+  - Successfully established secure RDS connection in Docker container
+  - Technical improvements:
+    - Updated Dockerfile with correct certificate paths
+    - Added proper file permissions for certificates
+    - Implemented robust path resolution for different environments
+    - Enhanced error handling with fallback SSL configuration
+
 ## Fixed (May 26, 2025)
 - Biomarker Chart Data Issues:
   - Fixed selector refresh issue by correcting URL parameter parsing in labs.tsx
