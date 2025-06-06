@@ -22,129 +22,64 @@ const CATEGORY_COLORS = {
 type CategoryType = keyof typeof CATEGORY_COLORS;
 
 export function BiomarkerFilter() {
-  const { data: chartData, isLoading } = useLabChartData();
+  const { data, isLoading } = useLabChartData();
   const [location, setLocation] = useLocation();
 
   const selectedNames = React.useMemo(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const biomarkersParam = searchParams.get('biomarkers');
-    return biomarkersParam ? new Set(biomarkersParam.split(',').filter(Boolean)) : new Set<string>();
+    const params = new URLSearchParams(location.split('?')[1]);
+    const param = params.get('biomarkers') ?? '';
+    return new Set(param.split(',').filter(Boolean));
   }, [location]);
 
-  // Initialize selection state from URL params
-  React.useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const biomarkersParam = searchParams.get('biomarkers');
-    if (biomarkersParam) {
-      const biomarkers = biomarkersParam.split(',').filter(Boolean);
-      setLocation(`${window.location.pathname}?biomarkers=${biomarkers.join(',')}`, { replace: true });
-    }
-  }, [setLocation]);
-
-  const toggleName = React.useCallback((name: string) => {
-    const newSelected = new Set(selectedNames);
-    if (newSelected.has(name)) {
-      newSelected.delete(name);
+  const toggleName = (name: string) => {
+    const next = new Set(selectedNames);
+    if (next.has(name)) {
+      next.delete(name);
     } else {
-      newSelected.add(name);
+      next.add(name);
     }
 
-    const searchParams = new URLSearchParams(window.location.search);
-    if (newSelected.size > 0) {
-      searchParams.set('biomarkers', Array.from(newSelected).join(','));
+    const params = new URLSearchParams(location.split('?')[1]);
+    if (next.size > 0) {
+      params.set('biomarkers', Array.from(next).join(','));
     } else {
-      searchParams.delete('biomarkers');
+      params.delete('biomarkers');
     }
-
-    const newSearch = searchParams.toString();
-    const basePath = window.location.pathname;
-    const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
     
-    setLocation(newUrl, { replace: true });
-  }, [selectedNames, setLocation]);
-
-  const clearAll = React.useCallback(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.delete('biomarkers');
-    const newSearch = searchParams.toString();
-    const basePath = window.location.pathname;
-    const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
-    setLocation(newUrl, { replace: true });
-  }, [setLocation]);
+    const newSearch = params.toString();
+    const basePath = location.split('?')[0];
+    setLocation(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+  };
 
   if (isLoading) {
     return (
       <Card className="p-4">
-        <div className="space-y-2">
-          <div className="animate-pulse h-6 bg-gray-200 rounded w-48"></div>
-          <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (!chartData?.allBiomarkers?.length) {
-    return (
-      <Card className="p-4">
-        <div className="text-center text-gray-500">
-          <p>No biomarkers found. Upload lab results to see available biomarkers.</p>
-        </div>
+        <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
       </Card>
     );
   }
 
   return (
     <Card className="p-4">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Select Biomarkers</h3>
-          {selectedNames.size > 0 && (
+      <ScrollArea className="h-[200px] w-full">
+        <div className="flex flex-wrap gap-2 p-2">
+          {data?.allBiomarkers?.map((name) => (
             <Button
-              variant="outline"
+              key={name}
+              variant={selectedNames.has(name) ? "default" : "outline"}
               size="sm"
-              onClick={clearAll}
-              className="text-xs"
+              onClick={() => toggleName(name)}
+              className={`rounded-full ${
+                selectedNames.has(name) 
+                  ? '' 
+                  : CATEGORY_COLORS[data.categories[name] || 'other']
+              }`}
             >
-              Clear All ({selectedNames.size})
+              {name}
             </Button>
-          )}
+          ))}
         </div>
-        
-        <ScrollArea className="h-[200px] w-full">
-          <div className="flex flex-wrap gap-2 p-2">
-            {chartData.allBiomarkers.map((name) => {
-              const isSelected = selectedNames.has(name);
-              const category = (chartData.categories[name] || 'other') as CategoryType;
-              const colorClass = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
-              
-              return (
-                <Button
-                  key={name}
-                  variant={isSelected ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleName(name)}
-                  className={`rounded-full transition-all duration-200 ${
-                    isSelected 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' 
-                      : `${colorClass} text-gray-700 border`
-                  }`}
-                >
-                  {name}
-                  {isSelected && (
-                    <span className="ml-1 text-xs" aria-hidden="true">✓</span>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
-        </ScrollArea>
-        
-        {selectedNames.size > 0 && (
-          <div className="text-sm text-gray-600">
-            {selectedNames.size} biomarker{selectedNames.size === 1 ? '' : 's'} selected
-          </div>
-        )}
-      </div>
+      </ScrollArea>
     </Card>
   );
 }
