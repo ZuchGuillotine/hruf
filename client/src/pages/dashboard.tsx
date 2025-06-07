@@ -1,4 +1,4 @@
-import Header from "@/components/header";
+import Header from "@/components/Header";
 import SupplementList from "@/components/supplement-list";
 import SupplementForm from "@/components/supplement-form";
 import LLMChat from "@/components/llm-chat";

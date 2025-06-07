@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import LandingHeader from "@/components/landing-header";
 import Footer from "@/components/footer";
+import { Link } from "wouter";
 
 export default function AboutPage() {
   return (
