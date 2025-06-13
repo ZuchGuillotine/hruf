@@ -17,7 +17,7 @@ type GetQueryFnOptions = {
 export function getQueryFn({ on401 = 'throw' }: GetQueryFnOptions = {}) {
   return async ({ queryKey }: { queryKey: string[] }): Promise<any> => {
     const [endpoint] = queryKey;
-    const response = await fetch(endpoint);
+    const response = await fetch(endpoint, { credentials: 'include' });
 
     if (response.status === 401) {
       if (on401 === 'returnNull') {
@@ -48,6 +48,7 @@ export async function apiRequest(
       ...options.headers,
     },
     body: data ? JSON.stringify(data) : undefined,
+    credentials: 'include',
     ...options,
   });
 

@@ -59,12 +59,34 @@ interface CustomError extends Error {
 app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors({
-  origin: true,
+
+// More permissive CORS for development
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow any localhost origin in development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow the custom domain
+    if (process.env.CUSTOM_DOMAIN && origin.includes(process.env.CUSTOM_DOMAIN.replace(/^https?:\/\//, ''))) {
+      return callback(null, true);
+    }
+    
+    // Log rejected origins for debugging
+    console.log('CORS rejected origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie']
+};
+
+app.use(cors(corsOptions));
 
 // Enhanced session configuration
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -88,23 +110,73 @@ const sessionConfig = {
     checkPeriod: DAY_IN_MS, // Prune expired sessions every 24 hours
     ttl: DAY_IN_MS // Session TTL (time to live)
   }),
+  // Cookie settings – automatically loosen for local HTTP development
   cookie: {
-    secure: app.get('env') === 'production', // HTTPS only in production
-    httpOnly: true, // Prevent JavaScript access to cookies
+    // Use secure cookies only when we are *actually* serving over HTTPS
+    secure: false, // will be overwritten below if we detect HTTPS env
+    httpOnly: true,
     maxAge: DAY_IN_MS,
-    sameSite: app.get('env') === 'production' ? 'none' as const : 'lax' as const, // Allow cross-site requests in production with HTTPS
-    path: '/'
+    sameSite: 'lax' as 'lax' | 'none',
+    path: '/',
+    // Ensure cookies work with proxied requests in development
+    domain: undefined // Let the browser handle domain automatically
   },
   name: 'stacktracker.sid' // Custom name to avoid default "connect.sid"
 };
 
-// Apply secure cookies only with HTTPS in production
-if (app.get('env') === 'production' && sessionConfig.cookie.sameSite === 'none') {
-  sessionConfig.cookie.secure = true; // Must be secure if sameSite is none
+// Strengthen cookie only if we are confident the *request origin* itself is HTTPS and not localhost.
+const customDomainRaw = process.env.CUSTOM_DOMAIN ?? '';
+const customDomain = customDomainRaw.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+const runningOnLocalhost = ['localhost', '127.0.0.1'].some((host) => customDomain.startsWith(host));
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// CRITICAL: Only use secure cookies when ACTUALLY served over HTTPS
+// Check if we're being accessed via HTTPS by looking at the protocol
+const isActuallyHttps = process.env.FORCE_HTTPS === 'true' || 
+  (customDomain && customDomain.startsWith('https://') && !runningOnLocalhost);
+
+if (isActuallyHttps) {
+  sessionConfig.cookie.secure = true;
+  sessionConfig.cookie.sameSite = 'none';
+} else {
+  // For ANY HTTP access (including localhost), disable secure cookies
+  sessionConfig.cookie.secure = false;
+  sessionConfig.cookie.sameSite = 'lax';
 }
+
+// Log session configuration for debugging
+console.log('Session Configuration:', {
+  environment: process.env.NODE_ENV,
+  customDomain,
+  runningOnLocalhost,
+  cookieSettings: {
+    secure: sessionConfig.cookie.secure,
+    sameSite: sessionConfig.cookie.sameSite,
+    httpOnly: sessionConfig.cookie.httpOnly,
+    path: sessionConfig.cookie.path
+  },
+  timestamp: new Date().toISOString()
+});
 
 // Core middleware setup - order is important
 app.use(session(sessionConfig));
+
+// Debug middleware to log session info
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log('Request to:', req.path, {
+      method: req.method,
+      sessionID: req.sessionID,
+      hasSession: !!req.session,
+      sessionData: req.session,
+      cookies: req.headers.cookie,
+      timestamp: new Date().toISOString()
+    });
+  }
+  next();
+});
+
 setupAuth(app);
 app.use(handleStripeRedirects); // Handle authentication for Stripe redirects
 app.use(setAuthInfo);
@@ -162,9 +234,6 @@ app.use('/api', (err: CustomError, _req: Request, res: Response, _next: NextFunc
 });
 
 
-// Serve static files (images)
-app.use(express.static(path.join(__dirname, '..', 'client', 'public')));
-
 // Initialize and start server with proper React app serving
 async function initializeAndStart() {
   try {
@@ -175,15 +244,52 @@ async function initializeAndStart() {
     await startServer();
 
     // Setup Vite/static serving AFTER server is running
-    if (app.get("env") === "development") {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('Setting up Vite development server...');
       await setupVite(app, server);
+      
+      // Also serve the app directly on port 3001 for direct access
+      // This ensures the app works when accessed at localhost:3001
+      const clientPath = path.join(__dirname, '..', 'client');
+      if (fs.existsSync(clientPath)) {
+        // Serve the Vite-processed files
+        app.get('*', async (req, res, next) => {
+          if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
+            return next();
+          }
+          
+          try {
+            // For development, redirect to Vite dev server
+            if (!req.headers.host?.includes('5173')) {
+              console.log('Direct access detected, redirecting to Vite dev server...');
+              return res.redirect(`http://localhost:5173${req.path}`);
+            }
+            next();
+          } catch (error) {
+            next(error);
+          }
+        });
+      }
     } else {
       console.log('Setting up static file serving...');
-      app.use(express.static(path.join(__dirname, 'public')));
+      const publicPath = path.join(__dirname, '..', 'dist');
+      console.log('Looking for static files at:', publicPath);
+      
+      if (!fs.existsSync(publicPath)) {
+        console.error('Static files directory not found at:', publicPath);
+        throw new Error('Static files directory not found');
+      }
+      
+      app.use(express.static(publicPath));
+      
       // Serve index.html for all routes not explicitly handled
       app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        const indexPath = path.join(publicPath, 'index.html');
+        if (!fs.existsSync(indexPath)) {
+          console.error('index.html not found at:', indexPath);
+          return res.status(404).send('index.html not found');
+        }
+        res.sendFile(indexPath);
       });
     }
 

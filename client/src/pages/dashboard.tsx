@@ -1,4 +1,16 @@
-import Header from "@/components/Header";
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 06/06/2025 - 21:07:23
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 06/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
+import Header from "@/components/header";
 import SupplementList from "@/components/supplement-list";
 import SupplementForm from "@/components/supplement-form";
 import LLMChat from "@/components/llm-chat";

@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/06/2025 - 12:21:38
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -46,62 +58,42 @@ export default function AuthPage() {
     }
   }, [setLocation]);
 
-  const handleGoogleSignup = () => {
-    window.location.href = '/auth/google?signup=true';
+  const handleGoogleAuth = () => {
+    const params = new URLSearchParams();
+    if (!isLogin) {
+      params.set('signup', 'true');
+    }
+    window.location.href = `/auth/google?${params.toString()}`;
   };
 
   const onSubmit = async (data: FormData) => {
     try {
       if (isLogin) {
-        console.log('Starting login process');
-        const loginResponse = await login(data);
-        console.log('Login attempt response:', loginResponse);
-        
-        if (loginResponse.ok) {
-          if ('redirectUrl' in loginResponse && loginResponse.redirectUrl) {
-            console.log('Redirecting to:', loginResponse.redirectUrl);
-            window.location.href = loginResponse.redirectUrl;
-          } else {
-            console.log('No redirect URL provided, redirecting to dashboard');
-            window.location.href = '/';
-          }
+        const response = await login(data);
+        console.log('Login response:', response);
+        if (response.ok) {
+          // Use location.replace to ensure a full page reload
+          window.location.replace(response.redirectUrl || '/');
         } else {
-          throw new Error(loginResponse.message || 'Login failed');
+          throw new Error(response.message);
         }
       } else {
-        console.log('Starting registration process');
         const response = await register(data);
-
-        if (response.ok && 'requiresVerification' in response && response.requiresVerification) {
+        if (response.ok && response.requiresVerification) {
           setVerificationSent(true);
+        } else if (response.ok) {
+          window.location.replace('/subscription?newUser=true');
         } else {
-          console.log('Registration successful, redirecting to subscription page');
-          window.location.href = '/subscription?newUser=true';
+          throw new Error(response.message);
         }
       }
     } catch (error: any) {
-      console.error('Authentication error:', error);
-
-      let errorMessage = isLogin
-        ? "Login failed. Please check your credentials."
-        : "Registration failed. Please try again.";
-
-      if (error.response?.data) {
-        errorMessage = error.response.data.message || errorMessage;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      if (error.code === 'TRIAL_EXPIRED') {
-        setLocation('/subscription');
-      } else {
-        toast({
-          variant: "destructive",
-          title: isLogin ? "Login Error" : "Registration Error",
-          description: error.message || errorMessage,
-          duration: 5000,
-        });
-      }
+      console.error('Auth error:', error);
+      toast({
+        variant: "destructive",
+        title: isLogin ? "Login Error" : "Registration Error",
+        description: error.message || "An unexpected error occurred.",
+      });
     }
   };
 
@@ -214,8 +206,6 @@ export default function AuthPage() {
                     />
                   </div>
 
-                  {/* Google OAuth separator and button temporarily disabled */}
-                  {/* 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <Separator className="w-full" />
@@ -230,15 +220,14 @@ export default function AuthPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
-                    onClick={handleGoogleSignup}
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleGoogleAuth}
                   >
-                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                    <svg className="h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
                       <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
                     </svg>
-                    Continue with Google
+                    {isLogin ? "Sign in with Google" : "Sign up with Google"}
                   </Button>
-                  */}
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
                   <Button
