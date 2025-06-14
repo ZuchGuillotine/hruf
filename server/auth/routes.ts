@@ -277,6 +277,8 @@ router.get('/api/user', (req: Request, res: Response) => {
       id: req.user!.id,
       username: req.user!.username,
       email: req.user!.email,
+      name: req.user!.name,
+      phoneNumber: req.user!.phoneNumber,
       subscriptionTier: req.user!.subscriptionTier,
       isAdmin: req.user!.isAdmin
     }

@@ -23,6 +23,13 @@ import { authConfig } from '../config/auth.config';
 import { crypto } from './crypto';
 import type { User } from '../types/user';
 
+// Extend Express.User to include our custom fields
+declare global {
+  namespace Express {
+    interface User extends Omit<import('../types/user').User, 'password'> {}
+  }
+}
+
 // Track if auth has been initialized to prevent double initialization
 let authInitialized = false;
 
@@ -72,9 +79,10 @@ export async function setupAuthentication(app: Express): Promise<void> {
   app.use(passport.session());
 
   // 3. Passport serialization
-  passport.serializeUser((user: User, done) => {
-    console.log('Serializing user:', { userId: user.id, timestamp: new Date().toISOString() });
-    done(null, user.id);
+  passport.serializeUser((user, done) => {
+    const u = user as User;
+    console.log('Serializing user:', { userId: u.id, timestamp: new Date().toISOString() });
+    done(null, u.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
@@ -95,13 +103,13 @@ export async function setupAuthentication(app: Express): Promise<void> {
         id: user.id,
         username: user.username,
         email: user.email,
-        name: user.name,
-        phoneNumber: user.phoneNumber,
+        name: user.name ?? null,
+        phoneNumber: user.phoneNumber ?? null,
         subscriptionTier: user.subscriptionTier,
-        isAdmin: user.isAdmin, // Database already has isAdmin (not is_admin)
+        isAdmin: user.isAdmin,
         trialEndsAt: null, // Not in database schema
-        stripeCustomerId: user.stripeCustomerId,
-        stripeSubscriptionId: user.subscriptionId, // Map subscriptionId to stripeSubscriptionId
+        stripeCustomerId: user.stripeCustomerId ?? null,
+        stripeSubscriptionId: user.subscriptionId ?? null,
         emailVerified: user.emailVerified,
         password: user.password,
         createdAt: user.createdAt,
@@ -151,13 +159,13 @@ export async function setupAuthentication(app: Express): Promise<void> {
             id: user.id,
             username: user.username,
             email: user.email,
-            name: user.name,
-            phoneNumber: user.phoneNumber,
+            name: user.name ?? null,
+            phoneNumber: user.phoneNumber ?? null,
             subscriptionTier: user.subscriptionTier,
             isAdmin: user.isAdmin,
             trialEndsAt: null,
-            stripeCustomerId: user.stripeCustomerId,
-            stripeSubscriptionId: user.subscriptionId,
+            stripeCustomerId: user.stripeCustomerId ?? null,
+            stripeSubscriptionId: user.subscriptionId ?? null,
             emailVerified: user.emailVerified,
             password: user.password,
             createdAt: user.createdAt,
@@ -238,13 +246,13 @@ export async function setupAuthentication(app: Express): Promise<void> {
               id: user.id,
               username: user.username,
               email: user.email,
-              name: user.name,
-              phoneNumber: user.phoneNumber,
+              name: user.name ?? null,
+              phoneNumber: user.phoneNumber ?? null,
               subscriptionTier: user.subscriptionTier,
               isAdmin: user.isAdmin,
               trialEndsAt: null,
-              stripeCustomerId: user.stripeCustomerId,
-              stripeSubscriptionId: user.subscriptionId,
+              stripeCustomerId: user.stripeCustomerId ?? null,
+              stripeSubscriptionId: user.subscriptionId ?? null,
               emailVerified: user.emailVerified,
               password: user.password,
               createdAt: user.createdAt,
