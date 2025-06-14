@@ -1,15 +1,3 @@
-/**
-    * @description      : 
-    * @author           : 
-    * @group            : 
-    * @created          : 06/06/2025 - 21:22:09
-    * 
-    * MODIFICATION LOG
-    * - Version         : 1.0.0
-    * - Date            : 06/06/2025
-    * - Author          : 
-    * - Modification    : 
-**/
 import { useUser } from '@/hooks/use-user';
 import {
   DropdownMenu,
@@ -21,8 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History, HelpCircle, FileText, Menu } from
- 'lucide-react';
+import { LogOut, User, LineChart, Database, Home, BookOpen, Info, History, HelpCircle, FileText, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -63,8 +50,7 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2 cursor-pointer">
                 <Menu className="h-5 w-5 text-primary" />
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text t
-ext-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                   StackTracker
                 </h1>
               </div>
@@ -161,4 +147,4 @@ ext-transparent">
       </div>
     </header>
   );
-} 
+}

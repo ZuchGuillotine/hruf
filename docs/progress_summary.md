@@ -1,140 +1,50 @@
-## Auth Troubleshooting Summary (June 13, 2025) - PARTIALLY RESOLVED
+## Auth Refactor Status (June 15, 2025) - NEARLY COMPLETE
 
-This summary documents the major changes and discoveries from the June 13 troubleshooting session, which focused on fixing authentication issues after implementing Google OAuth. The session resulted in a working manual login flow for the dev environment, but Google OAuth remains unresolved.
+This document summarizes the final status of the major authentication system refactoring. The primary goals of stabilizing the server, centralizing configuration, and implementing robust manual and Google OAuth flows have been achieved. The system is now stable and largely functional, with a few remaining issues to be addressed.
 
-### Current Status: ⚠️ PARTIALLY RESOLVED
-- **Manual Login (Dev):** Fully functional. Users can log in with credentials, session is persisted, and user data is accessible on subsequent requests.
-- **Google OAuth:** Still broken. The frontend flow initiates, but the server-side token exchange fails ("TokenError: Bad Request" from Passport/Google). This is likely due to a configuration mismatch or missing/incorrect environment variables.
+### Current Status: ✅ LARGELY RESOLVED
+- **Server Stability:** ✅ The server is stable with no crash loops.
+- **Manual Login:** ✅ Manual email/password authentication is fully functional, including session persistence.
+- **Google OAuth:** ✅ Users can successfully sign up and sign in using their Google accounts.
+- **Configuration:** ✅ Auth logic is centralized, environment-aware, and follows best practices.
 
-### Major Changes & Fixes (June 13, 2025)
+### Core Improvements from Refactor
 
-#### 1. **Session Configuration & Middleware**
-- **Critical Fix:** Session cookies are now set as `secure: false` and `sameSite: 'lax'` for all HTTP/localhost/dev environments, regardless of `NODE_ENV`. Secure cookies are only set for true HTTPS production domains.
-- **Dynamic Detection:** The session config checks if the app is actually being served over HTTPS (not just if `NODE_ENV=production`).
-- **Domain:** The `domain` attribute is left `undefined` for dev/local, letting the browser handle it.
-- **Debug Logging:** Added extensive logging for session creation, cookie settings, and authentication state on every request.
-- **Middleware Order:** Ensured `express-session` and `passport` are initialized in the correct order, before any route handlers.
-- **CORS:** CORS is now permissive for all localhost origins in dev, and for the production domain in prod.
+The extensive refactoring effort has resulted in a more secure, maintainable, and robust authentication system. Key improvements include:
 
-#### 2. **Manual Login Flow**
-- **Frontend:** All fetches use `credentials: 'include'` to ensure cookies are sent.
-- **Backend:** The login route now explicitly saves the session before responding, ensuring the cookie is set.
-- **Testing:** Manual login is confirmed working in dev when using the correct run commands (see below).
-
-#### 3. **Google OAuth Flow**
-- **Flexible Env Vars:** The backend now tries multiple naming patterns for Google credentials (e.g., `GOOGLE_CLIENT_ID_TEST`, `GOOGLE_CLIENT_ID_DEV`, `GOOGLE_CLIENT_ID`).
-- **Callback URL:** The callback URL is dynamically set based on environment and always uses `http://localhost:3001/auth/google/callback` for local dev.
-- **Error Logging:** Improved error messages if credentials are missing or misnamed.
-- **Current Issue:** Google returns a "TokenError: Bad Request" after redirect. This is likely due to:
-    - Incorrect or missing Google credentials in the `.env` file
-    - Mismatched redirect URI in Google Cloud Console
-    - Consent screen not published or test user not whitelisted
-    - Required Google APIs not enabled
-
-#### 4. **Run Commands & Environment Setup**
-- **For Local Development:**
-    - Always use:
-      ```bash
-      npm run dev:local
-      # or
-      LOCAL_DEV=true NODE_ENV=development npm run dev
-      ```
-    - **Do NOT use `NODE_ENV=production` for local dev** (this will break cookies/auth).
-    - Access the app at `http://localhost:5173` (not `:3001`).
-- **For Production:**
-    - Use `NODE_ENV=production` and set `CUSTOM_DOMAIN` to your real domain (e.g., `https://stacktracker.io`).
-    - Secure cookies and strict CORS will be enforced automatically.
-
-#### 5. **Environment Variable Reminders**
-- For Google OAuth to work in dev, your `.env` must include **one** of the following sets:
-    - `GOOGLE_CLIENT_ID_TEST` and `GOOGLE_CLIENT_SECRET_TEST`
-    - `GOOGLE_CLIENT_ID_DEV` and `GOOGLE_CLIENT_SECRET_DEV`
-    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
-- For production, use:
-    - `GOOGLE_CLIENT_ID_PROD` and `GOOGLE_CLIENT_SECRET_PROD`
-- **Callback URL in Google Cloud Console:** Must be exactly `http://localhost:3001/auth/google/callback` for dev, and your real domain for prod.
-- **Consent Screen:** If in "Testing" mode, your Google account must be added as a test user.
-- **APIs:** Ensure "Google People API" is enabled in your Google Cloud project.
-
-#### 6. **Other Technical Notes**
-- **Session Debugging:** Server logs now show session ID, cookie settings, and user state for every request.
-- **Vite Proxy:** All API requests from the frontend are proxied to the backend, ensuring cookies are sent and received correctly.
-- **Legacy Issues:** Many previous issues were caused by running the dev server with `NODE_ENV=production` or by accessing the app at the wrong port.
-
-### Next Steps
-- **Google OAuth:**
-    - Double-check all environment variable names and values.
-    - Verify Google Cloud Console settings (redirect URIs, test users, enabled APIs).
-    - Check server logs for detailed error output during the OAuth callback.
-    - If issues persist, try creating new OAuth credentials and updating your `.env`.
-- **Production:**
-    - No further changes needed for session/cookie security; the current config is production-safe.
+1.  **Centralized Configuration (`server/config/auth.config.ts`):** All auth settings (session secrets, cookie settings, tier limits, OAuth credentials) are managed in a single, environment-aware file.
+2.  **Robust Initialization (`server/auth/setup.ts`):** A single, idempotent `setupAuth` function prevents the double-initialization errors that previously caused server instability. It correctly handles different session stores for development and production.
+3.  **Dedicated Auth Routes & Middleware:** All authentication-related endpoints are consolidated (`server/auth/routes.ts`), and reusable middleware (`server/middleware/auth.middleware.ts`) handles authorization checks for authentication, admin roles, and subscription tiers.
+4.  **Stable Server Startup:** The server initialization process (`server/index.ts`) is now asynchronous and correctly ordered, resolving previous dependency and import timing issues.
 
 ---
 
-**Summary:**
-- Manual login is now fully functional in dev.
-- Google OAuth is still not working; focus is now on environment/configuration debugging.
-- Session and cookie handling is now robust, secure, and environment-aware.
-- Always use the correct run commands and variable names for your environment.
+### Remaining Issues & Troubleshooting Plan
 
-## Latest Status (June 13, 2025) - UNRESOLVED
+The following issues were identified during final testing and need to be resolved.
 
-This summary outlines the extensive troubleshooting steps taken to resolve authentication issues that arose after implementing Google OAuth. Despite numerous fixes that solved intermediate problems (build failures, incorrect file serving), the core authentication flows remain broken.
+#### 1. Google OAuth Session Not Terminating on Logout
+- **Problem:** When a user who signed in with Google logs out, their session is not properly terminated on the server.
+- **Troubleshooting Plan:**
+    1.  **Review Logout Handler:** Inspect the `/api/logout` endpoint.
+    2.  **Ensure Session Destruction:** Confirm that `req.logout()` is called and that `req.session.destroy()` is being successfully executed for Google-authenticated sessions.
+    3.  **Check for Errors:** Look for any errors during the session destruction process in the server logs.
 
-### Current Status: ⚠️ UNRESOLVED
-- **Manual Login**: Users can "log in" (the server validates credentials successfully), but the session is not persisted. Subsequent requests are unauthenticated, leading to a redirect back to the login page. This is a **partial authentication failure** due to session persistence issues.
-- **Google OAuth**: The flow fails with a generic error on the frontend, indicating the app is not compliant with Google's OAuth 2.0 standards. This occurs even with newly created test credentials.
+#### 2. "Complete Profile" CTA Incorrectly Displayed
+- **Problem:** Users who have already filled out their profile information are still seeing the call-to-action (CTA) to complete it. This indicates the logic for checking profile completion is failing.
+- **Troubleshooting Plan:**
+    1.  **Identify Check Logic:** Locate the code responsible for checking profile completion status (likely in a middleware or the `/api/user` endpoint).
+    2.  **Verify Field Mapping:** Double-check that the database field names for user profile data (e.g., `profileComplete`, `onboardingStatus`) are correctly mapped in `deserializeUser` and match the application's user model.
+    3.  **Inspect User Object:** Log the user object on the server and check the data returned by `/api/user` on the client to see if the expected profile fields are present and correct.
 
-### Troubleshooting Steps & Changes Made (updated after live session on June 13):
+#### 3. Brief 404 Flash on Post-Authentication Redirect
+- **Problem:** After a successful login or sign-up, users briefly see a 404 error page before being redirected to the main dashboard.
+- **Troubleshooting Plan:**
+    1.  **Examine Redirects:** Review the redirect URLs in the `/api/login` and `/auth/google/callback` handlers to ensure they point directly to a valid, existing route (e.g., `/`).
+    2.  **Check Client-Side Routing:** Investigate the initial route handling in the React application for authenticated users. The default authenticated route might be momentarily pointing to a path that no longer exists (e.g., `/dashboard` instead of `/`).
+    3.  **Analyze Network Tab:** Use browser developer tools to trace the redirect chain and identify which URL is causing the 404.
 
-1.  **Build & Vite Configuration:**
-    *   **Initial Problem**: Dev server failed to load, reporting "cannot find index.html".
-    *   **Fixes Implemented**:
-        *   Corrected `vite.config.ts` build output from `dist/server/public` to just `dist`.
-        *   Simplified the `package.json` build script, removing fragile `cp` and `rm` commands.
-        *   Fixed a failing `esbuild` process by marking `lightningcss` and other packages as external.
-        *   Resolved middleware order by moving `express.static` serving for the `client/public` directory inside the Vite setup.
-        *   **Final Approach**: Implemented a Vite proxy in `vite.config.ts` to forward `/api` requests to the backend, creating a unified origin for the browser and eliminating CORS/cookie issues.
-
-2.  **Manual Login & Session Middleware:**
-    *   **Initial Problem**: User was authenticated on the server, but subsequent requests showed them as logged out.
-    *   **Fixes Implemented**:
-        *   Corrected client-side error handling in `auth-page.tsx` that was masking login failures.
-        *   Attempted to fix session persistence by setting the `domain` on the session cookie in `server/index.ts`.
-        *   **Final Approach**: Removed the `domain` cookie setting after implementing the Vite proxy, as the proxy should handle origin issues.
-
-3.  **Google OAuth Flow:**
-    *   **Initial Problem**: Google login button produced an error.
-    *   **Fixes Implemented**:
-        *   Updated `server/auth.ts` to allow using production OAuth credentials in dev as a fallback.
-        *   Guided the creation of new **test credentials** in Google Cloud Console with correct Authorized JavaScript Origins (`http://localhost:5173`) and Authorized Redirect URIs (`http://localhost:3001/auth/google/callback`).
-        *   Reverted `server/auth.ts` to enforce a strict separation of `_TEST` and `_PROD` credentials for better security and error reporting.
-
-4.  **Live Pair-Programming Session (this document)**  
-    *Files touched:* `server/index.ts`, `server/auth.ts`, `client/src/lib/queryClient.ts`  
-    *   **Session Cookie Logic** – relaxed `secure`/`sameSite` flags for any localhost / HTTP run while keeping them strict on real HTTPS domains.  
-    *   **Callback URL Normalization** – stripped protocol & trailing slash from `CUSTOM_DOMAIN` to prevent double-`https://` in Google callback.  
-    *   **Frontend Fetch Credentials** – enforced `credentials:"include"` on all React Query helper fetches so the browser actually sends `stacktracker.sid` on every request.  
-    *   **Follow-up Patch** – refined the cookie logic again to avoid marking cookies `Secure` when `CUSTOM_DOMAIN` is set but still points to `localhost`, because this still blocks cookies over plain HTTP.
-
-### Results of Latest Attempts
-
-* **Manual Login:** Still fails – server logs show successful authentication & `serializeUser`, but every immediate `/api/user` call arrives unauthenticated → redirect to signup.  The `stacktracker.sid` cookie does not appear in DevTools, indicating the browser is still discarding it.  Next step: inspect `Set-Cookie` header in the login response and verify attributes match localhost expectations.
-* **Google OAuth:** Duplicate-URL bug fixed; Google redirects back to our callback, but token exchange now returns `TokenError: Bad Request` from Passport.  Indicates our client-ID / secret pair is accepted, but Google rejected the authorization code during server-side token exchange.  Next step: verify OAuth credentials and allowed redirect URIs, and log the full error payload returned by Google.
-
-### Top Theories for Remaining Issues:
-
-1.  **Manual Login (Session Persistence Failure):**
-    *   **Theory**: The `express-session` middleware configuration is still incorrect for a proxied environment, or there's another middleware interfering. Even with the Vite proxy, if the session cookie's attributes (`SameSite`, `Secure`, `Path`) are not perfectly aligned with the browser's expectations for proxied requests, it will fail to be sent on subsequent `/api` calls. The browser's developer tools (Network tab) would be key to confirming if the `stacktracker.sid` cookie is being set on `/api/login` and then sent on subsequent requests.
-
-2.  **Google OAuth (Compliance Error):**
-    *   **Theory**: This error often points to a configuration issue in the Google Cloud Console that is more nuanced than just the redirect URI. Common culprits include:
-        *   **Publishing Status**: If the OAuth Consent Screen is in "Testing" mode, only explicitly added Test Users can log in. If you are not on that list, Google will block the login.
-        *   **APIs & Services**: The required "Google People API" or other related APIs might not be enabled for the project.
-        *   **Incorrect Scopes**: The scopes requested by the application in the `passport` strategy might not match what's configured in the consent screen.
-
-These issues are complex and often result from subtle configuration mismatches. The next steps should involve a meticulous review of the session middleware and a thorough audit of the Google Cloud Console OAuth settings.
+---
 
 ## Latest Status (June 6, 2025)
 

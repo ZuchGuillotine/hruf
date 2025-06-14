@@ -10,8 +10,8 @@
     * - Author          : 
     * - Modification    : 
 **/
-import dotenv from 'dotenv';
-dotenv.config();
+// Environment variables are now loaded in server/config/env.ts
+// which must be imported before this module
 console.log("DATABASE_URL at db/index.ts:", process.env.DATABASE_URL);
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool, PoolConfig } from 'pg';

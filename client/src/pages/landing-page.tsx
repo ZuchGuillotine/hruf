@@ -72,7 +72,7 @@ export default function LandingPage() {
       } else {
         // For paid tiers, redirect to subscription checkout
         // Use PRODUCTS from our stripe price helper
-        const priceIds = {
+        const priceIds: { [key: string]: string } = {
           'starter-monthly': 'price_1OpGHMAIJBVVerrJCXB9LK8z',  // Monthly starter
           'starter-yearly': 'price_1RKZsdAIJBVVerrJmp9neLDz',   // Yearly starter 
           'pro-monthly': 'price_1RFrkBAIJBVVerrJNDRc9xSL',      // Monthly pro
@@ -122,6 +122,13 @@ export default function LandingPage() {
 
   const goToLogin = () => {
     setLocation('/auth?login=true');
+  };
+
+  const handleGoogleAuth = (plan: 'free' | 'starter' | 'pro' = 'free') => {
+    // Store the selected plan to be retrieved after Google auth
+    sessionStorage.setItem('selectedPlan', plan);
+    // Redirect to the Google auth endpoint, marking it as a signup
+    window.location.href = `/auth/google?signup=true`;
   };
 
   return (
@@ -435,78 +442,89 @@ export default function LandingPage() {
         </div>
 
         {/* Free Trial Signup Form */}
-        <div id="free-trial-signup" className="max-w-md mx-auto mb-16 px-4 sm:px-6">
-          <Card className="shadow-lg">
+        <div id="free-trial-signup" className="pt-20">
+          <Card className="max-w-xl mx-auto shadow-xl bg-white/95 backdrop-blur-sm border-2 border-[#1b4332]/10">
             <CardHeader className="text-center">
-              <CardTitle id="try-free">Optimal Health Starts Here</CardTitle>
+              <CardTitle className="text-3xl text-[#1b4332]">Start Your Journey</CardTitle>
               <CardDescription>
-                No credit card required
+                Create an account to start tracking for free. No credit card required.
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </label>
+                  <label htmlFor="username-trial" className="text-sm font-medium">Username</label>
                   <Input
-                    id="email"
-                    type="email"
-                    {...registerField("email", { required: true })}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs">Email is required</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="username" className="text-sm font-medium">
-                    Username
-                  </label>
-                  <Input
-                    id="username"
+                    id="username-trial"
                     type="text"
-                    {...registerField("username", { required: true })}
-                    placeholder="Choose a username"
+                    {...registerField("username", { required: "Username is required" })}
+                    className={errors.username ? "border-red-500" : ""}
+                    autoComplete="username"
                   />
-                  {errors.username && (
-                    <p className="text-red-500 text-xs">Username is required</p>
-                  )}
+                  {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </label>
+                  <label htmlFor="email-trial" className="text-sm font-medium">Email</label>
                   <Input
-                    id="password"
-                    type="password"
-                    {...registerField("password", { required: true, minLength: 6 })}
-                    placeholder="Create a password"
+                    id="email-trial"
+                    type="email"
+                    {...registerField("email", { required: "Email is required" })}
+                    className={errors.email ? "border-red-500" : ""}
+                    autoComplete="email"
                   />
-                  {errors.password && (
-                    <p className="text-red-500 text-xs">Password must be at least 6 characters</p>
-                  )}
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="password-trial" className="text-sm font-medium">Password</label>
+                  <Input
+                    id="password-trial"
+                    type="password"
+                    {...registerField("password", { required: "Password is required" })}
+                    className={errors.password ? "border-red-500" : ""}
+                    autoComplete="new-password"
+                  />
+                  {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
-                <Button
-                  type="submit"
-                  className="w-full bg-[#2d6a4f] hover:bg-[#1b4332]"
-                  disabled={isSubmitting}
-                >
+              <CardFooter className="flex flex-col space-y-3">
+                <Button type="submit" className="w-full bg-[#2d6a4f] hover:bg-[#1b4332]" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <BarChart3 className="mr-2 h-4 w-4" />
+                    "Create Account"
                   )}
-                  Start Tracking
                 </Button>
+
+                <div className="relative w-full py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t"></span>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      Or
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => handleGoogleAuth('free')}
+                >
+                  <svg className="h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                    <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                  </svg>
+                  Sign up with Google
+                </Button>
+
                 <Button
                   type="button"
                   variant="link"
+                  className="text-sm"
                   onClick={goToLogin}
                 >
-                  Already have an account? Sign in
+                  Already have an account? Sign In
                 </Button>
               </CardFooter>
             </form>

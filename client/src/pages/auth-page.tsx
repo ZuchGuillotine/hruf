@@ -72,19 +72,29 @@ export default function AuthPage() {
         const response = await login(data);
         console.log('Login response:', response);
         if (response.ok) {
-          // Use location.replace to ensure a full page reload
-          window.location.replace(response.redirectUrl || '/');
+          if (response.user) {
+            // Redirect to dashboard for all users (admin page doesn't exist yet)
+            window.location.replace('/');
+          } else {
+            // This shouldn't happen, but handle it gracefully
+            window.location.replace('/');
+          }
         } else {
-          throw new Error(response.message);
+          throw new Error(response.message || 'Login failed');
         }
       } else {
         const response = await register(data);
-        if (response.ok && response.requiresVerification) {
-          setVerificationSent(true);
-        } else if (response.ok) {
-          window.location.replace('/subscription?newUser=true');
+        if (response.ok) {
+          if (response.requiresVerification) {
+            setVerificationSent(true);
+          } else if (response.user) {
+            window.location.replace('/subscription?newUser=true');
+          } else {
+            // Registration successful but no user data - redirect to dashboard
+            window.location.replace('/');
+          }
         } else {
-          throw new Error(response.message);
+          throw new Error(response.message || 'Registration failed');
         }
       }
     } catch (error: any) {
@@ -181,6 +191,7 @@ export default function AuthPage() {
                         type="text"
                         {...registerField("username")}
                         required={!isLogin}
+                        autoComplete="username"
                       />
                     </div>
                   )}
@@ -193,6 +204,7 @@ export default function AuthPage() {
                       type={isLogin ? "text" : "email"}
                       {...registerField("email")}
                       placeholder={isLogin ? "Enter your email or username" : "Enter your email"}
+                      autoComplete="email"
                     />
                   </div>
                   <div className="space-y-2">
@@ -203,43 +215,39 @@ export default function AuthPage() {
                       id="password"
                       type="password"
                       {...registerField("password")}
+                      autoComplete={isLogin ? "current-password" : "new-password"}
                     />
                   </div>
 
-                  <div className="relative">
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isLogin ? "Sign In" : "Sign Up"}
+                  </Button>
+                  <div className="relative w-full">
                     <div className="absolute inset-0 flex items-center">
                       <Separator className="w-full" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
+                      <span className="bg-card px-2 text-muted-foreground">
+                        Or
                       </span>
                     </div>
                   </div>
-
                   <Button
                     type="button"
                     variant="outline"
                     className="w-full flex items-center justify-center gap-2"
                     onClick={handleGoogleAuth}
                   >
-                    <svg className="h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                    <svg className="h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.0.0/2000/svg" viewBox="0 0 488 512">
                       <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
                     </svg>
                     {isLogin ? "Sign in with Google" : "Sign up with Google"}
                   </Button>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isLogin ? "Sign In" : "Sign Up"}
-                  </Button>
                   <Button
                     type="button"
                     variant="link"

@@ -26,46 +26,19 @@ import { or } from "drizzle-orm";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // Get the environment-specific callback URL
-const getCallbackURL = (app: Express) => {
+const getCallbackURL = () => {
   const isProd = process.env.NODE_ENV === 'production';
-  // Normalize custom domain so it never includes protocol or trailing slash
-  const rawDomain = process.env.CUSTOM_DOMAIN || '';
-  const customDomain = rawDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  let callbackURL;
+  const customDomain = process.env.CUSTOM_DOMAIN;
 
-  // Check if we're actually running locally
-  const isLocalhost = typeof window !== 'undefined' 
-    ? window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    : process.env.LOCAL_DEV === 'true' || !customDomain || customDomain.includes('localhost');
-
-  // Determine callback URL based on actual runtime environment
-  if (isProd && customDomain && !isLocalhost) {
-    callbackURL = `https://${customDomain}/auth/google/callback`;
-  } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    // For Replit development environment - match exact casing from Google Console
-    const replSlug = process.env.REPL_SLUG.toLowerCase();
-    const replOwner = process.env.REPL_OWNER; // Keep original casing
-    callbackURL = `https://${replSlug}.${replOwner}.repl.co/auth/google/callback`;
-  } else {
-    // Local development fallback - always use this for localhost
-    callbackURL = `http://localhost:3001/auth/google/callback`;
+  // In production, with a custom domain, use the domain.
+  if (isProd && customDomain) {
+    // Ensure the domain doesn't have a protocol for this construction
+    const domain = customDomain.replace(/^https?:\/\//, '');
+    return `https://${domain}/auth/google/callback`;
   }
-
-  // Log the callback URL determination process
-  console.log('Callback URL Determination:', {
-    isProd,
-    customDomain,
-    replSlug: process.env.REPL_SLUG,
-    replOwner: process.env.REPL_OWNER,
-    resultingURL: callbackURL,
-    authorizedURLs: [
-      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/test/callback`,
-      `https://${process.env.REPL_SLUG?.toLowerCase()}.${process.env.REPL_OWNER}.repl.co/auth/google/callback`
-    ],
-    timestamp: new Date().toISOString()
-  });
-
-  return callbackURL;
+  
+  // For all other cases (development, local, staging without custom domain), use localhost.
+  return 'http://localhost:3001/auth/google/callback';
 };
 
 const scryptAsync = promisify(scrypt);
@@ -177,7 +150,7 @@ export function setupAuth(app: Express) {
 
   // Google OAuth Strategy Configuration
   const isProd = process.env.NODE_ENV === 'production';
-  const CALLBACK_URL = getCallbackURL(app);
+  const CALLBACK_URL = getCallbackURL();
   
   // Use test credentials if we're using a localhost callback URL
   const useTestCredentials = CALLBACK_URL.includes('localhost');
@@ -307,10 +280,33 @@ export function setupAuth(app: Express) {
   app.get(
     '/auth/google/callback',
     (req: Request, res: Response, next: NextFunction) => {
-      passport.authenticate('google', {
-        failureRedirect: '/auth?error=google_auth_failed',
-        successReturnToOrRedirect: '/',
-        keepSessionInfo: true
+      passport.authenticate('google', (err: any, user: Express.User | false, info: any) => {
+        if (err) {
+          console.error('Google auth callback error:', err);
+          return res.redirect('/auth?error=google_auth_failed');
+        }
+        if (!user) {
+          console.log('Google auth failed, no user returned.', { info });
+          return res.redirect('/auth?error=google_auth_failed');
+        }
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            console.error('Session login error after Google auth:', loginErr);
+            return next(loginErr);
+          }
+          // Explicitly save the session before redirecting
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error('Session save error:', saveErr);
+              return next(saveErr);
+            }
+            console.log('User authenticated and session saved. Redirecting to /.');
+            // Check for a plan stored in sessionStorage and redirect accordingly
+            // This part is client-side logic, but we redirect to a generic place
+            // and let the client handle it.
+            res.redirect('/'); 
+          });
+        });
       })(req, res, next);
     }
   );

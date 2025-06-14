@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/06/2025 - 19:25:16
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import { Router } from 'express';
 import Stripe from 'stripe';
 import { db } from '@db';

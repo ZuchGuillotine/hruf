@@ -425,6 +425,25 @@ POST /api/summaries/realtime
    - Error recovery mechanisms
    - Performance optimization hooks
 
+### 2025 Authentication Refactor Highlights
+- **Centralized configuration** (`server/config/auth.config.ts`) consolidates all cookie, tier-limit, and OAuth settings with full environment awareness.
+- **Single initialization entry point**: `server/auth/setup.ts` is an async, idempotent loader that prevents duplicate Passport configuration and gracefully handles CommonJS ↔ ESM imports.
+- **Dedicated route module** (`server/auth/routes.ts`) replaces scattered auth endpoints and mounts all routes under `/auth` (OAuth) and `/api` (local auth).
+- **Comprehensive middleware layer** (`server/middleware/auth.middleware.ts`):
+  - `requireAuth`, `requireAdmin`, `requireTier`, and `checkFeatureLimit` helpers.
+  - `setAuthInfo` attaches a consistent `req.auth` object that downstream handlers and services can trust.
+- **Session storage strategy**:
+  - `MemoryStore` in development for speed.
+  - `session-file-store` in production with 24-hour TTL and automatic cleanup.
+  - Dynamic cookie attributes: `secure` & `sameSite` tighten automatically when `CUSTOM_DOMAIN` is an HTTPS origin.
+- **Google OAuth improvements**:
+  - Environment-specific credential resolution (`DEV`, `TEST`, `PROD`).
+  - Helper to generate callback URLs and avoid double-protocol bugs.
+  - Structured logging surfaces token-exchange errors for rapid debugging.
+- **Logout handling**:
+  - `req.logout()` now explicitly destroys the session and clears cookies.
+  - Future enhancement: Google token revocation on logout.
+
 ## Data Flow Architecture
 
 ### Biomarker Extraction System

@@ -42,8 +42,8 @@ export default function CookieConsent() {
             We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. 
             By clicking "Accept", you consent to our use of cookies. By clicking "Decline", only essential cookies will be used.
             For more information about how we use cookies, please read our{" "}
-            <Link href="/privacy">
-              <a className="text-[#1b4332] font-semibold hover:underline">Privacy Policy</a>
+            <Link href="/privacy" className="text-[#1b4332] font-semibold hover:underline">
+              Privacy Policy
             </Link>.
           </p>
         </CardContent>

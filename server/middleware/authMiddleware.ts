@@ -9,6 +9,8 @@ export const setAuthInfo = (req: Request, res: Response, next: NextFunction) => 
   req.authInfo = {
     isAuthenticated,
     userId: isAuthenticated && req.user ? req.user.id : null,
+    userTier: isAuthenticated && req.user ? (req.user.subscriptionTier || 'free') : null,
+    isAdmin: isAuthenticated && req.user ? (req.user.isAdmin || false) : false
   };
 
   // Only log auth failures in non-public routes
@@ -31,6 +33,8 @@ declare global {
       authInfo?: {
         isAuthenticated: boolean;
         userId: number | null;
+        userTier: string | null;
+        isAdmin: boolean;
       };
     }
   }

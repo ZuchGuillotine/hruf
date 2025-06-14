@@ -1,6 +1,17 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 13/06/2025 - 18:51:47
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 13/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
 import { chatWithAI } from "./openai";
 import { queryWithAI } from "./services/openaiQueryService";
 import { qualitativeChatWithAI } from "./services/llmService";
@@ -27,7 +38,8 @@ import { sendWelcomeEmail } from './services/emailService';
 import { type SelectSupplement } from "@db/schema";
 import { constructUserContext } from './services/llmContextService';
 import { constructQueryContext } from './services/llmContextService_query';
-// Removed problematic controller imports temporarily
+// Import our new middleware
+import { requireAuth, requireAdmin, checkFeatureLimit } from './middleware/auth.middleware';
 import supplementsRouter from './routes/supplements';
 import stripeRouter from './routes/stripe';
 import postPaymentRouter from './routes/post-payment';
@@ -37,27 +49,12 @@ import { healthCheck } from './utils/healthCheck';
 export function registerRoutes(app: Express): Server {
   // Health check endpoint
   app.get('/health', healthCheck);
-  // Setup authentication first
-  setupAuth(app);
+  
+  // NOTE: Authentication is now set up in server/index.ts via setupAuthentication()
+  // This prevents double initialization issues
 
   // Ensure JSON parsing middleware is applied globally
   app.use(express.json());
-
-  // Middleware to check authentication
-  const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.isAuthenticated()) {
-      console.log('Authentication check failed:', {
-        session: req.session,
-        user: req.user,
-        timestamp: new Date().toISOString()
-      });
-      return res.status(401).json({
-        error: "Authentication required",
-        redirect: "/login"
-      });
-    }
-    next();
-  };
 
   // Mount routes
   app.use('/api/stripe', stripeRouter);
@@ -115,9 +112,9 @@ export function registerRoutes(app: Express): Server {
                 
                 // Map product IDs to subscription tiers
                 if (typeof productId === 'string') {
-                  if (productId === 'prod_SF40NCVtZWsX05') {
+                  if (productId === process.env.STRIPE_STARTER_PRODUCT_ID) {
                     verifiedTier = 'starter';
-                  } else if (productId === 'prod_RtcuCvjOY9gHvm') {
+                  } else if (productId === process.env.STRIPE_PRO_PRODUCT_ID) {
                     verifiedTier = 'pro';
                   }
                 }
@@ -145,7 +142,7 @@ export function registerRoutes(app: Express): Server {
           email,
           password: hashedPassword,
           subscriptionTier: verified ? verifiedTier : 'free',
-          stripeSubscriptionId,
+          subscriptionId: stripeSubscriptionId,
           stripeCustomerId: null, // Will be updated later if needed
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -180,18 +177,6 @@ export function registerRoutes(app: Express): Server {
     }
   }));
 
-
-  // Middleware to check admin role
-  const requireAdmin = (req: Request, res: Response, next: Function) => {
-    if (!req.user?.isAdmin) {
-      return res.status(403).json({
-        error: "Admin access required",
-        message: "You do not have admin privileges"
-      });
-    }
-    next();
-  };
-
   // Test email endpoint (remove in production)
   app.post("/api/test-email", async (req, res) => {
     try {
@@ -215,7 +200,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-
   // Add 2FA endpoint
   app.post("/api/auth/2fa/send", async (req, res, next) => {
     try {
@@ -230,76 +214,11 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Remove email verification from registration endpoint
-  app.post("/api/register", async (req, res) => {
-    try {
-      console.log('Starting registration process:', {
-        email: req.body.email,
-        bodyKeys: Object.keys(req.body),
-        timestamp: new Date().toISOString()
-      });
-
-      // Check for existing user with same email
-      const [existingUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, req.body.email));
-
-      if (existingUser) {
-        return res.status(409).json({
-          status: 'error',
-          message: "An account with this email already exists. Please use a different email or try logging in.",
-          code: "EMAIL_EXISTS"
-        });
-      }
-
-      // Create user
-      const [user] = await db
-        .insert(users)
-        .values({
-          ...req.body,
-          emailVerified: true, // Auto-verify for now since we don't have email service
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-        })
-        .returning();
-
-      console.log('User created successfully:', {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date().toISOString()
-      });
-
-      // Log the user in after registration
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Error logging in after registration:', err);
-          return res.status(500).json({
-            message: "Error logging in after registration",
-            error: err.message
-          });
-        }
-
-        res.json({
-          message: "Registration successful",
-          user: user
-        });
-      });
-    } catch (error: any) {
-      console.error('Error in registration process:', {
-        error: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      });
-
-      res.status(500).json({
-        message: "Error registering user",
-        error: error.message
-      });
-    }
-  });
+  // NOTE: Registration and login endpoints have been moved to server/auth/routes.ts
+  // This is to keep all auth-related routes in one place
 
   // Chat endpoint with storage
-  app.post("/api/chat", requireAuth, async (req, res) => {
+  app.post("/api/chat", requireAuth, checkFeatureLimit('llm'), async (req, res) => {
     try {
       console.log('Chat request received:', {
         session: req.sessionID,
@@ -388,7 +307,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Supplement query endpoint - works for both authenticated and non-authenticated users
-  app.post("/api/query", async (req, res) => {
+  app.post("/api/query", checkFeatureLimit('llm'), async (req, res) => {
     try {
       const { messages } = req.body;
 
@@ -400,21 +319,28 @@ export function registerRoutes(app: Express): Server {
       const userId = req.isAuthenticated() ? req.user?.id : null;
 
       // Get user context if available, or use minimal context for non-authenticated users
-      const queryContext = await constructQueryContext(userId, userQuery);
+      const queryContext = await constructQueryContext(userId ? userId.toString() : null, userQuery);
       const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
 
       // Get AI response with appropriate context
-      const aiResponse = await queryWithAI(contextualizedMessages, userId);
+      const aiResponse = await queryWithAI(contextualizedMessages, userId ? userId.toString() : null);
 
-      if (!aiResponse?.response) {
-        return res.status(500).json({
-          error: "Failed to get AI response",
-          message: "The AI service did not provide a valid response"
-        });
+      // queryWithAI returns an async generator, we need to collect the response
+      let fullResponse = '';
+      for await (const chunk of aiResponse) {
+        if (chunk.response) {
+          fullResponse += chunk.response;
+        }
+        if (chunk.error) {
+          return res.status(500).json({
+            error: "AI service error",
+            message: chunk.error
+          });
+        }
       }
 
-      // Send AI response
-      res.json(aiResponse);
+      // Send the complete response
+      res.json({ response: fullResponse });
     } catch (error: any) {
       console.error("Error in query endpoint:", {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -764,7 +690,7 @@ export function registerRoutes(app: Express): Server {
         return {
           id: log.id,
           content: log.content,
-          loggedAt: log.loggedAt.toISOString(),
+          loggedAt: log.loggedAt ? log.loggedAt.toISOString() : new Date().toISOString(),
           type: log.type,
           metadata: log.metadata,
           summary
