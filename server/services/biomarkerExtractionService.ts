@@ -128,31 +128,31 @@ export type BiomarkerCategory =
 
 // Enhanced biomarker regex patterns with flexible ordering and better unit handling
 const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerCategory; defaultUnit: string }> = {
-  // Lipid Panel - More flexible patterns that handle fragmented text
+  // Lipid Panel - Improved patterns that avoid reference ranges
   cholesterol: {
-    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol|Chol)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol|Chol)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
   hdl: {
-    pattern: /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern: /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
   ldl: {
-    pattern: /(?:LDL|LDL-C|LDL Cholesterol|Low-Density Lipoprotein)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern: /(?:LDL|LDL-C|LDL Cholesterol|Low-Density Lipoprotein)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
   triglycerides: {
-    pattern: /(?:Triglycerides|TG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/gi,
+    pattern: /(?:Triglycerides|TG)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
 
   // Metabolic Panel - More flexible patterns
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)(?:[\s\S]*?)(\d{2,3}(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?/gi,
+    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d{2,3}(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
     category: 'metabolic',
     defaultUnit: 'mg/dL'
   },
@@ -331,12 +331,13 @@ type BiomarkerProcessingMetadata = {
 };
 
 export class BiomarkerExtractionService {
-  private async extractWithRegex(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
+  private async extractWithRegex(text: string, transactionId?: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     const results: z.infer<typeof BiomarkerSchema>[] = [];
     logger.info('Starting regex extraction with text:', { 
       textLength: text.length,
       textSample: text.substring(0, 500),
-      patterns: Object.keys(BIOMARKER_PATTERNS) 
+      patterns: Object.keys(BIOMARKER_PATTERNS),
+      transactionId 
     });
 
     // Pre-process text to handle fragmented numbers
@@ -370,22 +371,60 @@ export class BiomarkerExtractionService {
       }
     }
 
-    // Define reasonable ranges for common biomarkers
-    const BIOMARKER_RANGES: Record<string, { min: number; max: number }> = {
-      glucose: { min: 20, max: 600 },
-      cholesterol: { min: 50, max: 500 },
-      hdl: { min: 10, max: 150 },
-      ldl: { min: 10, max: 300 },
-      triglycerides: { min: 10, max: 1000 },
-      sodium: { min: 100, max: 180 },
-      potassium: { min: 2, max: 8 },
-      chloride: { min: 80, max: 120 },
-      hemoglobin: { min: 5, max: 20 },
-      hematocrit: { min: 15, max: 65 },
-      creatinine: { min: 0.1, max: 15 },
-      bun: { min: 1, max: 150 },
-      alt: { min: 1, max: 1000 },
-      ast: { min: 1, max: 1000 }
+    // Define reasonable ranges for common biomarkers to filter out reference range values
+    const BIOMARKER_RANGES: Record<string, { min: number; max: number; unit?: string }> = {
+      // Metabolic markers
+      glucose: { min: 30, max: 600, unit: 'mg/dL' },
+      hemoglobinA1c: { min: 3.0, max: 20.0, unit: '%' },
+      insulin: { min: 0.1, max: 300, unit: 'µIU/mL' },
+      
+      // Lipid panel
+      cholesterol: { min: 50, max: 500, unit: 'mg/dL' },
+      hdl: { min: 10, max: 150, unit: 'mg/dL' },
+      ldl: { min: 10, max: 400, unit: 'mg/dL' },
+      triglycerides: { min: 10, max: 2000, unit: 'mg/dL' },
+      
+      // Electrolytes
+      sodium: { min: 120, max: 180, unit: 'mmol/L' },
+      potassium: { min: 2.0, max: 8.0, unit: 'mmol/L' },
+      chloride: { min: 80, max: 130, unit: 'mmol/L' },
+      co2: { min: 10, max: 40, unit: 'mmol/L' },
+      anionGap: { min: 3, max: 30, unit: 'mmol/L' },
+      
+      // Blood count
+      hemoglobin: { min: 3, max: 25, unit: 'g/dL' },
+      hematocrit: { min: 10, max: 70, unit: '%' },
+      platelets: { min: 10, max: 1500, unit: 'K/µL' },
+      
+      // Kidney function
+      creatinine: { min: 0.1, max: 20, unit: 'mg/dL' },
+      bun: { min: 1, max: 200, unit: 'mg/dL' },
+      egfr: { min: 1, max: 200, unit: 'mL/min/1.73m²' },
+      
+      // Liver function
+      alt: { min: 1, max: 2000, unit: 'U/L' },
+      ast: { min: 1, max: 2000, unit: 'U/L' },
+      alkalinePhosphatase: { min: 10, max: 1000, unit: 'U/L' },
+      
+      // Thyroid
+      tsh: { min: 0.01, max: 100, unit: 'mIU/L' },
+      t4: { min: 0.1, max: 30, unit: 'ng/dL' },
+      t3: { min: 0.5, max: 15, unit: 'pg/mL' },
+      
+      // Vitamins
+      vitaminD: { min: 1, max: 150, unit: 'ng/mL' },
+      vitaminB12: { min: 50, max: 5000, unit: 'pg/mL' },
+      folate: { min: 0.5, max: 50, unit: 'ng/mL' },
+      
+      // Minerals
+      ferritin: { min: 1, max: 5000, unit: 'ng/mL' },
+      iron: { min: 10, max: 500, unit: 'µg/dL' },
+      magnesium: { min: 0.5, max: 5.0, unit: 'mg/dL' },
+      
+      // Hormones
+      cortisol: { min: 0.1, max: 100, unit: 'µg/dL' },
+      testosterone: { min: 1, max: 2000, unit: 'ng/dL' },
+      estradiol: { min: 1, max: 1000, unit: 'pg/mL' }
     };
 
     // Track matches and validation results
@@ -431,6 +470,17 @@ export class BiomarkerExtractionService {
               value: parsedValue,
               expectedRange: range,
               matchContext: match[0]
+            });
+            validationFailures++;
+            continue;
+          }
+
+          // Additional check: detect if this might be a reference range value
+          if (this.isLikelyReferenceRangeValue(match[0], parsedValue, name)) {
+            logger.warn('Skipping likely reference range value:', {
+              biomarker: name,
+              value: parsedValue,
+              context: match[0]
             });
             validationFailures++;
             continue;
@@ -501,9 +551,12 @@ export class BiomarkerExtractionService {
     return results;
   }
 
-  private async extractWithLLM(text: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
+  private async extractWithLLM(text: string, transactionId?: string): Promise<z.infer<typeof BiomarkerSchema>[]> {
     try {
-      logger.info('Starting LLM extraction with text length:', { textLength: text.length });
+      logger.info('Starting LLM extraction with text length:', { 
+        textLength: text.length,
+        transactionId 
+      });
 
       const functions = [{
         name: "extract_lab_biomarkers",
@@ -560,29 +613,40 @@ export class BiomarkerExtractionService {
       const systemPrompt = `You are a precise medical lab report parser. Extract biomarkers with these strict requirements:
 
 CRITICAL RULES:
-1. The "unit" field is important, but for values that are ratios or have no unit, it should be omitted.
-2. If a unit is not clearly specified, use the most appropriate standard unit (e.g., mg/dL for glucose).
-3. All "value" fields MUST be numeric (convert text to numbers).
-4. Include standard reference ranges when available.
-5. If the text is a summary report (already analyzed), you can still extract all valid measurements 
-6. Use the most specific biomarker name possible (e.g., "HDL" instead of just "cholesterol")
-7. For each biomarker, determine if the value is "High", "Low", or "Normal" and set the status field
-8. For testDate, use the collection date from the report when available
+1. UNIT HANDLING: For values that are ratios (e.g., LDL/HDL ratio, ApoB/ApoA1 ratio) or inherently unitless, omit the "unit" field entirely. For all other biomarkers, ALWAYS include the appropriate unit.
+2. UNIT INFERENCE: If a unit is not clearly specified in the text, infer the most standard unit based on the biomarker type:
+   - Glucose, Cholesterol, LDL, HDL, Triglycerides: mg/dL
+   - Hemoglobin A1c: %
+   - TSH: mIU/L
+   - Vitamin D: ng/mL
+   - Creatinine: mg/dL
+   - Hemoglobin: g/dL
+3. VALUE EXTRACTION: Extract only actual test result values, NOT reference range values. Skip any numbers that appear in "Normal range: X-Y" contexts.
+4. All "value" fields MUST be numeric (convert text to numbers).
+5. Include standard reference ranges when available in the referenceRange field.
+6. Use the most specific biomarker name possible (e.g., "HDL Cholesterol" instead of just "cholesterol")
+7. For each biomarker, determine if the value is "High", "Low", or "Normal" based on context
+8. For testDate, use the collection date from the report when available, format as YYYY-MM-DD
 9. All returned data MUST comply with the function schema exactly
 
-Extract these biomarker types:
-- Lipids: Cholesterol, LDL, HDL, Triglycerides
-- Metabolic: Glucose, HbA1c, Insulin
-- Thyroid: TSH, T3, T4
-- Vitamins: D, B12, Folate
-- Minerals: Iron, Ferritin, Magnesium
-- Blood: Hemoglobin, Hematocrit, RBC, WBC, Platelets
-- Liver: ALT, AST, ALP, Bilirubin
-- Kidney: Creatinine, BUN, eGFR
-- Hormones: Testosterone, Estrogen, Cortisol
+REFERENCE RANGE AVOIDANCE:
+- If you see "Normal range: 70-99 mg/dL, Result: 85 mg/dL", extract 85, NOT 70 or 99
+- If you see "Reference: 40-160 mg/dL | Your Result: 120", extract 120, NOT 40 or 160
+- Look for keywords like "Result:", "Value:", "Your Result:", or values that appear after reference ranges
 
-Use closest standard units when needed (e.g., mg/dL, µg/dL, ng/mL).
-Ignore any text not related to biomarkers.`;
+Extract these biomarker types:
+- Lipids: Total Cholesterol, LDL Cholesterol, HDL Cholesterol, Triglycerides
+- Metabolic: Glucose, Hemoglobin A1c, Insulin, Fructosamine
+- Thyroid: TSH, Free T4, Free T3, Reverse T3
+- Vitamins: Vitamin D (25-OH), Vitamin B12, Folate, Vitamin B6
+- Minerals: Iron, Ferritin, Magnesium, Zinc
+- Blood: Hemoglobin, Hematocrit, RBC Count, WBC Count, Platelets
+- Liver: ALT, AST, Alkaline Phosphatase, Total Bilirubin
+- Kidney: Creatinine, BUN, eGFR, Uric Acid
+- Hormones: Testosterone, Estradiol, Cortisol, DHEA-S
+
+NEVER extract values from reference ranges or normal ranges.
+Focus on actual test results only.`;
 
       // Call OpenAI with function calling
       const response = await openai.chat.completions.create({
@@ -767,16 +831,21 @@ Ignore any text not related to biomarkers.`;
     };
   }
 
-  async extractBiomarkers(text: string): Promise<{
+  async extractBiomarkers(text: string, transactionId?: string): Promise<{
     parsedBiomarkers: z.infer<typeof BiomarkerSchema>[];
     parsingErrors: string[];
   }> {
+    logger.info('Starting biomarker extraction pipeline', {
+      textLength: text.length,
+      transactionId
+    });
+
     // 1. First pass: Quick regex extraction for high-confidence matches
-    const regexResults = await this.extractWithRegex(text);
+    const regexResults = await this.extractWithRegex(text, transactionId);
 
     // 2. Second pass: Use regex results to guide LLM extraction
     const llmPrompt = this.buildEnhancedPrompt(text, regexResults);
-    const llmResults = await this.extractWithLLM(llmPrompt);
+    const llmResults = await this.extractWithLLM(llmPrompt, transactionId);
 
     // 3. Third pass: Pattern-based extraction for specific formats
     const patternResults = await this.extractWithPatterns(text);
@@ -787,6 +856,14 @@ Ignore any text not related to biomarkers.`;
       llmResults,
       patternResults
     );
+
+    logger.info('Extraction pipeline completed', {
+      regexCount: regexResults.length,
+      llmCount: llmResults.length,
+      patternCount: patternResults.length,
+      mergedCount: mergedResults.length,
+      transactionId
+    });
 
     // 5. Validate and standardize
     return this.validateAndStandardizeResults(mergedResults);
@@ -810,54 +887,63 @@ Ignore any text not related to biomarkers.`;
 
   async storeBiomarkers(labResultId: number, biomarkers: z.infer<typeof BiomarkerSchema>[]): Promise<void> {
     const startTime = new Date();
-    logger.info(`Starting biomarker storage`, {
+    const transactionId = `tx_${labResultId}_${Date.now()}`;
+    
+    logger.info(`Starting atomic biomarker storage`, {
       labResultId,
       biomarkerCount: biomarkers.length,
+      transactionId,
       timestamp: startTime.toISOString()
     });
 
-    try {
-      // Initialize or update processing status
-      const [existingStatus] = await db
-        .select()
-        .from(biomarkerProcessingStatus)
-        .where(eq(biomarkerProcessingStatus.labResultId, labResultId))
-        .limit(1);
+    // Use database transaction for atomic operations
+    return await db.transaction(async (tx) => {
+      try {
+        // Initialize or update processing status within transaction
+        const [existingStatus] = await tx
+          .select()
+          .from(biomarkerProcessingStatus)
+          .where(eq(biomarkerProcessingStatus.labResultId, labResultId))
+          .limit(1);
 
-      const processingMetadata = {
-        biomarkerCount: biomarkers.length,
-        processingTime: Date.now() - startTime.getTime()
-      };
+        const processingMetadata = {
+          biomarkerCount: biomarkers.length,
+          processingTime: Date.now() - startTime.getTime(),
+          transactionId
+        };
 
-      if (existingStatus) {
-        await db
-          .update(biomarkerProcessingStatus)
-          .set({
-            status: 'processing' as const,
-            startedAt: new Date(),
-            metadata: {
-              ...existingStatus.metadata,
-              ...processingMetadata
-            }
-          })
-          .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
-      } else {
-        await db
-          .insert(biomarkerProcessingStatus)
-          .values({
-            labResultId,
-            status: 'processing' as const,
-            startedAt: new Date(),
-            metadata: processingMetadata
-          });
-      }
+        if (existingStatus) {
+          await tx
+            .update(biomarkerProcessingStatus)
+            .set({
+              status: 'processing' as const,
+              startedAt: new Date(),
+              metadata: {
+                ...existingStatus.metadata,
+                ...processingMetadata
+              }
+            })
+            .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+        } else {
+          await tx
+            .insert(biomarkerProcessingStatus)
+            .values({
+              labResultId,
+              status: 'processing' as const,
+              startedAt: new Date(),
+              metadata: processingMetadata
+            });
+        }
 
-      // Delete existing biomarkers
-      await db
-        .delete(biomarkerResults)
-        .where(eq(biomarkerResults.labResultId, labResultId));
+        // Delete existing biomarkers within transaction
+        const deleteResult = await tx
+          .delete(biomarkerResults)
+          .where(eq(biomarkerResults.labResultId, labResultId));
 
-      logger.info(`Deleted existing biomarkers for lab ${labResultId}`);
+        logger.info(`Deleted existing biomarkers for lab ${labResultId}`, { 
+          transactionId,
+          deletedCount: deleteResult 
+        });
 
       // Prepare biomarker inserts with proper data types and validation
       const biomarkerInserts = biomarkers
@@ -924,94 +1010,113 @@ Ignore any text not related to biomarkers.`;
         throw new Error('No valid biomarkers to insert');
       }
 
-      // Insert biomarkers in chunks to avoid transaction timeout
-      const CHUNK_SIZE = 50;
-      for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
-        const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
-        await db.insert(biomarkerResults).values(chunk);
-        logger.info(`Inserted biomarker chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length / CHUNK_SIZE)}`);
-      }
+        // Insert biomarkers in chunks within transaction
+        const CHUNK_SIZE = 50;
+        for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
+          const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
+          await tx.insert(biomarkerResults).values(chunk);
+          logger.info(`Inserted biomarker chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(biomarkerInserts.length / CHUNK_SIZE)}`, {
+            transactionId,
+            chunkSize: chunk.length
+          });
+        }
 
-      // Update lab result metadata
-      const [labResult] = await db
-        .select()
-        .from(labResults)
-        .where(eq(labResults.id, labResultId))
-        .limit(1);
+        // Update lab result metadata within transaction
+        const [labResult] = await tx
+          .select()
+          .from(labResults)
+          .where(eq(labResults.id, labResultId))
+          .limit(1);
 
-      if (!labResult) {
-        throw new Error(`Lab result ${labResultId} not found during metadata update`);
-      }
+        if (!labResult) {
+          throw new Error(`Lab result ${labResultId} not found during metadata update`);
+        }
 
-      const existingMetadata = (labResult.metadata || {}) as LabMetadata;
-      const biomarkerMetadata: BiomarkerMetadata = {
-        parsedBiomarkers: biomarkerInserts.map(b => ({
-          name: b.name,
-          value: parseFloat(b.value),
-          unit: b.unit,
-          referenceRange: b.referenceRange || undefined,
-          testDate: b.testDate.toISOString(),
-          category: b.category
-        })),
-        parsingErrors: [] as string[], // Add required parsingErrors field
-        extractedAt: new Date().toISOString()
-      };
+        const existingMetadata = (labResult.metadata || {}) as LabMetadata;
+        const biomarkerMetadata: BiomarkerMetadata = {
+          parsedBiomarkers: biomarkerInserts.map(b => ({
+            name: b.name,
+            value: parseFloat(b.value),
+            unit: b.unit,
+            referenceRange: b.referenceRange || undefined,
+            testDate: b.testDate.toISOString(),
+            category: b.category
+          })),
+          parsingErrors: [] as string[],
+          extractedAt: new Date().toISOString()
+        };
 
-      const updatedMetadata: LabMetadata = {
-        ...existingMetadata,
-        biomarkers: biomarkerMetadata
-      };
+        const updatedMetadata: LabMetadata = {
+          ...existingMetadata,
+          biomarkers: biomarkerMetadata
+        };
 
-      await db
-        .update(labResults)
-        .set({
-          metadata: updatedMetadata
-        })
-        .where(eq(labResults.id, labResultId));
+        await tx
+          .update(labResults)
+          .set({
+            metadata: updatedMetadata
+          })
+          .where(eq(labResults.id, labResultId));
 
-      // Update processing status to completed
-      const completionMetadata = {
-        processingTime: Date.now() - startTime.getTime(),
-        regexMatches: biomarkerInserts.filter(b => b.extractionMethod === 'regex').length,
-        llmExtractions: biomarkerInserts.filter(b => b.extractionMethod === 'llm').length
-      };
+        // Update processing status to completed within transaction
+        const completionMetadata = {
+          processingTime: Date.now() - startTime.getTime(),
+          regexMatches: biomarkerInserts.filter(b => b.extractionMethod === 'regex').length,
+          llmExtractions: biomarkerInserts.filter(b => b.extractionMethod === 'llm').length,
+          transactionId
+        };
 
-      await db
-        .update(biomarkerProcessingStatus)
-        .set({
-          status: 'completed' as const,
-          completedAt: new Date(),
+        await tx
+          .update(biomarkerProcessingStatus)
+          .set({
+            status: 'completed' as const,
+            completedAt: new Date(),
+            biomarkerCount: biomarkerInserts.length,
+            extractionMethod: biomarkerInserts.some(b => b.extractionMethod === 'llm') ? 'hybrid' : 'regex',
+            metadata: completionMetadata
+          })
+          .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
+
+        // Verify storage within transaction
+        const verificationCount = await tx
+          .select({ count: sql`count(*)` })
+          .from(biomarkerResults)
+          .where(eq(biomarkerResults.labResultId, labResultId))
+          .then(res => Number(res[0]?.count || 0));
+
+        if (verificationCount !== biomarkerInserts.length) {
+          const error = new Error(`Storage verification failed for lab ${labResultId}: expected ${biomarkerInserts.length}, found ${verificationCount}`);
+          logger.error('Storage verification failed', {
+            labResultId,
+            expected: biomarkerInserts.length,
+            found: verificationCount,
+            transactionId
+          });
+          throw error;
+        }
+
+        logger.info(`Successfully completed atomic storage of ${biomarkerInserts.length} biomarkers for lab ${labResultId}`, {
+          processingTime: Date.now() - startTime.getTime(),
           biomarkerCount: biomarkerInserts.length,
-          extractionMethod: biomarkerInserts.some(b => b.extractionMethod === 'llm') ? 'hybrid' : 'regex',
-          metadata: completionMetadata
-        })
-        .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
-
-      // Verify storage
-      const verificationCount = await db
-        .select({ count: sql`count(*)` })
-        .from(biomarkerResults)
-        .where(eq(biomarkerResults.labResultId, labResultId))
-        .then(res => Number(res[0]?.count || 0));
-
-      if (verificationCount !== biomarkerInserts.length) {
-        logger.error(`Storage verification failed for lab ${labResultId}`, {
-          expected: biomarkerInserts.length,
-          found: verificationCount
+          transactionId
         });
-        throw new Error('Storage verification failed');
+
+        // Transaction will auto-commit if we reach here without throwing
+      } catch (transactionError) {
+        // Log transaction error and let it bubble up to trigger rollback
+        logger.error(`Transaction failed for lab ${labResultId}`, {
+          error: transactionError instanceof Error ? transactionError.message : String(transactionError),
+          transactionId,
+          processingTime: Date.now() - startTime.getTime()
+        });
+        throw transactionError;
       }
-
-      logger.info(`Successfully completed atomic storage of ${biomarkerInserts.length} biomarkers for lab ${labResultId}`, {
-        processingTime: Date.now() - startTime.getTime(),
-        biomarkerCount: biomarkerInserts.length
-      });
-
-    } catch (error) {
-      // Update processing status to error state
+    }).catch(async (error) => {
+      // Handle transaction failure - update processing status to error state outside transaction
       const errorMetadata = {
         processingTime: Date.now() - startTime.getTime(),
-        errorDetails: error instanceof Error ? error.message : String(error)
+        errorDetails: error instanceof Error ? error.message : String(error),
+        transactionId
       };
 
       try {
@@ -1027,7 +1132,8 @@ Ignore any text not related to biomarkers.`;
       } catch (statusError) {
         logger.error('Failed to update error status after storage failure:', {
           originalError: error instanceof Error ? error.message : String(error),
-          statusError: statusError instanceof Error ? statusError.message : String(statusError)
+          statusError: statusError instanceof Error ? statusError.message : String(statusError),
+          transactionId
         });
       }
 
@@ -1035,16 +1141,24 @@ Ignore any text not related to biomarkers.`;
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         biomarkerCount: biomarkers.length,
-        processingTime: Date.now() - startTime.getTime()
+        processingTime: Date.now() - startTime.getTime(),
+        transactionId
       });
 
       throw error;
-    }
+    });
   }
 
   async processLabResult(labResultId: number): Promise<void> {
     const startTime = new Date();
+    const transactionId = `proc_${labResultId}_${Date.now()}`;
     let textContent: string | undefined;
+
+    logger.info('Starting lab result processing', {
+      labResultId,
+      transactionId,
+      timestamp: startTime.toISOString()
+    });
 
     try {
       // Get the lab result with metadata
@@ -1081,14 +1195,16 @@ Ignore any text not related to biomarkers.`;
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
       // Extract biomarkers
-      const { parsedBiomarkers, parsingErrors } = await this.extractBiomarkers(textContent);
+      const { parsedBiomarkers, parsingErrors } = await this.extractBiomarkers(textContent, transactionId);
       const processingTime = Date.now() - startTime.getTime();
 
       logger.info(`Extracted ${parsedBiomarkers.length} biomarkers from lab result ${labResultId}`, {
         processingTime,
         biomarkers: parsedBiomarkers.map(b => b.name),
         regexCount: parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
-        llmCount: parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length
+        llmCount: parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length,
+        transactionId,
+        parsingErrors: parsingErrors.length > 0 ? parsingErrors : undefined
       });
 
       if (parsedBiomarkers.length > 0) {
@@ -1123,9 +1239,9 @@ Ignore any text not related to biomarkers.`;
           .set({ metadata: updatedMetadata })
           .where(eq(labResults.id, labResultId));
 
-        logger.info(`Successfully updated metadata for lab result ${labResultId}`);
+        logger.info(`Successfully updated metadata for lab result ${labResultId}`, { transactionId });
       } else {
-        logger.warn(`No biomarkers extracted for lab result ${labResultId}`);
+        logger.warn(`No biomarkers extracted for lab result ${labResultId}`, { transactionId });
 
         // Update processing status to indicate no data found
         await db.update(biomarkerProcessingStatus)
@@ -1137,7 +1253,8 @@ Ignore any text not related to biomarkers.`;
               processingTime,
               regexMatches: 0,
               llmExtractions: 0,
-              retryCount: 0
+              retryCount: 0,
+              transactionId
             }
           })
           .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
@@ -1154,7 +1271,8 @@ Ignore any text not related to biomarkers.`;
             processingTime,
             retryCount: 0,
             textLength: textContent?.length || 0,
-            errorDetails: error instanceof Error ? error.message : String(error)
+            errorDetails: error instanceof Error ? error.message : String(error),
+            transactionId
           }
         })
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
@@ -1162,7 +1280,8 @@ Ignore any text not related to biomarkers.`;
       logger.error(`Error processing biomarkers for lab result ${labResultId}:`, {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        textLength: textContent?.length || 0
+        textLength: textContent?.length || 0,
+        transactionId
       });
 
       throw error; // Propagate the error to be handled by the caller
@@ -1174,6 +1293,50 @@ Ignore any text not related to biomarkers.`;
     if (normalized.includes('high') || normalized === 'h') return 'High';
     if (normalized.includes('low') || normalized === 'l') return 'Low';
     return 'Normal';
+  }
+
+  private isLikelyReferenceRangeValue(context: string, value: number, biomarkerName: string): boolean {
+    const lowerContext = context.toLowerCase();
+    
+    // Check for reference range indicators
+    const rangeIndicators = [
+      'range:', 'ref:', 'reference:', 'normal:', 'typical:', 'standard:',
+      'expected:', 'limits:', 'interval:', 'norm:', 'ref range'
+    ];
+    
+    const hasRangeIndicator = rangeIndicators.some(indicator => 
+      lowerContext.includes(indicator)
+    );
+    
+    // Check if the value appears in a range context (e.g., "70-99" or "70 - 99")
+    const rangePattern = /(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/;
+    const rangeMatch = context.match(rangePattern);
+    
+    if (rangeMatch && hasRangeIndicator) {
+      const rangeLow = parseFloat(rangeMatch[1]);
+      const rangeHigh = parseFloat(rangeMatch[2]);
+      
+      // If the extracted value is exactly the low or high end of a range, it's likely a reference value
+      if (value === rangeLow || value === rangeHigh) {
+        return true;
+      }
+    }
+    
+    // Additional heuristics: common reference range values that shouldn't be actual results
+    const commonReferenceValues: Record<string, number[]> = {
+      glucose: [70, 99, 100, 125], // Common reference range boundaries
+      cholesterol: [200, 239, 240], // Common cholesterol reference boundaries
+      hdl: [40, 60], // Common HDL reference boundaries
+      ldl: [100, 129, 130, 159, 160], // Common LDL reference boundaries
+      triglycerides: [150, 199, 200, 499], // Common triglycerides reference boundaries
+    };
+    
+    const suspiciousValues = commonReferenceValues[biomarkerName];
+    if (suspiciousValues && suspiciousValues.includes(value) && hasRangeIndicator) {
+      return true;
+    }
+    
+    return false;
   }
 }
 

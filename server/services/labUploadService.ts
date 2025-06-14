@@ -16,7 +16,7 @@ import fs from 'fs';
 import { db } from '../../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../../db/schema';
 import type { SelectLabResult, InsertBiomarkerResult, SelectBiomarkerResult } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import logger from '../utils/logger';
 import { labTextPreprocessingService } from './labTextPreprocessingService';
 
@@ -342,102 +342,83 @@ export class LabUploadService {
             throw new Error('Lab result not found during processing');
           }
 
-          // Use a transaction to ensure atomic updates
-          await db.transaction(async (trx) => {
-            // 1. Delete any existing biomarkers for this lab result
-            await trx
-              .delete(biomarkerResults)
-              .where(eq(biomarkerResults.labResultId, labResultId));
+          // Ensure preprocessedText is not null before accessing its properties
+          if (!preprocessedText) {
+            throw new Error('Preprocessed text is null');
+          }
 
-            // 2. Insert new biomarkers if any were extracted
-            const extractionResults = await this.biomarkerExtractionService.getResults(labResultId);
-            if (extractionResults.parsedBiomarkers.length > 0) {
-              const biomarkerInserts = extractionResults.parsedBiomarkers.map(b => ({
-                labResultId,
-                name: b.name,
-                value: String(typeof b.value === 'string' ? parseFloat(b.value) : b.value),
-                unit: b.unit,
-                category: b.category || 'other',
-                referenceRange: b.referenceRange || null,
-                testDate: b.testDate instanceof Date ? b.testDate : new Date(b.testDate || currentLab.uploadedAt || new Date()),
-                status: b.status || null,
-                extractionMethod: b.extractionMethod || 'regex',
-                confidence: b.confidence ? String(b.confidence) : null,
-                metadata: {
-                  sourceText: b.sourceText || undefined,
-                  extractionTimestamp: new Date().toISOString(),
-                  validationStatus: 'validated'
-                }
-              }));
+          // Get biomarker count from the database to update metadata
+          const biomarkerCount = await db
+            .select({ count: sql`count(*)` })
+            .from(biomarkerResults)
+            .where(eq(biomarkerResults.labResultId, labResultId))
+            .then(res => Number(res[0]?.count || 0));
 
-              // Insert in chunks to avoid transaction timeout
-              const CHUNK_SIZE = 50;
-              for (let i = 0; i < biomarkerInserts.length; i += CHUNK_SIZE) {
-                const chunk = biomarkerInserts.slice(i, i + CHUNK_SIZE);
-                await trx.insert(biomarkerResults).values(chunk);
+          // Get stored biomarkers for metadata
+          const storedBiomarkers = await db
+            .select()
+            .from(biomarkerResults)
+            .where(eq(biomarkerResults.labResultId, labResultId));
+
+          // Update lab result metadata
+          const existingMetadata = (currentLab.metadata || {}) as LabMetadata;
+          const updatedMetadata: LabMetadata = {
+            size: existingMetadata.size || 0,
+            lastViewed: new Date().toISOString(),
+            tags: existingMetadata.tags || [],
+            preprocessedText: {
+              rawText: preprocessedText.rawText,
+              normalizedText: preprocessedText.normalizedText,
+              processingMetadata: {
+                originalFormat: preprocessedText.metadata.originalFormat || 'unknown',
+                processingSteps: preprocessedText.metadata.processingSteps || [],
+                confidence: preprocessedText.metadata.confidence,
+                ocrEngine: preprocessedText.metadata.ocrEngine,
+                processingTimestamp: new Date().toISOString(),
+                textLength: preprocessedText.normalizedText.length,
+                lineCount: preprocessedText.normalizedText.split('\n').length,
+                hasHeaders: preprocessedText.metadata.hasHeaders || false,
+                hasFooters: preprocessedText.metadata.hasFooters || false,
+                qualityMetrics: preprocessedText.metadata.qualityMetrics
               }
-            }
+            },
+            biomarkers: storedBiomarkers.length > 0 ? {
+              parsedBiomarkers: storedBiomarkers.map((b: SelectBiomarkerResult) => ({
+                name: b.name,
+                value: parseFloat(b.value),
+                unit: b.unit,
+                referenceRange: b.referenceRange || undefined,
+                testDate: b.testDate.toISOString(),
+                category: b.category
+              })),
+              parsingErrors: [],
+              extractedAt: new Date().toISOString()
+            } : undefined,
+            summary: summary || undefined,
+            summarizedAt: new Date().toISOString()
+          };
 
-            // 3. Update lab result metadata within the same transaction
-            const existingMetadata = (currentLab.metadata || {}) as LabMetadata;
-            const updatedMetadata: LabMetadata = {
-              size: existingMetadata.size || 0,
-              lastViewed: new Date().toISOString(),
-              tags: existingMetadata.tags || [],
-              preprocessedText: {
-                rawText: preprocessedText.rawText,
-                normalizedText: preprocessedText.normalizedText,
-                processingMetadata: {
-                  originalFormat: preprocessedText.metadata.originalFormat || 'unknown',
-                  processingSteps: preprocessedText.metadata.processingSteps || [],
-                  confidence: preprocessedText.metadata.confidence,
-                  ocrEngine: preprocessedText.metadata.ocrEngine,
-                  processingTimestamp: new Date().toISOString(),
-                  textLength: preprocessedText.normalizedText.length,
-                  lineCount: preprocessedText.normalizedText.split('\n').length,
-                  hasHeaders: preprocessedText.metadata.hasHeaders || false,
-                  hasFooters: preprocessedText.metadata.hasFooters || false,
-                  qualityMetrics: preprocessedText.metadata.qualityMetrics
-                }
-              },
-              biomarkers: extractionResults.parsedBiomarkers.length > 0 ? {
-                parsedBiomarkers: extractionResults.parsedBiomarkers.map(b => ({
-                  name: b.name,
-                  value: typeof b.value === 'string' ? parseFloat(b.value) : b.value,
-                  unit: b.unit,
-                  referenceRange: b.referenceRange,
-                  testDate: b.testDate instanceof Date ? b.testDate.toISOString() : b.testDate,
-                  category: b.category || 'other'
-                })),
-                parsingErrors: extractionResults.parsingErrors,
-                extractedAt: new Date().toISOString()
-              } : undefined,
-              summary: summary || undefined,
-              summarizedAt: new Date().toISOString()
-            };
+          await db
+            .update(labResults)
+            .set({ metadata: updatedMetadata })
+            .where(eq(labResults.id, labResultId));
 
-            await trx
-              .update(labResults)
-              .set({ metadata: updatedMetadata })
-              .where(eq(labResults.id, labResultId));
-
-            // 4. Update processing status
-            await trx
-              .update(biomarkerProcessingStatus)
-              .set({
-                status: 'completed',
-                completedAt: new Date(),
-                biomarkerCount: extractionResults.parsedBiomarkers.length,
-                metadata: {
-                  regexMatches: extractionResults.parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
-                  llmExtractions: extractionResults.parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length,
-                  processingTime: Date.now() - new Date(currentLab.uploadedAt).getTime(),
-                  retryCount,
-                  textLength: preprocessedText.normalizedText.length
-                }
-              })
-              .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
-          });
+          // Update processing status
+          await db
+            .update(biomarkerProcessingStatus)
+            .set({
+              status: 'completed',
+              completedAt: new Date(),
+              biomarkerCount: biomarkerCount,
+              metadata: {
+                regexMatches: storedBiomarkers.filter((b: SelectBiomarkerResult) => b.extractionMethod === 'regex').length,
+                llmExtractions: storedBiomarkers.filter((b: SelectBiomarkerResult) => b.extractionMethod === 'llm').length,
+                processingTime: Date.now() - new Date(currentLab.uploadedAt).getTime(),
+                retryCount,
+                textLength: preprocessedText.normalizedText.length
+              }
+            })
+            .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
           // Update progress to completed
           this.updateProgress(labResultId, {
