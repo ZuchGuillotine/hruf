@@ -1,15 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { InsertUser, SelectUser } from "@db/neon-schema";
+import type { InsertUser, SelectUser } from "@db/schema";
+
+// Extended user type with subscription fields that come from the API
+type ExtendedUser = SelectUser & {
+  isPro?: boolean;
+  trialEndsAt?: string | null;
+  subscriptionEndsAt?: string | null;
+  aiInteractionsCount?: number;
+  aiInteractionsReset?: Date | string | null;
+  labUploadsCount?: number;
+  labUploadsReset?: Date | string | null;
+};
 
 type RequestResult = {
   ok: true;
-  user?: SelectUser;
+  user?: ExtendedUser;
   message?: string;
   requiresVerification?: boolean;
   redirectUrl?: string;
 } | {
   ok: false;
   message: string;
+  code?: 'TRIAL_EXPIRED' | 'AUTH_FAILED' | 'SERVER_ERROR' | 'CONNECTION_ERROR';
 };
 
 async function handleRequest(
@@ -48,7 +60,7 @@ async function handleRequest(
   }
 }
 
-async function fetchUser(): Promise<SelectUser | null> {
+async function fetchUser(): Promise<ExtendedUser | null> {
   const response = await fetch('/api/user', {
     credentials: 'include'
   });
@@ -61,13 +73,14 @@ async function fetchUser(): Promise<SelectUser | null> {
     throw new Error(`${response.status}: ${await response.text()}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  return data.user; // The API returns { user: { ... } }
 }
 
 export function useUser() {
   const queryClient = useQueryClient();
 
-  const { data: user, error, isLoading } = useQuery<SelectUser | null>({
+  const { data: user, error, isLoading } = useQuery<ExtendedUser | null>({
     queryKey: ['user'],
     queryFn: fetchUser,
     staleTime: Infinity,

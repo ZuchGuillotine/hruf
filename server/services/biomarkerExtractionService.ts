@@ -26,7 +26,7 @@ import { sql } from 'drizzle-orm';
 interface Biomarker {
   name: string;
   value: number | string; // Allow both number and string values for flexibility
-  unit: string;
+  unit?: string;
   category: string;
   referenceRange?: string;
   testDate?: Date | string; // Make testDate optional
@@ -52,7 +52,7 @@ const BiomarkerSchema = z.object({
       return parsed;
     })
   ]),
-  unit: z.string().min(1),
+  unit: z.string().optional(),
   // More flexible category enum with proper error handling
   category: z.string()
     .transform(val => {
@@ -152,7 +152,7 @@ const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerC
 
   // Metabolic Panel - More flexible patterns
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*[:=]?\s*(?:(?:Normal range:?\s*[\d\.]+\s*-\s*[\d\.]+\s*(?:mg\/dL|mmol\/L))?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?\s*(?:mg\/dL|mmol\/L)?|(?:mg\/dL|mmol\/L)?\s*\n?\s*(\d+(?:\.\d+)?)\s*(?:High|Low|Normal|H|L|N)?)/i,
+    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)(?:[\s\S]*?)(\d{2,3}(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?/gi,
     category: 'metabolic',
     defaultUnit: 'mg/dL'
   },
@@ -370,6 +370,24 @@ export class BiomarkerExtractionService {
       }
     }
 
+    // Define reasonable ranges for common biomarkers
+    const BIOMARKER_RANGES: Record<string, { min: number; max: number }> = {
+      glucose: { min: 20, max: 600 },
+      cholesterol: { min: 50, max: 500 },
+      hdl: { min: 10, max: 150 },
+      ldl: { min: 10, max: 300 },
+      triglycerides: { min: 10, max: 1000 },
+      sodium: { min: 100, max: 180 },
+      potassium: { min: 2, max: 8 },
+      chloride: { min: 80, max: 120 },
+      hemoglobin: { min: 5, max: 20 },
+      hematocrit: { min: 15, max: 65 },
+      creatinine: { min: 0.1, max: 15 },
+      bun: { min: 1, max: 150 },
+      alt: { min: 1, max: 1000 },
+      ast: { min: 1, max: 1000 }
+    };
+
     // Track matches and validation results
     let totalMatches = 0;
     let validationFailures = 0;
@@ -400,6 +418,19 @@ export class BiomarkerExtractionService {
             logger.warn('Failed to parse biomarker value as number:', {
               biomarker: name,
               rawValue: value
+            });
+            validationFailures++;
+            continue;
+          }
+
+          // Check if value is within reasonable range
+          const range = BIOMARKER_RANGES[name];
+          if (range && (parsedValue < range.min || parsedValue > range.max)) {
+            logger.warn('Biomarker value out of reasonable range:', {
+              biomarker: name,
+              value: parsedValue,
+              expectedRange: range,
+              matchContext: match[0]
             });
             validationFailures++;
             continue;
@@ -485,7 +516,7 @@ export class BiomarkerExtractionService {
               description: "Array of biomarkers extracted from lab report. Each must have name, value, unit, and category.",
               items: {
                 type: "object",
-                required: ["name", "value", "unit", "category"],
+                required: ["name", "value", "category"],
                 properties: {
                   name: { 
                     type: "string",
@@ -497,8 +528,7 @@ export class BiomarkerExtractionService {
                   },
                   unit: { 
                     type: "string",
-                    description: "Unit of measurement (e.g., 'mg/dL', 'mmol/L'). Must not be empty.",
-                    minLength: 1
+                    description: "Unit of measurement (e.g., 'mg/dL'). Omit for unitless values like ratios."
                   },
                   referenceRange: { 
                     type: "string",
@@ -530,10 +560,10 @@ export class BiomarkerExtractionService {
       const systemPrompt = `You are a precise medical lab report parser. Extract biomarkers with these strict requirements:
 
 CRITICAL RULES:
-1. The "unit" field MUST NOT be empty - it must contain a valid unit string
-2. If a unit is not clearly specified, use the most appropriate standard unit (e.g., mg/dL for glucose)
-3. All "value" fields MUST be numeric (convert text to numbers)
-4. Include standard reference ranges when available
+1. The "unit" field is important, but for values that are ratios or have no unit, it should be omitted.
+2. If a unit is not clearly specified, use the most appropriate standard unit (e.g., mg/dL for glucose).
+3. All "value" fields MUST be numeric (convert text to numbers).
+4. Include standard reference ranges when available.
 5. If the text is a summary report (already analyzed), you can still extract all valid measurements 
 6. Use the most specific biomarker name possible (e.g., "HDL" instead of just "cholesterol")
 7. For each biomarker, determine if the value is "High", "Low", or "Normal" and set the status field
@@ -663,14 +693,14 @@ Ignore any text not related to biomarkers.`;
   }
 
   private mergeResultsWithConfidence(
-    regexResults: Biomarker[],
-    llmResults: Biomarker[],
+    regexResults: z.infer<typeof BiomarkerSchema>[],
+    llmResults: z.infer<typeof BiomarkerSchema>[],
     patternResults: Biomarker[]
-  ): Biomarker[] {
-    const mergedMap = new Map<string, Biomarker>();
+  ): z.infer<typeof BiomarkerSchema>[] {
+    const mergedMap = new Map<string, z.infer<typeof BiomarkerSchema>>();
 
     // Helper function to add or update biomarker in map
-    const addOrUpdateBiomarker = (biomarker: Biomarker) => {
+    const addOrUpdateBiomarker = (biomarker: z.infer<typeof BiomarkerSchema>) => {
       const key = biomarker.name.toLowerCase();
       const existing = mergedMap.get(key);
 
@@ -680,28 +710,24 @@ Ignore any text not related to biomarkers.`;
     };
 
     // Add results in order of confidence (pattern -> regex -> llm)
-    patternResults.forEach(addOrUpdateBiomarker);
+    patternResults.forEach(b => addOrUpdateBiomarker(BiomarkerSchema.parse(b)));
     regexResults.forEach(addOrUpdateBiomarker);
     llmResults.forEach(addOrUpdateBiomarker);
 
     return Array.from(mergedMap.values());
   }
 
-  private validateAndStandardizeResults(results: Biomarker[]): {
-    parsedBiomarkers: Biomarker[];
+  private validateAndStandardizeResults(results: z.infer<typeof BiomarkerSchema>[]): {
+    parsedBiomarkers: z.infer<typeof BiomarkerSchema>[];
     parsingErrors: string[];
   } {
-    const validatedBiomarkers: Biomarker[] = [];
+    const validatedBiomarkers: z.infer<typeof BiomarkerSchema>[] = [];
     const errors: string[] = [];
 
     for (const biomarker of results) {
       try {
-        // Validate using our schema
-        const validated = BiomarkerSchema.parse(biomarker);
-
-        // Standardize units if needed
-        const standardized = this.standardizeUnit(validated);
-
+        // Validation is already done via parse, just standardize
+        const standardized = this.standardizeUnit(biomarker);
         validatedBiomarkers.push(standardized);
       } catch (error) {
         errors.push(`Validation failed for ${biomarker.name}: ${error instanceof Error ? error.message : String(error)}`);
@@ -714,7 +740,7 @@ Ignore any text not related to biomarkers.`;
     };
   }
 
-  private getMissingCategories(existingResults: Biomarker[]): string {
+  private getMissingCategories(existingResults: z.infer<typeof BiomarkerSchema>[]): string {
     const allCategories: BiomarkerCategory[] = [
       'lipid', 'metabolic', 'thyroid', 'vitamin', 
       'mineral', 'blood', 'liver', 'kidney', 'hormone'
@@ -731,26 +757,18 @@ Ignore any text not related to biomarkers.`;
     return missingCategories.join(', ');
   }
 
-  private standardizeUnit(biomarker: Biomarker): Biomarker {
-    // Create a new instance of BiomarkerPatternService to access public methods
-    const patternService = new BiomarkerPatternService();
-
-    // Convert value to number if it's a string
+  private standardizeUnit(biomarker: z.infer<typeof BiomarkerSchema>): z.infer<typeof BiomarkerSchema> {
     const numericValue = typeof biomarker.value === 'string' ? 
       parseFloat(biomarker.value) : biomarker.value;
 
-    // Use the public extractPatterns method instead of private standardizeUnit
-    const standardized = {
+    return {
       ...biomarker,
-      value: numericValue,
-      unit: biomarker.unit // Keep original unit for now
+      value: numericValue
     };
-
-    return standardized;
   }
 
   async extractBiomarkers(text: string): Promise<{
-    parsedBiomarkers: Biomarker[];
+    parsedBiomarkers: z.infer<typeof BiomarkerSchema>[];
     parsingErrors: string[];
   }> {
     // 1. First pass: Quick regex extraction for high-confidence matches
@@ -774,7 +792,7 @@ Ignore any text not related to biomarkers.`;
     return this.validateAndStandardizeResults(mergedResults);
   }
 
-  private buildEnhancedPrompt(text: string, regexResults: Biomarker[]): string {
+  private buildEnhancedPrompt(text: string, regexResults: z.infer<typeof BiomarkerSchema>[]): string {
     // Build a more focused prompt using regex results
     return `Extract biomarkers from this lab report. 
       I've already found these high-confidence biomarkers: ${JSON.stringify(regexResults)}
@@ -790,8 +808,7 @@ Ignore any text not related to biomarkers.`;
       ${text}`;
   }
 
-  // Modified storeBiomarkers to handle storage without transactions
-  async storeBiomarkers(labResultId: number, biomarkers: Biomarker[]): Promise<void> {
+  async storeBiomarkers(labResultId: number, biomarkers: z.infer<typeof BiomarkerSchema>[]): Promise<void> {
     const startTime = new Date();
     logger.info(`Starting biomarker storage`, {
       labResultId,
@@ -867,7 +884,7 @@ Ignore any text not related to biomarkers.`;
             }
 
             // Validate required fields
-            if (!b.name || !b.unit || isNaN(numericValue)) {
+            if (!b.name || isNaN(numericValue)) {
               throw new Error(`Invalid biomarker data: ${JSON.stringify(b)}`);
             }
 
@@ -878,12 +895,12 @@ Ignore any text not related to biomarkers.`;
               labResultId,
               name: b.name,
               value: String(numericValue),
-              unit: b.unit,
+              unit: b.unit || '',
               category: b.category || 'other',
               referenceRange,
               testDate: testDateValue,
               status: b.status || null,
-              extractionMethod: b.source || 'regex',
+              extractionMethod: b.extractionMethod || 'regex',
               confidence: isNaN(numericConfidence) ? null : String(numericConfidence),
               metadata: {
                 sourceText: b.sourceText || undefined,
@@ -926,7 +943,7 @@ Ignore any text not related to biomarkers.`;
         throw new Error(`Lab result ${labResultId} not found during metadata update`);
       }
 
-      const existingMetadata = labResult.metadata || {};
+      const existingMetadata = (labResult.metadata || {}) as LabMetadata;
       const biomarkerMetadata: BiomarkerMetadata = {
         parsedBiomarkers: biomarkerInserts.map(b => ({
           name: b.name,
@@ -940,14 +957,15 @@ Ignore any text not related to biomarkers.`;
         extractedAt: new Date().toISOString()
       };
 
+      const updatedMetadata: LabMetadata = {
+        ...existingMetadata,
+        biomarkers: biomarkerMetadata
+      };
+
       await db
         .update(labResults)
         .set({
-          metadata: {
-            ...existingMetadata,
-            biomarkers: biomarkerMetadata,
-            updatedAt: new Date().toISOString()
-          }
+          metadata: updatedMetadata
         })
         .where(eq(labResults.id, labResultId));
 
@@ -1063,54 +1081,42 @@ Ignore any text not related to biomarkers.`;
         .where(eq(biomarkerProcessingStatus.labResultId, labResultId));
 
       // Extract biomarkers
-      const extractedBiomarkers = await this.extractBiomarkers(textContent);
+      const { parsedBiomarkers, parsingErrors } = await this.extractBiomarkers(textContent);
       const processingTime = Date.now() - startTime.getTime();
 
-      logger.info(`Extracted ${extractedBiomarkers.parsedBiomarkers.length} biomarkers from lab result ${labResultId}`, {
+      logger.info(`Extracted ${parsedBiomarkers.length} biomarkers from lab result ${labResultId}`, {
         processingTime,
-        biomarkers: extractedBiomarkers.parsedBiomarkers.map(b => b.name),
-        regexCount: extractedBiomarkers.parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
-        llmCount: extractedBiomarkers.parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length
+        biomarkers: parsedBiomarkers.map(b => b.name),
+        regexCount: parsedBiomarkers.filter(b => b.extractionMethod === 'regex').length,
+        llmCount: parsedBiomarkers.filter(b => b.extractionMethod === 'llm').length
       });
 
-      if (extractedBiomarkers.parsedBiomarkers.length > 0) {
-        // Format and store biomarkers
-        const formattedBiomarkers = extractedBiomarkers.parsedBiomarkers.map(b => ({
-          name: b.name,
-          value: b.value,
-          unit: b.unit,
-          category: b.category || 'other',
-          referenceRange: b.referenceRange,
-          testDate: b.testDate instanceof Date ? b.testDate : 
-                    new Date(b.testDate || labResult.uploadedAt || new Date()),
-          source: b.extractionMethod || 'regex',
-          confidence: b.confidence || 1.0,
-          sourceText: b.sourceText || `Value: ${b.value} ${b.unit}`
-        }));
+      if (parsedBiomarkers.length > 0) {
+        // Store biomarkers 
+        await this.storeBiomarkers(labResultId, parsedBiomarkers);
 
-        // Store biomarkers - this will now use sequential operations
-        await this.storeBiomarkers(labResultId, formattedBiomarkers);
-
-        // Update lab metadata in a separate operation
-        const existingMetadata = (labResult.metadata || {}) as LabMetadata;
+        // Update lab metadata
+        const [currentLabResult] = await db.select().from(labResults).where(eq(labResults.id, labResultId)).limit(1);
+        const existingMetadata = (currentLabResult.metadata || {}) as LabMetadata;
+        
         const biomarkerMetadata: BiomarkerMetadata = {
-          parsedBiomarkers: formattedBiomarkers.map(b => ({
+          parsedBiomarkers: parsedBiomarkers.map(b => ({
             name: b.name,
             value: typeof b.value === 'string' ? parseFloat(b.value) : b.value,
-            unit: b.unit,
+            unit: b.unit || '',
             referenceRange: b.referenceRange,
-            testDate: b.testDate instanceof Date ? b.testDate.toISOString() : b.testDate,
+            testDate: (b.testDate instanceof Date ? b.testDate : new Date(b.testDate || Date.now())).toISOString(),
             category: b.category
           })),
-          parsingErrors: extractedBiomarkers.parsingErrors || [],
+          parsingErrors: parsingErrors || [],
           extractedAt: new Date().toISOString()
         };
 
         const updatedMetadata: LabMetadata = {
           ...existingMetadata,
-          size: existingMetadata.size || 0,
           biomarkers: biomarkerMetadata,
-          preprocessedText: existingMetadata.preprocessedText // Preserve the preprocessed text
+          preprocessedText: existingMetadata.preprocessedText,
+          size: existingMetadata.size || 0,
         };
 
         await db.update(labResults)

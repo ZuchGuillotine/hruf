@@ -1,10 +1,10 @@
-
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
 import { labResults, biomarkerResults } from '../../db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import logger from '../utils/logger';
+import { biomarkerExtractionService } from '../services/biomarkerExtractionService';
 
 const router = express.Router();
 
@@ -205,6 +205,7 @@ router.get('/debug', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Get raw biomarker data
     const rawResults = await db
       .select()
       .from(biomarkerResults)
@@ -212,11 +213,34 @@ router.get('/debug', async (req, res) => {
       .where(eq(labResults.userId, req.user.id))
       .limit(10);
 
+    // Get a specific lab result's text
+    const labId = req.query.labId ? parseInt(req.query.labId as string) : null;
+    let labText = null;
+    
+    if (labId) {
+      const [labResult] = await db
+        .select()
+        .from(labResults)
+        .where(and(
+          eq(labResults.id, labId),
+          eq(labResults.userId, req.user.id)
+        ))
+        .limit(1);
+      
+      if (labResult) {
+        labText = labResult.metadata?.preprocessedText?.normalizedText || 
+                  labResult.metadata?.preprocessedText?.rawText ||
+                  'No text found';
+      }
+    }
+
     res.json({
       success: true,
       userId: req.user.id,
       rawDataSample: rawResults,
-      totalCount: rawResults.length
+      totalCount: rawResults.length,
+      labText: labText ? labText.substring(0, 1000) : null,
+      labId: labId
     });
   } catch (error) {
     res.status(500).json({
@@ -224,6 +248,76 @@ router.get('/debug', async (req, res) => {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+router.post('/reprocess/:labId', async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const labId = parseInt(req.params.labId);
+    
+    // Verify the lab result belongs to the user
+    const [labResult] = await db
+      .select()
+      .from(labResults)
+      .where(and(
+        eq(labResults.id, labId),
+        eq(labResults.userId, req.user.id)
+      ))
+      .limit(1);
+    
+    if (!labResult) {
+      return res.status(404).json({ error: 'Lab result not found' });
+    }
+
+    // Delete existing biomarkers
+    await db
+      .delete(biomarkerResults)
+      .where(eq(biomarkerResults.labResultId, labId));
+
+    // Reprocess the lab result
+    await biomarkerExtractionService.processLabResult(labId);
+
+    // Get the new results
+    const newResults = await db
+      .select()
+      .from(biomarkerResults)
+      .where(eq(biomarkerResults.labResultId, labId));
+
+    res.json({
+      success: true,
+      message: 'Lab result reprocessed',
+      labId,
+      biomarkerCount: newResults.length,
+      biomarkers: newResults.map(r => ({
+        name: r.name,
+        value: r.value,
+        unit: r.unit,
+        category: r.category
+      }))
+    });
+  } catch (error) {
+    logger.error('Error reprocessing lab result:', {
+      labId: req.params.labId,
+      userId: req.user?.id,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to reprocess lab result'
+    });
+  }
+});
+
+router.get('/test', async (req, res) => {
+  res.json({
+    success: true,
+    message: 'Lab chart data endpoint is working',
+    timestamp: new Date().toISOString()
+  });
 });
 
 export default router;

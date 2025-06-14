@@ -1,6 +1,5 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { InsertSupplement, SelectSupplement } from "@db/neon-schema";
+import type { InsertSupplement, SelectSupplement } from "@db/schema";
 import { useUser } from "./use-user";
 
 export function useSupplements() {

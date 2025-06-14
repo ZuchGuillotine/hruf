@@ -11,8 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import { Link } from "wouter";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import type { SelectHealthStats } from "@db/neon-schema";
-import SupplementStreakCard from "@/components/SupplementStreakCard"; // Added import
+import type { SelectHealthStats } from "@db/schema";
+import SupplementStreakCard from "@/components/SupplementStreakCard";
 
 type HealthStatsFormData = {
   weight?: number;
@@ -66,38 +66,20 @@ export default function HealthStatsPage() {
 
   // Initialize form data when health stats load
   useEffect(() => {
-    console.log('Health stats received:', healthStats);
-    
     if (healthStats) {
       form.reset({
-        weight: healthStats.weight || undefined,
-        height: healthStats.height || undefined,
+        weight: healthStats.weight !== null && healthStats.weight !== undefined ? Number(healthStats.weight) : undefined,
+        height: healthStats.height !== null && healthStats.height !== undefined ? Number(healthStats.height) : undefined,
         gender: healthStats.gender || undefined,
         ethnicity: healthStats.ethnicity || undefined,
-        dateOfBirth: healthStats.dateOfBirth || undefined,
-        sleepHours: healthStats.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
-        sleepMinutes: healthStats.averageSleep ? healthStats.averageSleep % 60 : undefined,
+        dateOfBirth: healthStats.dateOfBirth ? (typeof healthStats.dateOfBirth === 'string' ? healthStats.dateOfBirth : new Date(healthStats.dateOfBirth).toISOString().split('T')[0]) : undefined,
+        sleepHours: healthStats.averageSleep !== null && healthStats.averageSleep !== undefined ? Math.floor(Number(healthStats.averageSleep) / 60) : undefined,
+        sleepMinutes: healthStats.averageSleep !== null && healthStats.averageSleep !== undefined ? Number(healthStats.averageSleep) % 60 : undefined,
         profilePhotoUrl: healthStats.profilePhotoUrl || undefined,
-        allergies: healthStats.allergies || '',
+        allergies: healthStats.allergies || undefined,
       });
     }
   }, [healthStats, form]);
-
-  useEffect(() => {
-    if (healthStats) {
-      form.reset({
-        weight: healthStats.weight,
-        height: healthStats.height,
-        gender: healthStats.gender,
-        ethnicity: healthStats.ethnicity,
-        dateOfBirth: healthStats.dateOfBirth,
-        sleepHours: healthStats.averageSleep ? Math.floor(healthStats.averageSleep / 60) : undefined,
-        sleepMinutes: healthStats.averageSleep ? healthStats.averageSleep % 60 : undefined,
-        profilePhotoUrl: healthStats.profilePhotoUrl,
-        allergies: healthStats.allergies || '',
-      });
-    }
-  }, [healthStats]);
 
   const mutation = useMutation({
     mutationFn: updateHealthStats,
@@ -118,12 +100,15 @@ export default function HealthStatsPage() {
     },
   });
 
-  const onSubmit = (data: HealthStatsFormData) => {
+  const onSubmit = form.handleSubmit((data: HealthStatsFormData) => {
     mutation.mutate({
       ...data,
-      averageSleep: (data.sleepHours || 0) * 60 + (data.sleepMinutes || 0)
+      averageSleep: (data.sleepHours || 0) * 60 + (data.sleepMinutes || 0),
+      weight: data.weight !== undefined && data.weight !== null ? data.weight : undefined,
+      height: data.height !== undefined && data.height !== null ? data.height : undefined,
+      dateOfBirth: data.dateOfBirth || undefined,
     });
-  };
+  });
 
   if (userLoading || statsLoading) {
     return (
@@ -144,7 +129,7 @@ export default function HealthStatsPage() {
         </div>
 
         <div className="px-4 mt-6">
-          <SupplementStreakCard /> {/* Added SupplementStreakCard */}
+          <SupplementStreakCard />
           <div className="grid gap-6">
             <Card className="bg-[#1b4332] text-white">
               <CardHeader>
@@ -152,7 +137,7 @@ export default function HealthStatsPage() {
               </CardHeader>
               <CardContent>
                 {isEditing ? (
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={onSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-white/70">Weight</Label>
@@ -161,6 +146,7 @@ export default function HealthStatsPage() {
                           step="0.1"
                           {...form.register('weight', { valueAsNumber: true })}
                           className="bg-white text-black"
+                          defaultValue={healthStats?.weight !== null && healthStats?.weight !== undefined ? Number(healthStats.weight) : ''}
                         />
                       </div>
                       <div>
@@ -169,6 +155,7 @@ export default function HealthStatsPage() {
                           type="number"
                           {...form.register('height', { valueAsNumber: true })}
                           className="bg-white text-black"
+                          defaultValue={healthStats?.height !== null && healthStats?.height !== undefined ? Number(healthStats.height) : ''}
                         />
                       </div>
                       <div>
@@ -202,6 +189,7 @@ export default function HealthStatsPage() {
                           type="date"
                           {...form.register('dateOfBirth')}
                           className="bg-white text-black"
+                          defaultValue={healthStats?.dateOfBirth ? (typeof healthStats.dateOfBirth === 'string' ? healthStats.dateOfBirth : new Date(healthStats.dateOfBirth).toISOString().split('T')[0]) : ''}
                         />
                       </div>
                       <div>
@@ -212,12 +200,14 @@ export default function HealthStatsPage() {
                             placeholder="Hours"
                             {...form.register('sleepHours', { valueAsNumber: true })}
                             className="bg-white text-black"
+                            defaultValue={healthStats?.averageSleep !== null && healthStats?.averageSleep !== undefined ? Math.floor(Number(healthStats.averageSleep) / 60) : ''}
                           />
                           <Input
                             type="number"
                             placeholder="Minutes"
                             {...form.register('sleepMinutes', { valueAsNumber: true })}
                             className="bg-white text-black"
+                            defaultValue={healthStats?.averageSleep !== null && healthStats?.averageSleep !== undefined ? Number(healthStats.averageSleep) % 60 : ''}
                           />
                         </div>
                       </div>
@@ -227,6 +217,7 @@ export default function HealthStatsPage() {
                           {...form.register('allergies')}
                           className="bg-white text-black h-[38px] min-h-[38px]"
                           placeholder="List any allergies"
+                          defaultValue={healthStats?.allergies || ''}
                         />
                       </div>
                     </div>
@@ -269,7 +260,7 @@ export default function HealthStatsPage() {
                       </div>
                       <div>
                         <Label className="text-white/70">Date of Birth</Label>
-                        <p className="text-white">{healthStats?.dateOfBirth || 'Not set'}</p>
+                        <p className="text-white">{healthStats?.dateOfBirth ? (typeof healthStats.dateOfBirth === 'string' ? healthStats.dateOfBirth : new Date(healthStats.dateOfBirth).toISOString().split('T')[0]) : ''}</p>
                       </div>
                       <div>
                         <Label className="text-white/70">Average Sleep</Label>

@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import Header from "@/components/header";
 import { ProfileProgress } from "@/components/profile-progress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 type ProfileFormData = {
   email: string;
@@ -28,7 +29,6 @@ async function updateProfile(data: ProfileFormData) {
       phoneNumber: data.phoneNumber || null,
       name: data.name || null,
       username: data.username,
-      isPro: data.isPro || false,
     }),
     credentials: 'include',
   });
@@ -53,9 +53,20 @@ export default function ProfilePage() {
       phoneNumber: user?.phoneNumber || "",
       name: user?.name || "",
       username: user?.username || "",
-      isPro: user?.isPro || false,
     },
   });
+
+  // Update form values when user data changes
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+        name: user.name || "",
+        username: user.username || "",
+      });
+    }
+  }, [user, form]);
 
   const mutation = useMutation({
     mutationFn: updateProfile,

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import type { BiomarkerDataPoint, Series } from '@/types/chart';
 
@@ -30,6 +29,10 @@ export function useLabChartData() {
     queryKey: ['labChartData'],
     retry: 2,
     retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     queryFn: async () => {
       try {
         const response = await fetch('/api/labs/chart-data', {
@@ -40,10 +43,12 @@ export function useLabChartData() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch lab chart data');
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch lab chart data: ${response.status} ${errorText}`);
         }
 
-        return response.json();
+        const data = await response.json();
+        return data;
       } catch (error) {
         throw error;
       }
@@ -57,7 +62,22 @@ export function useLabChartData() {
 
       const categoriesMap: Record<string, string> = {};
 
+      if (!response.data || !Array.isArray(response.data)) {
+        return {
+          series: [],
+          allBiomarkers: [],
+          categories: {}
+        };
+      }
+
+      const allBiomarkers = Array.from(new Set(response.data.map(biomarker => biomarker.name)));
+
       response.data.forEach(biomarker => {
+        // Skip invalid values
+        if (!biomarker.value || isNaN(biomarker.value) || biomarker.value > 10000) {
+          return;
+        }
+        
         const series = biomarkers.get(biomarker.name) || [];
         series.push({
           value: biomarker.value,
@@ -82,11 +102,10 @@ export function useLabChartData() {
 
       return {
         series: allSeries,
-        allBiomarkers: allSeries.map(s => s.name),
+        allBiomarkers: allBiomarkers,
         categories: categoriesMap
       };
     },
-    staleTime: 5 * 60 * 1000
   });
 
   const getSeriesByName = (name: string): Series | undefined => {

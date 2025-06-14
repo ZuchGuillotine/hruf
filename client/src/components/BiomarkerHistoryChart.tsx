@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 14/06/2025 - 00:54:04
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 14/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 
 
 import React from 'react';
@@ -22,42 +34,73 @@ interface BiomarkerHistoryChartProps {
 }
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
+  // Early return with message if no series
+  if (!series || series.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow-sm">
+        <p className="text-gray-500">No biomarker data to display</p>
+      </div>
+    );
+  }
+
+  // Process chart data
   const chartData = React.useMemo(() => {
-    // Get all unique dates across all series
-    const dates = Array.from(
-      new Set(series.flatMap(s => s.points.map(p => p.testDate)))
-    ).sort();
-    
-    // Create data points for each date
-    return dates.map(date => {
-      const entry: Record<string, any> = { testDate: date };
-      series.forEach(s => {
-        const point = s.points.find(p => p.testDate === date);
-        if (point) {
-          entry[s.name] = point.value;
-          entry[`${s.name}_unit`] = s.unit;
-        }
+    try {
+      // Get all unique dates across all series
+      const dates = Array.from(
+        new Set(series.flatMap(s => s.points.map((p: { testDate: string }) => p.testDate)))
+      ).sort();
+      
+      // Create data points for each date
+      const data = dates.map(date => {
+        const entry: Record<string, any> = { testDate: date };
+        series.forEach(s => {
+          const point = s.points.find((p: { testDate: string }) => p.testDate === date);
+          if (point) {
+            entry[s.name] = point.value;
+            entry[`${s.name}_unit`] = s.unit;
+          }
+        });
+        return entry;
       });
-      return entry;
-    });
+      
+      return data;
+    } catch (error) {
+      console.error('Error processing chart data:', error);
+      return [];
+    }
   }, [series]);
 
-  if (series.length === 0) {
+  // If no data after processing, show message
+  if (chartData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-white rounded-lg">
-        <p className="text-gray-500">Select biomarkers to view their trends</p>
+      <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow-sm">
+        <p className="text-gray-500">No data points available</p>
       </div>
     );
   }
 
   return (
     <div className="w-full h-[600px] bg-white rounded-lg p-4 shadow-sm">
-      <ResponsiveContainer width="100%" height="100%">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Biomarker History</h3>
+        <p className="text-sm text-gray-600">
+          Showing {series.length} biomarker{series.length > 1 ? 's' : ''} with {chartData.length} data point{chartData.length > 1 ? 's' : ''}
+        </p>
+      </div>
+      
+      <ResponsiveContainer width="100%" height="90%">
         <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis 
             dataKey="testDate" 
-            tickFormatter={date => new Date(date).toLocaleDateString()}
+            tickFormatter={date => {
+              try {
+                return new Date(date).toLocaleDateString();
+              } catch {
+                return date;
+              }
+            }}
             stroke="#666"
           />
           <YAxis 
@@ -70,11 +113,21 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
             }}
           />
           <Tooltip
-            labelFormatter={label => new Date(label).toLocaleDateString()}
-            formatter={(value, name, props) => [
-              `${value} ${props.payload[`${name}_unit`]}`,
-              name
-            ]}
+            labelFormatter={label => {
+              try {
+                return new Date(label).toLocaleDateString();
+              } catch {
+                return label;
+              }
+            }}
+            formatter={(value: any, name: any, props: any) => {
+              try {
+                const unit = props?.payload?.[`${name}_unit`] || '';
+                return [`${value} ${unit}`, name];
+              } catch {
+                return [value, name];
+              }
+            }}
             contentStyle={{
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #f0f0f0',

@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 14/06/2025 - 01:05:10
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 14/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";

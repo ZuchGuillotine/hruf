@@ -21,7 +21,7 @@ interface LabFile {
 
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
-  const { getSeriesByName } = useLabChartData();
+  const { getSeriesByName, data: labChartData, isLoading: chartLoading, error: chartError } = useLabChartData();
   const [location] = useLocation();
   const selectedNames = useMemo(() => {
     const params = new URLSearchParams(location.split('?')[1]);
@@ -71,9 +71,10 @@ export default function Labs() {
   };
 
   const chartData = useMemo(() => {
-      return Array.from(selectedNames).map(name =>
+      const data = Array.from(selectedNames).map(name =>
           getSeriesByName(name)
       ).filter(Boolean) as Series[];
+      return data;
   }, [selectedNames, getSeriesByName]);
 
   return (
@@ -86,12 +87,30 @@ export default function Labs() {
             <>
               <BiomarkerFilter />
               <div className="mt-4">
-                {selectedNames.size > 0 ? (
+                {chartLoading && (
+                  <Card className="bg-white/10 border-none">
+                    <CardContent className="p-6 text-center">
+                      <p className="text-white/70">Loading chart data...</p>
+                    </CardContent>
+                  </Card>
+                )}
+                {chartError && (
+                  <Card className="bg-red-50 border-red-200">
+                    <CardContent className="p-6 text-center">
+                      <p className="text-red-700">Error loading chart: {chartError.message}</p>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Show chart when biomarkers are selected */}
+                {selectedNames.size > 0 && (
                   <div className="w-full max-w-[95vw] mx-auto">
                     <BiomarkerHistoryChart series={chartData} />
                   </div>
-                ) : (
-                  <Card className="bg-white/10 border-none">
+                )}
+                
+                {!chartLoading && !chartError && selectedNames.size === 0 && (
+                  <Card className="bg-white/10 border-none mt-4">
                     <CardContent className="p-6 text-center">
                       <p className="text-white/70">Select biomarkers above to view their trends</p>
                     </CardContent>

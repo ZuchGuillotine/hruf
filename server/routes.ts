@@ -248,6 +248,9 @@ export function registerRoutes(app: Express): Server {
 
       console.log('Starting streaming response');
 
+      // Track if we've successfully started streaming (to know if we should increment usage)
+      let streamingStarted = false;
+
       // Create streaming response
       try {
         console.log('Starting qualitative chat with context:', {
@@ -278,8 +281,24 @@ export function registerRoutes(app: Express): Server {
           });
           res.write(sseData);
 
+          // Mark that streaming has started (successful AI interaction)
+          if (!streamingStarted && chunk.response) {
+            streamingStarted = true;
+          }
+
           // If this is the final chunk, end the response
           if (!chunk.streaming) {
+            // Increment AI usage count for successful interaction
+            if (streamingStarted && req.user?.id) {
+              try {
+                const { tierLimitService } = await import('./services/tierLimitService');
+                await tierLimitService.incrementAICount(req.user.id);
+                console.log('AI usage count incremented for user:', req.user.id);
+              } catch (incrementError) {
+                console.error('Failed to increment AI count:', incrementError);
+                // Don't fail the request if increment fails
+              }
+            }
             res.end();
             return;
           }
@@ -316,10 +335,10 @@ export function registerRoutes(app: Express): Server {
       }
 
       const userQuery = messages[messages.length - 1].content;
-      const userId = req.isAuthenticated() ? req.user?.id : null;
+      const userId = req.isAuthenticated() ? req.user?.id || null : null;
 
       // Get user context if available, or use minimal context for non-authenticated users
-      const queryContext = await constructQueryContext(userId ? userId.toString() : null, userQuery);
+      const queryContext = await constructQueryContext(userId, userQuery);
       const contextualizedMessages = [...queryContext.messages, ...messages.slice(1)];
 
       // Get AI response with appropriate context
@@ -327,15 +346,29 @@ export function registerRoutes(app: Express): Server {
 
       // queryWithAI returns an async generator, we need to collect the response
       let fullResponse = '';
+      let hasResponse = false;
       for await (const chunk of aiResponse) {
         if (chunk.response) {
           fullResponse += chunk.response;
+          hasResponse = true;
         }
         if (chunk.error) {
           return res.status(500).json({
             error: "AI service error",
             message: chunk.error
           });
+        }
+      }
+
+      // Increment AI usage count for authenticated users with successful responses
+      if (hasResponse && req.isAuthenticated() && req.user?.id) {
+        try {
+          const { tierLimitService } = await import('./services/tierLimitService');
+          await tierLimitService.incrementAICount(req.user.id);
+          console.log('AI usage count incremented for user:', req.user.id);
+        } catch (incrementError) {
+          console.error('Failed to increment AI count:', incrementError);
+          // Don't fail the request if increment fails
         }
       }
 

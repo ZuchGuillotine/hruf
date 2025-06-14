@@ -1,5 +1,5 @@
 import type { InferSelectModel } from 'drizzle-orm';
-import type { users, healthStats, supplements, userSupplements, labResults, biomarkerResults, feedback, goals, supplementTrie, notifications } from '@db/neon-schema';
+import type { users, healthStats, supplements, labResults, biomarkerResults, qualitativeLogs, queryChatLogs } from '@db/schema';
 
 export type User = Omit<InferSelectModel<typeof users>, 'password' | 'verificationToken' | 'verificationTokenExpiry'> & {
     password?: string | null;
@@ -13,6 +13,10 @@ export type User = Omit<InferSelectModel<typeof users>, 'password' | 'verificati
 
 export type HealthStats = InferSelectModel<typeof healthStats>;
 export type Supplement = InferSelectModel<typeof supplements>;
+export type LabResult = InferSelectModel<typeof labResults>;
+export type BiomarkerResult = InferSelectModel<typeof biomarkerResults>;
+export type QualitativeLog = InferSelectModel<typeof qualitativeLogs>;
+export type QueryChatLog = InferSelectModel<typeof queryChatLogs>;
 
 // Extend Express types
 declare global {

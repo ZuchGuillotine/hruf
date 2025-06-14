@@ -29,7 +29,11 @@ These rules apply to every file in the repository and are always injected into t
 *do not use require, as we are using es modules
 * Reuse OpenAI wrapper in `/server/openai.ts`; never instantiate the SDK elsewhere.
 * All new endpoints must include input validation with Zod and integration tests.
+# Cursor Rules
 
+- Ensure that backend fields (e.g. numeric, date) are returned as string | null (or Date) and convert them appropriately in the frontend (e.g. using Number(...) or new Date(...).toISOString().split('T')[0]) to avoid type mismatches in forms and API interactions.
+
+# (Additional rules or notes can be added below.) 
 ## Testing
 
 * Jest for all unit/integration tests.

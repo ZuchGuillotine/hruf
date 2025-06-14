@@ -242,6 +242,7 @@ export class LabUploadService {
   private async processLabResult(labResultId: number, filePath: string): Promise<void> {
     let retryCount = 0;
     let lastError: Error | null = null;
+    let preprocessedText: PreprocessedText | null = null;
 
     try {
       // Initialize processing status
@@ -282,7 +283,7 @@ export class LabUploadService {
           const fileBuffer = fs.readFileSync(filePath);
           
           // Pre-process the file content
-          const preprocessedText = await labTextPreprocessingService.preprocessLabText(fileBuffer) as PreprocessedText;
+          preprocessedText = await labTextPreprocessingService.preprocessLabText(fileBuffer) as PreprocessedText;
           
           // Validate extracted text
           const isValid = await validateExtractedText(preprocessedText.normalizedText);
@@ -349,6 +350,7 @@ export class LabUploadService {
               .where(eq(biomarkerResults.labResultId, labResultId));
 
             // 2. Insert new biomarkers if any were extracted
+            const extractionResults = await this.biomarkerExtractionService.getResults(labResultId);
             if (extractionResults.parsedBiomarkers.length > 0) {
               const biomarkerInserts = extractionResults.parsedBiomarkers.map(b => ({
                 labResultId,

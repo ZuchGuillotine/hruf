@@ -1,8 +1,7 @@
-
 import { useEffect } from "react";
 import { useUser } from "./use-user";
 import { useQuery } from "@tanstack/react-query";
-import { SelectHealthStats } from "@db/neon-schema";
+import type { SelectHealthStats } from "@db/schema";
 
 type ProfileStep = {
   id: string;
@@ -21,7 +20,20 @@ export function useProfileCompletion() {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch health stats');
-      return response.json();
+      const data = await response.json();
+      
+      // Ensure proper data type conversion
+      if (data) {
+        return {
+          ...data,
+          weight: data.weight ? Number(data.weight) : null,
+          height: data.height ? Number(data.height) : null,
+          averageSleep: data.averageSleep ? Number(data.averageSleep) : null,
+          dateOfBirth: data.dateOfBirth ? String(data.dateOfBirth) : null,
+          allergies: data.allergies ? String(data.allergies).trim() : null,
+        };
+      }
+      return data;
     },
     enabled: !!user?.id,
   });
@@ -33,7 +45,8 @@ export function useProfileCompletion() {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch supplement count');
-      return response.json();
+      const data = await response.json();
+      return Number(data) || 0; // Ensure it's a number
     },
     enabled: !!user?.id,
   });
@@ -46,7 +59,7 @@ export function useProfileCompletion() {
       });
       if (!response.ok) throw new Error('Failed to fetch lab results');
       const data = await response.json();
-      return { count: data.length };
+      return { count: Array.isArray(data) ? data.length : 0 }; // Ensure proper count
     },
     enabled: !!user?.id,
   });

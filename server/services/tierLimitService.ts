@@ -1,7 +1,6 @@
-
 import { db } from '@db';
 import { users } from '@db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 export type SubscriptionTier = 'free' | 'core' | 'pro';
 
@@ -38,26 +37,24 @@ export const tierLimitService = {
     // Pro tier has unlimited access
     if (user.subscriptionTier === 'pro') return true;
     
-    // Free tier has no access
-    if (user.subscriptionTier === 'free') return false;
-
     // Check if we need to reset the monthly counter
     const now = new Date();
     const resetDate = user.aiInteractionsReset ? new Date(user.aiInteractionsReset) : null;
+    
     // Set reset date to first day of next month if not set
-  if (!resetDate || now > resetDate) {
-    const firstDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    await db.update(users)
-      .set({ 
-        aiInteractionsCount: 0,
-        aiInteractionsReset: firstDayNextMonth
-      })
-      .where(eq(users.id, userId));
-    return true;
-  }
+    if (!resetDate || now > resetDate) {
+      const firstDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      await db.update(users)
+        .set({ 
+          aiInteractionsCount: 0,
+          aiInteractionsReset: firstDayNextMonth
+        })
+        .where(eq(users.id, userId));
+      return true;
+    }
 
-  // Check against monthly limit based on subscription tier
-  return (user.aiInteractionsCount || 0) < tierLimits.aiInteractions;
+    // Check against monthly limit based on subscription tier (applies to both free and core)
+    return (user.aiInteractionsCount || 0) < tierLimits.aiInteractions;
   },
 
   async incrementAICount(userId: number): Promise<void> {

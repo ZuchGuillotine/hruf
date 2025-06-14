@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 14/06/2025 - 00:21:27
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 14/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import passport from 'passport';
 import { db } from '@db';
@@ -272,6 +284,9 @@ router.get('/api/user', (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   
+  // Normalize tier naming - convert 'core' to 'starter' for frontend consistency
+  const normalizedTier = req.user!.subscriptionTier === 'core' ? 'starter' : req.user!.subscriptionTier;
+  
   res.json({
     user: {
       id: req.user!.id,
@@ -279,8 +294,21 @@ router.get('/api/user', (req: Request, res: Response) => {
       email: req.user!.email,
       name: req.user!.name,
       phoneNumber: req.user!.phoneNumber,
-      subscriptionTier: req.user!.subscriptionTier,
-      isAdmin: req.user!.isAdmin
+      subscriptionTier: normalizedTier,
+      subscriptionId: req.user!.subscriptionId,
+      stripeCustomerId: req.user!.stripeCustomerId,
+      isAdmin: req.user!.isAdmin,
+      // Usage tracking
+      aiInteractionsCount: req.user!.aiInteractionsCount || 0,
+      aiInteractionsReset: req.user!.aiInteractionsReset,
+      labUploadsCount: req.user!.labUploadsCount || 0,
+      labUploadsReset: req.user!.labUploadsReset,
+      // Computed subscription fields
+      isPro: normalizedTier === 'pro',
+      trialEndsAt: normalizedTier === 'free' && req.user!.createdAt ? 
+        new Date(new Date(req.user!.createdAt).getTime() + 28 * 24 * 60 * 60 * 1000).toISOString() : null,
+      subscriptionEndsAt: (normalizedTier === 'pro' || normalizedTier === 'starter') ? 
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null, // Mock next billing date
     }
   });
 });
