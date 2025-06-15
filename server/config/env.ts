@@ -22,7 +22,8 @@ if (result.error) {
     'SENDGRID_API_KEY',
     'STRIPE_SECRET_KEY',
     'GOOGLE_CLIENT_ID_TEST',
-    'GOOGLE_CLIENT_SECRET_TEST'
+    'GOOGLE_CLIENT_SECRET_TEST',
+    'GOOGLE_VISION_CREDENTIALS'
   ];
   
   criticalVars.forEach(varName => {

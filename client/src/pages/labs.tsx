@@ -23,11 +23,42 @@ export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
   const { getSeriesByName, data: labChartData, isLoading: chartLoading, error: chartError } = useLabChartData();
   const [location] = useLocation();
+  const [urlState, setUrlState] = useState(location);
+  
+  // Listen for browser URL changes (including programmatic ones)
+  useEffect(() => {
+    let lastUrl = window.location.pathname + window.location.search;
+    
+    const handleUrlChange = () => {
+      const currentUrl = window.location.pathname + window.location.search;
+      if (currentUrl !== lastUrl) {
+        console.log('Labs: Browser URL changed to:', currentUrl);
+        setUrlState(currentUrl);
+        lastUrl = currentUrl;
+      }
+    };
+    
+    // Initial load
+    handleUrlChange();
+    
+    // Listen for popstate (back/forward) and manual updates  
+    window.addEventListener('popstate', handleUrlChange);
+    
+    // Check URL changes less frequently and only when different
+    const interval = setInterval(handleUrlChange, 500);
+    
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      clearInterval(interval);
+    };
+  }, []);
+  
   const selectedNames = useMemo(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
+    const params = new URLSearchParams(urlState.split('?')[1]);
     const biomarkers = params.get('biomarkers') ?? '';
-    return new Set(biomarkers.split(',').filter(Boolean));
-  }, [location]);
+    const names = biomarkers.split(',').filter(Boolean);
+    return new Set(names);
+  }, [urlState]);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   const fetchLabFiles = async () => {
@@ -102,20 +133,10 @@ export default function Labs() {
                   </Card>
                 )}
                 
-                {/* Show chart when biomarkers are selected */}
-                {selectedNames.size > 0 && (
-                  <div className="w-full max-w-[95vw] mx-auto">
-                    <BiomarkerHistoryChart series={chartData} />
-                  </div>
-                )}
-                
-                {!chartLoading && !chartError && selectedNames.size === 0 && (
-                  <Card className="bg-white/10 border-none mt-4">
-                    <CardContent className="p-6 text-center">
-                      <p className="text-white/70">Select biomarkers above to view their trends</p>
-                    </CardContent>
-                  </Card>
-                )}
+                {/* Always show chart area */}
+                <div className="w-full max-w-[95vw] mx-auto">
+                  <BiomarkerHistoryChart series={chartData} />
+                </div>
               </div>
             </>
           ) : (

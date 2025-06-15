@@ -34,11 +34,27 @@ interface BiomarkerHistoryChartProps {
 }
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
-  // Early return with message if no series
+  // Show empty chart template if no series selected
   if (!series || series.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow-sm">
-        <p className="text-gray-500">No biomarker data to display</p>
+      <div className="w-full h-[600px] bg-white rounded-lg p-4 shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Biomarker History</h3>
+          <p className="text-sm text-gray-600">
+            Select biomarkers above to view their trends over time
+          </p>
+        </div>
+        <div className="flex items-center justify-center h-[500px] border-2 border-dashed border-gray-200 rounded-lg">
+          <div className="text-center">
+            <div className="text-gray-400 mb-2">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 font-medium">Chart will appear here</p>
+            <p className="text-gray-400 text-sm">Click biomarker buttons above to add data</p>
+          </div>
+        </div>
       </div>
     );
   }

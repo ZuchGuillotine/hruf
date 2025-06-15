@@ -22,14 +22,47 @@ const CATEGORY_COLORS = {
 type CategoryType = keyof typeof CATEGORY_COLORS;
 
 export function BiomarkerFilter() {
-  const { data, isLoading } = useLabChartData();
+  const { data, isLoading, refetch } = useLabChartData();
   const [location, setLocation] = useLocation();
+  const [urlState, setUrlState] = React.useState(location);
+
+  // Force refetch on mount to ensure we have fresh data
+  React.useEffect(() => {
+    console.log('BiomarkerFilter mounted, refetching data');
+    refetch();
+  }, [refetch]);
+
+  // Listen for browser URL changes
+  React.useEffect(() => {
+    let lastUrl = window.location.pathname + window.location.search;
+    
+    const handleUrlChange = () => {
+      const currentUrl = window.location.pathname + window.location.search;
+      if (currentUrl !== lastUrl) {
+        console.log('Filter: Browser URL changed to:', currentUrl);
+        setUrlState(currentUrl);
+        lastUrl = currentUrl;
+      }
+    };
+    
+    // Initial load
+    handleUrlChange();
+    
+    // Listen for URL changes
+    window.addEventListener('popstate', handleUrlChange);
+    const interval = setInterval(handleUrlChange, 500);
+    
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const selectedNames = React.useMemo(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
+    const params = new URLSearchParams(urlState.split('?')[1]);
     const param = params.get('biomarkers') ?? '';
     return new Set(param.split(',').filter(Boolean));
-  }, [location]);
+  }, [urlState]);
 
   const toggleName = (name: string) => {
     const next = new Set(selectedNames);
@@ -39,16 +72,19 @@ export function BiomarkerFilter() {
       next.add(name);
     }
 
-    const params = new URLSearchParams(location.split('?')[1]);
+    const params = new URLSearchParams();
     if (next.size > 0) {
-      params.set('biomarkers', Array.from(next).join(','));
-    } else {
-      params.delete('biomarkers');
+      const biomarkersList = Array.from(next).join(',');
+      params.set('biomarkers', biomarkersList);
     }
     
     const newSearch = params.toString();
     const basePath = location.split('?')[0];
-    setLocation(`${basePath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    const newUrl = `${basePath}${newSearch ? `?${newSearch}` : ''}`;
+    
+    // Update URL using both methods to ensure it works
+    setLocation(newUrl);
+    window.history.pushState({}, '', newUrl);
   };
 
   if (isLoading) {

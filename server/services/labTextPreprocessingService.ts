@@ -421,7 +421,25 @@ export class LabTextPreprocessingService {
 
   private async processImage(buffer: Buffer): Promise<PreprocessedText> {
     try {
-      const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
+      // Check if Google Vision credentials are available
+      const credentialsStr = process.env.GOOGLE_VISION_CREDENTIALS;
+      if (!credentialsStr || credentialsStr.trim() === '' || credentialsStr === '{}') {
+        throw new Error('Google Vision credentials not configured');
+      }
+      
+      // Parse credentials with proper error handling
+      let credentials;
+      try {
+        credentials = JSON.parse(credentialsStr);
+      } catch (parseError) {
+        logger.error('Failed to parse Google Vision credentials:', {
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+          credentialsLength: credentialsStr.length,
+          credentialsStart: credentialsStr.substring(0, 50)
+        });
+        throw new Error('Invalid Google Vision credentials format');
+      }
+      
       const client = new ImageAnnotatorClient({ credentials });
 
       // Enhanced OCR configuration for medical documents
@@ -825,12 +843,13 @@ export class LabTextPreprocessingService {
     const processingSteps: string[] = [];
     let normalizedText = text;
 
-    // Step 0: Reflow PDF columns if needed
+    // Step 0: Reflow PDF columns if needed (DISABLED for debugging)
     if (originalFormat === 'pdf') {
       processingSteps.push('reflow_columns');
-      const lines = normalizedText.split('\n');
-      const reflowedLines = this.reflowPdfColumns(lines);
-      normalizedText = reflowedLines.join('\n');
+      // TEMP FIX: Skip reflow to prevent text loss
+      // const lines = normalizedText.split('\n');
+      // const reflowedLines = this.reflowPdfColumns(lines);
+      // normalizedText = reflowedLines.join('\n');
     }
 
     // Step 1: Basic cleanup with better whitespace preservation

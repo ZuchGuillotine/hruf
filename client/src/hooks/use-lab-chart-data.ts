@@ -32,7 +32,7 @@ export function useLabChartData() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     queryFn: async () => {
       try {
         const response = await fetch('/api/labs/chart-data', {
@@ -73,8 +73,8 @@ export function useLabChartData() {
       const allBiomarkers = Array.from(new Set(response.data.map(biomarker => biomarker.name)));
 
       response.data.forEach(biomarker => {
-        // Skip invalid values
-        if (!biomarker.value || isNaN(biomarker.value) || biomarker.value > 10000) {
+        // Very minimal filtering - only exclude truly invalid values
+        if (biomarker.value == null || isNaN(biomarker.value)) {
           return;
         }
         
@@ -99,6 +99,10 @@ export function useLabChartData() {
         unit: points[0]?.unit || '',
         category: categoriesMap[name] || 'other'
       }));
+
+      console.log('Filtered out', filteredCount, 'invalid biomarkers');
+      console.log('Final processed series:', allSeries.length, 'biomarkers with data');
+      console.log('Sample series data:', allSeries.slice(0, 2));
 
       return {
         series: allSeries,
