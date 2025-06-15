@@ -20,6 +20,38 @@ class LabSummaryService {
   private MAX_TOKEN_LIMIT = 16000;
   private MAX_LABS_PER_REQUEST = 50;
 
+  private getGoogleVisionCredentials(): any {
+    // First try the base64 encoded version
+    const base64Credentials = process.env.GOOGLE_VISION_CREDENTIALS_BASE64;
+    if (base64Credentials) {
+      try {
+        const decodedCredentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+        return JSON.parse(decodedCredentials);
+      } catch (error) {
+        logger.error('Failed to decode base64 Google Vision credentials:', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+
+    // Fallback to the original JSON string format
+    const credentialsStr = process.env.GOOGLE_VISION_CREDENTIALS;
+    if (!credentialsStr || credentialsStr.trim() === '' || credentialsStr === '{}') {
+      throw new Error('Google Vision credentials not configured');
+    }
+    
+    try {
+      return JSON.parse(credentialsStr);
+    } catch (parseError) {
+      logger.error('Failed to parse Google Vision credentials:', {
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        credentialsLength: credentialsStr.length,
+        credentialsStart: credentialsStr.substring(0, 50)
+      });
+      throw new Error('Invalid Google Vision credentials format');
+    }
+  }
+
   private LAB_SUMMARY_PROMPT = `
   You are a medical assistant helping to summarize lab results. Focus on:
 
@@ -115,7 +147,10 @@ class LabSummaryService {
                 ...labResult.metadata,
                 parsedText: textContent,
                 parseDate: new Date().toISOString(),
-                biomarkers: biomarkerResults || undefined
+                biomarkers: biomarkerResults ? {
+                  ...biomarkerResults,
+                  extractedAt: new Date().toISOString()
+                } : undefined
               }
             })
             .where(eq(labResults.id, labResultId));
@@ -153,8 +188,8 @@ class LabSummaryService {
             fileSize: fileBuffer.length
           });
 
-          const { ImageAnnotatorClient } = await import('@google-cloud-vision');
-          const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
+          const { ImageAnnotatorClient } = await import('@google-cloud/vision');
+          const credentials = this.getGoogleVisionCredentials();
           const client = new ImageAnnotatorClient({
             credentials
           });
@@ -179,7 +214,7 @@ class LabSummaryService {
           // Log detailed OCR results to help debug recognition issues
           logger.info(`Detailed OCR results for lab ${labResultId}:`, {
             rawText: text,
-            textByLines: text.split('\n').map(line => line.trim()).filter(Boolean),
+            textByLines: text.split('\n').map((line: string) => line.trim()).filter(Boolean),
             characterCount: text.length,
             lineCount: text.split('\n').length
           });
@@ -245,6 +280,7 @@ class LabSummaryService {
             .set({
               metadata: {
                 ...labResult.metadata,
+                size: fileBuffer.length,
                 ocr: {
                   text: textContent,
                   processedAt: new Date().toISOString(),
@@ -262,14 +298,25 @@ class LabSummaryService {
             })
             .where(eq(labResults.id, labResultId));
 
-          // Wait for biomarker extraction and update metadata if successful
-          const biomarkerResults = await biomarkerPromise;
+          // Extract biomarkers from OCR text
+          const biomarkerResults = await biomarkerExtractionService.extractBiomarkers(text)
+            .then(async (results) => {
+              logger.info(`Extracted biomarkers for OCR lab result ${labResultId}`, {
+                biomarkerCount: results.parsedBiomarkers.length
+              });
+              return results;
+            })
+            .catch(error => {
+              logger.error(`Error extracting biomarkers for OCR lab result ${labResultId}:`, error);
+              return null;
+            });
           if (biomarkerResults) {
             await db
               .update(labResults)
               .set({
                 metadata: {
                   ...labResult.metadata,
+                  size: fileBuffer.length,
                   ocr: {
                     text: textContent,
                     processedAt: new Date().toISOString(),
@@ -350,6 +397,7 @@ class LabSummaryService {
         .set({
           metadata: {
             ...labResult.metadata,
+            size: labResult.metadata?.size || 0,
             summary: summaryContent,
             summarizedAt: new Date().toISOString()
           }
