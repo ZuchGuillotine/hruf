@@ -11,11 +11,11 @@
     * - Modification    : 
 **/
 import './config/env';
-import { validateEnvVars } from './config/env';
+import { validateEnvVars, loadEnvironmentSecrets } from './config/env';
 
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// Vite imports moved to dynamic imports to avoid loading in production
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import rateLimit from "express-rate-limit";
@@ -35,7 +35,7 @@ import adminRoutes from './routes/admin';
 import { summaryTaskManager } from './cron/summaryManager';
 import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
-import { healthCheck } from './utils/healthCheck';
+import { healthCheck, setReadinessCheck } from './utils/healthCheck';
 import fs from 'fs';
 import { checkAndReprocessBiomarkers } from '../scripts/check-biomarkers';
 import logger from './utils/logger';
@@ -51,13 +51,19 @@ interface CustomError extends Error {
   code?: string;
 }
 
-// Validate required environment variables
-validateEnvVars();
-
 // Initialize and start server with proper React app serving
 async function initializeAndStart() {
   try {
     console.log('Initializing application...');
+
+    // Skip async secrets loading - all environment variables are now set by EB
+    // Google Vision credentials loaded via .ebextensions/02-secrets.config
+    // All other environment variables set via eb setenv
+    console.log('Environment variables loaded via EB configuration');
+
+    // Validate required environment variables
+    validateEnvVars();
+    setReadinessCheck('environment', true);
 
     const app = express();
 
@@ -93,6 +99,18 @@ async function initializeAndStart() {
     };
 
     app.use(cors(corsOptions));
+
+    // Test database connection
+    try {
+      console.log('Testing database connection...');
+      // Simple query to test connection
+      await db.execute('SELECT 1');
+      console.log('Database connection successful');
+      setReadinessCheck('database', true);
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      // Don't crash immediately - allow health check to report the issue
+    }
 
     // Setup authentication (includes session middleware)
     await setupAuthentication(app);
@@ -188,6 +206,7 @@ async function initializeAndStart() {
         // Initialize services after server is running
         await serviceInitializer.initializeServices();
         console.log('Background initialization completed successfully');
+        setReadinessCheck('services', true);
 
         // Find where checkAndReprocessBiomarkers is called and modify it
         const SKIP_BIOMARKER_PROCESSING = true; // Temporary flag to isolate SSL issues
@@ -212,8 +231,8 @@ async function initializeAndStart() {
   }
 }
 
-// Use port 3001 for deployment compatibility (mapped to port 80)
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+// Use port 80 for Elastic Beanstalk deployment, 3001 for local development
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : (process.env.NODE_ENV === 'production' ? 80 : 3001);
 const HOST = '0.0.0.0'; // Required for Elastic Beanstalk deployments
 
 async function startServer(server: Server, app: express.Express) {
@@ -223,6 +242,7 @@ async function startServer(server: Server, app: express.Express) {
     // Setup Vite/static serving BEFORE starting the server
     if (process.env.NODE_ENV !== 'production') {
       console.log('Setting up Vite development server...');
+      const { setupVite } = await import('./vite');
       await setupVite(app, server);
       
       // Also serve the app directly on port 3001 for direct access

@@ -1,6 +1,11 @@
-node_modules
-.git
-Dockerfile
-dist
-.vscode
-.idea 
+# dist/ - Need this for production build
+node_modules/
+.git/
+.gitignore
+*.log
+coverage/
+.elasticbeanstalk/
+.env
+.env.*
+README.md
+*.md

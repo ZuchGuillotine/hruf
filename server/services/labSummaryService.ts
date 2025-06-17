@@ -8,6 +8,7 @@ import logger from "../utils/logger";
 import path from "path";
 import fs from "fs";
 import { fileTypeFromBuffer } from "file-type";
+import { getGoogleVisionCredentials } from '../utils/parameterStore';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -20,35 +21,13 @@ class LabSummaryService {
   private MAX_TOKEN_LIMIT = 16000;
   private MAX_LABS_PER_REQUEST = 50;
 
-  private getGoogleVisionCredentials(): any {
-    // First try the base64 encoded version
-    const base64Credentials = process.env.GOOGLE_VISION_CREDENTIALS_BASE64;
-    if (base64Credentials) {
-      try {
-        const decodedCredentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-        return JSON.parse(decodedCredentials);
-      } catch (error) {
-        logger.error('Failed to decode base64 Google Vision credentials:', {
-          error: error instanceof Error ? error.message : String(error)
-        });
-      }
-    }
-
-    // Fallback to the original JSON string format
-    const credentialsStr = process.env.GOOGLE_VISION_CREDENTIALS;
-    if (!credentialsStr || credentialsStr.trim() === '' || credentialsStr === '{}') {
-      throw new Error('Google Vision credentials not configured');
-    }
-    
+  private async getGoogleVisionCredentials(): Promise<any> {
     try {
+      const credentialsStr = await getGoogleVisionCredentials();
       return JSON.parse(credentialsStr);
-    } catch (parseError) {
-      logger.error('Failed to parse Google Vision credentials:', {
-        error: parseError instanceof Error ? parseError.message : String(parseError),
-        credentialsLength: credentialsStr.length,
-        credentialsStart: credentialsStr.substring(0, 50)
-      });
-      throw new Error('Invalid Google Vision credentials format');
+    } catch (error) {
+      logger.error('Failed to get Google Vision credentials from Parameter Store:', error);
+      throw new Error('Google Vision credentials not available');
     }
   }
 
@@ -189,7 +168,7 @@ class LabSummaryService {
           });
 
           const { ImageAnnotatorClient } = await import('@google-cloud/vision');
-          const credentials = this.getGoogleVisionCredentials();
+          const credentials = await this.getGoogleVisionCredentials();
           const client = new ImageAnnotatorClient({
             credentials
           });

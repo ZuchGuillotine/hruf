@@ -29,6 +29,8 @@
     "test:auth": "node scripts/test-auth.js"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.828.0",
+    "@aws-sdk/client-ssm": "^3.828.0",
     "@chakra-ui/react": "^3.19.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",

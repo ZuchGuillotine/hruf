@@ -1,0 +1,20 @@
+Jun 17 04:52:13 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:52:13.729158104Z" level=info msg="Starting up"
+Jun 17 04:52:14 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:52:14.233189689Z" level=info msg="Loading containers: start."
+Jun 17 04:52:15 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:52:15.150991822Z" level=info msg="Loading containers: done."
+Jun 17 04:52:15 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:52:15.190345891Z" level=info msg="Docker daemon" commit=71907ca containerd-snapshotter=false storage-driver=overlay2 version=25.0.8
+Jun 17 04:52:15 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:52:15.191390144Z" level=info msg="Daemon has completed initialization"
+Jun 17 04:52:15 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:52:15.326551319Z" level=info msg="API listen on /run/docker.sock"
+Jun 17 04:54:08 ip-172-31-14-20 docker[1934]: 2025/06/17 04:54:08 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
+Jun 17 04:55:56 ip-172-31-14-20 docker[1934]: time="2025-06-17T04:55:56.762062973Z" level=info msg="ignoring event" container=5af210a1dd4b90363d67a566d11d55d0d9dcabf8b21f09a734d3e3d5b07d270e module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Jun 17 04:56:00 ip-172-31-14-20 docker[1934]: 2025/06/17 04:56:00 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
+Jun 17 05:14:09 ip-172-31-14-20 docker[1934]: time="2025-06-17T05:14:09.311147048Z" level=info msg="ignoring event" container=a5bd941cfc9f7249e3d7d2e427786137c6853d397de9a4dfde3a0fddb4f7611e module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Jun 17 05:14:12 ip-172-31-14-20 docker[1934]: 2025/06/17 05:14:12 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
+Jun 17 05:18:09 ip-172-31-14-20 docker[1934]: time="2025-06-17T05:18:09.961043062Z" level=info msg="ignoring event" container=ffb798c9e6a96f572a11f36a040e0fef2f2365e7544443b166767dbf9f100819 module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Jun 17 05:18:13 ip-172-31-14-20 docker[1934]: 2025/06/17 05:18:13 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
+Jun 17 05:20:21 ip-172-31-14-20 docker[1934]: 2025/06/17 05:20:21 http2: server: error reading preface from client @: read unix /run/docker.sock->@: read: connection reset by peer
+Jun 17 05:20:26 ip-172-31-14-20 docker[1934]: time="2025-06-17T05:20:26.851084836Z" level=info msg="ignoring event" container=8703925466b011e92b19541e146ff97ea1fa923f5c6444d2da0715ec26ae54fd module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Jun 17 05:20:30 ip-172-31-14-20 docker[1934]: 2025/06/17 05:20:30 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
+Jun 17 05:35:06 ip-172-31-14-20 docker[1934]: 2025/06/17 05:35:06 http2: server: error reading preface from client @: read unix /run/docker.sock->@: read: connection reset by peer
+Jun 17 05:35:06 ip-172-31-14-20 docker[1934]: 2025/06/17 05:35:06 http2: server: error reading preface from client @: read unix /run/docker.sock->@: read: connection reset by peer
+Jun 17 05:35:12 ip-172-31-14-20 docker[1934]: time="2025-06-17T05:35:12.091351367Z" level=info msg="ignoring event" container=00b482c39d7a06a6e8ba549d12431a83877e5db42570acfd940d062180f33058 module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
+Jun 17 05:35:15 ip-172-31-14-20 docker[1934]: 2025/06/17 05:35:15 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)

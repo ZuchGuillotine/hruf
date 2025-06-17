@@ -1,0 +1,35 @@
+stdout: Loading environment variables from: /app/.env
+DATABASE_URL at db/index.ts: undefined
+Environment variables related to SSL: {
+  NODE_ENV: 'production',
+  NODE_EXTRA_CA_CERTS: '/app/certs/stcert.pem',
+  AWS_RDS_CA_CERT_PATH: '/app/certs/stcert.pem',
+  __dirname: '/app/dist/server',
+  cwd: '/app'
+}
+, stderr: Error loading .env file: Error: ENOENT: no such file or directory, open '/app/.env'
+    at Object.readFileSync (node:fs:449:20)
+    at Object.configDotenv (/app/node_modules/dotenv/lib/main.js:236:44)
+    at Object.config (/app/node_modules/dotenv/lib/main.js:265:25)
+    at file:///app/dist/server/index.js:4236:21
+    at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/app/.env'
+}
+file:///app/dist/server/index.js:509
+      throw new Error("DATABASE_URL must be set");
+            ^
+
+Error: DATABASE_URL must be set
+    at db/index.ts (file:///app/dist/server/index.js:509:13)
+    at __init (file:///app/dist/server/index.js:10:56)
+    at file:///app/dist/server/index.js:4275:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v20.19.2

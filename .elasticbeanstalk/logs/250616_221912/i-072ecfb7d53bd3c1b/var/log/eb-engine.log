@@ -1,0 +1,436 @@
+2025/06/17 04:52:05.412867 [INFO] Starting...
+2025/06/17 04:52:05.412950 [INFO] Starting EBPlatform-PlatformEngine
+2025/06/17 04:52:05.413054 [INFO] reading event message file
+2025/06/17 04:52:05.413463 [INFO] Engine received EB command userdata-exec
+
+2025/06/17 04:52:05.430854 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBAutoScalingGroup --region us-west-2
+2025/06/17 04:52:08.205524 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBBeanstalkMetadata --region us-west-2
+2025/06/17 04:52:08.969003 [INFO] This is a workflow controlled instance.
+2025/06/17 04:52:08.969094 [INFO] Engine command: (env-launch)
+
+2025/06/17 04:52:08.970097 [INFO] Executing instruction: SyncClock
+2025/06/17 04:52:08.970103 [INFO] Starting SyncClock
+2025/06/17 04:52:08.970113 [INFO] Running command: /usr/bin/chronyc tracking
+2025/06/17 04:52:08.998399 [INFO] Reference ID    : A9FEA97B (169.254.169.123)
+Stratum         : 4
+Ref time (UTC)  : Tue Jun 17 04:52:07 2025
+System time     : 0.000038503 seconds slow of NTP time
+Last offset     : -0.000041095 seconds
+RMS offset      : 0.000041095 seconds
+Frequency       : 9.817 ppm fast
+Residual freq   : -29.935 ppm
+Skew            : 0.077 ppm
+Root delay      : 0.002386899 seconds
+Root dispersion : 0.000657089 seconds
+Update interval : 1.0 seconds
+Leap status     : Normal
+
+2025/06/17 04:52:08.998451 [INFO] Running command: /usr/bin/chronyc -a makestep
+2025/06/17 04:52:09.007796 [INFO] 200 OK
+
+2025/06/17 04:52:09.007868 [INFO] Skipping Configure OS
+2025/06/17 04:52:09.007875 [INFO] Skipping LockRepo
+2025/06/17 04:52:09.007880 [INFO] Skipping GenerateEBBanner
+2025/06/17 04:52:09.007886 [INFO] Skipping Install Process Manager
+2025/06/17 04:52:09.007892 [INFO] Skipping install syslog
+2025/06/17 04:52:09.007897 [INFO] Skipping install cron
+2025/06/17 04:52:09.007902 [INFO] Skipping install proxy
+2025/06/17 04:52:09.007907 [INFO] Skipping installhealthd
+2025/06/17 04:52:09.007912 [INFO] Skipping Install Log Streaming Manager
+2025/06/17 04:52:09.007917 [INFO] Skipping install X-Ray
+2025/06/17 04:52:09.007922 [INFO] Skipping install Third Party License
+2025/06/17 04:52:09.007928 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:09.007931 [INFO] Executing instruction: installSqsd
+2025/06/17 04:52:09.007936 [INFO] This is a web server environment instance, skip install sqsd daemon ...
+2025/06/17 04:52:09.007941 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:09.007943 [INFO] Executing instruction: bootstraphealthd
+2025/06/17 04:52:09.007947 [INFO] this is an enhanced health env ...
+2025/06/17 04:52:09.007966 [INFO] bootstrap healthd....
+2025/06/17 04:52:09.007981 [INFO] Running command: /usr/bin/id -u healthd || /usr/sbin/useradd --user-group healthd -s /sbin/nologin --create-home
+2025/06/17 04:52:09.260184 [INFO] /usr/bin/id: ‘healthd’: no such user
+
+2025/06/17 04:52:09.260614 [INFO] none proxy, skip creating proxy dir for healthd
+2025/06/17 04:52:09.260629 [INFO] bootstrap healthd....
+2025/06/17 04:52:09.260642 [INFO] Running command: /usr/bin/id -u healthd || /usr/sbin/useradd --user-group healthd -s /sbin/nologin --create-home
+2025/06/17 04:52:09.264979 [INFO] 1001
+
+2025/06/17 04:52:09.265322 [INFO] configure bundle log for healthd...
+2025/06/17 04:52:09.265395 [INFO] Skipping Install yum packages
+2025/06/17 04:52:09.265401 [INFO] Skipping install docker-compose
+2025/06/17 04:52:09.265407 [INFO] Skipping Configure Docker Daemon
+2025/06/17 04:52:09.265415 [INFO] Skipping MarkBaked
+2025/06/17 04:52:09.265422 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:09.265424 [INFO] Executing instruction: TuneSystemSettings
+2025/06/17 04:52:09.265427 [INFO] Starting TuneSystemSettings
+2025/06/17 04:52:09.265432 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:09.268049 [INFO] Executing instruction: GetSetupLogRotate
+2025/06/17 04:52:09.268057 [INFO] Initialize LogRotate files and directories
+2025/06/17 04:52:09.296392 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:09.296403 [INFO] Executing instruction: BootstrapCFNHup
+2025/06/17 04:52:09.296407 [INFO] Bootstrap cfn-hup
+2025/06/17 04:52:09.298576 [INFO] Copying file /opt/elasticbeanstalk/config/private/aws-eb-command-handler.conf to /etc/cfn/hooks.d/aws-eb-command-handler.conf
+2025/06/17 04:52:09.300637 [INFO] Executing instruction: StartCFNHup
+2025/06/17 04:52:09.300644 [INFO] Start cfn-hup
+2025/06/17 04:52:09.300665 [INFO] Running command: systemctl show -p PartOf cfn-hup.service
+2025/06/17 04:52:09.329666 [INFO] cfn-hup is not registered with EB yet, registering it now
+2025/06/17 04:52:09.329702 [INFO] Running command: systemctl show -p PartOf cfn-hup.service
+2025/06/17 04:52:09.349693 [INFO] Running command: systemctl daemon-reload
+2025/06/17 04:52:09.950187 [INFO] Running command: systemctl reset-failed
+2025/06/17 04:52:09.970906 [INFO] Running command: systemctl is-enabled aws-eb.target
+2025/06/17 04:52:09.982253 [INFO] Running command: systemctl enable aws-eb.target
+2025/06/17 04:52:10.542081 [INFO] Running command: systemctl start aws-eb.target
+2025/06/17 04:52:10.553372 [INFO] Running command: systemctl enable cfn-hup.service
+2025/06/17 04:52:11.097544 [INFO] Created symlink /etc/systemd/system/multi-user.target.wants/cfn-hup.service → /etc/systemd/system/cfn-hup.service.
+
+2025/06/17 04:52:11.097581 [INFO] Running command: systemctl is-active cfn-hup.service
+2025/06/17 04:52:11.111572 [INFO] cfn-hup process is not running, starting it now
+2025/06/17 04:52:11.111602 [INFO] Running command: systemctl show -p PartOf cfn-hup.service
+2025/06/17 04:52:11.132854 [INFO] Running command: systemctl is-active cfn-hup.service
+2025/06/17 04:52:11.148347 [INFO] Running command: systemctl start cfn-hup.service
+2025/06/17 04:52:11.275976 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:11.275994 [INFO] Executing instruction: SetupPublishLogCronjob
+2025/06/17 04:52:11.275997 [INFO] Setup publish logs cron job...
+2025/06/17 04:52:11.276004 [INFO] Copying file /opt/elasticbeanstalk/config/private/logtasks/cron/publishlogs to /etc/cron.d/publishlogs
+2025/06/17 04:52:11.279158 [INFO] Executing instruction: Start Docker
+2025/06/17 04:52:11.279172 [INFO] Starting Docker...
+2025/06/17 04:52:11.279242 [INFO] Copying file /opt/elasticbeanstalk/config/private/docker-log.conf to /etc/systemd/system/docker.service.d/docker-log.conf
+2025/06/17 04:52:11.281356 [INFO] Copying file /opt/elasticbeanstalk/config/private/docker-rsyslog.conf to /etc/rsyslog.d/docker-log.conf
+2025/06/17 04:52:11.283643 [INFO] Running command: systemctl restart rsyslog.service
+2025/06/17 04:52:11.827642 [INFO] Running command: systemctl show -p PartOf docker.service
+2025/06/17 04:52:11.848054 [INFO] Running command: systemctl daemon-reload
+2025/06/17 04:52:12.332379 [INFO] Running command: systemctl reset-failed
+2025/06/17 04:52:12.351182 [INFO] Running command: systemctl show -p PartOf docker.service
+2025/06/17 04:52:12.374564 [INFO] Running command: systemctl is-active docker.service
+2025/06/17 04:52:12.388358 [INFO] Running command: systemctl start docker.service
+2025/06/17 04:52:15.406891 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:15.406911 [INFO] Executing instruction: Setup Docker Options
+2025/06/17 04:52:15.406915 [INFO] Setting up configurations for docker platform
+2025/06/17 04:52:15.412531 [INFO] Running command: systemctl show -p PartOf eb-docker-events.service
+2025/06/17 04:52:15.441345 [INFO] Running command: systemctl daemon-reload
+2025/06/17 04:52:16.001149 [INFO] Running command: systemctl reset-failed
+2025/06/17 04:52:16.015951 [INFO] Running command: systemctl enable eb-docker-events.service
+2025/06/17 04:52:16.586503 [INFO] Created symlink /etc/systemd/system/docker.service.wants/eb-docker-events.service → /etc/systemd/system/eb-docker-events.service.
+
+2025/06/17 04:52:16.586541 [INFO] Running command: systemctl show -p PartOf eb-docker-events.service
+2025/06/17 04:52:16.603119 [INFO] Running command: systemctl is-active eb-docker-events.service
+2025/06/17 04:52:16.618389 [INFO] Running command: systemctl start eb-docker-events.service
+2025/06/17 04:52:16.759627 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:16.759643 [INFO] Executing instruction: MarkBootstrapped
+2025/06/17 04:52:16.759647 [INFO] Starting MarkBootstrapped
+2025/06/17 04:52:16.759652 [INFO] Instance has NOT been bootstrapped
+2025/06/17 04:52:16.759854 [INFO] Marked instance as Bootstrapped
+2025/06/17 04:52:16.759858 [INFO] Executing instruction: Save CFN Stack Info
+2025/06/17 04:52:16.759923 [INFO] Executing cleanup logic
+2025/06/17 04:52:16.759933 [INFO] Platform Engine finished execution on command: env-launch
+
+2025/06/17 04:54:07.418104 [INFO] Starting...
+2025/06/17 04:54:07.418153 [INFO] Starting EBPlatform-PlatformEngine
+2025/06/17 04:54:07.418176 [INFO] reading event message file
+2025/06/17 04:54:07.418469 [INFO] Engine received EB command cfn-hup-exec
+
+2025/06/17 04:54:07.483589 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBAutoScalingGroup --region us-west-2
+2025/06/17 04:54:07.793580 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBBeanstalkMetadata --region us-west-2
+2025/06/17 04:54:08.092078 [INFO] checking whether command app-deploy is applicable to this instance...
+2025/06/17 04:54:08.092092 [INFO] this command is applicable to the instance, thus instance should execute command
+2025/06/17 04:54:08.092095 [INFO] Engine command: (app-deploy)
+
+2025/06/17 04:54:08.092098 [INFO] Downloading EB Application...
+2025/06/17 04:54:08.092100 [INFO] Region: us-west-2
+2025/06/17 04:54:08.092102 [INFO] envID: e-fsmcpgmwaq
+2025/06/17 04:54:08.092104 [INFO] envBucket: elasticbeanstalk-us-west-2-881490119784
+2025/06/17 04:54:08.092106 [INFO] accountID: 881490119784
+2025/06/17 04:54:08.092108 [INFO] Using manifest file name from command request
+2025/06/17 04:54:08.092114 [INFO] Unable to get version manifest file.
+2025/06/17 04:54:08.092116 [INFO] Downloading latest manifest available.
+2025/06/17 04:54:08.092118 [INFO] Download latest app version manifest
+2025/06/17 04:54:08.092331 [INFO] resources/environments/e-fsmcpgmwaq/_runtime/versions/manifest
+2025/06/17 04:54:08.131070 [INFO] latestManifest key *: resources/environments/e-fsmcpgmwaq/_runtime/versions/manifest_1750135873046
+
+2025/06/17 04:54:08.131303 [INFO] Downloading: bucket: elasticbeanstalk-us-west-2-881490119784, object: resources/environments/e-fsmcpgmwaq/_runtime/versions/manifest_1750135873046, expected bucket owner: 881490119784
+2025/06/17 04:54:08.166211 [INFO] Download successful162bytes downloaded
+2025/06/17 04:54:08.166308 [INFO] Trying to read and parse version manifest...
+2025/06/17 04:54:08.166395 [INFO] Downloading: bucket: elasticbeanstalk-us-west-2-881490119784, object: resources/environments/e-fsmcpgmwaq/_runtime/_versions/stacktracker-app-v3/app-d01c-250616_215101754466, expected bucket owner: 881490119784
+2025/06/17 04:54:08.327747 [INFO] Download successful6705586bytes downloaded
+2025/06/17 04:54:08.328041 [INFO] Executing instruction: ElectLeader
+2025/06/17 04:54:08.328047 [INFO] Running leader election for instance i-072ecfb7d53bd3c1b...
+2025/06/17 04:54:08.328049 [INFO] Calling the cfn-elect-cmd-leader to elect the command leader.
+2025/06/17 04:54:08.328070 [INFO] Running command: /opt/aws/bin/cfn-elect-cmd-leader --stack arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd --command-name ElasticBeanstalkCommand-AWSEBAutoScalingGroup --invocation-id fd0f645b-4746-4e7c-9e97-760d5008827c --listener-id i-072ecfb7d53bd3c1b --region us-west-2
+2025/06/17 04:54:08.626733 [INFO] Instance is Leader.
+2025/06/17 04:54:08.626802 [INFO] Executing instruction: stopSqsd
+2025/06/17 04:54:08.626808 [INFO] This is a web server environment instance, skip stop sqsd daemon ...
+2025/06/17 04:54:08.626821 [INFO] Executing instruction: PreBuildEbExtension
+2025/06/17 04:54:08.626824 [INFO] Starting executing the config set Infra-EmbeddedPreBuild.
+2025/06/17 04:54:08.626839 [INFO] Running command: /opt/aws/bin/cfn-init -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBAutoScalingGroup --region us-west-2 --configsets Infra-EmbeddedPreBuild
+2025/06/17 04:54:08.933598 [INFO] Finished executing the config set Infra-EmbeddedPreBuild.
+
+2025/06/17 04:54:08.933638 [INFO] Executing instruction: StagedockerApplication
+2025/06/17 04:54:08.933650 [INFO] Running command: docker ps -a -q -f status=running
+2025/06/17 04:54:08.954537 [INFO] Pruning containers ...
+2025/06/17 04:54:08.954565 [INFO] Running command: docker ps -a
+2025/06/17 04:54:08.969468 [INFO] CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+2025/06/17 04:54:08.969509 [INFO] Running command: docker container prune -f
+2025/06/17 04:54:08.985382 [INFO] Total reclaimed space: 0B
+
+2025/06/17 04:54:08.985401 [INFO] Running command: docker ps -a
+2025/06/17 04:54:08.998483 [INFO] CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+2025/06/17 04:54:08.998508 [INFO] Recreating /var/app/staging/
+2025/06/17 04:54:08.998615 [INFO] Recreating /var/log/eb-docker/containers/eb-current-app
+2025/06/17 04:54:08.998756 [INFO] Running command: /bin/file -m /opt/elasticbeanstalk/config/private/beanstalk-magic -b --mime-type /opt/elasticbeanstalk/deployment/app_source_bundle
+2025/06/17 04:54:09.007540 [INFO] application/zip
+
+2025/06/17 04:54:09.007563 [INFO] app source bundle is zip file ...
+2025/06/17 04:54:09.007567 [INFO] extracting /opt/elasticbeanstalk/deployment/app_source_bundle to /var/app/staging/
+2025/06/17 04:54:09.007577 [INFO] Running command: /usr/bin/unzip -q -o /opt/elasticbeanstalk/deployment/app_source_bundle -d /var/app/staging/
+2025/06/17 04:54:09.133981 [INFO] finished extracting /opt/elasticbeanstalk/deployment/app_source_bundle to /var/app/staging/ successfully
+2025/06/17 04:54:09.134021 [INFO] Executing instruction: RunAppDeployPreBuildHooks
+2025/06/17 04:54:09.134088 [INFO] Executing platform hooks in .platform/hooks/prebuild/
+2025/06/17 04:54:09.134112 [INFO] The dir .platform/hooks/prebuild/ does not exist
+2025/06/17 04:54:09.134114 [INFO] Finished running scripts in /var/app/staging/.platform/hooks/prebuild
+2025/06/17 04:54:09.134119 [INFO] Executing instruction: Generate environment file
+2025/06/17 04:54:09.134157 [INFO] Executing instruction: Docker Specific Build Application
+2025/06/17 04:54:09.134161 [INFO] start build docker app
+2025/06/17 04:54:09.134170 [INFO] fetching image names from Dockerfile /var/app/staging/Dockerfile
+2025/06/17 04:54:09.134253 [INFO] found images [node:20-slim node:20-slim] in Dockerfile /var/app/staging/Dockerfile
+2025/06/17 04:54:09.134256 [INFO] pull docker image if update is not false in Dockerrun.aws.json
+2025/06/17 04:54:09.134268 [INFO] Running command: docker pull node:20-slim
+2025/06/17 04:54:14.146943 [INFO] 20-slim: Pulling from library/node
+dad67da3f26b: Pulling fs layer
+f4d50efedfc3: Pulling fs layer
+dce1efe5dcc7: Pulling fs layer
+dfe145b807d3: Pulling fs layer
+eee71ccbe522: Pulling fs layer
+eee71ccbe522: Waiting
+dfe145b807d3: Waiting
+f4d50efedfc3: Verifying Checksum
+f4d50efedfc3: Download complete
+dad67da3f26b: Verifying Checksum
+dad67da3f26b: Download complete
+dfe145b807d3: Verifying Checksum
+dfe145b807d3: Download complete
+eee71ccbe522: Verifying Checksum
+eee71ccbe522: Download complete
+dce1efe5dcc7: Verifying Checksum
+dce1efe5dcc7: Download complete
+dad67da3f26b: Pull complete
+f4d50efedfc3: Pull complete
+dce1efe5dcc7: Pull complete
+dfe145b807d3: Pull complete
+eee71ccbe522: Pull complete
+Digest: sha256:7cd3fbc830c75c92256fe1122002add9a1c025831af8770cd0bf8e45688ef661
+Status: Downloaded newer image for node:20-slim
+docker.io/library/node:20-slim
+
+2025/06/17 04:54:14.146965 [INFO] successfully execute command: docker pull node:20-slim
+2025/06/17 04:54:14.146968 [INFO] successfully pulled docker image node:20-slim
+2025/06/17 04:54:14.146990 [INFO] Running command: docker pull node:20-slim
+2025/06/17 04:54:14.834521 [INFO] 20-slim: Pulling from library/node
+Digest: sha256:7cd3fbc830c75c92256fe1122002add9a1c025831af8770cd0bf8e45688ef661
+Status: Image is up to date for node:20-slim
+docker.io/library/node:20-slim
+
+2025/06/17 04:54:14.834543 [INFO] successfully execute command: docker pull node:20-slim
+2025/06/17 04:54:14.834546 [INFO] successfully pulled docker image node:20-slim
+2025/06/17 04:54:14.834548 [INFO] start to build docker image
+2025/06/17 04:54:14.834562 [INFO] Running command: docker build -t aws_beanstalk/staging-app /var/app/staging/
+2025/06/17 04:55:51.932368 [INFO] #0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.40kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:20-slim
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 137B done
+#3 DONE 0.0s
+
+#4 [builder 1/6] FROM docker.io/library/node:20-slim
+#4 DONE 0.1s
+
+#5 [builder 2/6] WORKDIR /app
+#5 ...
+
+#6 [internal] load build context
+#6 transferring context: 13.08MB 0.2s done
+#6 DONE 0.2s
+
+#5 [builder 2/6] WORKDIR /app
+#5 DONE 0.8s
+
+#7 [builder 3/6] COPY package*.json ./
+#7 DONE 0.0s
+
+#8 [builder 4/6] RUN npm ci
+#8 6.919 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#8 8.946 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#8 9.282 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#8 9.559 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#8 11.87 npm warn deprecated @types/long@5.0.0: This is a stub types definition. long provides its own type definitions, so you do not need this installed.
+#8 13.08 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#8 13.08 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#8 13.41 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+#8 13.51 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+#8 19.27 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#8 26.60 
+#8 26.60 added 1169 packages, and audited 1170 packages in 26s
+#8 26.60 
+#8 26.60 199 packages are looking for funding
+#8 26.60   run `npm fund` for details
+#8 26.65 
+#8 26.65 6 vulnerabilities (1 low, 5 moderate)
+#8 26.65 
+#8 26.65 To address issues that do not require attention, run:
+#8 26.65   npm audit fix
+#8 26.65 
+#8 26.65 To address all issues (including breaking changes), run:
+#8 26.65   npm audit fix --force
+#8 26.65 
+#8 26.65 Run `npm audit` for details.
+#8 26.65 npm notice
+#8 26.65 npm notice New major version of npm available! 10.8.2 -> 11.4.2
+#8 26.65 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+#8 26.65 npm notice To update run: npm install -g npm@11.4.2
+#8 26.65 npm notice
+#8 DONE 29.6s
+
+#9 [builder 5/6] COPY . .
+#9 DONE 0.1s
+
+#10 [builder 6/6] RUN npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server
+#10 1.134 vite v5.4.19 building for production...
+#10 1.234 transforming...
+#10 12.39 ✓ 2904 modules transformed.
+#10 12.99 rendering chunks...
+#10 13.41 computing gzip size...
+#10 13.45 ../dist/index.html                         4.00 kB │ gzip:   1.37 kB
+#10 13.45 ../dist/assets/index-Djak2wtN.css         98.41 kB │ gzip:  15.90 kB
+#10 13.45 ../dist/assets/contact-C755iz31.js         0.78 kB │ gzip:   0.41 kB
+#10 13.45 ../dist/assets/index-CvWaMnp7.js           1.01 kB │ gzip:   0.47 kB
+#10 13.45 ../dist/assets/index-CBzjYaxK.js           1.80 kB │ gzip:   0.86 kB
+#10 13.45 ../dist/assets/_slug_-EOtN3fpX.js          2.92 kB │ gzip:   1.10 kB
+#10 13.45 ../dist/assets/blog-S0VszuRy.js            6.40 kB │ gzip:   2.21 kB
+#10 13.45 ../dist/assets/query-vendor-CjrkeIZG.js   38.90 kB │ gzip:  11.61 kB
+#10 13.45 ../dist/assets/ui-vendor-Dfzj-_mw.js      83.35 kB │ gzip:  27.99 kB
+#10 13.45 ../dist/assets/react-vendor-DrrtegDc.js  146.48 kB │ gzip:  47.86 kB
+#10 13.45 ../dist/assets/index-DS_IUsc4.js         841.64 kB │ gzip: 232.35 kB
+#10 13.45 
+#10 13.45 (!) Some chunks are larger than 500 kB after minification. Consider:
+#10 13.45 - Using dynamic import() to code-split the application
+#10 13.45 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+#10 13.45 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+#10 13.45 ✓ built in 12.27s
+#10 13.92 
+#10 13.92   dist/server/index.js  364.7kb
+#10 13.92 
+#10 13.92 ⚡ Done in 43ms
+#10 DONE 14.0s
+
+#11 [stage-1 3/6] COPY --from=builder /app /app
+#11 DONE 6.4s
+
+#12 [stage-1 4/6] COPY --chown=node:node certs ./certs
+#12 DONE 0.0s
+
+#13 [stage-1 5/6] RUN chmod 644 /app/certs/stcert.pem
+#13 DONE 0.3s
+
+#14 [stage-1 6/6] RUN ls -l /app/certs/stcert.pem &&     echo "Certificate file exists" &&     cat /app/certs/stcert.pem | head -n 1
+#14 0.317 -rw-r--r--. 1 node node 160792 Jun 15 21:00 /app/certs/stcert.pem
+#14 0.317 Certificate file exists
+#14 0.319 -----BEGIN CERTIFICATE-----
+#14 DONE 0.3s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 38.2s done
+#15 writing image sha256:dc076ba992451e2e2be629caa4aea156f5450f9caacc1146ce9156f8bb833475 done
+#15 naming to docker.io/aws_beanstalk/staging-app done
+#15 DONE 38.2s
+
+2025/06/17 04:55:51.932402 [INFO] successfully execute command: docker build -t aws_beanstalk/staging-app /var/app/staging/
+2025/06/17 04:55:51.932405 [INFO] successfully build docker image
+2025/06/17 04:55:51.932407 [INFO] save staging docker image id
+2025/06/17 04:55:51.932417 [INFO] Running command: docker images aws_beanstalk/staging-app -q
+2025/06/17 04:55:51.947681 [INFO] dc076ba99245
+
+2025/06/17 04:55:51.947829 [INFO] Executing instruction: configure X-Ray
+2025/06/17 04:55:51.947835 [INFO] X-Ray is not enabled.
+2025/06/17 04:55:51.947837 [INFO] Executing instruction: configure proxy Nginx
+2025/06/17 04:55:51.947921 [INFO] Recreating /var/proxy/staging/nginx
+2025/06/17 04:55:51.955055 [INFO] Executing instruction: configure healthd specific proxy conf
+2025/06/17 04:55:51.957245 [INFO] Running command: systemctl show -p PartOf healthd.service
+2025/06/17 04:55:51.988025 [INFO] Running command: systemctl daemon-reload
+2025/06/17 04:55:52.275541 [INFO] Running command: systemctl reset-failed
+2025/06/17 04:55:52.322302 [INFO] Running command: systemctl is-enabled aws-eb.target
+2025/06/17 04:55:52.330314 [INFO] Running command: systemctl enable aws-eb.target
+2025/06/17 04:55:52.615018 [INFO] Running command: systemctl start aws-eb.target
+2025/06/17 04:55:52.623412 [INFO] Running command: systemctl enable healthd.service
+2025/06/17 04:55:52.851623 [INFO] Created symlink /etc/systemd/system/multi-user.target.wants/healthd.service → /etc/systemd/system/healthd.service.
+
+2025/06/17 04:55:52.851656 [INFO] Running command: systemctl show -p PartOf healthd.service
+2025/06/17 04:55:52.862678 [INFO] Running command: systemctl is-active healthd.service
+2025/06/17 04:55:52.870182 [INFO] Running command: systemctl start healthd.service
+2025/06/17 04:55:52.969860 [INFO] Copying file /opt/elasticbeanstalk/config/private/healthd/healthd_logformat.conf to /var/proxy/staging/nginx/conf.d/healthd_logformat.conf
+2025/06/17 04:55:52.971077 [INFO] Copying file /opt/elasticbeanstalk/config/private/healthd/healthd_nginx.conf to /var/proxy/staging/nginx/conf.d/elasticbeanstalk/healthd.conf
+2025/06/17 04:55:52.972210 [INFO] Executing instruction: configure log streaming
+2025/06/17 04:55:52.972219 [INFO] log streaming is not enabled
+2025/06/17 04:55:52.972221 [INFO] disable log stream
+2025/06/17 04:55:52.972232 [INFO] Running command: systemctl show -p PartOf amazon-cloudwatch-agent.service
+2025/06/17 04:55:52.985281 [INFO] Running command: systemctl stop amazon-cloudwatch-agent.service
+2025/06/17 04:55:52.997615 [INFO] Executing instruction: GetToggleForceRotate
+2025/06/17 04:55:52.997634 [INFO] Checking if logs need forced rotation
+2025/06/17 04:55:52.997645 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBAutoScalingGroup --region us-west-2
+2025/06/17 04:55:53.322148 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBBeanstalkMetadata --region us-west-2
+2025/06/17 04:55:53.684944 [INFO] Procfile not found. Generating default rsyslog config
+2025/06/17 04:55:53.687093 [INFO] Running command: systemctl restart rsyslog.service
+2025/06/17 04:55:54.213138 [INFO] Executing instruction: Configure Docker Logging
+2025/06/17 04:55:54.235394 [INFO] Executing instruction: PostBuildEbExtension
+2025/06/17 04:55:54.235419 [INFO] Starting executing the config set Infra-EmbeddedPostBuild.
+2025/06/17 04:55:54.235433 [INFO] Running command: /opt/aws/bin/cfn-init -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBAutoScalingGroup --region us-west-2 --configsets Infra-EmbeddedPostBuild
+2025/06/17 04:55:54.540883 [INFO] Finished executing the config set Infra-EmbeddedPostBuild.
+
+2025/06/17 04:55:54.540922 [INFO] Executing instruction: CleanEbExtensions
+2025/06/17 04:55:54.540947 [INFO] Cleaned ebextensions subdirectories from app staging directory.
+2025/06/17 04:55:54.540950 [INFO] Executing instruction: RunAppDeployPreDeployHooks
+2025/06/17 04:55:54.540972 [INFO] Executing platform hooks in .platform/hooks/predeploy/
+2025/06/17 04:55:54.540982 [INFO] The dir .platform/hooks/predeploy/ does not exist
+2025/06/17 04:55:54.540984 [INFO] Finished running scripts in /var/app/staging/.platform/hooks/predeploy
+2025/06/17 04:55:54.540989 [INFO] Executing instruction: stop X-Ray
+2025/06/17 04:55:54.540991 [INFO] stop X-Ray ...
+2025/06/17 04:55:54.541000 [INFO] Running command: systemctl show -p PartOf xray.service
+2025/06/17 04:55:54.554289 [WARN] stopProcess Warning: process xray is not registered 
+2025/06/17 04:55:54.554315 [INFO] Running command: systemctl stop xray.service
+2025/06/17 04:55:54.566436 [INFO] Executing instruction: Run Docker Container
+2025/06/17 04:55:54.566468 [INFO] this is the first time deploying app...
+2025/06/17 04:55:54.566471 [INFO] Removing /var/app/current/ if it exists
+2025/06/17 04:55:54.566478 [INFO] Renaming /var/app/staging/ to /var/app/current/
+2025/06/17 04:55:54.566500 [INFO] detected new app is not docker compose app
+2025/06/17 04:55:54.566593 [INFO] Running command: docker run -d --env-file /opt/elasticbeanstalk/deployment/env.list    dc076ba99245 
+2025/06/17 04:55:55.095756 [INFO] 5af210a1dd4b90363d67a566d11d55d0d9dcabf8b21f09a734d3e3d5b07d270e
+
+2025/06/17 04:56:00.100073 [INFO] Running command: docker ps | grep -q 5af210a1dd4b
+2025/06/17 04:56:00.174129 [ERROR] docker container quit unexpectedly on 2025-06-17 04:56:00.173995282 +0000 UTC: Command docker ps | grep -q 5af210a1dd4b failed with error exit status 1
+2025/06/17 04:56:00.174378 [INFO] Running command: docker logs 5af210a1dd4b
+2025/06/17 04:56:00.248225 [ERROR] An error occurred during execution of command [app-deploy] - [Run Docker Container]. Stop running the command. Error: failed to run the docker container 5af210a1dd4b: Command docker ps | grep -q 5af210a1dd4b failed with error exit status 1 
+
+2025/06/17 04:56:00.248236 [INFO] Executing cleanup logic
+2025/06/17 04:56:00.248318 [INFO] CommandService Response: {"status":"FAILURE","api_version":"1.0","results":[{"status":"FAILURE","msg":"Engine execution has encountered an error.","returncode":1,"events":[{"msg":"Instance deployment: The Docker container unexpectedly ended after it was started.","timestamp":1750136160174,"severity":"ERROR"},{"msg":"Instance deployment failed. For details, see 'eb-engine.log'.","timestamp":1750136160248,"severity":"ERROR"}]}]}
+
+2025/06/17 04:56:00.248670 [INFO] Platform Engine finished execution on command: app-deploy
+
+2025/06/17 05:07:37.189631 [INFO] Starting...
+2025/06/17 05:07:37.189688 [INFO] Starting EBPlatform-PlatformEngine
+2025/06/17 05:07:37.189713 [INFO] reading event message file
+2025/06/17 05:07:37.190010 [INFO] Engine received EB command cfn-hup-exec
+
+2025/06/17 05:07:37.257805 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBAutoScalingGroup --region us-west-2
+2025/06/17 05:07:37.557718 [INFO] Running command: /opt/aws/bin/cfn-get-metadata -s arn:aws:cloudformation:us-west-2:881490119784:stack/awseb-e-fsmcpgmwaq-stack/b21d57b0-4b36-11f0-8c0d-060c0c2b31bd -r AWSEBBeanstalkMetadata --region us-west-2
+2025/06/17 05:07:37.845328 [INFO] checking whether command bundle-log is applicable to this instance...
+2025/06/17 05:07:37.845340 [INFO] this command is applicable to the instance, thus instance should execute command
+2025/06/17 05:07:37.845342 [INFO] Engine command: (bundle-log)
+
+2025/06/17 05:07:37.845383 [INFO] Executing instruction: GetBundleLogs
+2025/06/17 05:07:37.845385 [INFO] Bundle Logs...

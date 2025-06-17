@@ -16,6 +16,7 @@ import logger from '../utils/logger';
 import mammoth from 'mammoth';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
 import { fileTypeFromBuffer } from 'file-type';
+import { getGoogleVisionCredentials } from '../utils/parameterStore';
 
 // Define the schema for pre-processed text output
 const PreprocessedTextSchema = z.object({
@@ -236,7 +237,8 @@ export class LabTextPreprocessingService {
       const base64Pdf = buffer.toString('base64');
       
       // Use our existing OCR infrastructure
-      const credentials = JSON.parse(process.env.GOOGLE_VISION_CREDENTIALS || '{}');
+      const credentialsStr = await getGoogleVisionCredentials();
+      const credentials = JSON.parse(credentialsStr);
       const client = new ImageAnnotatorClient({ credentials });
 
       // Enhanced OCR configuration for PDF documents
@@ -421,23 +423,14 @@ export class LabTextPreprocessingService {
 
   private async processImage(buffer: Buffer): Promise<PreprocessedText> {
     try {
-      // Check if Google Vision credentials are available
-      const credentialsStr = process.env.GOOGLE_VISION_CREDENTIALS;
-      if (!credentialsStr || credentialsStr.trim() === '' || credentialsStr === '{}') {
-        throw new Error('Google Vision credentials not configured');
-      }
-      
-      // Parse credentials with proper error handling
+      // Get Google Vision credentials from Parameter Store or environment
       let credentials;
       try {
+        const credentialsStr = await getGoogleVisionCredentials();
         credentials = JSON.parse(credentialsStr);
-      } catch (parseError) {
-        logger.error('Failed to parse Google Vision credentials:', {
-          error: parseError instanceof Error ? parseError.message : String(parseError),
-          credentialsLength: credentialsStr.length,
-          credentialsStart: credentialsStr.substring(0, 50)
-        });
-        throw new Error('Invalid Google Vision credentials format');
+      } catch (error) {
+        logger.error('Failed to get Google Vision credentials:', error);
+        throw new Error('Google Vision credentials not available');
       }
       
       const client = new ImageAnnotatorClient({ credentials });

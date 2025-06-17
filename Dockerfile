@@ -1,43 +1,41 @@
-# --- Build stage ---------------------------------------------------
-FROM node:20-slim AS builder
-
-# Create app directory
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install dependencies (including dev-deps needed for the build)
+# Copy package files
 COPY package*.json ./
+
+# Install all dependencies (including dev deps for build)
 RUN npm ci
 
-# Copy the rest of the source code
+# Copy source code
 COPY . .
 
-# Build the production assets (Vite + esbuild)
-RUN npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server
+# Build the application
+RUN npm run build
 
-# Remove dev dependencies to keep the runtime layer small
-# RUN npm prune --production
-
-# --- Runtime stage --------------------------------------------------
-FROM node:20-slim
+# Stage 2: Runtime
+FROM node:20-alpine AS runtime
 WORKDIR /app
+
+# Set production environment
 ENV NODE_ENV=production
-ENV NODE_EXTRA_CA_CERTS=/app/certs/stcert.pem
-ENV AWS_RDS_CA_CERT_PATH=/app/certs/stcert.pem
 
-# Copy built app & prod dependencies from builder layer
-COPY --from=builder /app /app
+# Copy package files and install production dependencies only
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy certificates with explicit permissions
-COPY --chown=node:node certs ./certs
-RUN chmod 644 /app/certs/stcert.pem
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
 
-# Verify certificate exists and is readable
-RUN ls -l /app/certs/stcert.pem && \
-    echo "Certificate file exists" && \
-    cat /app/certs/stcert.pem | head -n 1
+# Copy necessary runtime files
+COPY --from=builder /app/certs ./certs
 
-# Expose the port the server listens on (see server/index.ts, default 3001)
-EXPOSE 3001
+# Set certificate permissions if they exist
+RUN chmod 644 /app/certs/stcert.pem 2>/dev/null || echo "Certificate not found, continuing..."
 
-# Default command – start the Node server
-CMD ["node", "dist/server/index.js"] 
+# Expose port 80 to match EB expectations
+EXPOSE 80
+
+# Default command
+CMD ["sh", "-c", "echo 'Starting StackTracker application...' && echo 'NODE_ENV:' $NODE_ENV && echo 'PORT:' $PORT && node dist/server/index.js"] 
