@@ -6,3 +6,37 @@ vite.config.ts.*
 *.tar.gzsendgrid.env
 .env
 certs
+
+# Elastic Beanstalk configuration files (contain sensitive infrastructure details)
+.elasticbeanstalk/
+.ebextensions/
+
+# AWS and deployment configuration files
+Dockerrun.aws.json
+Dockerfile
+
+# Log files that may contain sensitive information
+*.log
+logs/
+
+# Backup and temporary files
+*.backup
+*.bak
+backups/
+backup_config/
+
+# Session and temporary files
+.sessions/
+debug_logs/
+coverage/
+
+# Certificate and security files
+certs/
+*.pem
+*.key
+*.crt
+
+# Environment and configuration files
+.env*
+*.env
+config/

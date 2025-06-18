@@ -1,9 +1,0 @@
-Jun 17 06:11:05 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:11:05.221265958Z" level=info msg="Starting up"
-Jun 17 06:11:05 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:11:05.725450110Z" level=info msg="Loading containers: start."
-Jun 17 06:11:06 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:11:06.682625251Z" level=info msg="Loading containers: done."
-Jun 17 06:11:06 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:11:06.705993969Z" level=info msg="Docker daemon" commit=71907ca containerd-snapshotter=false storage-driver=overlay2 version=25.0.8
-Jun 17 06:11:06 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:11:06.707426125Z" level=info msg="Daemon has completed initialization"
-Jun 17 06:11:06 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:11:06.837400346Z" level=info msg="API listen on /run/docker.sock"
-Jun 17 06:13:02 ip-172-31-5-93 docker[1933]: 2025/06/17 06:13:02 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
-Jun 17 06:14:46 ip-172-31-5-93 docker[1933]: time="2025-06-17T06:14:46.943648471Z" level=info msg="ignoring event" container=2dcc4747da0aaa5fb06c023a194ad6feadfd13609cdf673ff366648e2d618230 module=libcontainerd namespace=moby topic=/tasks/delete type="*events.TaskDelete"
-Jun 17 06:14:50 ip-172-31-5-93 docker[1933]: 2025/06/17 06:14:50 http: superfluous response.WriteHeader call from go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp.(*respWriterWrapper).WriteHeader (wrap.go:98)
