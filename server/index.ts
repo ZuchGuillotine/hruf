@@ -56,10 +56,20 @@ async function initializeAndStart() {
   try {
     console.log('Initializing application...');
 
-    // Skip async secrets loading - all environment variables are now set by EB
-    // Google Vision credentials loaded via .ebextensions/02-secrets.config
-    // All other environment variables set via eb setenv
-    console.log('Environment variables loaded via EB configuration');
+    // Load environment secrets in production with proper error handling
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🚀 Production mode: Loading environment secrets from AWS Secrets Manager...');
+      try {
+        await loadEnvironmentSecrets();
+        console.log('✅ Successfully loaded all environment secrets');
+      } catch (error) {
+        console.error('❌ Failed to load environment secrets:', error);
+        console.log('⚠️ Application will continue with fallback/embedded credentials');
+        // Don't crash - let the app start with minimal functionality
+      }
+    } else {
+      console.log('🔧 Development mode: Using local environment variables');
+    }
 
     // Validate required environment variables
     validateEnvVars();

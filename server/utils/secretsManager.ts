@@ -64,17 +64,21 @@ export async function getSecret(secretName: string, ttl: number = DEFAULT_TTL): 
 
 export async function getEnvironmentSecrets(): Promise<Record<string, string>> {
   try {
-    const secrets = await getSecret('STEBENV');
+    console.log('🔐 Loading main environment secrets from STEBENV...');
+    const secrets = await getSecret('arn:aws:secretsmanager:us-west-2:881490119784:secret:STEBENV-GOgM9v');
     
     // If secrets is already an object, return it
     if (typeof secrets === 'object' && secrets !== null) {
+      console.log('✅ Successfully loaded environment secrets from STEBENV');
       return secrets;
     }
     
     // If it's a string, try to parse it
     if (typeof secrets === 'string') {
       try {
-        return JSON.parse(secrets);
+        const parsed = JSON.parse(secrets);
+        console.log('✅ Successfully parsed environment secrets from STEBENV');
+        return parsed;
       } catch {
         logger.error('STEBENV secret is not valid JSON');
         throw new Error('STEBENV secret must be a JSON object');
@@ -83,7 +87,28 @@ export async function getEnvironmentSecrets(): Promise<Record<string, string>> {
     
     throw new Error('STEBENV secret has unexpected format');
   } catch (error) {
-    logger.error('Failed to fetch environment secrets:', error);
+    logger.error('❌ Failed to fetch environment secrets:', error);
+    throw error;
+  }
+}
+
+export async function getGoogleVisionCredentials(): Promise<string> {
+  try {
+    console.log('🔐 Loading Google Vision credentials from GOOGLEOCR...');
+    const credentials = await getSecret('arn:aws:secretsmanager:us-west-2:881490119784:secret:GOOGLEOCR-DvqiRC');
+    
+    // Return as string (JSON string for Google Vision)
+    if (typeof credentials === 'string') {
+      console.log('✅ Successfully loaded Google Vision credentials from GOOGLEOCR');
+      return credentials;
+    } else if (typeof credentials === 'object') {
+      console.log('✅ Successfully loaded Google Vision credentials from GOOGLEOCR (object format)');
+      return JSON.stringify(credentials);
+    }
+    
+    throw new Error('GOOGLEOCR secret has unexpected format');
+  } catch (error) {
+    logger.error('❌ Failed to fetch Google Vision credentials:', error);
     throw error;
   }
 }

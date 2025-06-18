@@ -17,47 +17,56 @@ async function loadEnvironmentSecrets(): Promise<void> {
 
   try {
     // First try to load from .env file (for local development)
-    console.log('Attempting to load environment variables from:', envPath);
+    console.log('🔍 Checking for local .env file at:', envPath);
     const result = dotenv.config({ path: envPath });
 
     if (result.error) {
-      console.log('No .env file found, trying AWS Secrets Manager...');
+      console.log('📁 No .env file found, loading from AWS Secrets Manager...');
       
       try {
-        console.log('Attempting to connect to AWS Secrets Manager...');
-        // Try to load from AWS Secrets Manager
+        // Load main application secrets
+        console.log('🔐 Loading main application secrets...');
         const secrets = await getEnvironmentSecrets();
-        console.log('Successfully retrieved secrets from AWS Secrets Manager');
         
         // Set environment variables from secrets
         Object.entries(secrets).forEach(([key, value]) => {
           if (typeof value === 'string') {
             process.env[key] = value;
-            console.log(`Set environment variable: ${key}`);
+            console.log(`✅ Set environment variable: ${key}`);
           }
         });
         
-        console.log('Environment variables loaded successfully from AWS Secrets Manager');
+        // Also set GOOGLE_VISION_CREDENTIALS from the dedicated secret
+        try {
+          const { getGoogleVisionCredentials } = await import('../utils/secretsManager');
+          const googleCreds = await getGoogleVisionCredentials();
+          process.env.GOOGLE_VISION_CREDENTIALS = googleCreds;
+          console.log('✅ Set GOOGLE_VISION_CREDENTIALS from dedicated secret');
+        } catch (googleError) {
+          console.warn('⚠️ Failed to load Google Vision credentials from dedicated secret:', googleError);
+        }
+        
+        console.log('🎉 Environment variables loaded successfully from AWS Secrets Manager');
       } catch (secretsError) {
-        console.error('Failed to load from AWS Secrets Manager:', secretsError);
+        console.error('❌ Failed to load from AWS Secrets Manager:', secretsError);
         
         // Set minimal required environment variables for basic startup
         if (!process.env.DATABASE_URL) {
           process.env.DATABASE_URL = 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
-          console.log('Set placeholder DATABASE_URL for startup');
+          console.log('🔧 Set placeholder DATABASE_URL for startup');
         }
         if (!process.env.SESSION_SECRET) {
           process.env.SESSION_SECRET = 'placeholder-session-secret-for-startup';
-          console.log('Set placeholder SESSION_SECRET for startup');
+          console.log('🔧 Set placeholder SESSION_SECRET for startup');
         }
         
-        console.log('Application will continue with placeholder environment variables...');
+        console.log('⚠️ Application will continue with placeholder environment variables...');
       }
     } else {
-      console.log('Environment variables loaded successfully from .env file');
+      console.log('✅ Environment variables loaded successfully from .env file');
     }
 
-    // Log which critical env vars are present (without values)
+    // Log which critical env vars are present (without values for security)
     const criticalVars = [
       'DATABASE_URL',
       'SESSION_SECRET',
@@ -72,13 +81,16 @@ async function loadEnvironmentSecrets(): Promise<void> {
       'CUSTOM_DOMAIN'
     ];
     
+    console.log('📋 Environment variables status:');
     criticalVars.forEach(varName => {
-      console.log(`${varName}: ${process.env[varName] ? 'Set' : 'Not set'}`);
+      const isSet = !!process.env[varName];
+      const status = isSet ? '✅ Set' : '❌ Missing';
+      console.log(`  ${varName}: ${status}`);
     });
 
     environmentSecretsLoaded = true;
   } catch (error) {
-    console.error('Failed to load environment variables from both .env and AWS Secrets Manager:', error);
+    console.error('💥 Critical error loading environment variables:', error);
     throw error;
   }
 }

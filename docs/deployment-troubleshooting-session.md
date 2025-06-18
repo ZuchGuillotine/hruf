@@ -1,3 +1,16 @@
+  ☒ Analyze current codebase structure and deployment configuration
+     ☒ Create ECR repository for Docker image hosting
+     ☒ Fix Dockerfile to use pre-built dist/ and avoid cloud rebuilds
+     ☐ Temporarily disable Secrets Manager loading in env.ts
+     ☐ Handle large GOOGLE_VISION_CREDENTIALS via alternative method
+     ☐ Build and test Docker image locally
+     ☐ Push Docker image to ECR
+     ☐ Create Dockerrun.aws.json for EB deployment
+     ☐ Configure EB environment variables (except large ones)
+     ☐ Deploy to EB and verify application startup
+     ☐ Test application functionality end-to-end
+
+
 # Elastic Beanstalk Deployment Troubleshooting Session
 
 **Date:** June 16-17, 2025  

@@ -11,9 +11,6 @@ certs
 .elasticbeanstalk/
 .ebextensions/
 
-# AWS and deployment configuration files
-Dockerrun.aws.json
-Dockerfile
 
 # Log files that may contain sensitive information
 *.log
