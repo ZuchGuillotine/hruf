@@ -241,9 +241,9 @@ async function initializeAndStart() {
   }
 }
 
-// Use port 80 for Elastic Beanstalk deployment, 3001 for local development
+// Use port 80 for App Runner deployment, 3001 for local development
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : (process.env.NODE_ENV === 'production' ? 80 : 3001);
-const HOST = '0.0.0.0'; // Required for Elastic Beanstalk deployments
+const HOST = '0.0.0.0'; // Required for App Runner deployments
 
 async function startServer(server: Server, app: express.Express) {
   try {

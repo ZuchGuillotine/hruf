@@ -34,7 +34,7 @@ COPY --from=builder /app/certs ./certs
 # Set certificate permissions if they exist
 RUN chmod 644 /app/certs/stcert.pem 2>/dev/null || echo "Certificate not found, continuing..."
 
-# Expose port 80 to match EB expectations
+# Expose port 80 to match App Runner expectations
 EXPOSE 80
 
 # Default command

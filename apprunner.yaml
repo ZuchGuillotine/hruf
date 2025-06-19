@@ -1,0 +1,18 @@
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "Build phase started on `date`"
+      - echo "Building Docker image..."
+run:
+  runtime-version: latest
+  command: node dist/server/index.js
+  network:
+    port: 80
+    env: PORT
+  env:
+    - name: NODE_ENV
+      value: production
+    - name: PORT
+      value: "80"
