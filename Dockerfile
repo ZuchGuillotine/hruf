@@ -34,8 +34,8 @@ COPY --from=builder /app/certs ./certs
 # Set certificate permissions if they exist
 RUN chmod 644 /app/certs/stcert.pem 2>/dev/null || echo "Certificate not found, continuing..."
 
-# Expose port 80 to match App Runner expectations
-EXPOSE 80
+# Expose port 8080 to match App Runner expectations
+EXPOSE 8080
 
 # Default command
 CMD ["sh", "-c", "echo 'Starting StackTracker application...' && echo 'NODE_ENV:' $NODE_ENV && echo 'PORT:' $PORT && node dist/server/index.js"] 

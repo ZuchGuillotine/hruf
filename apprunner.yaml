@@ -9,10 +9,10 @@ run:
   runtime-version: latest
   command: node dist/server/index.js
   network:
-    port: 80
+    port: 8080
     env: PORT
   env:
     - name: NODE_ENV
       value: production
     - name: PORT
-      value: "80"
+      value: "8080"

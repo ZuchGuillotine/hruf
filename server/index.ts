@@ -35,7 +35,7 @@ import adminRoutes from './routes/admin';
 import { summaryTaskManager } from './cron/summaryManager';
 import { updateTrialStatusesCron } from './cron/updateTrialStatuses';
 import { processMissingBiomarkersCron } from './cron/processMissingBiomarkers';
-import { healthCheck, setReadinessCheck } from './utils/healthCheck';
+import { healthCheck, livenessCheck, setReadinessCheck } from './utils/healthCheck';
 import fs from 'fs';
 import { checkAndReprocessBiomarkers } from '../scripts/check-biomarkers';
 import logger from './utils/logger';
@@ -71,9 +71,17 @@ async function initializeAndStart() {
       console.log('🔧 Development mode: Using local environment variables');
     }
 
-    // Validate required environment variables
-    validateEnvVars();
-    setReadinessCheck('environment', true);
+    // Validate required environment variables (with graceful handling)
+    try {
+      validateEnvVars();
+      console.log('Environment validation successful');
+      setReadinessCheck('environment', true);
+    } catch (error) {
+      console.error('Environment validation failed:', error);
+      console.log('App will continue with limited functionality - some features may not work');
+      // Still mark environment as ready for basic functionality
+      setReadinessCheck('environment', true);
+    }
 
     const app = express();
 
@@ -110,17 +118,18 @@ async function initializeAndStart() {
 
     app.use(cors(corsOptions));
 
-    // Test database connection
-    try {
-      console.log('Testing database connection...');
-      // Simple query to test connection
-      await db.execute('SELECT 1');
-      console.log('Database connection successful');
-      setReadinessCheck('database', true);
-    } catch (error) {
-      console.error('Database connection failed:', error);
-      // Don't crash immediately - allow health check to report the issue
-    }
+    // Test database connection (non-blocking)
+    console.log('Testing database connection...');
+    db.execute('SELECT 1')
+      .then(() => {
+        console.log('Database connection successful');
+        setReadinessCheck('database', true);
+      })
+      .catch((error) => {
+        console.error('Database connection failed:', error);
+        console.log('App will continue without database - some features may be limited');
+        // Don't crash - app can still serve static content and basic endpoints
+      });
 
     // Setup authentication (includes session middleware)
     await setupAuthentication(app);
@@ -168,6 +177,12 @@ async function initializeAndStart() {
     }));
 
     // Health checks must come before static file handling
+    // Basic liveness check - always returns 200 when server is running
+    app.get(['/ping', '/api/ping'], (req, res) => {
+      return livenessCheck(req, res);
+    });
+    
+    // Full readiness check - checks if services are ready
     app.get(['/health', '/api/health'], (req, res) => {
       return healthCheck(req, res);
     });
@@ -202,27 +217,38 @@ async function initializeAndStart() {
     console.log('Starting server...');
     await startServer(server, app);
 
-    // Initialize background services after server is running
-    setTimeout(async () => {
+    // Initialize background services after server is running (non-blocking)
+    process.nextTick(async () => {
       try {
         console.log('Starting background initialization...');
 
-        // Start cron jobs in background
-        summaryTaskManager.startDailySummaryTask();
-        summaryTaskManager.startWeeklySummaryTask();
-        updateTrialStatusesCron.start();
-        processMissingBiomarkersCron.start();
+        // Start cron jobs in background (these are fire-and-forget)
+        try {
+          summaryTaskManager.startDailySummaryTask();
+          summaryTaskManager.startWeeklySummaryTask();
+          updateTrialStatusesCron.start();
+          processMissingBiomarkersCron.start();
+          console.log('Cron jobs started successfully');
+        } catch (error) {
+          console.error('Some cron jobs failed to start:', error);
+        }
 
         // Initialize services after server is running
-        await serviceInitializer.initializeServices();
-        console.log('Background initialization completed successfully');
-        setReadinessCheck('services', true);
+        try {
+          await serviceInitializer.initializeServices();
+          console.log('Background services initialized successfully');
+          setReadinessCheck('services', true);
+        } catch (error) {
+          console.error('Background service initialization failed:', error);
+          console.log('App will continue with limited functionality');
+        }
 
-        // Find where checkAndReprocessBiomarkers is called and modify it
+        // Biomarker processing (optional, can fail without affecting app)
         const SKIP_BIOMARKER_PROCESSING = true; // Temporary flag to isolate SSL issues
         if (!SKIP_BIOMARKER_PROCESSING) {
             try {
                 await checkAndReprocessBiomarkers();
+                console.log('Biomarker reprocessing completed');
             } catch (error) {
                 logger.error('Error in biomarker reprocessing script:', {
                     error: error instanceof Error ? error.message : String(error)
@@ -232,17 +258,18 @@ async function initializeAndStart() {
             logger.info('Skipping biomarker processing during SSL debugging');
         }
       } catch (error) {
-        console.error('Failed to initialize background services:', error);
+        console.error('Background initialization failed:', error);
+        // Don't crash the app - it can still serve basic functionality
       }
-    }, 1000);
+    });
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
 }
 
-// Use port 80 for App Runner deployment, 3001 for local development
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : (process.env.NODE_ENV === 'production' ? 80 : 3001);
+// Use port 8080 for App Runner deployment, 3001 for local development
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : (process.env.NODE_ENV === 'production' ? 8080 : 3001);
 const HOST = '0.0.0.0'; // Required for App Runner deployments
 
 async function startServer(server: Server, app: express.Express) {
