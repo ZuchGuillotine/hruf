@@ -1,9 +1,17 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import logger from './logger';
 
-const client = new SecretsManagerClient({
-  region: "us-west-2"
-});
+// Lazy-initialize the client to ensure credentials are available
+let client: SecretsManagerClient | null = null;
+
+function getClient(): SecretsManagerClient {
+  if (!client) {
+    client = new SecretsManagerClient({
+      region: process.env.AWS_REGION || "us-west-2"
+    });
+  }
+  return client;
+}
 
 interface SecretsCache {
   [key: string]: {
@@ -25,13 +33,15 @@ export async function getSecret(secretName: string, ttl: number = DEFAULT_TTL): 
       return cached.value;
     }
 
-    logger.info(`Fetching secret from AWS Secrets Manager: ${secretName}`);
+    console.log(`🔐 Fetching secret from AWS Secrets Manager: ${secretName}`);
+    console.log(`🌍 AWS Region: ${process.env.AWS_REGION || "us-west-2"}`);
+    console.log(`🔑 NODE_ENV: ${process.env.NODE_ENV}`);
     
     const command = new GetSecretValueCommand({
       SecretId: secretName,
     });
 
-    const response = await client.send(command);
+    const response = await getClient().send(command);
     
     if (!response.SecretString) {
       throw new Error(`No secret string found for ${secretName}`);
