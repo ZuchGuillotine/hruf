@@ -1,12 +1,19 @@
 version: 1.0
-runtime: docker
+runtime: nodejs20
 build:
   commands:
     build:
       - echo "Build phase started on `date`"
-      - echo "Building Docker image..."
+      - echo "Installing dependencies..."
+      - npm ci
+      - echo "Building application..."
+      - npm run build
+      - echo "Build completed successfully"
+    post_build:
+      - echo "Post-build phase - verifying dist/server/index.js exists"
+      - test -f dist/server/index.js && echo "Server entry point exists" || echo "ERROR: Server entry point missing"
 run:
-  runtime-version: latest
+  runtime-version: "20"
   command: node dist/server/index.js
   network:
     port: 8080

@@ -4,7 +4,7 @@ import { Alert, AlertTitle, AlertDescription, AlertCircle } from '@chakra-ui/rea
 function LabUpload() {
   // ... (Other component logic, assumed unchanged)
 
-  const isUploadLimitReached =  // ... (Logic to determine if upload limit is reached, assumed unchanged)
+  const isUploadLimitReached = false; // ... (Logic to determine if upload limit is reached, assumed unchanged)
 
   return (
     <div>
