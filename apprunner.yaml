@@ -13,7 +13,6 @@ build:
       - ls -la dist/server/
       - echo "Build verification complete"
 run:
-  runtime-version: "18"
   command: node dist/server/index.js
   network:
     port: 8080
