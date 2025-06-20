@@ -24,6 +24,19 @@ async function loadEnvironmentSecrets(): Promise<void> {
       console.log('📁 No .env file found, loading from AWS Secrets Manager...');
       
       try {
+        // First test basic AWS credentials
+        console.log('🔐 Testing AWS credentials...');
+        const { STSClient, GetCallerIdentityCommand } = await import('@aws-sdk/client-sts');
+        const stsClient = new STSClient({ region: 'us-west-2' });
+        
+        try {
+          const identity = await stsClient.send(new GetCallerIdentityCommand({}));
+          console.log('✅ AWS credentials working, identity:', identity.Arn);
+        } catch (stsError) {
+          console.error('❌ AWS credentials test failed:', stsError);
+          throw new Error('AWS credentials not available');
+        }
+        
         // Load main application secrets
         console.log('🔐 Loading main application secrets...');
         const secrets = await getEnvironmentSecrets();
