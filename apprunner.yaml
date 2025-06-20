@@ -3,23 +3,18 @@ runtime: nodejs18
 build:
   commands:
     build:
-      - echo "Build phase started on `date`"
-      - echo "Current working directory:" && pwd
-      - echo "Listing files:" && ls -la
       - echo "Installing dependencies..."
       - npm ci
       - echo "Building application..."
       - npm run build
-      - echo "Build completed successfully"
+      - echo "Build completed"
     post-build:
-      - echo "Post-build phase - verifying dist/server/index.js exists"
-      - echo "Current working directory:" && pwd
-      - echo "Listing dist directory:" && ls -la dist/ || echo "dist directory not found"
-      - echo "Listing dist/server directory:" && ls -la dist/server/ || echo "dist/server directory not found"
-      - test -f dist/server/index.js && echo "✓ Server entry point exists" || echo "✗ ERROR: Server entry point missing"
+      - echo "Verifying build output..."
+      - ls -la dist/server/
+      - echo "Build verification complete"
 run:
   runtime-version: "18"
-  command: sh -c "echo 'Starting application from:' && pwd && echo 'Looking for:' && ls -la dist/server/index.js && node dist/server/index.js"
+  command: node dist/server/index.js
   network:
     port: 8080
     env: PORT
