@@ -29,10 +29,8 @@ async function startup() {
 // Export the startup function
 export default startup;
 
-// If this file is run directly, execute startup
-if (import.meta.url === `file://${process.argv[1]}`) {
-  startup().catch((error) => {
-    console.error('💥 Startup failed:', error);
-    process.exit(1);
-  });
-}
+// Execute startup immediately since this is the entry point
+startup().catch((error) => {
+  console.error('💥 Startup failed:', error);
+  process.exit(1);
+});
