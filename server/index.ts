@@ -314,8 +314,16 @@ async function startServer(server: Server, app: express.Express) {
       
       app.use(express.static(publicPath));
       
-      // Serve index.html for all routes not explicitly handled
+      // Serve index.html for all routes not explicitly handled (SPA fallback)
       app.get('*', (req, res) => {
+        // Skip API routes, auth routes, and health checks
+        if (req.path.startsWith('/api') || 
+            req.path.startsWith('/auth') || 
+            req.path.startsWith('/health') ||
+            req.path.startsWith('/ping')) {
+          return res.status(404).json({ error: 'Route not found' });
+        }
+        
         const indexPath = path.join(publicPath, 'index.html');
         if (!fs.existsSync(indexPath)) {
           console.error('index.html not found at:', indexPath);
