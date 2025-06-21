@@ -304,8 +304,10 @@ async function startServer(server: Server, app: express.Express) {
       }
     } else {
       console.log('Setting up static file serving...');
-      const publicPath = path.join(__dirname, '..', 'dist');
+      // In App Runner: __dirname is /app/dist/server, so we need to go up to /app/dist
+      const publicPath = path.join(__dirname, '..');
       console.log('Looking for static files at:', publicPath);
+      console.log('__dirname is:', __dirname);
       
       if (!fs.existsSync(publicPath)) {
         console.error('Static files directory not found at:', publicPath);
@@ -358,7 +360,7 @@ async function startServer(server: Server, app: express.Express) {
 
       // Log where the static files are expected to be found in production
       if (process.env.NODE_ENV === 'production') {
-        const publicPath = path.join(__dirname, '..', 'dist');
+        const publicPath = path.join(__dirname, '..');
         console.log('In production mode, looking for static files at:', publicPath);
         
         if (fs.existsSync(publicPath)) {
