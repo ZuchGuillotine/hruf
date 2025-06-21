@@ -37,6 +37,7 @@ if (!process.env.DATABASE_URL) {
   console.error("⚠️  DATABASE_URL not set - database operations will fail");
   console.error("Please ensure STEBENV secret is configured in AWS Secrets Manager");
   // Don't throw immediately - let the app try to start
+  // Create a placeholder connection to prevent module load crashes
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -98,6 +99,38 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('rds.amazonaws
   }
 }
 
-const pool = new Pool(poolConfig);
-export const db = drizzle(pool, { schema });
+let pool: Pool;
+let db: ReturnType<typeof drizzle>;
+
+try {
+  pool = new Pool(poolConfig);
+  db = drizzle(pool, { schema });
+  console.log('✅ Database pool created successfully');
+} catch (error) {
+  console.error('❌ Failed to create database pool:', error);
+  console.log('⚠️ Creating placeholder database connection to prevent startup crashes');
+  // Create a minimal pool configuration that won't fail
+  const fallbackConfig: PoolConfig = {
+    connectionString: 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
+    max: 1,
+    min: 0,
+    acquireTimeoutMillis: 1000,
+    createTimeoutMillis: 1000,
+    destroyTimeoutMillis: 1000,
+    idleTimeoutMillis: 1000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 500,
+    propagateCreateError: false,
+  };
+  
+  try {
+    pool = new Pool(fallbackConfig);
+    db = drizzle(pool, { schema });
+  } catch (fallbackError) {
+    console.error('❌ Even fallback database pool failed:', fallbackError);
+    throw fallbackError;
+  }
+}
+
+export { db };
 export * from './schema';
