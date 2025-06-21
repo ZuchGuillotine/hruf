@@ -386,5 +386,10 @@ async function handleShutdown(server: Server) {
   }
 }
 
-// Start services and server
-initializeAndStart().catch(console.error);
+// Export initialization function for startup script
+export default initializeAndStart;
+
+// Only auto-start if this file is run directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  initializeAndStart().catch(console.error);
+}

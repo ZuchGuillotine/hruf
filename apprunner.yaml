@@ -13,7 +13,7 @@ build:
       - ls -la dist/server/
       - echo "Build verification complete"
 run:
-  command: node dist/server/index.js
+  command: node dist/server/startup.js
   network:
     port: 8080
     env: PORT
