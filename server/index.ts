@@ -315,7 +315,7 @@ async function startServer(server: Server, app: express.Express) {
       }
     } else {
       console.log('Setting up static file serving...');
-      const publicPath = path.join(__dirname, '..');
+      const publicPath = path.join(__dirname, '..', 'dist');
       console.log('Looking for static files at:', publicPath);
       
       if (!fs.existsSync(publicPath)) {

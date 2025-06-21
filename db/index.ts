@@ -43,6 +43,15 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const poolConfig: PoolConfig = {
   connectionString: process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
+  max: 20, // Maximum number of connections
+  min: 2,  // Minimum number of connections
+  acquireTimeoutMillis: 60000, // 60 seconds
+  createTimeoutMillis: 30000,  // 30 seconds
+  destroyTimeoutMillis: 5000,  // 5 seconds
+  idleTimeoutMillis: 30000,    // 30 seconds
+  reapIntervalMillis: 1000,    // 1 second
+  createRetryIntervalMillis: 500, // 500ms between retries
+  propagateCreateError: false,
 };
 
 // In production, enforce SSL with the AWS RDS CA certificate.
