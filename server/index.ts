@@ -126,14 +126,16 @@ async function initializeAndStart() {
 
     // Test database connection (non-blocking)
     console.log('Testing database connection...');
-    db.execute('SELECT 1')
+    import('drizzle-orm').then(({ sql }) => {
+      return db.execute(sql`SELECT 1`);
+    })
       .then(() => {
-        console.log('Database connection successful');
+        console.log('✅ Database connection successful');
         setReadinessCheck('database', true);
       })
       .catch((error) => {
-        console.error('Database connection failed:', error);
-        console.log('App will continue without database - some features may be limited');
+        console.error('❌ Database connection failed:', error);
+        console.log('⚠️ App will continue without database - some features may be limited');
         // Don't crash - app can still serve static content and basic endpoints
       });
 
