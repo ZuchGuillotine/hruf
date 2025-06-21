@@ -401,6 +401,7 @@ async function handleShutdown(server: Server) {
 export default initializeAndStart;
 
 // Only auto-start if this file is run directly (not imported)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  initializeAndStart().catch(console.error);
-}
+// Disabled auto-start to prevent conflicts when imported by startup.ts
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   initializeAndStart().catch(console.error);
+// }
