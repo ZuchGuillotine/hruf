@@ -22,8 +22,16 @@ async function startup() {
   
   // Now import and start the main server
   console.log('📡 Importing and starting main server...');
-  const { default: initializeAndStart } = await import('./index');
-  await initializeAndStart();
+  try {
+    const { default: initializeAndStart } = await import('./index');
+    console.log('✅ Successfully imported main server module');
+    console.log('🔄 Starting server initialization...');
+    await initializeAndStart();
+    console.log('🎉 Server started successfully!');
+  } catch (error) {
+    console.error('💥 Failed to start main server:', error);
+    throw error;
+  }
 }
 
 // Export the startup function

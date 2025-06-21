@@ -85,6 +85,12 @@ async function initializeAndStart() {
 
     const app = express();
 
+    // Add immediate health check for App Runner
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    });
+    console.log('✅ Health check endpoint configured');
+
     // Essential middleware
     app.set('trust proxy', 1);
     app.use(express.json());
@@ -274,7 +280,8 @@ const HOST = '0.0.0.0'; // Required for App Runner deployments
 
 async function startServer(server: Server, app: express.Express) {
   try {
-    console.log(`Starting server on ${HOST}:${PORT}`);
+    console.log(`🚀 Starting server on ${HOST}:${PORT}`);
+    console.log(`📊 App Runner health check will use port ${PORT}`);
 
     // Setup Vite/static serving BEFORE starting the server
     if (process.env.NODE_ENV !== 'production') {
@@ -327,9 +334,11 @@ async function startServer(server: Server, app: express.Express) {
       });
     }
 
+    console.log(`🔌 Attempting to bind server to ${HOST}:${PORT}...`);
     server.listen(PORT, HOST, () => {
-      console.log(`Server started on ${HOST}:${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
-      console.log('Health check endpoints available at /health and /api/health');
+      console.log(`✅ Server successfully started on ${HOST}:${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
+      console.log('🏥 Health check endpoints available at /health and /api/health');
+      console.log('🎯 App Runner can now perform health checks!');
 
       // Log where the static files are expected to be found in production
       if (process.env.NODE_ENV === 'production') {
