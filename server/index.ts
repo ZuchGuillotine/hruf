@@ -255,8 +255,8 @@ async function initializeAndStart() {
         const SKIP_BIOMARKER_PROCESSING = true; // Temporary flag to isolate SSL issues
         if (!SKIP_BIOMARKER_PROCESSING) {
             try {
-                await checkAndReprocessBiomarkers();
-                console.log('Biomarker reprocessing completed');
+                // TODO: Move this to a scheduled task or background worker
+                // await checkAndReprocessBiomarkers(); 
             } catch (error) {
                 logger.error('Error in biomarker reprocessing script:', {
                     error: error instanceof Error ? error.message : String(error)

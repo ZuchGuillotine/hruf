@@ -1,4 +1,3 @@
-
 import { supplementReference } from "@db/schema";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -7,6 +6,7 @@ import { Trie } from "../utils/trie";
 class SupplementService {
   private trie: Trie;
   private initialized: boolean;
+  private initializing: Promise<void> | null = null;
   private retryCount: number;
   private maxRetries: number;
   private cacheTimeout: NodeJS.Timeout | null;
@@ -22,32 +22,54 @@ class SupplementService {
   }
 
   async initialize() {
-    try {
-      console.log("Initializing supplement service...");
-      
-      // Load most frequently accessed supplements first
-      const commonSupplements = await db
-        .select({
-          id: supplementReference.id,
-          name: supplementReference.name,
-          category: supplementReference.category
-        })
-        .from(supplementReference)
-        .limit(this.PAGE_SIZE);
+    if (this.initialized) {
+      return;
+    }
+    if (this.initializing) {
+      return this.initializing;
+    }
 
-      this.trie = new Trie();
-      this.loadSupplements(commonSupplements);
-      
-      this.initialized = true;
-      this.scheduleCacheRefresh();
-      
-      // Load remaining supplements in background
-      this.loadRemainingSupplements();
-      
-      console.log("Supplement service initialized with common supplements");
-    } catch (error) {
-      console.error("Error initializing supplement service:", error);
-      throw error;
+    const doInitialize = async () => {
+      try {
+        console.log("Initializing supplement service...");
+        
+        // Load most frequently accessed supplements first
+        const commonSupplements = await db
+          .select({
+            id: supplementReference.id,
+            name: supplementReference.name,
+            category: supplementReference.category
+          })
+          .from(supplementReference)
+          .limit(this.PAGE_SIZE);
+
+        this.trie = new Trie();
+        this.loadSupplements(commonSupplements);
+        
+        this.initialized = true;
+        this.scheduleCacheRefresh();
+        
+        // Load remaining supplements in background
+        this.loadRemainingSupplements();
+        
+        console.log("Supplement service initialized with common supplements");
+      } catch (error) {
+        console.error("Error initializing supplement service:", error);
+        this.initializing = null; // Reset on failure
+        throw error;
+      }
+    };
+    
+    this.initializing = doInitialize();
+    return this.initializing;
+  }
+
+  private async ensureInitialized() {
+    if (!this.initialized && !this.initializing) {
+      console.warn("Supplement service not initialized, initializing now...");
+      await this.initialize();
+    } else if (this.initializing) {
+      await this.initializing;
     }
   }
 
@@ -89,10 +111,7 @@ class SupplementService {
 
   async search(query: string, limit: number = 4) {
     try {
-      if (!this.initialized) {
-        console.warn("Supplement service not initialized, initializing now...");
-        await this.initialize();
-      }
+      await this.ensureInitialized();
 
       console.log(`Searching for "${query}" with limit ${limit}`);
 
