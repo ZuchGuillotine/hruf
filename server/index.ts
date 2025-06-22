@@ -129,6 +129,24 @@ async function initializeAndStart() {
 
     app.use(cors(corsOptions));
 
+    // --- STATIC FILE SERVING (PRODUCTION ONLY) ---
+    // Serve static files *before* session and auth middleware.
+    // This prevents session/auth logic from running on asset requests.
+    if (process.env.NODE_ENV === 'production') {
+      // The `client` directory is expected to be a sibling of the `server` directory in the build output.
+      // e.g., /app/dist/client and /app/dist/server
+      const clientBuildPath = path.join(__dirname, '..', 'client');
+      console.log('Production mode: looking for client build at:', clientBuildPath);
+
+      if (fs.existsSync(clientBuildPath)) {
+        console.log('✅ Found client build directory. Serving static files.');
+        // Serve all static files from the client build directory
+        app.use(express.static(clientBuildPath));
+      } else {
+        console.warn('⚠️ Client build directory not found. The app will only serve API routes.');
+      }
+    }
+
     // Test database connection (non-blocking)
     console.log('Testing database connection...');
     import('drizzle-orm').then(({ sql }) => {
@@ -199,6 +217,27 @@ async function initializeAndStart() {
     app.get(['/health', '/api/health'], (req, res) => {
       return healthCheck(req, res);
     });
+
+    // --- SPA FALLBACK (PRODUCTION ONLY) ---
+    // This must be after all API routes. It sends index.html for any
+    // GET request that did not match a previous route (e.g., /about, /profile).
+    if (process.env.NODE_ENV === 'production') {
+      const clientBuildPath = path.join(__dirname, '..', 'client');
+      app.get('*', (req, res, next) => {
+        // Exclude API and auth routes from the fallback
+        if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
+          return next();
+        }
+        
+        const indexPath = path.join(clientBuildPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          // If index.html is missing, it's a genuine 404
+          res.status(404).send('Not Found');
+        }
+      });
+    }
 
     // Setup routes
     setupQueryRoutes(app);
@@ -290,99 +329,20 @@ async function startServer(server: Server, app: express.Express) {
     console.log(`🚀 Starting server on ${HOST}:${PORT}`);
     console.log(`📊 App Runner health check will use port ${PORT}`);
 
-    // Setup Vite/static serving BEFORE starting the server
+    // Vite setup for development remains here
     if (process.env.NODE_ENV !== 'production') {
       console.log('Setting up Vite development server...');
       const { setupVite } = await import('./vite');
       await setupVite(app, server);
-      
-      // Also serve the app directly on port 3001 for direct access
-      // This ensures the app works when accessed at localhost:3001
-      const clientPath = path.join(__dirname, '..', 'client');
-      if (fs.existsSync(clientPath)) {
-        // Serve the Vite-processed files
-        app.get('*', async (req, res, next) => {
-          if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
-            return next();
-          }
-          
-          try {
-            // For development, redirect to Vite dev server
-            if (!req.headers.host?.includes('5173')) {
-              console.log('Direct access detected, redirecting to Vite dev server...');
-              return res.redirect(`http://localhost:5173${req.path}`);
-            }
-            next();
-          } catch (error) {
-            next(error);
-          }
-        });
-      }
-    } else {
-      console.log('Setting up static file serving...');
-      // In App Runner: __dirname is /app/dist/server, so we need to go up to /app/dist
-      const publicPath = path.join(__dirname, '..');
-      console.log('Looking for static files at:', publicPath);
-      console.log('__dirname is:', __dirname);
-      
-      if (!fs.existsSync(publicPath)) {
-        console.error('Static files directory not found at:', publicPath);
-        throw new Error('Static files directory not found');
-      }
-      
-      // Serve static assets from specific directories to avoid conflicts with API routes
-      app.use(express.static(publicPath));
-      app.use('/assets', express.static(path.join(publicPath, 'assets')));
-      app.use('/images', express.static(path.join(publicPath, 'images')));
-      
-      // Serve index.html only for non-API routes (SPA fallback)
-      app.get('*', (req, res) => {
-        // Skip all API and auth routes
-        if (req.path.startsWith('/api') || 
-            req.path.startsWith('/auth') || 
-            req.path.startsWith('/health') ||
-            req.path.startsWith('/ping')) {
-          return res.status(404).json({ error: 'Route not found' });
-        }
-        
-        const indexPath = path.join(publicPath, 'index.html');
-        if (!fs.existsSync(indexPath)) {
-          console.error('index.html not found at:', indexPath);
-          return res.status(404).send('index.html not found');
-        }
-        res.sendFile(indexPath);
-      });
     }
+    // Production static serving is now handled in initializeAndStart
 
-    console.log(`🔌 Attempting to bind server to ${HOST}:${PORT}...`);
-    server.listen(PORT, HOST, () => {
-      console.log(`✅ Server successfully started on ${HOST}:${PORT} (${process.env.NODE_ENV || 'development'} mode)`);
-      console.log('🏥 Health check endpoints available at /health and /api/health');
-      console.log('🎯 App Runner can now perform health checks!');
+    // The server.listen call is now outside this function,
+    // as it needs to be called after all routes are set up.
 
-
-      // Log where the static files are expected to be found in production
-      if (process.env.NODE_ENV === 'production') {
-        const publicPath = path.join(__dirname, '..');
-        console.log('In production mode, looking for static files at:', publicPath);
-        
-        if (fs.existsSync(publicPath)) {
-          const indexPath = path.join(publicPath, 'index.html');
-          if (fs.existsSync(indexPath)) {
-            console.log('✅ index.html found at:', indexPath);
-          } else {
-            console.log('❌ index.html NOT found at:', indexPath);
-          }
-        }
-      }
-    });
-
-    // Handle graceful shutdown
-    process.on('SIGTERM', () => handleShutdown(server));
-    process.on('SIGINT', () => handleShutdown(server));
   } catch (err: unknown) {
     const error = err as { message?: string; code?: string };
-    console.error('Failed to start server:', {
+    console.error('Error during server startup phase:', {
       error: error.message || 'Unknown error',
       code: error.code || 'UNKNOWN',
       timestamp: new Date().toISOString()
