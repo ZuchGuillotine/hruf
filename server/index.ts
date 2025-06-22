@@ -316,28 +316,29 @@ async function startServer(server: Server, app: express.Express) {
     } else {
       console.log('Setting up static file serving...');
       // In App Runner: __dirname is /app/dist/server, so we need to go up to /app/dist
-      const publicPath = path.join(__dirname, '..');
-      console.log('Looking for static files at:', publicPath);
+      const clientPath = path.join(__dirname, '..', 'client');
+      console.log('Looking for static files at:', clientPath);
       console.log('__dirname is:', __dirname);
       
-      if (!fs.existsSync(publicPath)) {
-        console.error('Static files directory not found at:', publicPath);
+      if (!fs.existsSync(clientPath)) {
+        console.error('Static files directory not found at:', clientPath);
         throw new Error('Static files directory not found');
       }
       
-      app.use(express.static(publicPath));
+      app.use(express.static(clientPath));
       
       // Serve index.html for all routes not explicitly handled (SPA fallback)
-      app.get('*', (req, res) => {
+      app.get('*', (req, res, next) => {
         // Skip API routes, auth routes, and health checks
         if (req.path.startsWith('/api') || 
             req.path.startsWith('/auth') || 
             req.path.startsWith('/health') ||
             req.path.startsWith('/ping')) {
-          return res.status(404).json({ error: 'Route not found' });
+          // Let other handlers deal with it
+          return next();
         }
         
-        const indexPath = path.join(publicPath, 'index.html');
+        const indexPath = path.join(clientPath, 'index.html');
         if (!fs.existsSync(indexPath)) {
           console.error('index.html not found at:', indexPath);
           return res.status(404).send('index.html not found');
