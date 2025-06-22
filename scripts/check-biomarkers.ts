@@ -1,4 +1,3 @@
-
 import { db } from '../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../db/schema';
 import { eq, isNull, or, and, sql } from 'drizzle-orm';
@@ -115,16 +114,6 @@ async function checkAndReprocessBiomarkers() {
     });
     throw error;
   }
-}
-
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  checkAndReprocessBiomarkers()
-    .then(() => process.exit(0))
-    .catch(error => {
-      console.error('Script failed:', error);
-      process.exit(1);
-    });
 }
 
 export { checkAndReprocessBiomarkers };
