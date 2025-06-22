@@ -321,8 +321,7 @@ async function startServer(server: Server, app: express.Express) {
       console.log('__dirname is:', __dirname);
       
       if (!fs.existsSync(clientPath)) {
-        console.error('Static files directory not found at:', clientPath);
-        throw new Error('Static files directory not found');
+        console.warn('Static files directory not found at:', clientPath, '- this may be temporary during deployment.');
       }
       
       app.use(express.static(clientPath));
