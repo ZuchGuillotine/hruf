@@ -107,6 +107,11 @@ async function initializeAndStart() {
           return callback(null, true);
         }
         
+        // Allow App Runner domains
+        if (origin.includes('awsapprunner.com')) {
+          return callback(null, true);
+        }
+        
         // Allow the custom domain
         if (process.env.CUSTOM_DOMAIN && origin.includes(process.env.CUSTOM_DOMAIN.replace(/^https?:\/\//, ''))) {
           return callback(null, true);
