@@ -331,6 +331,7 @@ async function startServer(server: Server, app: express.Express) {
       }
       
       // Serve static assets from specific directories to avoid conflicts with API routes
+      app.use(express.static(publicPath));
       app.use('/assets', express.static(path.join(publicPath, 'assets')));
       app.use('/images', express.static(path.join(publicPath, 'images')));
       
