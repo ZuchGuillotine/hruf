@@ -1,4 +1,3 @@
-
 import path from 'path';
 import fs from 'fs';
 import embeddingService from './embeddingService';
@@ -148,7 +147,7 @@ class ServiceInitializer {
       summaryTaskManager.startWeeklySummaryTask(0, 2);
 
       // Start lab processing task to run daily at 3 AM
-      summaryTaskManager.startLabProcessingTask(3);
+      // summaryTaskManager.startLabProcessingTask(3);
 
       logger.info('Scheduled tasks started successfully');
     } catch (error) {
