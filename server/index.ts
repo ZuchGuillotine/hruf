@@ -20,8 +20,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
-// Database import moved to after server starts to prevent startup crashes
-// import { db } from '../db';
+import { db } from '../db';
 import cors from 'cors';
 import { setupAuthentication } from './auth/setup';
 import authRoutes from './auth/routes';
@@ -125,8 +124,20 @@ async function initializeAndStart() {
 
     app.use(cors(corsOptions));
 
-    // Test database connection (non-blocking) - moved to after server starts
-    // Database connection testing will happen after server is listening
+    // Test database connection (non-blocking)
+    console.log('Testing database connection...');
+    import('drizzle-orm').then(({ sql }) => {
+      return db.execute(sql`SELECT 1`);
+    })
+      .then(() => {
+        console.log('✅ Database connection successful');
+        setReadinessCheck('database', true);
+      })
+      .catch((error) => {
+        console.error('❌ Database connection failed:', error);
+        console.log('⚠️ App will continue without database - some features may be limited');
+        // Don't crash - app can still serve static content and basic endpoints
+      });
 
     // Setup authentication (includes session middleware)
     await setupAuthentication(app);
@@ -341,22 +352,6 @@ async function startServer(server: Server, app: express.Express) {
       console.log('🏥 Health check endpoints available at /health and /api/health');
       console.log('🎯 App Runner can now perform health checks!');
 
-      // Test database connection after server starts (non-blocking)
-      console.log('Testing database connection...');
-      import('../db/index.js').then(({ db }) => {
-        return import('drizzle-orm').then(({ sql }) => {
-          return db.execute(sql`SELECT 1`);
-        });
-      })
-        .then(() => {
-          console.log('✅ Database connection successful');
-          setReadinessCheck('database', true);
-        })
-        .catch((error) => {
-          console.error('❌ Database connection failed:', error);
-          console.log('⚠️ App will continue without database - some features may be limited');
-          // Don't crash - app can still serve static content and basic endpoints
-        });
 
       // Log where the static files are expected to be found in production
       if (process.env.NODE_ENV === 'production') {
