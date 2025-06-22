@@ -316,28 +316,30 @@ async function startServer(server: Server, app: express.Express) {
     } else {
       console.log('Setting up static file serving...');
       // In App Runner: __dirname is /app/dist/server, so we need to go up to /app/dist
-      const clientPath = path.join(__dirname, '..', 'client');
-      console.log('Looking for static files at:', clientPath);
+      const publicPath = path.join(__dirname, '..');
+      console.log('Looking for static files at:', publicPath);
       console.log('__dirname is:', __dirname);
       
-      if (!fs.existsSync(clientPath)) {
-        console.warn('Static files directory not found at:', clientPath, '- this may be temporary during deployment.');
+      if (!fs.existsSync(publicPath)) {
+        console.error('Static files directory not found at:', publicPath);
+        throw new Error('Static files directory not found');
       }
       
-      app.use(express.static(clientPath));
+      // Serve static assets from specific directories to avoid conflicts with API routes
+      app.use('/assets', express.static(path.join(publicPath, 'assets')));
+      app.use('/images', express.static(path.join(publicPath, 'images')));
       
-      // Serve index.html for all routes not explicitly handled (SPA fallback)
-      app.get('*', (req, res, next) => {
-        // Skip API routes, auth routes, and health checks
+      // Serve index.html only for non-API routes (SPA fallback)
+      app.get('*', (req, res) => {
+        // Skip all API and auth routes
         if (req.path.startsWith('/api') || 
             req.path.startsWith('/auth') || 
             req.path.startsWith('/health') ||
             req.path.startsWith('/ping')) {
-          // Let other handlers deal with it
-          return next();
+          return res.status(404).json({ error: 'Route not found' });
         }
         
-        const indexPath = path.join(clientPath, 'index.html');
+        const indexPath = path.join(publicPath, 'index.html');
         if (!fs.existsSync(indexPath)) {
           console.error('index.html not found at:', indexPath);
           return res.status(404).send('index.html not found');
