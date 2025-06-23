@@ -112,8 +112,11 @@ async function initializeAndStart() {
           return callback(null, true);
         }
         
-        // Allow the custom domain explicitly
-        if (origin.includes('stacktracker.io')) {
+        // Allow the custom domain explicitly - handle both www and non-www
+        if (origin === 'https://stacktracker.io' || 
+            origin === 'https://www.stacktracker.io' ||
+            origin === 'http://stacktracker.io' ||
+            origin === 'http://www.stacktracker.io') {
           return callback(null, true);
         }
         
@@ -342,8 +345,15 @@ async function startServer(server: Server, app: express.Express) {
     }
     // Production static serving is now handled in initializeAndStart
 
-    // The server.listen call is now outside this function,
-    // as it needs to be called after all routes are set up.
+    // Start the server listening
+    server.listen(PORT, HOST, () => {
+      console.log(`✅ Server is now listening on ${HOST}:${PORT}`);
+      console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
+      console.log(`🔗 Local: http://localhost:${PORT}`);
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🔗 App Runner will proxy requests to this port`);
+      }
+    });
 
   } catch (err: unknown) {
     const error = err as { message?: string; code?: string };
