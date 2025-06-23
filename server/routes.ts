@@ -524,7 +524,7 @@ export function registerRoutes(app: Express): Server {
         .returning();
 
       // Reinitialize the supplement service to include the new supplement
-      await supplementService.initialize();
+      await supplementService.getInstance().initialize();
 
       res.json(newSupplement);
     } catch (error) {
@@ -880,7 +880,7 @@ export function registerRoutes(app: Express): Server {
 
   // Initialize supplement service with a delay to ensure DB is ready
   setTimeout(() => {
-    supplementService.initialize().catch(error => {
+    supplementService.getInstance().initialize().catch(error => {
       console.error("Failed to initialize supplement service:", error);
       // Continue running even if supplement service fails
     });
@@ -897,7 +897,7 @@ export function registerRoutes(app: Express): Server {
         return res.json([]);
       }
 
-      const suggestions = await supplementService.search(query);
+      const suggestions = await supplementService.getInstance().search(query);
       console.log(`Returning ${suggestions.length} suggestions`);
       res.json(suggestions);
     } catch (error) {
