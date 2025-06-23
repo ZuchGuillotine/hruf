@@ -1,9 +1,5 @@
 import path from 'path';
 import fs from 'fs';
-import embeddingService from './embeddingService';
-import { advancedSummaryService } from './advancedSummaryService';
-import { summaryTaskManager } from '../cron/summaryManager';
-import { labSummaryService } from './labSummaryService';
 import logger from '../utils/logger';
 
 /**
@@ -26,9 +22,13 @@ class ServiceInitializer {
       // Initialize lab results services
       await this.initializeLabServices();
 
+      // Initialize supplement service
+      await this.initializeSupplementService();
+
       // Start scheduled tasks if in production mode
       if (process.env.NODE_ENV === 'production') {
-        this.startScheduledTasks();
+        const { summaryTaskManager } = await import('../cron/summaryManager');
+        this.startScheduledTasks(summaryTaskManager);
       } else {
         logger.info('Scheduled tasks not started in development mode');
       }
@@ -51,6 +51,7 @@ class ServiceInitializer {
   private async initializePGVector(): Promise<void> {
     try {
       logger.info('Initializing PGVector services...');
+      const { default: embeddingService } = await import('./embeddingService');
 
       // Verify PGVector availability and initialize embedding service
       const initialized = await embeddingService.initialize();
@@ -72,6 +73,8 @@ class ServiceInitializer {
   private async initializeSummarization(): Promise<void> {
     try {
       logger.info('Initializing summarization services...');
+      const { default: embeddingService } = await import('./embeddingService');
+      const { advancedSummaryService } = await import('./advancedSummaryService');
 
       // Verify OpenAI API access for summarization
       try {
@@ -96,6 +99,8 @@ class ServiceInitializer {
   private async initializeLabServices(): Promise<void> {
     try {
       logger.info('Initializing lab results services...');
+      const { labSummaryService } = await import('./labSummaryService');
+      // Any specific initialization for labSummaryService would go here
 
       // Ensure uploads directory exists
       const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -134,9 +139,25 @@ class ServiceInitializer {
   }
 
   /**
+   * Initialize the supplement service
+   */
+  private async initializeSupplementService(): Promise<void> {
+    try {
+      logger.info('Initializing supplement service...');
+      const { supplementService } = await import('./supplements');
+      // This will start the async data loading for the trie
+      await supplementService.getInstance().initialize();
+      logger.info('Supplement service initialization started in background.');
+    } catch (error) {
+      logger.error('Supplement service initialization failed:', error);
+      // Non-fatal, continue running
+    }
+  }
+
+  /**
    * Start scheduled tasks for summarization
    */
-  private startScheduledTasks(): void {
+  private startScheduledTasks(summaryTaskManager: any): void {
     try {
       logger.info('Starting scheduled tasks...');
 
@@ -163,6 +184,7 @@ class ServiceInitializer {
   async shutdownServices(): Promise<void> {
     try {
       logger.info('Shutting down services...');
+      const { summaryTaskManager } = await import('../cron/summaryManager');
 
       // Stop all scheduled tasks
       summaryTaskManager.stopAllTasks();

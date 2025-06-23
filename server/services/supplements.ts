@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 21/06/2025 - 22:02:22
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 21/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import { supplementReference } from "@db/schema";
 import { db } from "@db";
 import { sql } from "drizzle-orm";
@@ -141,4 +153,14 @@ class SupplementService {
   }
 }
 
-export const supplementService = new SupplementService();
+// Singleton instance management
+let instance: SupplementService | null = null;
+
+export const supplementService = {
+  getInstance: (): SupplementService => {
+    if (!instance) {
+      instance = new SupplementService();
+    }
+    return instance;
+  }
+};
