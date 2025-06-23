@@ -10,7 +10,9 @@ build:
       - echo "Build completed"
     post-build:
       - echo "Verifying build output..."
+      - ls -la dist/
       - ls -la dist/server/
+      - ls -la dist/client/
       - echo "Build verification complete"
 run:
   command: node dist/server/startup.js
