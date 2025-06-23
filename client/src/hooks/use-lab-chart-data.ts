@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import type { BiomarkerDataPoint, Series } from '@/types/chart';
 
 interface ChartData {
@@ -137,9 +138,9 @@ export function useLabChartData() {
     },
   });
 
-  const getSeriesByName = (name: string): Series | undefined => {
+  const getSeriesByName = useCallback((name: string): Series | undefined => {
     return query.data?.series.find(s => s.name === name);
-  };
+  }, [query.data?.series]);
 
   return {
     ...query,

@@ -21,7 +21,7 @@ interface LabFile {
 
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
-  const { getSeriesByName, data: labChartData, isLoading: chartLoading, error: chartError } = useLabChartData();
+  const { data: labChartData, isLoading: chartLoading, error: chartError } = useLabChartData();
   const [location] = useLocation();
   const [urlState, setUrlState] = useState(location);
   
@@ -102,11 +102,21 @@ export default function Labs() {
   };
 
   const chartData = useMemo(() => {
+      if (!labChartData?.series) return [];
+      
       const data = Array.from(selectedNames).map(name =>
-          getSeriesByName(name)
+          labChartData.series.find(s => s.name === name)
       ).filter(Boolean) as Series[];
+      
+      console.log('📊 Labs: Chart data computed:', {
+        selectedNamesSize: selectedNames.size,
+        selectedNamesArray: Array.from(selectedNames),
+        availableSeries: labChartData.series?.map(s => s.name),
+        filteredData: data.map(d => d.name)
+      });
+      
       return data;
-  }, [selectedNames, getSeriesByName]);
+  }, [selectedNames, labChartData?.series]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8f3e8]">
