@@ -34,8 +34,23 @@ interface BiomarkerHistoryChartProps {
 }
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
+  // Debug logging
+  React.useEffect(() => {
+    console.log('📊 BiomarkerHistoryChart - Received series:', {
+      seriesCount: series?.length || 0,
+      seriesNames: series?.map(s => s.name) || [],
+      sampleSeries: series?.slice(0, 2).map(s => ({
+        name: s.name,
+        pointCount: s.points?.length || 0,
+        unit: s.unit,
+        category: s.category
+      })) || []
+    });
+  }, [series]);
+
   // Show empty chart template if no series selected
   if (!series || series.length === 0) {
+    console.log('📊 BiomarkerHistoryChart - Showing empty state');
     return (
       <div className="w-full h-[600px] bg-white rounded-lg p-4 shadow-sm">
         <div className="mb-4">
@@ -62,10 +77,14 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
   // Process chart data
   const chartData = React.useMemo(() => {
     try {
+      console.log('📊 BiomarkerHistoryChart - Processing chart data for', series.length, 'series');
+      
       // Get all unique dates across all series
       const dates = Array.from(
         new Set(series.flatMap(s => s.points.map((p: { testDate: string }) => p.testDate)))
       ).sort();
+      
+      console.log('📊 Found', dates.length, 'unique dates:', dates.slice(0, 5));
       
       // Create data points for each date
       const data = dates.map(date => {
@@ -80,21 +99,32 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
         return entry;
       });
       
+      console.log('📊 Processed chart data:', {
+        dataPoints: data.length,
+        sampleData: data.slice(0, 2)
+      });
+      
       return data;
     } catch (error) {
-      console.error('Error processing chart data:', error);
+      console.error('📊 Error processing chart data:', error);
       return [];
     }
   }, [series]);
 
   // If no data after processing, show message
   if (chartData.length === 0) {
+    console.log('📊 BiomarkerHistoryChart - No chart data available');
     return (
       <div className="flex items-center justify-center h-64 bg-white rounded-lg shadow-sm">
-        <p className="text-gray-500">No data points available</p>
+        <div className="text-center">
+          <p className="text-gray-500 font-medium">No data points available</p>
+          <p className="text-gray-400 text-sm">Selected biomarkers have no data to display</p>
+        </div>
       </div>
     );
   }
+
+  console.log('📊 BiomarkerHistoryChart - Rendering chart with', chartData.length, 'data points');
 
   return (
     <div className="w-full h-[600px] bg-white rounded-lg p-4 shadow-sm">

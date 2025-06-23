@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { db } from '../../db';
-import { labResults, biomarkerResults } from '../../db/schema';
+import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../../db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import logger from '../utils/logger';
 import { biomarkerExtractionService } from '../services/biomarkerExtractionService';
@@ -205,47 +205,93 @@ router.get('/debug', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Get raw biomarker data
-    const rawResults = await db
-      .select()
+    const userId = req.user.id;
+    
+    // Step 1: Check lab results
+    const labResultsQuery = await db
+      .select({
+        id: labResults.id,
+        fileName: labResults.fileName,
+        uploadedAt: labResults.uploadedAt,
+        hasMetadata: labResults.metadata
+      })
+      .from(labResults)
+      .where(eq(labResults.userId, userId))
+      .orderBy(labResults.uploadedAt);
+
+    // Step 2: Check biomarker results
+    const biomarkerQuery = await db
+      .select({
+        id: biomarkerResults.id,
+        labResultId: biomarkerResults.labResultId,
+        name: biomarkerResults.name,
+        value: biomarkerResults.value,
+        unit: biomarkerResults.unit,
+        testDate: biomarkerResults.testDate,
+        category: biomarkerResults.category
+      })
       .from(biomarkerResults)
       .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
-      .where(eq(labResults.userId, req.user.id))
+      .where(eq(labResults.userId, userId))
       .limit(10);
 
-    // Get a specific lab result's text
-    const labId = req.query.labId ? parseInt(req.query.labId as string) : null;
-    let labText = null;
-    
-    if (labId) {
-      const [labResult] = await db
-        .select()
-        .from(labResults)
-        .where(and(
-          eq(labResults.id, labId),
-          eq(labResults.userId, req.user.id)
-        ))
-        .limit(1);
-      
-      if (labResult) {
-        labText = labResult.metadata?.preprocessedText?.normalizedText || 
-                  labResult.metadata?.preprocessedText?.rawText ||
-                  'No text found';
+    // Step 3: Get unique biomarker names
+    const uniqueBiomarkers = await db
+      .selectDistinct({ name: biomarkerResults.name })
+      .from(biomarkerResults)
+      .innerJoin(labResults, eq(biomarkerResults.labResultId, labResults.id))
+      .where(eq(labResults.userId, userId));
+
+    // Step 4: Get processing status
+    const processingStatus = await db
+      .select({
+        labResultId: biomarkerProcessingStatus.labResultId,
+        status: biomarkerProcessingStatus.status,
+        biomarkerCount: biomarkerProcessingStatus.biomarkerCount
+      })
+      .from(biomarkerProcessingStatus)
+      .innerJoin(labResults, eq(biomarkerProcessingStatus.labResultId, labResults.id))
+      .where(eq(labResults.userId, userId));
+
+    const debugInfo = {
+      userId,
+      timestamp: new Date().toISOString(),
+      labResults: {
+        count: labResultsQuery.length,
+        data: labResultsQuery
+      },
+      biomarkerResults: {
+        count: biomarkerQuery.length,
+        data: biomarkerQuery,
+        uniqueNames: uniqueBiomarkers.map(b => b.name)
+      },
+      processingStatus: processingStatus,
+      summary: {
+        totalLabResults: labResultsQuery.length,
+        totalBiomarkers: biomarkerQuery.length,
+        uniqueBiomarkerNames: uniqueBiomarkers.length,
+        processedLabs: processingStatus.filter(p => p.status === 'completed').length
       }
-    }
+    };
+
+    logger.info('Debug info requested', debugInfo);
 
     res.json({
       success: true,
-      userId: req.user.id,
-      rawDataSample: rawResults,
-      totalCount: rawResults.length,
-      labText: labText ? labText.substring(0, 1000) : null,
-      labId: labId
+      debug: debugInfo
     });
+
   } catch (error) {
+    logger.error('Debug endpoint error:', {
+      userId: req.user?.id,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Debug query failed',
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });

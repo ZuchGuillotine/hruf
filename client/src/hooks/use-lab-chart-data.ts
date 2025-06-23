@@ -35,6 +35,7 @@ export function useLabChartData() {
     refetchOnMount: true,
     queryFn: async () => {
       try {
+        console.log('🔍 Fetching lab chart data from /api/labs/chart-data');
         const response = await fetch('/api/labs/chart-data', {
           credentials: 'include',
           headers: {
@@ -42,18 +43,34 @@ export function useLabChartData() {
           }
         });
 
+        console.log('📡 API Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
         if (!response.ok) {
           const errorText = await response.text();
+          console.error('❌ API Error:', errorText);
           throw new Error(`Failed to fetch lab chart data: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('📊 Raw API Data:', {
+          success: data.success,
+          dataLength: data.data?.length || 0,
+          sampleData: data.data?.slice(0, 3),
+          pagination: data.pagination
+        });
         return data;
       } catch (error) {
+        console.error('🚨 Fetch Error:', error);
         throw error;
       }
     },
     select: (response) => {
+      console.log('🔄 Processing API response:', response);
+      
       const biomarkers = new Map<string, Array<{
         value: number;
         testDate: string;
@@ -61,8 +78,10 @@ export function useLabChartData() {
       }>>();
 
       const categoriesMap: Record<string, string> = {};
+      let filteredCount = 0;
 
       if (!response.data || !Array.isArray(response.data)) {
+        console.warn('⚠️ No data array in response');
         return {
           series: [],
           allBiomarkers: [],
@@ -71,10 +90,13 @@ export function useLabChartData() {
       }
 
       const allBiomarkers = Array.from(new Set(response.data.map(biomarker => biomarker.name)));
+      console.log('📋 Found biomarkers:', allBiomarkers);
 
       response.data.forEach(biomarker => {
         // Very minimal filtering - only exclude truly invalid values
         if (biomarker.value == null || isNaN(biomarker.value)) {
+          filteredCount++;
+          console.warn('🚫 Filtered invalid biomarker:', biomarker);
           return;
         }
         
@@ -100,9 +122,12 @@ export function useLabChartData() {
         category: categoriesMap[name] || 'other'
       }));
 
-      console.log('Filtered out', filteredCount, 'invalid biomarkers');
-      console.log('Final processed series:', allSeries.length, 'biomarkers with data');
-      console.log('Sample series data:', allSeries.slice(0, 2));
+      console.log('✅ Processed data:', {
+        filteredCount,
+        seriesCount: allSeries.length,
+        biomarkersWithData: allSeries.map(s => `${s.name} (${s.points.length} points)`),
+        categories: categoriesMap
+      });
 
       return {
         series: allSeries,

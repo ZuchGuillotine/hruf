@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
@@ -22,9 +21,21 @@ const CATEGORY_COLORS = {
 type CategoryType = keyof typeof CATEGORY_COLORS;
 
 export function BiomarkerFilter() {
-  const { data, isLoading, refetch } = useLabChartData();
+  const { data, isLoading, refetch, error } = useLabChartData();
   const [location, setLocation] = useLocation();
   const [urlState, setUrlState] = React.useState(location);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔍 BiomarkerFilter - Data State:', {
+      isLoading,
+      hasData: !!data,
+      error: error?.message,
+      allBiomarkers: data?.allBiomarkers?.length || 0,
+      categories: data?.categories ? Object.keys(data.categories).length : 0,
+      sampleBiomarkers: data?.allBiomarkers?.slice(0, 5)
+    });
+  }, [data, isLoading, error]);
 
   // Force refetch on mount to ensure we have fresh data
   React.useEffect(() => {
@@ -91,15 +102,55 @@ export function BiomarkerFilter() {
     return (
       <Card className="p-4">
         <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+        <p className="text-sm text-gray-500 mt-2">Loading biomarkers...</p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-4 border-red-200 bg-red-50">
+        <div className="text-red-700">
+          <p className="font-medium">Error loading biomarkers:</p>
+          <p className="text-sm">{error.message}</p>
+          <button 
+            onClick={() => refetch()} 
+            className="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 rounded text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!data?.allBiomarkers || data.allBiomarkers.length === 0) {
+    return (
+      <Card className="p-4 border-yellow-200 bg-yellow-50">
+        <div className="text-yellow-800">
+          <p className="font-medium">No biomarkers found</p>
+          <p className="text-sm">Make sure you have uploaded lab results with processed biomarker data.</p>
+          <button 
+            onClick={() => refetch()} 
+            className="mt-2 px-3 py-1 bg-yellow-100 hover:bg-yellow-200 rounded text-sm"
+          >
+            Refresh
+          </button>
+        </div>
       </Card>
     );
   }
 
   return (
     <Card className="p-4">
+      <div className="mb-2">
+        <p className="text-sm text-gray-600">
+          Found {data.allBiomarkers.length} biomarkers
+        </p>
+      </div>
       <ScrollArea className="h-[200px] w-full">
         <div className="flex flex-wrap gap-2 p-2">
-          {data?.allBiomarkers?.map((name) => (
+          {data.allBiomarkers.map((name) => (
             <Button
               key={name}
               variant={selectedNames.has(name) ? "default" : "outline"}
@@ -108,7 +159,7 @@ export function BiomarkerFilter() {
               className={`rounded-full ${
                 selectedNames.has(name) 
                   ? '' 
-                  : CATEGORY_COLORS[data.categories[name] || 'other']
+                  : CATEGORY_COLORS[(data.categories[name] as CategoryType) || 'other']
               }`}
             >
               {name}
