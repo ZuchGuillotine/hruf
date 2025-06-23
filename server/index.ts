@@ -112,7 +112,12 @@ async function initializeAndStart() {
           return callback(null, true);
         }
         
-        // Allow the custom domain
+        // Allow the custom domain explicitly
+        if (origin.includes('stacktracker.io')) {
+          return callback(null, true);
+        }
+        
+        // Allow the custom domain via environment variable (for flexibility)
         if (process.env.CUSTOM_DOMAIN && origin.includes(process.env.CUSTOM_DOMAIN.replace(/^https?:\/\//, ''))) {
           return callback(null, true);
         }
