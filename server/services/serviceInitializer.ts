@@ -146,7 +146,8 @@ class ServiceInitializer {
       logger.info('Initializing supplement service...');
       const { supplementService } = await import('./supplements');
       // This will start the async data loading for the trie
-      await supplementService.getInstance().initialize();
+      const instance = supplementService.getInstance();
+      await instance.initialize();
       logger.info('Supplement service initialization started in background.');
     } catch (error) {
       logger.error('Supplement service initialization failed:', error);
