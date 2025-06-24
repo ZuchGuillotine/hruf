@@ -23,10 +23,26 @@ npm run db:push
 
 5. Start development server
 ```bash
-npm run dev
+npm run dev:local
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:5173`
+
+## Environment Configuration
+
+### Quick Start
+- **Development**: Run `npm run dev:local` and access the app at http://localhost:5173
+- **Production**: Deployed via AWS App Runner with automated builds
+
+### Important Documentation
+- 📚 **[Environment Configuration Guide](./docs/ENVIRONMENT_CONFIGURATION.md)** - Detailed guide for dev/prod environments
+- 🚀 **[Quick Reference](./docs/QUICK_REFERENCE_ENV.md)** - Quick commands and troubleshooting
+
+### Key Points
+- Development and production use different authentication systems
+- Always test in local development before deploying
+- The production configuration is isolated from development changes
+- See the documentation above for detailed configuration information
 
 ## Development Guidelines
 

@@ -33,7 +33,8 @@ export function BiomarkerFilter() {
       error: error?.message,
       allBiomarkers: data?.allBiomarkers?.length || 0,
       categories: data?.categories ? Object.keys(data.categories).length : 0,
-      sampleBiomarkers: data?.allBiomarkers?.slice(0, 5)
+      sampleBiomarkers: data?.allBiomarkers?.slice(0, 5),
+      seriesCount: data?.series?.length || 0
     });
   }, [data, isLoading, error]);
 
@@ -130,6 +131,11 @@ export function BiomarkerFilter() {
         <div className="text-yellow-800">
           <p className="font-medium">No biomarkers found</p>
           <p className="text-sm">Make sure you have uploaded lab results with processed biomarker data.</p>
+          {data?.series && data.series.length > 0 && (
+            <p className="text-xs mt-1 text-yellow-600">
+              Found {data.series.length} data series but no biomarker names extracted.
+            </p>
+          )}
           <button 
             onClick={() => refetch()} 
             className="mt-2 px-3 py-1 bg-yellow-100 hover:bg-yellow-200 rounded text-sm"
@@ -150,21 +156,29 @@ export function BiomarkerFilter() {
       </div>
       <ScrollArea className="h-[200px] w-full">
         <div className="flex flex-wrap gap-2 p-2">
-          {data.allBiomarkers.map((name) => (
-            <Button
-              key={name}
-              variant={selectedNames.has(name) ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleName(name)}
-              className={`rounded-full ${
-                selectedNames.has(name) 
-                  ? '' 
-                  : CATEGORY_COLORS[(data.categories[name] as CategoryType) || 'other']
-              }`}
-            >
-              {name}
-            </Button>
-          ))}
+          {data.allBiomarkers.filter(name => name && typeof name === 'string').map((name) => {
+            const category = (data.categories?.[name] as CategoryType) || 'other';
+            const hasData = data.series?.some(s => s.name === name && s.points?.length > 0);
+            
+            return (
+              <Button
+                key={name}
+                variant={selectedNames.has(name) ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleName(name)}
+                disabled={!hasData}
+                className={`rounded-full ${
+                  selectedNames.has(name) 
+                    ? '' 
+                    : CATEGORY_COLORS[category]
+                } ${!hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={hasData ? `Click to ${selectedNames.has(name) ? 'remove' : 'add'} ${name}` : `No data available for ${name}`}
+              >
+                {name}
+                {!hasData && ' (no data)'}
+              </Button>
+            );
+          })}
         </div>
       </ScrollArea>
     </Card>

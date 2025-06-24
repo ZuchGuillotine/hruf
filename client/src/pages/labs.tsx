@@ -22,7 +22,7 @@ interface LabFile {
 export default function Labs() {
   const [labFiles, setLabFiles] = useState<LabFile[]>([]);
   const { data: labChartData, isLoading: chartLoading, error: chartError } = useLabChartData();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [urlState, setUrlState] = useState(location);
   
   // Listen for browser URL changes (including programmatic ones)
@@ -60,6 +60,25 @@ export default function Labs() {
     return new Set(names);
   }, [urlState]);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+
+  // Auto-select first available biomarker if none selected
+  useEffect(() => {
+    if (!chartLoading && labChartData?.series && labChartData.series.length > 0 && selectedNames.size === 0) {
+      // Find the first biomarker that has data
+      const firstBiomarkerWithData = labChartData.series.find(s => 
+        s && s.points && s.points.length > 0
+      );
+      
+      if (firstBiomarkerWithData) {
+        console.log('Auto-selecting first biomarker:', firstBiomarkerWithData.name);
+        const params = new URLSearchParams();
+        params.set('biomarkers', firstBiomarkerWithData.name);
+        const newUrl = `/labs?${params.toString()}`;
+        setLocation(newUrl);
+        window.history.pushState({}, '', newUrl);
+      }
+    }
+  }, [chartLoading, labChartData, selectedNames.size, setLocation]);
 
   const fetchLabFiles = async () => {
     try {
@@ -102,17 +121,49 @@ export default function Labs() {
   };
 
   const chartData = useMemo(() => {
-      if (!labChartData?.series) return [];
+      if (!labChartData?.series || !Array.isArray(labChartData.series)) {
+        console.log('📊 Labs: No series data available');
+        return [];
+      }
       
-      const data = Array.from(selectedNames).map(name =>
-          labChartData.series.find(s => s.name === name)
-      ).filter(Boolean) as Series[];
+      const selectedNamesArray = Array.from(selectedNames);
+      
+      if (selectedNamesArray.length === 0) {
+        console.log('📊 Labs: No biomarkers selected');
+        return [];
+      }
+      
+      const data = selectedNamesArray
+        .map(name => {
+          const series = labChartData.series.find(s => s && s.name === name);
+          if (!series) {
+            console.warn(`📊 Labs: Series not found for biomarker: ${name}`);
+          }
+          return series;
+        })
+        .filter((series): series is Series => {
+          const isValid = series !== null && 
+                 series !== undefined && 
+                 typeof series === 'object' &&
+                 'name' in series &&
+                 'points' in series &&
+                 'unit' in series &&
+                 'category' in series &&
+                 Array.isArray(series.points) &&
+                 series.points.length > 0;
+          
+          if (!isValid && series) {
+            console.warn('📊 Labs: Invalid series structure:', series);
+          }
+          return isValid;
+        });
       
       console.log('📊 Labs: Chart data computed:', {
         selectedNamesSize: selectedNames.size,
-        selectedNamesArray: Array.from(selectedNames),
-        availableSeries: labChartData.series?.map(s => s.name),
-        filteredData: data.map(d => d.name)
+        selectedNamesArray: selectedNamesArray,
+        availableSeries: labChartData.series?.map(s => s?.name).filter(Boolean) || [],
+        filteredData: data.map(d => `${d.name} (${d.points.length} points)`),
+        validSeriesCount: data.length
       });
       
       return data;

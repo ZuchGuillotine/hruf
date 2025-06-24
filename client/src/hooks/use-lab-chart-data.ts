@@ -37,7 +37,9 @@ export function useLabChartData() {
     queryFn: async () => {
       try {
         console.log('🔍 Fetching lab chart data from /api/labs/chart-data');
-        const response = await fetch('/api/labs/chart-data', {
+        
+        // First request to get initial data and total count
+        const firstResponse = await fetch('/api/labs/chart-data?pageSize=100&page=1', {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json'
@@ -45,25 +47,71 @@ export function useLabChartData() {
         });
 
         console.log('📡 API Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
+          status: firstResponse.status,
+          statusText: firstResponse.statusText,
+          headers: Object.fromEntries(firstResponse.headers.entries())
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
+        if (!firstResponse.ok) {
+          const errorText = await firstResponse.text();
           console.error('❌ API Error:', errorText);
-          throw new Error(`Failed to fetch lab chart data: ${response.status} ${errorText}`);
+          throw new Error(`Failed to fetch lab chart data: ${firstResponse.status} ${errorText}`);
         }
 
-        const data = await response.json();
-        console.log('📊 Raw API Data:', {
-          success: data.success,
-          dataLength: data.data?.length || 0,
-          sampleData: data.data?.slice(0, 3),
-          pagination: data.pagination
+        const firstData = await firstResponse.json();
+        console.log('📊 Initial API Data:', {
+          success: firstData.success,
+          dataLength: firstData.data?.length || 0,
+          pagination: firstData.pagination,
+          totalPages: firstData.pagination?.totalPages || 1
         });
-        return data;
+
+        // If there's only one page, return the data
+        if (!firstData.pagination || firstData.pagination.totalPages <= 1) {
+          return firstData;
+        }
+
+        // Otherwise, fetch remaining pages
+        const allData = [...firstData.data];
+        const totalPages = firstData.pagination.totalPages;
+        
+        console.log(`📄 Fetching ${totalPages - 1} additional pages...`);
+        
+        // Fetch remaining pages in parallel for better performance
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+          pagePromises.push(
+            fetch(`/api/labs/chart-data?pageSize=100&page=${page}`, {
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }).then(res => res.json())
+          );
+        }
+
+        const additionalPages = await Promise.all(pagePromises);
+        
+        // Combine all data
+        for (const pageData of additionalPages) {
+          if (pageData.success && pageData.data) {
+            allData.push(...pageData.data);
+          }
+        }
+
+        console.log(`✅ Fetched total of ${allData.length} biomarker records across ${totalPages} pages`);
+
+        // Return combined response
+        return {
+          ...firstData,
+          data: allData,
+          pagination: {
+            ...firstData.pagination,
+            page: 1,
+            pageSize: allData.length,
+            total: allData.length
+          }
+        };
       } catch (error) {
         console.error('🚨 Fetch Error:', error);
         throw error;
@@ -81,8 +129,12 @@ export function useLabChartData() {
       const categoriesMap: Record<string, string> = {};
       let filteredCount = 0;
 
-      if (!response.data || !Array.isArray(response.data)) {
-        console.warn('⚠️ No data array in response');
+      if (!response.success || !response.data || !Array.isArray(response.data)) {
+        console.warn('⚠️ Invalid API response structure:', {
+          success: response.success,
+          hasData: !!response.data,
+          isArray: Array.isArray(response.data)
+        });
         return {
           series: [],
           allBiomarkers: [],
@@ -94,8 +146,8 @@ export function useLabChartData() {
       console.log('📋 Found biomarkers:', allBiomarkers);
 
       response.data.forEach(biomarker => {
-        // Very minimal filtering - only exclude truly invalid values
-        if (biomarker.value == null || isNaN(biomarker.value)) {
+        // Validate required fields
+        if (!biomarker.name || biomarker.value == null || isNaN(Number(biomarker.value)) || !biomarker.testDate) {
           filteredCount++;
           console.warn('🚫 Filtered invalid biomarker:', biomarker);
           return;
@@ -103,9 +155,9 @@ export function useLabChartData() {
         
         const series = biomarkers.get(biomarker.name) || [];
         series.push({
-          value: biomarker.value,
+          value: Number(biomarker.value),
           testDate: biomarker.testDate,
-          unit: biomarker.unit
+          unit: biomarker.unit || ''
         });
         biomarkers.set(biomarker.name, series);
 

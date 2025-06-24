@@ -34,6 +34,83 @@ interface BiomarkerHistoryChartProps {
 }
 
 export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
+  // Process chart data - Move this hook before any conditional returns
+  const chartData = React.useMemo(() => {
+    try {
+      console.log('📊 BiomarkerHistoryChart - Processing chart data for', series?.length || 0, 'series');
+      
+      // Early return if no series
+      if (!series || series.length === 0) {
+        return [];
+      }
+      
+      // Validate series structure with better type checking
+      const validSeries = series.filter(s => {
+        const isValid = s && 
+               typeof s === 'object' &&
+               typeof s.name === 'string' &&
+               s.points && 
+               Array.isArray(s.points) && 
+               s.points.length > 0 &&
+               typeof s.unit === 'string' &&
+               typeof s.category === 'string';
+        
+        if (!isValid) {
+          console.warn('📊 Invalid series structure:', s);
+        }
+        return isValid;
+      });
+      
+      if (validSeries.length === 0) {
+        console.warn('📊 No valid series found after validation');
+        return [];
+      }
+      
+      // Get all unique dates across all series with better validation
+      const dates = Array.from(
+        new Set(validSeries.flatMap(s => 
+          s.points
+            .filter((p: any) => {
+              const hasValidDate = p && p.testDate && typeof p.testDate === 'string';
+              const hasValidValue = p && p.value !== null && p.value !== undefined && !isNaN(Number(p.value));
+              return hasValidDate && hasValidValue;
+            })
+            .map((p: { testDate: string }) => p.testDate)
+        ))
+      ).sort();
+      
+      console.log('📊 Found', dates.length, 'unique dates:', dates.slice(0, 5));
+      
+      if (dates.length === 0) {
+        console.warn('📊 No valid dates found in series data');
+        return [];
+      }
+      
+      // Create data points for each date
+      const data = dates.map(date => {
+        const entry: Record<string, any> = { testDate: date };
+        validSeries.forEach(s => {
+          const point = s.points.find((p: { testDate: string; value: number }) => p.testDate === date);
+          if (point && point.value !== null && point.value !== undefined && !isNaN(Number(point.value))) {
+            entry[s.name] = Number(point.value);
+            entry[`${s.name}_unit`] = s.unit || '';
+          }
+        });
+        return entry;
+      });
+      
+      console.log('📊 Processed chart data:', {
+        dataPoints: data.length,
+        sampleData: data.slice(0, 2)
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('📊 Error processing chart data:', error);
+      return [];
+    }
+  }, [JSON.stringify(series)]); // Use JSON.stringify to properly detect changes in series array
+
   // Debug logging
   React.useEffect(() => {
     console.log('📊 BiomarkerHistoryChart - Received series:', {
@@ -73,43 +150,6 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
       </div>
     );
   }
-
-  // Process chart data
-  const chartData = React.useMemo(() => {
-    try {
-      console.log('📊 BiomarkerHistoryChart - Processing chart data for', series.length, 'series');
-      
-      // Get all unique dates across all series
-      const dates = Array.from(
-        new Set(series.flatMap(s => s.points.map((p: { testDate: string }) => p.testDate)))
-      ).sort();
-      
-      console.log('📊 Found', dates.length, 'unique dates:', dates.slice(0, 5));
-      
-      // Create data points for each date
-      const data = dates.map(date => {
-        const entry: Record<string, any> = { testDate: date };
-        series.forEach(s => {
-          const point = s.points.find((p: { testDate: string }) => p.testDate === date);
-          if (point) {
-            entry[s.name] = point.value;
-            entry[`${s.name}_unit`] = s.unit;
-          }
-        });
-        return entry;
-      });
-      
-      console.log('📊 Processed chart data:', {
-        dataPoints: data.length,
-        sampleData: data.slice(0, 2)
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('📊 Error processing chart data:', error);
-      return [];
-    }
-  }, [series]);
 
   // If no data after processing, show message
   if (chartData.length === 0) {
@@ -181,7 +221,7 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
             }}
           />
           <Legend />
-          {series.map((s) => (
+          {series.filter(s => s && s.name && s.unit).map((s) => (
             <Line
               key={s.name}
               type="monotone"
@@ -190,7 +230,8 @@ export function BiomarkerHistoryChart({ series }: BiomarkerHistoryChartProps) {
               strokeWidth={2}
               dot={true}
               activeDot={{ r: 6, strokeWidth: 1 }}
-              name={`${s.name} (${s.unit})`}
+              name={`${s.name} ${s.unit ? `(${s.unit})` : ''}`}
+              connectNulls={false}
             />
           ))}
         </LineChart>
