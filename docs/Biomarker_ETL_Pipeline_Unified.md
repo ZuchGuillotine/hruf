@@ -158,7 +158,17 @@ await db.transaction(async (tx) => {
 - Storage: `tx_{labResultId}_{timestamp}`
 - Enables complete pipeline tracing and debugging
 
-### 3.5. Performance Metrics (Estimated Impact)
+### 3.5. Recent Frontend Improvements (June 2025)
+
+Recent work on the `BiomarkerHistoryChart` component has resolved several UI and data-fetching issues, leading to a more robust and user-friendly experience.
+
+-   **Pagination Support**: The frontend now properly handles paginated API responses. If the initial request indicates more than 100 records, it makes subsequent parallel requests to fetch all available biomarker data, ensuring the chart is always complete.
+-   **Auto-Selection of Biomarkers**: On page load, the chart automatically selects the first available biomarker from the fetched data. This prevents an empty state and provides immediate value to the user.
+-   **React Hook Correction**: A "Rendered more hooks than during the previous render" error was fixed by ensuring all React hooks (`useMemo`, `useEffect`) in the `BiomarkerHistoryChart` component are called unconditionally before any early returns.
+-   **API Compliance**: The `pageSize` parameter for API requests was adjusted from `1000` to `100` to comply with server-side validation constraints.
+-   **Robust Edge Case Handling**: The chart now gracefully handles cases where users have no biomarker data and ensures correct rendering when biomarkers are selected or deselected.
+
+### 3.6. Performance Metrics (Estimated Impact)
 
 | Metric                          | Baseline | Current (Est.) | Target | Status |
 | ------------------------------- | -------- | -------------- | ------ | ------ |
@@ -168,14 +178,30 @@ await db.transaction(async (tx) => {
 | Data consistency issues         | Frequent | Rare           | None   | ✅ Significantly Improved |
 | Pipeline traceability           | Poor     | Complete       | Complete | ✅ Achieved |
 
-### 3.6. Remaining Tasks (Lower Priority)
+### 3.7. Remaining Tasks (Lower Priority)
 1.  **Performance Testing**: Validate extraction accuracy improvements with real lab data
 2.  **Unit Canonicalization**: Implement standardized unit conversion (`unitConversion.ts`)
 3.  **Monitoring Dashboard**: Create real-time dashboard for pipeline health and metrics
 4.  **Queue Infrastructure**: Async processing with Redis/SQS and dead letter queues
 5.  **Advanced Analytics**: Custom ML model training and optimization
 
-## 4. Error Handling & Resilience (✅ IMPLEMENTED)
+## 4. Developer Resources
+
+### 4.1. API Endpoints for Debugging
+
+To assist with troubleshooting extraction and data issues, two dedicated endpoints are available:
+
+-   `GET /api/labs/chart-data/debug?labId=<labId>`: Retrieves the raw, unprocessed biomarker data and preprocessed text for a specific lab result. This is useful for inspecting the state of the data before it is transformed for the frontend.
+-   `POST /api/labs/chart-data/reprocess/:labId`: Triggers a full reprocessing of a lab result. This endpoint deletes existing biomarkers for the specified `labId` and re-runs the entire extraction and storage pipeline using the latest logic.
+
+### 4.2. Frontend Best Practices
+
+-   **React Query Caching**: Utilize `staleTime` and `gcTime` to prevent excessive API calls and improve performance. Disable `refetchOnWindowFocus` and `refetchOnMount` where frequent refetches are not necessary.
+-   **Conditional Rendering**: Ensure chart components only render when they have valid data to display.
+-   **Memoization**: Use `useMemo` for any expensive data transformations on the frontend to prevent unnecessary re-computation on each render.
+-   **Minimize Logging**: Avoid excessive `console.log` statements in production builds to prevent performance degradation.
+
+## 5. Error Handling & Resilience (✅ IMPLEMENTED)
 
 -   **✅ Comprehensive Logging**: Detailed, structured logs with transaction IDs implemented at each stage
 -   **✅ Transaction Rollback**: Atomic database transactions with automatic rollback on any failure
@@ -184,7 +210,7 @@ await db.transaction(async (tx) => {
 -   **✅ Reference Range Detection**: Advanced heuristics prevent extraction of reference values
 -   **Future Enhancement - Retry Logic**: Pipeline should include retry mechanisms with exponential backoff for transient failures
 
-### 4.1. Current Error Handling Implementation
+### 5.1. Current Error Handling Implementation
 
 #### **Transaction Safety**
 - All database operations wrapped in atomic transactions
@@ -204,7 +230,40 @@ await db.transaction(async (tx) => {
 - Processing time and method tracking
 - Error classification and detailed stack traces
 
-## 5. Future Enhancements
+## 6. Troubleshooting Guide
+
+This guide provides a systematic approach to debugging issues with the biomarker chart, from the frontend to the database.
+
+### 6.1. Step 1: Check Browser Console & Network Tab
+-   **Console Logs**: Check the browser's developer console for error messages. Key logs are prefixed with emojis (e.g., `🔍 Fetching...`, `📡 API Response...`, `📊 Raw API Data...`) to show the data flow. Look for 401 (auth), 500 (server), or CORS errors.
+-   **Network Requests**: In the "Network" tab, inspect the call to `/api/labs/chart-data`. Verify the HTTP status code (should be 200) and examine the JSON response to ensure it contains the expected biomarker data.
+
+### 6.2. Step 2: Test API Endpoints Directly
+If the frontend appears to be the issue, test the backend directly using a tool like `cURL` or Postman.
+
+-   **Check Data Endpoint**: `curl -X GET "https://[your-app-domain]/api/labs/chart-data" -b "cookie_from_browser"`
+-   **Check Debug Endpoint**: `curl -X GET "https://[your-app-domain]/api/labs/chart-data/debug?labId=<labId>" -b "cookie_from_browser"`
+
+This helps isolate whether the issue is in the backend data retrieval or the frontend rendering.
+
+### 6.3. Step 3: Check Server Logs
+Examine the server logs (e.g., in AWS App Runner) for database connection errors, processing failures in `biomarkerExtractionService`, or authentication middleware errors.
+
+### 6.4. Step 4: Verify Database State
+If you have access to the database, run SQL queries to confirm the data's presence and state.
+
+```sql
+-- Check for lab results for a specific user
+SELECT COUNT(*) FROM lab_results WHERE user_id = [USER_ID];
+
+-- Check for processed biomarkers for that user
+SELECT lr.id, ps.status, ps.error_details 
+FROM lab_results lr
+JOIN biomarker_processing_status ps ON lr.id = ps.lab_result_id
+WHERE lr.user_id = [USER_ID];
+```
+
+## 7. Future Enhancements
 
 1.  **Performance Optimization**:
     *   Implement parallel processing for large files or batch uploads.

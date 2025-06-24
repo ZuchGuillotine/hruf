@@ -39,8 +39,9 @@ const getCallbackURL = () => {
   
   // For production without custom domain, use APP_URL if available
   if (isProd && process.env.APP_URL) {
-    const appUrl = process.env.APP_URL.replace(/\/$/, ''); // Remove trailing slash
-    return `${appUrl}/auth/google/callback`;
+    // Ensure the domain doesn't have a protocol for this construction
+    const appUrl = process.env.APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return `https://${appUrl}/auth/google/callback`;
   }
   
   // For all other cases (development, local, staging without custom domain), use localhost.
