@@ -10,7 +10,7 @@ export default function AdminDashboard() {
       <Header />
       <main className="container mx-auto py-12 px-4">
         <h1 className="text-4xl font-bold mb-8 text-primary">Admin Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link href="/admin/blog">
             <Card className="cursor-pointer hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -24,6 +24,14 @@ export default function AdminDashboard() {
               <CardHeader>
                 <CardTitle>Supplement Reference</CardTitle>
                 <CardDescription>Manage supplement reference database</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+          <Link href="/admin/users">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>Manage users, subscriptions, and view growth analytics</CardDescription>
               </CardHeader>
             </Card>
           </Link>

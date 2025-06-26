@@ -533,6 +533,51 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.put("/api/admin/supplements/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const [updatedSupplement] = await db
+        .update(supplementReference)
+        .set(req.body)
+        .where(eq(supplementReference.id, id))
+        .returning();
+
+      if (!updatedSupplement) {
+        return res.status(404).send("Supplement not found");
+      }
+
+      // Reinitialize the supplement service to include the updated supplement
+      await supplementService.getInstance().initialize();
+
+      res.json(updatedSupplement);
+    } catch (error) {
+      console.error("Error updating supplement reference:", error);
+      res.status(500).send("Failed to update supplement reference");
+    }
+  });
+
+  app.delete("/api/admin/supplements/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const [deletedSupplement] = await db
+        .delete(supplementReference)
+        .where(eq(supplementReference.id, id))
+        .returning();
+
+      if (!deletedSupplement) {
+        return res.status(404).send("Supplement not found");
+      }
+
+      // Reinitialize the supplement service to exclude the deleted supplement
+      await supplementService.getInstance().initialize();
+
+      res.json({ message: "Supplement deleted successfully", supplement: deletedSupplement });
+    } catch (error) {
+      console.error("Error deleting supplement reference:", error);
+      res.status(500).send("Failed to delete supplement reference");
+    }
+  });
+
   // Supplements CRUD
   app.get("/api/supplements", requireAuth, async (req, res) => {
     try {

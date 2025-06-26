@@ -15,6 +15,7 @@ import SupplementHistory from "@/pages/supplement-history";
 import TermsOfService from "@/pages/terms-of-service";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import AdminSupplements from "@/pages/admin/supplements";
+import AdminUsers from "@/pages/admin/users";
 import CookieConsent from "@/components/cookie-consent";
 import { useUser } from "@/hooks/use-user";
 import { Loader2 } from "lucide-react";
@@ -162,6 +163,7 @@ function AppRouter() {
         );
       }} />
       <Route path="/admin/supplements" component={(props) => <AdminRoute component={AdminSupplements} {...props} />} />
+      <Route path="/admin/users" component={(props) => <AdminRoute component={AdminUsers} {...props} />} />
       <Route path="/admin/blog" component={(props) => {
         const AdminBlog = React.lazy(() => import("@/pages/admin/blog"));
         return (
