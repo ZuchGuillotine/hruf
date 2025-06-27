@@ -32,15 +32,15 @@ const getCallbackURL = () => {
 
   // In production, with a custom domain, use the domain.
   if (isProd && customDomain) {
-    // Ensure the domain doesn't have a protocol for this construction
-    const domain = customDomain.replace(/^https?:\/\//, '');
+    // Ensure the domain doesn't have a protocol or quotes for this construction
+    const domain = customDomain.replace(/^https?:\/\//, '').replace(/["']/g, "").replace(/\/$/, '');
     return `https://${domain}/auth/google/callback`;
   }
   
   // For production without custom domain, use APP_URL if available
   if (isProd && process.env.APP_URL) {
-    // Ensure the domain doesn't have a protocol for this construction
-    const appUrl = process.env.APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // Ensure the domain doesn't have a protocol or quotes for this construction
+    const appUrl = process.env.APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '').replace(/["']/g, "");
     return `https://${appUrl}/auth/google/callback`;
   }
   
@@ -162,14 +162,16 @@ export function setupAuth(app: Express) {
   // Use test credentials if we're using a localhost callback URL
   const useTestCredentials = CALLBACK_URL.includes('localhost');
   
-  // Try multiple naming patterns for Google credentials
-  const GOOGLE_CLIENT_ID = useTestCredentials 
+  // Try multiple naming patterns for Google credentials, and strip any quotes
+  const rawClientId = useTestCredentials
     ? (process.env.GOOGLE_CLIENT_ID_TEST || process.env.GOOGLE_CLIENT_ID_DEV || process.env.GOOGLE_CLIENT_ID)
     : (process.env.GOOGLE_CLIENT_ID_PROD || process.env.GOOGLE_CLIENT_ID);
-    
-  const GOOGLE_CLIENT_SECRET = useTestCredentials
+  const GOOGLE_CLIENT_ID = rawClientId?.replace(/["']/g, '');
+
+  const rawClientSecret = useTestCredentials
     ? (process.env.GOOGLE_CLIENT_SECRET_TEST || process.env.GOOGLE_CLIENT_SECRET_DEV || process.env.GOOGLE_CLIENT_SECRET)
     : (process.env.GOOGLE_CLIENT_SECRET_PROD || process.env.GOOGLE_CLIENT_SECRET);
+  const GOOGLE_CLIENT_SECRET = rawClientSecret?.replace(/["']/g, '');
 
   console.log('Google OAuth Configuration:', {
     environment: process.env.NODE_ENV,

@@ -247,17 +247,11 @@ export class LabTextPreprocessingService {
         imageContext: {
           languageHints: ['en'],
           textDetectionParams: {
-            enableTextDetectionConfidenceScore: true,
-            advancedOcrOptions: [
-              'MEDICAL_DOCUMENT',
-              'DENSE_TEXT',
-              'PDF_DOCUMENT'  // Add PDF-specific OCR mode
-            ],
-            // Add crop hints for common lab report layouts
-            cropHintsParams: {
-              aspectRatios: [1.414, 0.707], // A4 and landscape
-              minBoundingPolyVertices: 4
-            }
+            enableTextDetectionConfidenceScore: true
+          },
+          // Simplified crop hints for better compatibility  
+          cropHintsParams: {
+            aspectRatios: [1.0, 1.414, 0.707] // Square, A4 portrait, A4 landscape
           }
         }
       });
@@ -422,42 +416,82 @@ export class LabTextPreprocessingService {
   }
 
   private async processImage(buffer: Buffer): Promise<PreprocessedText> {
+    logger.info('Starting image processing with Google Vision OCR', {
+      bufferSize: buffer.length,
+      timestamp: new Date().toISOString()
+    });
+
     try {
       // Get Google Vision credentials from Parameter Store or environment
       let credentials;
       try {
         const credentialsStr = await getGoogleVisionCredentials();
         credentials = JSON.parse(credentialsStr);
+        logger.info('Successfully obtained Google Vision credentials');
       } catch (error) {
-        logger.error('Failed to get Google Vision credentials:', error);
+        logger.error('Failed to get Google Vision credentials:', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
         throw new Error('Google Vision credentials not available');
       }
       
       const client = new ImageAnnotatorClient({ credentials });
 
-      // Enhanced OCR configuration for medical documents
-      const [result] = await client.documentTextDetection({
-        image: { content: buffer.toString('base64') },
-        imageContext: {
-          languageHints: ['en'],
-          textDetectionParams: {
-            enableTextDetectionConfidenceScore: true,
-            advancedOcrOptions: [
-              'MEDICAL_DOCUMENT',
-              'DENSE_TEXT',  // Add this for dense lab reports
-              'TEXT_DENSE'   // Alternative dense text mode
-            ],
-            // Add crop hints for common lab report layouts
+      let result;
+      let ocrMethod = 'document_text_detection';
+      
+      try {
+        // Try enhanced document text detection first
+        logger.info('Attempting enhanced document text detection');
+        [result] = await client.documentTextDetection({
+          image: { content: buffer.toString('base64') },
+          imageContext: {
+            languageHints: ['en'],
+            textDetectionParams: {
+              enableTextDetectionConfidenceScore: true
+            },
+            // Simplified crop hints for better compatibility
             cropHintsParams: {
-              aspectRatios: [1.414, 0.707], // A4 and landscape
-              minBoundingPolyVertices: 4
+              aspectRatios: [1.0, 1.414, 0.707] // Square, A4 portrait, A4 landscape
             }
           }
+        });
+      } catch (enhancedError) {
+        logger.warn('Enhanced document text detection failed, trying basic text detection:', {
+          error: enhancedError instanceof Error ? enhancedError.message : String(enhancedError)
+        });
+        
+        try {
+          // Fallback to basic text detection
+          ocrMethod = 'text_detection';
+          [result] = await client.textDetection({
+            image: { content: buffer.toString('base64') }
+          });
+        } catch (basicError) {
+          logger.error('Both OCR methods failed:', {
+            enhancedError: enhancedError instanceof Error ? enhancedError.message : String(enhancedError),
+            basicError: basicError instanceof Error ? basicError.message : String(basicError)
+          });
+          throw basicError;
         }
-      });
+      }
 
       const rawText = result.fullTextAnnotation?.text || '';
       const confidence = result.fullTextAnnotation?.pages?.[0]?.confidence || 0;
+      
+      logger.info('Google Vision OCR completed', {
+        ocrMethod,
+        textLength: rawText.length,
+        confidence,
+        hasText: rawText.length > 0,
+        textSample: rawText.substring(0, 100)
+      });
+
+      if (!rawText || rawText.trim().length === 0) {
+        logger.warn('Google Vision OCR returned empty text');
+        throw new Error('OCR extraction returned no text content');
+      }
       
       // Enhanced OCR error corrections for medical documents
       const medicalOcrCorrections: Record<string, string> = {
@@ -497,8 +531,231 @@ export class LabTextPreprocessingService {
         'magnesium': 'Magnesium'
       };
 
-      // Apply medical-specific corrections
+      // Enhanced medical text preprocessing for better biomarker extraction
       let correctedText = rawText;
+      
+      // Step 1: Fix fragmented biomarker names common in OCR - expanded list
+      const biomarkerNameFixes = {
+        // Common fragmentations
+        'Hemo globin': 'Hemoglobin',
+        'Hema tocrit': 'Hematocrit', 
+        'Glu cose': 'Glucose',
+        'Choles terol': 'Cholesterol',
+        'Trigly cerides': 'Triglycerides',
+        'Creati nine': 'Creatinine',
+        'Vita min D': 'Vitamin D',
+        'Vita min B12': 'Vitamin B12',
+        'Thy roid': 'Thyroid',
+        'Fer ritin': 'Ferritin',
+        'Magne sium': 'Magnesium',
+        'Cal cium': 'Calcium',
+        'Phos phorus': 'Phosphorus',
+        'Alka line': 'Alkaline',
+        'Phospha tase': 'Phosphatase',
+        
+        // Additional common OCR fragmentations
+        'So dium': 'Sodium',
+        'Potas sium': 'Potassium', 
+        'Chlo ride': 'Chloride',
+        'Pro tein': 'Protein',
+        'Albu min': 'Albumin',
+        'Biliru bin': 'Bilirubin',
+        'Uric Acid': 'Uric Acid',
+        'Iron Bind': 'Iron Binding',
+        'Trans ferrin': 'Transferrin',
+        'Fola te': 'Folate',
+        'Insu lin': 'Insulin',
+        'Corti sol': 'Cortisol',
+        'Testos terone': 'Testosterone',
+        'Estra diol': 'Estradiol',
+        
+        // HDL/LDL variations
+        'HDL Chol': 'HDL Cholesterol',
+        'LDL Chol': 'LDL Cholesterol',
+        'Total Chol': 'Total Cholesterol',
+        'H D L': 'HDL',
+        'L D L': 'LDL',
+        
+        // Thyroid markers
+        'T S H': 'TSH',
+        'Free T4': 'Free T4',
+        'Free T3': 'Free T3',
+        'T 4': 'T4',
+        'T 3': 'T3',
+        
+        // Blood count markers
+        'W B C': 'WBC',
+        'R B C': 'RBC',
+        'Plate lets': 'Platelets',
+        'M C V': 'MCV',
+        'M C H': 'MCH',
+        'M C H C': 'MCHC',
+        'R D W': 'RDW',
+        
+        // Liver markers
+        'A L T': 'ALT',
+        'A S T': 'AST',
+        'A L P': 'ALP',
+        'G G T': 'GGT',
+        'L D H': 'LDH',
+        
+        // Kidney markers
+        'B U N': 'BUN',
+        'e G F R': 'eGFR',
+        'EGFR': 'eGFR',
+        
+        // Special cases
+        'HbA 1c': 'HbA1c',
+        'Hb A1c': 'HbA1c',
+        'A 1 C': 'A1C',
+        'PSA Total': 'PSA',
+        'Vitamin B 12': 'Vitamin B12',
+        'Vitamin D 25': 'Vitamin D'
+      };
+      
+      Object.entries(biomarkerNameFixes).forEach(([fragmented, correct]) => {
+        const regex = new RegExp(fragmented, 'gi');
+        correctedText = correctedText.replace(regex, correct);
+      });
+      
+      // Step 2: More aggressive fragmented numbers and units reconstruction
+      correctedText = correctedText
+        // Fix split numbers with various patterns
+        .replace(/(\d)\s+(\d+\.?\d*)/g, '$1$2') // "1 23.4" -> "123.4"
+        .replace(/(\d+)\s*\.\s*(\d+)/g, '$1.$2') // "123 . 4" -> "123.4"
+        .replace(/(\d+)\s*,\s*(\d+)/g, '$1.$2') // "123 , 4" -> "123.4" (European format)
+        
+        // Fix separated decimal numbers
+        .replace(/(\d+)\s+(\d{1,3})\s+(\d+)/g, '$1$2.$3') // "12 3 45" -> "123.45"
+        .replace(/(\d)\s(\d)\s(\d)/g, '$1$2$3') // "1 2 3" -> "123"
+        
+        // Fix numbers with status codes fragmented
+        .replace(/(\d+(?:\.\d+)?)\s+(H|L|N)\s/gi, '$1 $2 ') // "95 H " -> "95 H "
+        .replace(/(\d+(?:\.\d+)?)(H|L|N)(\s|$)/gi, '$1 $2$3') // "95H" -> "95 H"
+        
+        // Fix units separated from numbers with various spacing
+        .replace(/(\d+(?:\.\d+)?)\s+(mg\s*\/\s*dL|mmol\s*\/\s*L|g\s*\/\s*dL|ng\s*\/\s*mL|µg\s*\/\s*L|IU\s*\/\s*L|mEq\s*\/\s*L|U\s*\/\s*L|pg\s*\/\s*mL|µU\s*\/\s*mL|mU\s*\/\s*L|K\s*\/\s*µL)/gi, '$1 $2')
+        
+        // Fix heavily fragmented units
+        .replace(/mg\s*\/\s*d\s*L/gi, 'mg/dL')
+        .replace(/m\s*g\s*\/\s*d\s*L/gi, 'mg/dL')
+        .replace(/mmol\s*\/\s*L/gi, 'mmol/L')
+        .replace(/m\s*mol\s*\/\s*L/gi, 'mmol/L')
+        .replace(/ng\s*\/\s*m\s*L/gi, 'ng/mL')
+        .replace(/n\s*g\s*\/\s*m\s*L/gi, 'ng/mL')
+        .replace(/µg\s*\/\s*L/gi, 'µg/L')
+        .replace(/µ\s*g\s*\/\s*L/gi, 'µg/L')
+        .replace(/IU\s*\/\s*L/gi, 'IU/L')
+        .replace(/I\s*U\s*\/\s*L/gi, 'IU/L')
+        .replace(/mEq\s*\/\s*L/gi, 'mEq/L')
+        .replace(/m\s*Eq\s*\/\s*L/gi, 'mEq/L')
+        .replace(/U\s*\/\s*L/gi, 'U/L')
+        .replace(/pg\s*\/\s*m\s*L/gi, 'pg/mL')
+        .replace(/p\s*g\s*\/\s*m\s*L/gi, 'pg/mL')
+        .replace(/µU\s*\/\s*m\s*L/gi, 'µU/mL')
+        .replace(/µ\s*U\s*\/\s*m\s*L/gi, 'µU/mL')
+        .replace(/mU\s*\/\s*L/gi, 'mU/L')
+        .replace(/m\s*U\s*\/\s*L/gi, 'mU/L')
+        .replace(/K\s*\/\s*µ\s*L/gi, 'K/µL')
+        .replace(/K\s*\/\s*µL/gi, 'K/µL')
+        
+        // Fix percentage symbols
+        .replace(/(\d+(?:\.\d+)?)\s*%/g, '$1%')
+        .replace(/(\d+(?:\.\d+)?)\s*per\s*cent/gi, '$1%')
+        
+        // Fix common OCR errors in units
+        .replace(/rng\/mL/gi, 'ng/mL')
+        .replace(/mcg\/L/gi, 'µg/L')
+        .replace(/ug\/L/gi, 'µg/L')
+        .replace(/mcg\/dL/gi, 'µg/dL')
+        .replace(/ug\/dL/gi, 'µg/dL');
+      
+      // Step 3: Enhanced line reconstruction for biomarkers split across lines
+      const lines = correctedText.split('\n');
+      const processedLines: string[] = [];
+      let i = 0;
+      
+      // Common biomarker keywords to help identify biomarker names
+      const biomarkerKeywords = [
+        'cholesterol', 'glucose', 'hemoglobin', 'hematocrit', 'triglycerides',
+        'creatinine', 'sodium', 'potassium', 'chloride', 'protein', 'albumin',
+        'bilirubin', 'vitamin', 'iron', 'ferritin', 'magnesium', 'calcium',
+        'phosphorus', 'alkaline', 'phosphatase', 'thyroid', 'insulin', 'cortisol',
+        'testosterone', 'estradiol', 'folate', 'hdl', 'ldl', 'tsh', 'alt', 'ast',
+        'bun', 'egfr', 'wbc', 'rbc', 'platelets', 'mcv', 'mch', 'mchc', 'rdw'
+      ];
+      
+      while (i < lines.length) {
+        const currentLine = lines[i]?.trim();
+        const nextLine = lines[i + 1]?.trim();
+        const nextNextLine = lines[i + 2]?.trim();
+        
+        if (currentLine && nextLine) {
+          // Enhanced biomarker name detection
+          const isLikelyBiomarkerName = (line: string): boolean => {
+            // Check if it contains biomarker keywords
+            const containsKeyword = biomarkerKeywords.some(keyword => 
+              line.toLowerCase().includes(keyword)
+            );
+            
+            // Check if it looks like a biomarker name pattern
+            const namePattern = /^[A-Za-z][A-Za-z\s\-\/()]+[A-Za-z\d]$/.test(line) &&
+                               !line.match(/^\d/) && // Doesn't start with number
+                               line.length > 2 && line.length < 60; // Reasonable length
+                               
+            return containsKeyword || namePattern;
+          };
+          
+          // Enhanced value detection
+          const isLikelyValue = (line: string): boolean => {
+            return /^\d+(?:\.\d+)?/.test(line) || // Starts with number
+                   /\d+(?:\.\d+)?\s*(?:mg\/dL|mmol\/L|g\/dL|ng\/mL|µg\/L|IU\/L|mEq\/L|U\/L|pg\/mL|%|K\/µL)/i.test(line); // Contains number with unit
+          };
+          
+          const isBiomarkerName = isLikelyBiomarkerName(currentLine);
+          const nextLineHasValue = isLikelyValue(nextLine);
+          
+          if (isBiomarkerName && nextLineHasValue) {
+            // Combine biomarker name with its value
+            processedLines.push(`${currentLine}: ${nextLine}`);
+            i += 2; // Skip both lines
+            continue;
+          }
+          
+          // Handle cases where biomarker name, value, and unit are on separate lines
+          if (isBiomarkerName && nextLine && nextNextLine) {
+            const nextLineIsNumber = /^\d+(?:\.\d+)?$/.test(nextLine);
+            const nextNextLineIsUnit = /^(?:mg\/dL|mmol\/L|g\/dL|ng\/mL|µg\/L|IU\/L|mEq\/L|U\/L|pg\/mL|%|K\/µL)$/i.test(nextNextLine);
+            
+            if (nextLineIsNumber && nextNextLineIsUnit) {
+              processedLines.push(`${currentLine}: ${nextLine} ${nextNextLine}`);
+              i += 3; // Skip all three lines
+              continue;
+            }
+          }
+          
+          // Handle fragmented lines where value and unit are separated
+          const fragmentedValuePattern = /(\d+(?:\.\d+)?)\s*$/.exec(currentLine);
+          const fragmentedUnitPattern = /^(?:mg\/dL|mmol\/L|g\/dL|ng\/mL|µg\/L|IU\/L|mEq\/L|U\/L|pg\/mL|%|K\/µL)/i.exec(nextLine);
+          
+          if (fragmentedValuePattern && fragmentedUnitPattern) {
+            // Merge value line with unit line
+            const reconstructed = currentLine + ' ' + nextLine;
+            processedLines.push(reconstructed);
+            i += 2;
+            continue;
+          }
+        }
+        
+        if (currentLine) {
+          processedLines.push(currentLine);
+        }
+        i++;
+      }
+      
+      correctedText = processedLines.join('\n');
+      
+      // Step 4: Apply standard medical OCR corrections
       Object.entries(medicalOcrCorrections).forEach(([error, correction]) => {
         const regex = new RegExp(`\\b${error}\\b`, 'gi');
         correctedText = correctedText.replace(regex, correction);
@@ -514,7 +771,7 @@ export class LabTextPreprocessingService {
 
       const preprocessed = await this.normalizeText(correctedText, 'image', {
         confidence,
-        ocrEngine: 'google-vision',
+        ocrEngine: `google-vision-${ocrMethod}`,
         qualityMetrics
       });
 

@@ -1,3 +1,15 @@
+/**
+    * @description      : 
+    * @author           : 
+    * @group            : 
+    * @created          : 22/06/2025 - 23:59:47
+    * 
+    * MODIFICATION LOG
+    * - Version         : 1.0.0
+    * - Date            : 22/06/2025
+    * - Author          : 
+    * - Modification    : 
+**/
 import { db } from '../db';
 import { labResults, biomarkerResults, biomarkerProcessingStatus } from '../db/schema';
 import { eq, isNull, or, and, sql } from 'drizzle-orm';
