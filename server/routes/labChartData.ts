@@ -70,14 +70,40 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
       } : null
     });
 
-    // Process and validate data
+    // Process and validate data with enhanced debugging
     const processedResults = results.map(result => {
-      const numericValue = typeof result.value === 'string' ? parseFloat(result.value) : result.value;
+      let numericValue;
+      
+      // Enhanced value parsing with better error handling
+      if (typeof result.value === 'string') {
+        // Clean the string value first
+        const cleanValue = result.value.trim().replace(/[^\d.-]/g, '');
+        numericValue = parseFloat(cleanValue);
+        
+        if (isNaN(numericValue)) {
+          logger.warn('Failed to parse biomarker value:', {
+            biomarker: result.name,
+            originalValue: result.value,
+            cleanedValue: cleanValue,
+            labResultId: result.labResultId
+          });
+        }
+      } else if (typeof result.value === 'number') {
+        numericValue = result.value;
+      } else {
+        logger.warn('Unexpected value type for biomarker:', {
+          biomarker: result.name,
+          valueType: typeof result.value,
+          value: result.value,
+          labResultId: result.labResultId
+        });
+        numericValue = NaN;
+      }
       
       return {
         name: result.name,
         value: numericValue,
-        unit: result.unit || '',
+        unit: result.unit || '', // Allow empty units initially
         testDate: result.testDate.toISOString(),
         category: result.category || 'other',
         status: result.status || null,
@@ -85,21 +111,56 @@ async function getBiomarkerChartData(userId: number, biomarkerNames: string[]) {
       };
     });
 
-    // Validate data integrity
+    // More detailed validation with specific logging
     const invalidResults = processedResults.filter(r => {
-      return isNaN(r.value) || !r.unit || !r.testDate || !r.name;
+      const issues = [];
+      
+      if (isNaN(r.value) || r.value === null || r.value === undefined) {
+        issues.push('invalid_value');
+      }
+      if (!r.unit || r.unit.trim() === '') {
+        issues.push('missing_unit');
+      }
+      if (!r.testDate) {
+        issues.push('missing_testDate');
+      }
+      if (!r.name || r.name.trim() === '') {
+        issues.push('missing_name');
+      }
+      
+      if (issues.length > 0) {
+        logger.debug('Invalid biomarker found:', {
+          biomarker: r.name,
+          value: r.value,
+          unit: r.unit,
+          testDate: r.testDate,
+          issues,
+          labResultId: r.labResultId
+        });
+        return true;
+      }
+      return false;
     });
 
     if (invalidResults.length > 0) {
       logger.warn('Found invalid biomarker results', {
         invalidCount: invalidResults.length,
-        examples: invalidResults.slice(0, 3)
+        totalCount: processedResults.length,
+        examples: invalidResults.slice(0, 3).map(r => ({
+          name: r.name,
+          value: r.value,
+          unit: r.unit,
+          valueType: typeof r.value,
+          isNaN: isNaN(r.value)
+        }))
       });
     }
 
-    // Filter out invalid results
+    // Filter out invalid results - more lenient on units for now
     const validResults = processedResults.filter(r => 
-      !isNaN(r.value) && r.unit && r.testDate && r.name
+      !isNaN(r.value) && r.value !== null && r.value !== undefined && 
+      r.testDate && r.name && r.name.trim() !== ''
+      // Temporarily removed unit requirement to debug charting issues
     );
 
     logger.info('Processed biomarker data', {

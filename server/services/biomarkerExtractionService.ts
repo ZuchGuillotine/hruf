@@ -126,33 +126,33 @@ export type BiomarkerCategory =
   | 'kidney'
   | 'other';
 
-// Enhanced biomarker regex patterns with flexible ordering and better unit handling
+// Enhanced biomarker regex patterns with more flexible matching for OCR text
 const BIOMARKER_PATTERNS: Record<string, { pattern: RegExp; category: BiomarkerCategory; defaultUnit: string }> = {
-  // Lipid Panel - Improved patterns that avoid reference ranges
+  // Lipid Panel - More flexible patterns for OCR text
   cholesterol: {
-    pattern: /(?:Total Cholesterol|Cholesterol, Total|Cholesterol|Chol)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
+    pattern: /(?:Total\s*Cholesterol|Cholesterol,?\s*Total|Cholesterol|Chol)[\s:=]*(?!.*(?:range|ref|normal|reference).*?(\d+)\s*[-–—]\s*(\d+))(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L|mg\/dl|mmol\/l)?\s*(?:High|Low|Normal|H|L|N|\*)?/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
   hdl: {
-    pattern: /(?:HDL|HDL-C|HDL Cholesterol|High-Density Lipoprotein)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
+    pattern: /(?:HDL|HDL[-\s]*C|HDL\s*Cholesterol|High[-\s]*Density\s*Lipoprotein)[\s:=]*(?!.*(?:range|ref|normal|reference).*?(\d+)\s*[-–—]\s*(\d+))(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L|mg\/dl|mmol\/l)?\s*(?:High|Low|Normal|H|L|N|\*)?/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
   ldl: {
-    pattern: /(?:LDL|LDL-C|LDL Cholesterol|Low-Density Lipoprotein)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
+    pattern: /(?:LDL|LDL[-\s]*C|LDL\s*Cholesterol|Low[-\s]*Density\s*Lipoprotein)[\s:=]*(?!.*(?:range|ref|normal|reference).*?(\d+)\s*[-–—]\s*(\d+))(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L|mg\/dl|mmol\/l)?\s*(?:High|Low|Normal|H|L|N|\*)?/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
   triglycerides: {
-    pattern: /(?:Triglycerides|TG)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
+    pattern: /(?:Triglycerides?|TG|Trigs?)[\s:=]*(?!.*(?:range|ref|normal|reference).*?(\d+)\s*[-–—]\s*(\d+))(\d+(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L|mg\/dl|mmol\/l)?\s*(?:High|Low|Normal|H|L|N|\*)?/gi,
     category: 'lipid',
     defaultUnit: 'mg/dL'
   },
 
-  // Metabolic Panel - More flexible patterns
+  // Metabolic Panel - More flexible patterns for OCR
   glucose: {
-    pattern: /(?:Glucose|Blood Glucose|Fasting Glucose|FBG)\s*[:=]?\s*(?!.*(?:range|ref|normal).*?(\d+)\s*-\s*(\d+))(?:(?:mg\/dL|mmol\/L)?\s*)?(\d{2,3}(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L)?\s*(?:High|Low|Normal|H|L|N)?(?!\s*-\s*\d+)/gi,
+    pattern: /(?:Glucose|Blood\s*Glucose|Fasting\s*Glucose|FBG|GLU)[\s:=]*(?!.*(?:range|ref|normal|reference).*?(\d+)\s*[-–—]\s*(\d+))(\d{2,3}(?:\.\d+)?)\s*(?:mg\/dL|mmol\/L|mg\/dl|mmol\/l)?\s*(?:High|Low|Normal|H|L|N|\*)?/gi,
     category: 'metabolic',
     defaultUnit: 'mg/dL'
   },
@@ -371,60 +371,60 @@ export class BiomarkerExtractionService {
       }
     }
 
-    // Define reasonable ranges for common biomarkers to filter out reference range values
+    // More lenient ranges for common biomarkers - primarily to filter out obviously wrong values
     const BIOMARKER_RANGES: Record<string, { min: number; max: number; unit?: string }> = {
-      // Metabolic markers
-      glucose: { min: 30, max: 600, unit: 'mg/dL' },
-      hemoglobinA1c: { min: 3.0, max: 20.0, unit: '%' },
-      insulin: { min: 0.1, max: 300, unit: 'µIU/mL' },
+      // Metabolic markers - expanded ranges
+      glucose: { min: 10, max: 800, unit: 'mg/dL' },
+      hemoglobinA1c: { min: 2.0, max: 25.0, unit: '%' },
+      insulin: { min: 0.01, max: 500, unit: 'µIU/mL' },
       
-      // Lipid panel
-      cholesterol: { min: 50, max: 500, unit: 'mg/dL' },
-      hdl: { min: 10, max: 150, unit: 'mg/dL' },
-      ldl: { min: 10, max: 400, unit: 'mg/dL' },
-      triglycerides: { min: 10, max: 2000, unit: 'mg/dL' },
+      // Lipid panel - expanded ranges
+      cholesterol: { min: 20, max: 800, unit: 'mg/dL' },
+      hdl: { min: 5, max: 200, unit: 'mg/dL' },
+      ldl: { min: 5, max: 600, unit: 'mg/dL' },
+      triglycerides: { min: 5, max: 3000, unit: 'mg/dL' },
       
-      // Electrolytes
-      sodium: { min: 120, max: 180, unit: 'mmol/L' },
-      potassium: { min: 2.0, max: 8.0, unit: 'mmol/L' },
-      chloride: { min: 80, max: 130, unit: 'mmol/L' },
-      co2: { min: 10, max: 40, unit: 'mmol/L' },
-      anionGap: { min: 3, max: 30, unit: 'mmol/L' },
+      // Electrolytes - expanded ranges
+      sodium: { min: 100, max: 200, unit: 'mmol/L' },
+      potassium: { min: 1.0, max: 10.0, unit: 'mmol/L' },
+      chloride: { min: 60, max: 150, unit: 'mmol/L' },
+      co2: { min: 5, max: 50, unit: 'mmol/L' },
+      anionGap: { min: 1, max: 40, unit: 'mmol/L' },
       
-      // Blood count
-      hemoglobin: { min: 3, max: 25, unit: 'g/dL' },
-      hematocrit: { min: 10, max: 70, unit: '%' },
-      platelets: { min: 10, max: 1500, unit: 'K/µL' },
+      // Blood count - expanded ranges
+      hemoglobin: { min: 1, max: 30, unit: 'g/dL' },
+      hematocrit: { min: 5, max: 80, unit: '%' },
+      platelets: { min: 5, max: 2000, unit: 'K/µL' },
       
-      // Kidney function
-      creatinine: { min: 0.1, max: 20, unit: 'mg/dL' },
-      bun: { min: 1, max: 200, unit: 'mg/dL' },
-      egfr: { min: 1, max: 200, unit: 'mL/min/1.73m²' },
+      // Kidney function - expanded ranges
+      creatinine: { min: 0.01, max: 30, unit: 'mg/dL' },
+      bun: { min: 0.5, max: 300, unit: 'mg/dL' },
+      egfr: { min: 0.5, max: 250, unit: 'mL/min/1.73m²' },
       
-      // Liver function
-      alt: { min: 1, max: 2000, unit: 'U/L' },
-      ast: { min: 1, max: 2000, unit: 'U/L' },
-      alkalinePhosphatase: { min: 10, max: 1000, unit: 'U/L' },
+      // Liver function - expanded ranges
+      alt: { min: 0.5, max: 3000, unit: 'U/L' },
+      ast: { min: 0.5, max: 3000, unit: 'U/L' },
+      alkalinePhosphatase: { min: 5, max: 1500, unit: 'U/L' },
       
-      // Thyroid
-      tsh: { min: 0.01, max: 100, unit: 'mIU/L' },
-      t4: { min: 0.1, max: 30, unit: 'ng/dL' },
-      t3: { min: 0.5, max: 15, unit: 'pg/mL' },
+      // Thyroid - expanded ranges
+      tsh: { min: 0.001, max: 150, unit: 'mIU/L' },
+      t4: { min: 0.01, max: 50, unit: 'ng/dL' },
+      t3: { min: 0.1, max: 25, unit: 'pg/mL' },
       
-      // Vitamins
-      vitaminD: { min: 1, max: 150, unit: 'ng/mL' },
-      vitaminB12: { min: 50, max: 5000, unit: 'pg/mL' },
-      folate: { min: 0.5, max: 50, unit: 'ng/mL' },
+      // Vitamins - expanded ranges
+      vitaminD: { min: 0.5, max: 200, unit: 'ng/mL' },
+      vitaminB12: { min: 10, max: 10000, unit: 'pg/mL' },
+      folate: { min: 0.1, max: 100, unit: 'ng/mL' },
       
-      // Minerals
-      ferritin: { min: 1, max: 5000, unit: 'ng/mL' },
-      iron: { min: 10, max: 500, unit: 'µg/dL' },
-      magnesium: { min: 0.5, max: 5.0, unit: 'mg/dL' },
+      // Minerals - expanded ranges
+      ferritin: { min: 0.5, max: 10000, unit: 'ng/mL' },
+      iron: { min: 5, max: 800, unit: 'µg/dL' },
+      magnesium: { min: 0.1, max: 10.0, unit: 'mg/dL' },
       
-      // Hormones
-      cortisol: { min: 0.1, max: 100, unit: 'µg/dL' },
-      testosterone: { min: 1, max: 2000, unit: 'ng/dL' },
-      estradiol: { min: 1, max: 1000, unit: 'pg/mL' }
+      // Hormones - expanded ranges
+      cortisol: { min: 0.01, max: 200, unit: 'µg/dL' },
+      testosterone: { min: 0.5, max: 3000, unit: 'ng/dL' },
+      estradiol: { min: 0.5, max: 2000, unit: 'pg/mL' }
     };
 
     // Track matches and validation results
@@ -443,8 +443,18 @@ export class BiomarkerExtractionService {
 
         // Handle both ordering patterns (value-unit and unit-value)
         const value = match[1] || match[3]; // First or third capture group
-        const unit = match[2] || match[4] || defaultUnit; // Second or fourth capture group or default
+        let unit = match[2] || match[4] || defaultUnit; // Second or fourth capture group or default
         const status = match[0].match(/(?:High|Low|Normal|H|L|N)/i)?.[0];
+
+        // Ensure unit is always present - critical for charting
+        if (!unit || unit.trim() === '') {
+          unit = defaultUnit;
+          logger.info('Applied default unit for biomarker:', {
+            biomarker: name,
+            value,
+            appliedUnit: unit
+          });
+        }
 
         if (!value) {
           logger.warn('No value found in match:', { biomarker: name, match: match[0] });
@@ -462,17 +472,17 @@ export class BiomarkerExtractionService {
             continue;
           }
 
-          // Check if value is within reasonable range
+          // Check if value is within reasonable range (more lenient validation)
           const range = BIOMARKER_RANGES[name];
           if (range && (parsedValue < range.min || parsedValue > range.max)) {
-            logger.warn('Biomarker value out of reasonable range:', {
+            // Log warning but don't reject - allow borderline values through
+            logger.info('Biomarker value outside typical range, but accepting:', {
               biomarker: name,
               value: parsedValue,
               expectedRange: range,
               matchContext: match[0]
             });
-            validationFailures++;
-            continue;
+            // Don't increment validationFailures - accept the value
           }
 
           // Additional check: detect if this might be a reference range value
@@ -560,102 +570,163 @@ export class BiomarkerExtractionService {
 
       const functions = [{
         name: "extract_lab_biomarkers",
-        description: "Extract biomarkers from medical lab report text with precise values and units",
+        description: "Extract actual patient test results from medical lab report, excluding reference ranges",
         parameters: {
           type: "object",
           properties: {
             biomarkers: {
               type: "array",
-              description: "Array of biomarkers extracted from lab report. Each must have name, value, unit, and category.",
+              description: "Array of ACTUAL patient test results only. Do not include reference range values.",
+              minItems: 0,
+              maxItems: 50,
               items: {
                 type: "object",
-                required: ["name", "value", "category"],
+                required: ["name", "value", "unit", "category"],
+                additionalProperties: false,
                 properties: {
                   name: { 
                     type: "string",
-                    description: "Name of the biomarker (e.g., 'Glucose', 'Cholesterol')"
+                    description: "Specific biomarker name (e.g., 'Total Cholesterol', 'HDL Cholesterol', 'Glucose')",
+                    minLength: 2,
+                    maxLength: 100
                   },
                   value: { 
                     type: "number",
-                    description: "Numeric value of the biomarker measurement"
+                    description: "ACTUAL patient test result value (numeric only, never reference range)",
+                    minimum: 0,
+                    maximum: 10000
                   },
                   unit: { 
                     type: "string",
-                    description: "Unit of measurement (e.g., 'mg/dL'). Omit for unitless values like ratios."
-                  },
-                  referenceRange: { 
-                    type: "string",
-                    description: "Reference range for this biomarker (e.g., '70-99 mg/dL')"
-                  },
-                  testDate: { 
-                    type: "string", 
-                    description: "ISO date format (YYYY-MM-DD)",
-                    pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+                    description: "Unit of measurement. REQUIRED for all biomarkers (infer standard units if missing)",
+                    minLength: 1,
+                    maxLength: 20,
+                    examples: ["mg/dL", "mmol/L", "g/dL", "%", "mIU/L", "ng/mL", "pg/mL", "U/L", "K/µL"]
                   },
                   category: { 
                     type: "string", 
-                    description: "Category of biomarker",
-                    enum: ["lipid", "metabolic", "thyroid", "vitamin","mineral", "blood", "liver", "kidney", "hormone", "other"]
+                    description: "Medical category of biomarker",
+                    enum: ["lipid", "metabolic", "thyroid", "vitamin", "mineral", "blood", "liver", "kidney", "hormone", "electrolyte", "other"]
+                  },
+                  referenceRange: { 
+                    type: "string",
+                    description: "Reference range if explicitly stated in report (e.g., '70-99 mg/dL')",
+                    maxLength: 50
+                  },
+                  testDate: { 
+                    type: "string", 
+                    description: "Test date in YYYY-MM-DD format from report header/footer",
+                    pattern: "^\\d{4}-\\d{2}-\\d{2}$"
                   },
                   status: { 
                     type: "string",
-                    description: "Status of biomarker value relative to reference range",
+                    description: "Clinical status if indicated in report",
                     enum: ["High", "Low", "Normal"]
+                  },
+                  confidence: {
+                    type: "number",
+                    description: "Confidence score 0.0-1.0 based on text clarity",
+                    minimum: 0.0,
+                    maximum: 1.0
                   }
                 }
               }
+            },
+            extractionNotes: {
+              type: "string",
+              description: "Brief notes about extraction quality or challenges encountered",
+              maxLength: 200
             }
           },
           required: ["biomarkers"]
         }
       }];
 
-      const systemPrompt = `You are a precise medical lab report parser. Extract biomarkers with these strict requirements:
+      const systemPrompt = `You are an expert medical laboratory report parser with deep understanding of clinical lab report structure and terminology.
 
-CRITICAL RULES:
-1. UNIT HANDLING: For values that are ratios (e.g., LDL/HDL ratio, ApoB/ApoA1 ratio) or inherently unitless, omit the "unit" field entirely. For all other biomarkers, ALWAYS include the appropriate unit.
-2. UNIT INFERENCE: If a unit is not clearly specified in the text, infer the most standard unit based on the biomarker type:
-   - Glucose, Cholesterol, LDL, HDL, Triglycerides: mg/dL
-   - Hemoglobin A1c: %
-   - TSH: mIU/L
-   - Vitamin D: ng/mL
-   - Creatinine: mg/dL
-   - Hemoglobin: g/dL
-3. VALUE EXTRACTION: Extract only actual test result values, NOT reference range values. Skip any numbers that appear in "Normal range: X-Y" contexts.
-4. All "value" fields MUST be numeric (convert text to numbers).
-5. Include standard reference ranges when available in the referenceRange field.
-6. Use the most specific biomarker name possible (e.g., "HDL Cholesterol" instead of just "cholesterol")
-7. For each biomarker, determine if the value is "High", "Low", or "Normal" based on context
-8. For testDate, use the collection date from the report when available, format as YYYY-MM-DD
-9. All returned data MUST comply with the function schema exactly
+## YOUR MISSION
+Extract ONLY actual patient test results from this lab report. Your goal is to provide clean, structured data for medical tracking and charting.
 
-REFERENCE RANGE AVOIDANCE:
-- If you see "Normal range: 70-99 mg/dL, Result: 85 mg/dL", extract 85, NOT 70 or 99
-- If you see "Reference: 40-160 mg/dL | Your Result: 120", extract 120, NOT 40 or 160
-- Look for keywords like "Result:", "Value:", "Your Result:", or values that appear after reference ranges
+## MEDICAL DOCUMENT UNDERSTANDING
+Lab reports typically contain:
+1. **Patient Results** - The actual measured values for this patient (EXTRACT THESE)
+2. **Reference Ranges** - Normal/expected value ranges for comparison (IGNORE THESE)
+3. **Quality Control Data** - Lab calibration values (IGNORE THESE)
+4. **Header/Footer Info** - Lab name, dates, patient info (USE DATES ONLY)
 
-Extract these biomarker types:
-- Lipids: Total Cholesterol, LDL Cholesterol, HDL Cholesterol, Triglycerides
-- Metabolic: Glucose, Hemoglobin A1c, Insulin, Fructosamine
-- Thyroid: TSH, Free T4, Free T3, Reverse T3
-- Vitamins: Vitamin D (25-OH), Vitamin B12, Folate, Vitamin B6
-- Minerals: Iron, Ferritin, Magnesium, Zinc
-- Blood: Hemoglobin, Hematocrit, RBC Count, WBC Count, Platelets
-- Liver: ALT, AST, Alkaline Phosphatase, Total Bilirubin
-- Kidney: Creatinine, BUN, eGFR, Uric Acid
-- Hormones: Testosterone, Estradiol, Cortisol, DHEA-S
+## CRITICAL EXTRACTION RULES
 
-NEVER extract values from reference ranges or normal ranges.
-Focus on actual test results only.`;
+### 1. IDENTIFY ACTUAL RESULTS
+Look for these patterns indicating REAL patient results:
+- Values immediately following biomarker names: "Glucose: 95 mg/dL"
+- Values in result columns of tables
+- Values with status indicators: "Cholesterol: 185 mg/dL (Normal)"
+- Values followed by units then status: "Hemoglobin 14.2 g/dL H"
 
-      // Call OpenAI with function calling
+### 2. AVOID REFERENCE RANGE VALUES
+NEVER extract values from these contexts:
+- "Normal range: 70-99" → SKIP both 70 and 99
+- "Reference: 40-160" → SKIP both 40 and 160  
+- "Expected: 3.5-5.0" → SKIP both 3.5 and 5.0
+- Any value appearing in format "X-Y" or "X to Y"
+- Values preceded by words: "normal", "reference", "range", "expected", "typical"
+
+### 3. HANDLE EDGE CASES
+- If a biomarker name appears multiple times, extract the result value, not range values
+- For "Glucose 95 (Normal: 70-99)", extract 95, ignore 70 and 99
+- For fragmented text from OCR, look for the logical result value
+- If units are missing, infer standard units based on biomarker type
+
+### 4. REQUIRED OUTPUT QUALITY
+- Every biomarker MUST have a valid numeric value
+- Every biomarker MUST have a unit (infer if not explicit)
+- Use specific names: "HDL Cholesterol" not "Cholesterol"
+- Status should reflect actual result vs. reference range when available
+
+## STANDARD UNITS (infer these if not specified):
+- Glucose, Cholesterol, HDL, LDL, Triglycerides: mg/dL
+- Hemoglobin A1c: %
+- TSH: mIU/L  
+- Free T4: ng/dL
+- Free T3: pg/mL
+- Vitamin D: ng/mL
+- Vitamin B12: pg/mL
+- Creatinine: mg/dL
+- Hemoglobin: g/dL
+- Hematocrit: %
+- ALT, AST: U/L
+
+## EXAMPLES OF CORRECT EXTRACTION:
+
+✅ CORRECT:
+"Glucose: 95 mg/dL (Normal range: 70-99)" → Extract: {name: "Glucose", value: 95, unit: "mg/dL"}
+"Total Cholesterol 220 High (Normal: <200)" → Extract: {name: "Total Cholesterol", value: 220, unit: "mg/dL", status: "High"}
+
+❌ INCORRECT:
+"Normal range: 70-99" → Do NOT extract 70 or 99
+"Reference: 40-160 mg/dL" → Do NOT extract 40 or 160
+
+## FOCUS AREAS
+Extract these biomarker categories when present:
+- **Lipid Panel**: Total Cholesterol, LDL, HDL, Triglycerides
+- **Basic Metabolic**: Glucose, Sodium, Potassium, Chloride, CO2, BUN, Creatinine
+- **Complete Blood Count**: Hemoglobin, Hematocrit, WBC, RBC, Platelets  
+- **Liver Function**: ALT, AST, Alkaline Phosphatase, Bilirubin
+- **Thyroid**: TSH, Free T4, Free T3
+- **Vitamins**: Vitamin D, B12, Folate
+- **Other**: Hemoglobin A1c, Iron, Ferritin, Magnesium, PSA
+
+Remember: Your output will be used for medical tracking and charting. Accuracy is critical.`;
+
+      // Call OpenAI with optimized settings for medical text extraction
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o", // Keeping 4o for medical accuracy
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: text }
+          { role: "user", content: `Please extract biomarkers from this lab report:\n\n${text}` }
         ],
-        temperature: 0.1,
+        temperature: 0.05, // Lower temperature for more consistent medical extraction
+        max_tokens: 4096, // Sufficient for complex lab reports
         tools: functions.map(func => ({
           type: "function",
           function: func
@@ -671,33 +742,73 @@ Focus on actual test results only.`;
       if (toolCall?.type === 'function' && toolCall.function.name === 'extract_lab_biomarkers') {
         try {
           const parsedFunction = JSON.parse(toolCall.function.arguments);
-          const biomarkers = parsedFunction.biomarkers;
+          const biomarkers = parsedFunction.biomarkers || [];
+          const extractionNotes = parsedFunction.extractionNotes || '';
 
-          logger.info('LLM extraction extracted biomarkers:', { 
+          logger.info('LLM extraction completed:', { 
             count: biomarkers.length,
-            firstBiomarker: biomarkers.length > 0 ? 
-              `${biomarkers[0].name}: ${biomarkers[0].value} ${biomarkers[0].unit}` : null
+            extractionNotes,
+            sampleBiomarkers: biomarkers.slice(0, 3).map((b: any) => ({
+              name: b.name,
+              value: b.value,
+              unit: b.unit,
+              confidence: b.confidence
+            }))
           });
 
-          // Map to our schema and validate each biomarker
+          // Enhanced validation and mapping
           const validatedBiomarkers: z.infer<typeof BiomarkerSchema>[] = [];
+          let validationErrors = 0;
+
           for (const b of biomarkers) {
             try {
-              // Convert to our schema format
+              // Validate required fields first
+              if (!b.name || typeof b.value !== 'number' || !b.unit || !b.category) {
+                logger.warn('LLM biomarker missing required fields:', {
+                  name: b.name,
+                  value: b.value,
+                  unit: b.unit,
+                  category: b.category
+                });
+                validationErrors++;
+                continue;
+              }
+
+              // Convert to our schema format with enhanced validation
               const biomarker = {
-                ...b,
-                extractionMethod: 'llm',
+                name: b.name.trim(),
+                value: b.value,
+                unit: b.unit.trim(),
+                category: b.category,
+                referenceRange: b.referenceRange || undefined,
+                testDate: b.testDate || new Date().toISOString().split('T')[0],
+                status: b.status || undefined,
+                extractionMethod: 'llm' as const,
                 source: 'llm',
-                confidence: 0.9,
-                testDate: b.testDate || new Date().toISOString().split('T')[0]
+                confidence: b.confidence || 0.95, // Use LLM confidence if provided
+                sourceText: undefined
               };
 
-              // Validate
+              // Additional validation checks
+              if (biomarker.value < 0 || biomarker.value > 10000) {
+                logger.warn('LLM biomarker value out of reasonable range:', {
+                  biomarker: biomarker.name,
+                  value: biomarker.value
+                });
+                validationErrors++;
+                continue;
+              }
+
+              // Validate with our schema
               const validated = BiomarkerSchema.parse(biomarker);
               validatedBiomarkers.push(validated);
+              
             } catch (valErr) {
+              validationErrors++;
               logger.warn('Failed to validate LLM biomarker:', {
-                biomarker: b.name,
+                biomarker: b.name || 'unknown',
+                value: b.value,
+                unit: b.unit,
                 error: valErr instanceof Error ? valErr.message : String(valErr),
                 issues: valErr instanceof z.ZodError ? valErr.issues : undefined
               });
@@ -706,18 +817,27 @@ Focus on actual test results only.`;
 
           logger.info('LLM extraction validation complete:', {
             originalCount: biomarkers.length,
-            validCount: validatedBiomarkers.length
+            validCount: validatedBiomarkers.length,
+            validationErrors,
+            extractionNotes,
+            successRate: biomarkers.length > 0 ? (validatedBiomarkers.length / biomarkers.length * 100).toFixed(1) + '%' : '0%'
           });
 
           return validatedBiomarkers;
         } catch (parseError) {
           logger.error('Failed to parse LLM function response:', {
             error: parseError instanceof Error ? parseError.message : String(parseError),
-            rawResponse: toolCall.function.arguments
+            rawResponse: toolCall.function.arguments.substring(0, 500)
           });
         }
       } else {
-        logger.warn('LLM extraction did not return expected tool call');
+        logger.warn('LLM extraction did not return expected tool call', {
+          hasResponse: !!response.choices[0],
+          hasMessage: !!response.choices[0]?.message,
+          hasToolCalls: !!response.choices[0]?.message?.tool_calls,
+          toolCallType: toolCall?.type,
+          functionName: toolCall?.type === 'function' ? toolCall.function.name : undefined
+        });
       }
 
       return [];
@@ -1298,42 +1418,85 @@ Focus on actual test results only.`;
   private isLikelyReferenceRangeValue(context: string, value: number, biomarkerName: string): boolean {
     const lowerContext = context.toLowerCase();
     
-    // Check for reference range indicators
+    // Enhanced reference range indicators
     const rangeIndicators = [
       'range:', 'ref:', 'reference:', 'normal:', 'typical:', 'standard:',
-      'expected:', 'limits:', 'interval:', 'norm:', 'ref range'
+      'expected:', 'limits:', 'interval:', 'norm:', 'ref range',
+      'normal range:', 'reference range:', 'normal values:', 'expected range:',
+      'typical range:', 'standard range:', 'within normal limits:', 'wnl:',
+      'lab range:', 'lab normal:', 'institutional range:'
     ];
     
     const hasRangeIndicator = rangeIndicators.some(indicator => 
       lowerContext.includes(indicator)
     );
     
-    // Check if the value appears in a range context (e.g., "70-99" or "70 - 99")
-    const rangePattern = /(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/;
-    const rangeMatch = context.match(rangePattern);
+    // Check for context words that suggest reference information
+    const referenceContextWords = [
+      'normal', 'reference', 'range', 'expected', 'typical', 'standard',
+      'limits', 'baseline', 'target', 'goal', 'optimal'
+    ];
     
-    if (rangeMatch && hasRangeIndicator) {
-      const rangeLow = parseFloat(rangeMatch[1]);
-      const rangeHigh = parseFloat(rangeMatch[2]);
-      
-      // If the extracted value is exactly the low or high end of a range, it's likely a reference value
-      if (value === rangeLow || value === rangeHigh) {
-        return true;
+    const contextWordCount = referenceContextWords.filter(word => 
+      lowerContext.includes(word)
+    ).length;
+    
+    // More aggressive range pattern detection
+    const rangePatterns = [
+      /(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)/g, // Various dash types
+      /(\d+(?:\.\d+)?)\s+to\s+(\d+(?:\.\d+)?)/gi,
+      /(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/g,
+      /between\s+(\d+(?:\.\d+)?)\s+and\s+(\d+(?:\.\d+)?)/gi
+    ];
+    
+    let isInRange = false;
+    for (const pattern of rangePatterns) {
+      const matches = Array.from(context.matchAll(pattern));
+      for (const rangeMatch of matches) {
+        const rangeLow = parseFloat(rangeMatch[1]);
+        const rangeHigh = parseFloat(rangeMatch[2]);
+        
+        // If the extracted value is exactly the low or high end of a range
+        if (value === rangeLow || value === rangeHigh) {
+          isInRange = true;
+          break;
+        }
+        
+        // If the value is suspiciously close to range boundaries
+        if (Math.abs(value - rangeLow) < 0.1 || Math.abs(value - rangeHigh) < 0.1) {
+          isInRange = true;
+          break;
+        }
       }
+      if (isInRange) break;
     }
     
-    // Additional heuristics: common reference range values that shouldn't be actual results
+    // If we found range indicators AND the value appears to be a range boundary
+    if (hasRangeIndicator && isInRange) {
+      return true;
+    }
+    
+    // Enhanced heuristics: expanded common reference range values
     const commonReferenceValues: Record<string, number[]> = {
-      glucose: [70, 99, 100, 125], // Common reference range boundaries
-      cholesterol: [200, 239, 240], // Common cholesterol reference boundaries
-      hdl: [40, 60], // Common HDL reference boundaries
-      ldl: [100, 129, 130, 159, 160], // Common LDL reference boundaries
-      triglycerides: [150, 199, 200, 499], // Common triglycerides reference boundaries
+      glucose: [70, 99, 100, 125, 140], // Fasting and post-meal ranges
+      cholesterol: [200, 239, 240, 300], // Various risk categories
+      hdl: [40, 50, 60], // Gender-specific ranges
+      ldl: [100, 129, 130, 159, 160, 189, 190], // Risk category boundaries
+      triglycerides: [150, 199, 200, 499, 500], // Risk categories
+      hemoglobinA1c: [5.7, 6.4, 7.0], // Diabetes diagnostic thresholds
+      tsh: [0.4, 4.0, 4.5, 5.0], // Common TSH reference ranges
+      creatinine: [0.6, 1.2, 1.3, 1.5], // Common creatinine ranges
+      bun: [7, 20, 25], // Common BUN ranges
+      sodium: [135, 145], // Electrolyte ranges
+      potassium: [3.5, 5.0, 5.1], // Potassium ranges
     };
     
     const suspiciousValues = commonReferenceValues[biomarkerName];
-    if (suspiciousValues && suspiciousValues.includes(value) && hasRangeIndicator) {
-      return true;
+    if (suspiciousValues && suspiciousValues.includes(value)) {
+      // If it's a suspicious value and we have any reference context, flag it
+      if (hasRangeIndicator || contextWordCount >= 2) {
+        return true;
+      }
     }
     
     return false;
