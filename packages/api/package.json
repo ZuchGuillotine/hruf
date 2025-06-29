@@ -1,0 +1,48 @@
+{
+  "name": "@hruf/api",
+  "version": "1.0.0",
+  "description": "Shared API client for both web and mobile applications",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "api",
+    "client",
+    "tanstack-query",
+    "typescript",
+    "react-native",
+    "react"
+  ],
+  "author": "HRUF Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.60.5",
+    "react": "^18.3.1"
+  },
+  "dependencies": {
+    "@hruf/shared-types": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@tanstack/react-query": "^5.60.5",
+    "react": "^18.3.1",
+    "typescript": "^5.6.3"
+  }
+}
