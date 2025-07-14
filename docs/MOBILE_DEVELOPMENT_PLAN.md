@@ -235,6 +235,7 @@ npm run build && npm run test
 - **Mobile Configuration**: All critical dependencies and config files in place
 - **Architecture Decisions**: Card-based mobile dashboard strategy confirmed
 - **Build System**: All shared packages building correctly
+- **React Hook Conflicts Resolved**: ✅ **CRITICAL FIX** Multiple React instances causing "Invalid hook call" errors
 
 ### Immediate Next Steps:
 1. **Mobile App Structure**: Create screens, navigation, and UI components
@@ -243,3 +244,56 @@ npm run build && npm run test
 4. **Authentication**: Implement mobile OAuth and secure token storage
 
 The mobile development is significantly ahead of the original timeline. The robust shared package architecture ensures rapid feature development while maintaining code quality and consistency across platforms.
+
+---
+
+## 🔧 Critical Troubleshooting Solutions
+
+### React Hook Conflict Resolution (SOLVED)
+
+**Problem**: "Invalid hook call. Hooks can only be called inside of the body of a function component" errors preventing Expo app from starting.
+
+**Root Cause**: Multiple React instances in monorepo:
+- Root workspace: React 19.1.0
+- Mobile app: React 19.0.0  
+- Expo CLI canary: React 19.2.0-canary
+
+**Solution Applied**:
+
+1. **Exact Version Alignment**: Force React 19.0.0 across entire monorepo
+   ```json
+   // package.json resolutions
+   "resolutions": {
+     "react": "19.0.0",
+     "react-dom": "19.0.0", 
+     "@types/react": "19.0.10",
+     "@types/react-dom": "19.0.0"
+   }
+   ```
+
+2. **Metro Configuration**: Force React resolution from workspace root
+   ```js
+   // mobile/metro.config.js
+   config.resolver.alias = {
+     'react': path.resolve(workspaceRoot, 'node_modules/react'),
+     'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+   };
+   ```
+
+3. **Physical Cleanup**: Remove duplicate React instances
+   ```bash
+   rm -rf mobile/node_modules/react
+   rm -rf mobile/node_modules/react-dom
+   ```
+
+4. **Package Updates**: Align all shared packages to React 19.0.0
+   - `packages/api/package.json`: React 18.3.1 → 19.0.0
+   - `packages/core/package.json`: React 18.3.1 → 19.0.0
+
+**Verification**: Expo now starts successfully on port 8089 without React hook errors.
+
+**Key Learnings**:
+- Expo SDK 53 requires exact React 19.0.0 compatibility
+- Metro alias is more reliable than blockList for React resolution
+- Monorepo workspaces require careful dependency version management
+- Always run from mobile/ directory: `cd mobile && npx expo start`
