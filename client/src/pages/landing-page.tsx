@@ -153,7 +153,7 @@ export default function LandingPage() {
             size="lg" 
             className="bg-[#2d6a4f] hover:bg-[#1b4332] text-white"
             onClick={() => {
-              const trialElement = document.getElementById('try-free');
+              const trialElement = document.getElementById('free-trial-signup');
               if (trialElement) {
                 trialElement.scrollIntoView({ behavior: 'smooth' });
               }
