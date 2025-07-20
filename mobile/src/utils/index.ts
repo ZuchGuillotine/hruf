@@ -1,5 +1,5 @@
-// Re-export utilities from shared package
-export * from '@hruf/utils';
+// Temporary: Comment out shared package import until workspace is fixed
+// export * from '@hruf/utils';
 
 // Mobile-specific utilities
 export const platformUtils = {

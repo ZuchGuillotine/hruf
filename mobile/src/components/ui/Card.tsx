@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { ViewStyle, TextStyle } from 'react-native';
 import { clsx } from 'clsx';
+import { StyledView, StyledText, StyledTouchableOpacity } from '@/lib/styled';
 
 interface CardProps {
   children: React.ReactNode;
@@ -34,11 +35,23 @@ interface CardContentProps {
 }
 
 export function Card({ children, className, style, onPress }: CardProps) {
-  const Component = onPress ? TouchableOpacity : View;
+  if (onPress) {
+    return (
+      <StyledTouchableOpacity
+        onPress={onPress}
+        style={style}
+        className={clsx(
+          "bg-white rounded-xl shadow-sm border border-gray-200 p-4",
+          className
+        )}
+      >
+        {children}
+      </StyledTouchableOpacity>
+    );
+  }
   
   return (
-    <Component
-      onPress={onPress}
+    <StyledView
       style={style}
       className={clsx(
         "bg-white rounded-xl shadow-sm border border-gray-200 p-4",
@@ -46,44 +59,44 @@ export function Card({ children, className, style, onPress }: CardProps) {
       )}
     >
       {children}
-    </Component>
+    </StyledView>
   );
 }
 
 export function CardHeader({ children, className, style }: CardHeaderProps) {
   return (
-    <View style={style} className={clsx("pb-2", className)}>
+    <StyledView style={style} className={clsx("pb-2", className)}>
       {children}
-    </View>
+    </StyledView>
   );
 }
 
 export function CardTitle({ children, className, style }: CardTitleProps) {
   return (
-    <Text
+    <StyledText
       style={style}
       className={clsx("text-lg font-semibold text-gray-900", className)}
     >
       {children}
-    </Text>
+    </StyledText>
   );
 }
 
 export function CardDescription({ children, className, style }: CardDescriptionProps) {
   return (
-    <Text
+    <StyledText
       style={style}
       className={clsx("text-sm text-gray-600", className)}
     >
       {children}
-    </Text>
+    </StyledText>
   );
 }
 
 export function CardContent({ children, className, style }: CardContentProps) {
   return (
-    <View style={style} className={clsx("pt-2", className)}>
+    <StyledView style={style} className={clsx("pt-2", className)}>
       {children}
-    </View>
+    </StyledView>
   );
 }

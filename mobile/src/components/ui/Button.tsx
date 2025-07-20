@@ -1,6 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, Text, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
+import { ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 import { clsx } from 'clsx';
+import { StyledTouchableOpacity, StyledText } from '@/lib/styled';
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -74,7 +75,7 @@ export function Button({
   };
 
   return (
-    <TouchableOpacity
+    <StyledTouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
       style={style}
@@ -93,7 +94,7 @@ export function Button({
           style={{ marginRight: 8 }}
         />
       )}
-      <Text
+      <StyledText
         style={textStyle}
         className={clsx(
           'font-medium text-center',
@@ -102,7 +103,7 @@ export function Button({
         )}
       >
         {children}
-      </Text>
-    </TouchableOpacity>
+      </StyledText>
+    </StyledTouchableOpacity>
   );
 }

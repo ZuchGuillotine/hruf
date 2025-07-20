@@ -1,9 +1,10 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { RootStackParamList, MainTabParamList } from '@/types/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { StyledView, StyledText } from '@/lib/styled';
 
 // Import screens
 import DashboardScreen from '@/screens/DashboardScreen';
@@ -32,9 +33,9 @@ function MainTabNavigator() {
         tabBarIcon: ({ focused }) => {
           const iconSet = tabIcons[route.name as keyof typeof tabIcons];
           return (
-            <Text className="text-lg">
+            <StyledText className="text-lg">
               {focused ? iconSet.focused : iconSet.unfocused}
-            </Text>
+            </StyledText>
           );
         },
         tabBarActiveTintColor: '#3b82f6',
@@ -84,10 +85,21 @@ function MainTabNavigator() {
 }
 
 export default function RootNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    // Show loading screen while checking auth state
+    return (
+      <StyledView className="flex-1 justify-center items-center bg-white">
+        <StyledText className="text-lg text-gray-600">Loading...</StyledText>
+      </StyledView>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="MainTabs"
+        initialRouteName={isAuthenticated ? "MainTabs" : "Auth"}
         screenOptions={{
           headerStyle: {
             backgroundColor: '#f8fafc',
@@ -98,32 +110,39 @@ export default function RootNavigator() {
           },
         }}
       >
-        <Stack.Screen 
-          name="MainTabs" 
-          component={MainTabNavigator}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="Chat" 
-          component={ChatScreen}
-          options={{ 
-            title: 'AI Chat',
-            presentation: 'modal',
-          }}
-        />
-        <Stack.Screen 
-          name="HealthStats" 
-          component={HealthStatsScreen}
-          options={{ 
-            title: 'Health Statistics',
-            presentation: 'modal',
-          }}
-        />
-        <Stack.Screen 
-          name="Auth" 
-          component={AuthScreen}
-          options={{ title: 'Authentication', headerShown: false }}
-        />
+        {isAuthenticated ? (
+          // Authenticated user screens
+          <>
+            <Stack.Screen 
+              name="MainTabs" 
+              component={MainTabNavigator}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Chat" 
+              component={ChatScreen}
+              options={{ 
+                title: 'AI Chat',
+                presentation: 'modal',
+              }}
+            />
+            <Stack.Screen 
+              name="HealthStats" 
+              component={HealthStatsScreen}
+              options={{ 
+                title: 'Health Statistics',
+                presentation: 'modal',
+              }}
+            />
+          </>
+        ) : (
+          // Unauthenticated user screens
+          <Stack.Screen 
+            name="Auth" 
+            component={AuthScreen}
+            options={{ title: 'Welcome to HRUF', headerShown: false }}
+          />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

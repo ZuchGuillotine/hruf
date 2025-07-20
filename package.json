@@ -114,8 +114,8 @@
     "pgvector": "^0.2.1",
     "postgres": "^3.4.5",
     "prettier": "^3.5.3",
-    "react": "19.0.0",
-    "react-day-picker": "^8.10.1",
+    "react": "^19.0.0",
+    "react-day-picker": "^9.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.53.1",
@@ -147,7 +147,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/passport": "^1.0.16",
     "@types/passport-local": "^1.0.38",
-    "@types/react": "19.0.10",
+    "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.0",
     "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
@@ -175,9 +175,9 @@
     "bufferutil": "^4.0.8"
   },
   "resolutions": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "@types/react": "19.0.10",
-    "@types/react-dom": "19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.0"
   }
 }

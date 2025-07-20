@@ -247,6 +247,47 @@ The mobile development is significantly ahead of the original timeline. The robu
 
 ---
 
+## 🚩 Findings from Initial Expo Test (Week 1.5)
+
+#### Observed Issues
+- Test build auto-logged into a **fake demo account** created by a collaborator.
+- Authentication & API calls were **not exercised against the real backend** in Expo dev mode.
+- Mobile UI diverges significantly from web app styling – lacks Tailwind tokens, consistent colors, and component density.
+- **No landing / onboarding flow**: app boots directly into the dashboard of the demo user.
+
+#### Impact
+These gaps hide critical bugs in auth, networking, and user-journey; they must be resolved before continuing feature work.
+
+### 📌 Plan Adjustments & Action Items
+1. **Real Backend Integration**
+   - [ ] Disable demo account auto-login and seed scripts.
+   - [ ] Configure environment switching for mobile to point to the local backend (AWS App Runner tunnel / LAN IP) in dev.
+   - [ ] Verify token-based auth, session refresh, and SSE streaming on both iOS and Android.
+
+2. **Onboarding & Landing Screens**
+   - [ ] Build a mobile landing page with branding and a “Get Started” CTA.
+   - [ ] Implement multi-step onboarding cards (profile, health stats, supplements).
+   - [ ] Route unauthenticated users to onboarding; authenticated users → dashboard.
+
+3. **UI/UX Alignment with Web**
+   - [ ] Export Tailwind design tokens from the web app and import them into the NativeWind theme.
+   - [ ] Create a set of shadcn/ui-equivalent components for React Native.
+   - [ ] Standardize spacing, typography, palette, and dark-mode support across screens.
+
+4. **Dev Networking & Environment**
+   - [ ] Add a `npm run dev:tunnel` script (ngrok or Cloudflare Tunnel) to expose the local App Runner backend.
+   - [ ] Document RDS temporary public access and required IP whitelisting.
+   - [ ] Provide a `.env.mobile.example` file with API endpoints and third-party keys (lab processor, OpenAI).
+
+5. **Regression Checklist**
+   - [ ] Validate auth, supplement CRUD, lab uploads, and AI chat against real data.
+   - [ ] Confirm friendly error states for offline and API failures.
+   - [ ] Ensure crash-free sessions on iOS device/simulator and Android emulator.
+
+These items are promoted to the **top of Phase 1.5** and must be completed before advancing to Phase 2.
+
+---
+
 ## 🔧 Critical Troubleshooting Solutions
 
 ### React Hook Conflict Resolution (SOLVED)

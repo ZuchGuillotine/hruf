@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text } from 'react-native';
 import { Card, CardContent } from './ui';
 import { clsx } from 'clsx';
+import { StyledView, StyledText } from '@/lib/styled';
 
 interface NavigationCardProps {
   title: string;
@@ -61,21 +61,21 @@ export function NavigationCard({
     >
       <CardContent className="flex-row items-center p-4">
         {icon && (
-          <View className={clsx(
+          <StyledView className={clsx(
             'w-12 h-12 rounded-full items-center justify-center mr-4',
             getIconColorStyles()
           )}>
             {icon}
-          </View>
+          </StyledView>
         )}
-        <View className="flex-1">
-          <Text className="text-lg font-semibold text-gray-900 mb-1">
+        <StyledView className="flex-1">
+          <StyledText className="text-lg font-semibold text-gray-900 mb-1">
             {title}
-          </Text>
-          <Text className="text-sm text-gray-600">
+          </StyledText>
+          <StyledText className="text-sm text-gray-600">
             {description}
-          </Text>
-        </View>
+          </StyledText>
+        </StyledView>
       </CardContent>
     </Card>
   );

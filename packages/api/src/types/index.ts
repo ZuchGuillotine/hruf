@@ -41,7 +41,7 @@ export interface User {
 }
 
 export interface LoginData {
-  username: string;
+  email: string;  // Backend expects 'email' field but accepts email OR username as value
   password: string;
 }
 
